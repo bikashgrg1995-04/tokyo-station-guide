@@ -1,0 +1,323 @@
+/* ========================================
+   Common Dialogs
+======================================== */
+
+/* ========================================
+   Dialog Backdrop
+======================================== */
+
+.common-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(15, 23, 42, 0.48);
+
+  opacity: 0;
+  visibility: hidden;
+
+  transition:
+    opacity 0.15s ease,
+    visibility 0.15s ease;
+}
+
+.common-dialog-backdrop[hidden] {
+  display: none;
+}
+
+.common-dialog-backdrop.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+
+/* ========================================
+   Dialog
+======================================== */
+
+.common-dialog {
+  width: 100%;
+  max-width: 430px;
+
+  padding: 26px;
+
+  background: #ffffff;
+  border: 1px solid #e6e9ee;
+  border-radius: 16px;
+
+  box-shadow:
+    0 20px 45px rgba(15, 23, 42, 0.16);
+
+  transform: translateY(8px) scale(0.98);
+
+  transition:
+    transform 0.15s ease;
+}
+
+.common-dialog-backdrop.is-open .common-dialog {
+  transform: translateY(0) scale(1);
+}
+
+
+/* ========================================
+   Dialog Icon
+======================================== */
+
+.common-dialog-icon {
+  display: grid;
+
+  width: 42px;
+  height: 42px;
+
+  margin-bottom: 18px;
+
+  place-items: center;
+
+  border: 1px solid transparent;
+  border-radius: 11px;
+
+  font-size: 17px;
+  font-weight: 700;
+}
+
+
+/* ========================================
+   Primary Icon
+======================================== */
+
+.common-dialog-icon-primary {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+
+
+/* ========================================
+   Danger Icon
+======================================== */
+
+.common-dialog-icon-danger {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+
+/* ========================================
+   Warning Icon
+======================================== */
+
+.common-dialog-icon-warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #d97706;
+}
+
+
+/* ========================================
+   Content
+======================================== */
+
+.common-dialog-content h2 {
+  margin: 0;
+
+  color: #111827;
+
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.3;
+
+  letter-spacing: -0.2px;
+}
+
+.common-dialog-content p {
+  margin: 8px 0 0;
+
+  color: #6b7280;
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+
+/* ========================================
+   Highlighted Name
+======================================== */
+
+.common-dialog-name {
+  display: block;
+
+  margin-top: 12px;
+  padding: 11px 13px;
+
+  border: 1px solid #e6e9ee;
+  border-radius: 9px;
+
+  background: #f8fafc;
+
+  color: #111827;
+
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.4;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* ========================================
+   Warning Text
+======================================== */
+
+.common-dialog-warning {
+  color: #6b7280;
+}
+
+
+/* ========================================
+   Actions
+======================================== */
+
+.common-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+
+  margin-top: 24px;
+}
+
+
+/* ========================================
+   Buttons
+======================================== */
+
+.common-dialog-button {
+  min-height: 38px;
+
+  padding: 9px 15px;
+
+  border: 1px solid transparent;
+  border-radius: 8px;
+
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.common-dialog-button:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
+
+/* ========================================
+   Secondary Button
+======================================== */
+
+.common-dialog-button-secondary {
+  background: #ffffff;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.common-dialog-button-secondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+
+/* ========================================
+   Primary Button
+======================================== */
+
+.common-dialog-button-primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.common-dialog-button-primary:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+
+/* ========================================
+   Danger Button
+======================================== */
+
+.common-dialog-button-danger {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+.common-dialog-button-danger:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+
+/* ========================================
+   Warning Button
+======================================== */
+
+.common-dialog-button-warning {
+  background: #d97706;
+  border-color: #d97706;
+  color: #ffffff;
+}
+
+.common-dialog-button-warning:hover {
+  background: #b45309;
+  border-color: #b45309;
+}
+
+
+/* ========================================
+   Disabled
+======================================== */
+
+.common-dialog-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+
+/* ========================================
+   Responsive
+======================================== */
+
+@media (max-width: 760px) {
+  .common-dialog-backdrop {
+    padding: 16px;
+  }
+
+  .common-dialog {
+    max-width: none;
+    padding: 22px;
+    border-radius: 14px;
+  }
+
+  .common-dialog-actions {
+    flex-direction: column-reverse;
+  }
+
+  .common-dialog-actions .common-dialog-button {
+    width: 100%;
+  }
+}

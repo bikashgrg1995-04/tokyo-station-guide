@@ -1,0 +1,108 @@
+/* ========================================
+   Common Search Input
+======================================== */
+
+
+/* ========================================
+   Base
+======================================== */
+
+.common-search {
+  position: relative;
+  width: 320px;
+  max-width: 320px;
+}
+
+.common-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  color: #6b7280;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.common-search-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 12px 9px 38px;
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.4;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+
+/* ========================================
+   Placeholder
+======================================== */
+
+.common-search-input::placeholder {
+  color: #9ca3af;
+}
+
+
+/* ========================================
+   Hover
+======================================== */
+
+.common-search-input:hover {
+  border-color: #9ca3af;
+}
+
+
+/* ========================================
+   Focus
+======================================== */
+
+.common-search-input:focus {
+  border-color: #2563eb;
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+
+/* ========================================
+   Disabled
+======================================== */
+
+.common-search-input:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.common-search:has(.common-search-input:disabled)
+  .common-search-icon {
+  color: #9ca3af;
+}
+
+
+/* ========================================
+   Search Cancel Button
+======================================== */
+
+.common-search-input::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+
+/* ========================================
+   Responsive
+======================================== */
+
+@media (max-width: 760px) {
+  .common-search {
+    width: 100%;
+    max-width: none;
+  }
+}

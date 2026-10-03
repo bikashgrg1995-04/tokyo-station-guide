@@ -1,0 +1,214 @@
+/* ========================================
+   Common Pagination
+======================================== */
+
+.common-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  width: 100%;
+  padding: 16px 20px;
+
+  border-top: 1px solid #e6e9ee;
+}
+
+
+/* ========================================
+   Info
+======================================== */
+
+.common-pagination-info {
+  min-width: 0;
+
+  color: #6b7280;
+
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.common-pagination-info:empty {
+  display: none;
+}
+
+
+/* ========================================
+   Controls
+======================================== */
+
+.common-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.common-pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+
+/* ========================================
+   Page Button
+======================================== */
+
+.common-pagination-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 34px;
+  height: 34px;
+
+  padding: 0 9px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+
+  background: #ffffff;
+  color: #374151;
+
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+
+  text-decoration: none;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.common-pagination-button:hover:not(.is-current):not(.is-disabled) {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+
+/* ========================================
+   Current Page
+======================================== */
+
+.common-pagination-button.is-current {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+
+  cursor: default;
+}
+
+
+/* ========================================
+   Previous / Next
+======================================== */
+
+.common-pagination-button-arrow {
+  gap: 6px;
+  padding: 0 10px;
+}
+
+.common-pagination-button-arrow span[aria-hidden="true"] {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.common-pagination-button-label {
+  font-size: 12px;
+}
+
+
+/* ========================================
+   Disabled
+======================================== */
+
+.common-pagination-button.is-disabled {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  color: #c1c7d0;
+
+  cursor: not-allowed;
+}
+
+
+/* ========================================
+   Ellipsis
+======================================== */
+
+.common-pagination-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 24px;
+  height: 34px;
+
+  color: #9ca3af;
+
+  font-size: 13px;
+  user-select: none;
+}
+
+
+/* ========================================
+   Focus
+======================================== */
+
+.common-pagination-button:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
+
+/* ========================================
+   Responsive
+======================================== */
+
+@media (max-width: 760px) {
+  .common-pagination {
+    flex-direction: column;
+    align-items: stretch;
+
+    padding: 14px 16px;
+  }
+
+  .common-pagination-info {
+    text-align: center;
+  }
+
+  .common-pagination-controls {
+    justify-content: center;
+  }
+
+  .common-pagination-button-label {
+    display: none;
+  }
+
+  .common-pagination-button-arrow {
+    min-width: 34px;
+    padding: 0 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .common-pagination-pages {
+    gap: 3px;
+  }
+
+  .common-pagination-button {
+    min-width: 32px;
+    height: 32px;
+
+    padding: 0 7px;
+  }
+
+  .common-pagination-ellipsis {
+    min-width: 18px;
+    height: 32px;
+  }
+}

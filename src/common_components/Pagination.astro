@@ -1,0 +1,181 @@
+---
+import "../styles/common/pagination.css";
+
+export interface Props {
+  currentPage: number;
+  totalPages: number;
+
+  /**
+   * Base URL used to generate pagination links.
+   *
+   * Example:
+   * /admin/operators
+   */
+  baseUrl: string;
+
+  /**
+   * Query parameter used for the page number.
+   */
+  pageParam?: string;
+
+  /**
+   * Number of page buttons shown around the current page.
+   */
+  siblingCount?: number;
+
+  /**
+   * Optional total item count.
+   */
+  totalItems?: number;
+
+  /**
+   * Items shown per page.
+   */
+  perPage?: number;
+}
+
+const {
+  currentPage,
+  totalPages,
+  baseUrl,
+  pageParam = "page",
+  siblingCount = 1,
+  totalItems,
+  perPage,
+} = Astro.props;
+
+const safeCurrentPage = Math.max(1, Math.min(currentPage, totalPages));
+
+const createUrl = (page: number) => {
+  const url = new URL(baseUrl, Astro.url);
+
+  if (page <= 1) {
+    url.searchParams.delete(pageParam);
+  } else {
+    url.searchParams.set(pageParam, String(page));
+  }
+
+  return `${url.pathname}${url.search}${url.hash}`;
+};
+
+const pageNumbers: Array<number | "ellipsis"> = [];
+
+const addPage = (page: number) => {
+  if (!pageNumbers.includes(page)) {
+    pageNumbers.push(page);
+  }
+};
+
+if (totalPages > 0) {
+  addPage(1);
+
+  const start = Math.max(2, safeCurrentPage - siblingCount);
+
+  const end = Math.min(totalPages - 1, safeCurrentPage + siblingCount);
+
+  if (start > 2) {
+    pageNumbers.push("ellipsis");
+  }
+
+  for (let page = start; page <= end; page += 1) {
+    addPage(page);
+  }
+
+  if (end < totalPages - 1) {
+    pageNumbers.push("ellipsis");
+  }
+
+  if (totalPages > 1) {
+    addPage(totalPages);
+  }
+}
+
+const firstItem =
+  totalItems && perPage ? (safeCurrentPage - 1) * perPage + 1 : null;
+
+const lastItem =
+  totalItems && perPage
+    ? Math.min(safeCurrentPage * perPage, totalItems)
+    : null;
+---
+
+{
+  totalPages > 1 && (
+    <nav class="common-pagination" aria-label="Pagination">
+      <div class="common-pagination-info">
+        {firstItem !== null &&
+          lastItem !== null &&
+          totalItems !== undefined && (
+            <span>
+              Showing {firstItem}–{lastItem} of {totalItems}
+            </span>
+          )}
+      </div>
+
+      <div class="common-pagination-controls">
+        {safeCurrentPage > 1 ? (
+          <a
+            href={createUrl(safeCurrentPage - 1)}
+            class="common-pagination-button common-pagination-button-arrow"
+            aria-label="Previous page"
+          >
+            <span aria-hidden="true">‹</span>
+            <span class="common-pagination-button-label">Previous</span>
+          </a>
+        ) : (
+          <span
+            class="common-pagination-button common-pagination-button-arrow is-disabled"
+            aria-disabled="true"
+          >
+            <span aria-hidden="true">‹</span>
+            <span class="common-pagination-button-label">Previous</span>
+          </span>
+        )}
+
+        <div class="common-pagination-pages">
+          {pageNumbers.map((page) =>
+            page === "ellipsis" ? (
+              <span class="common-pagination-ellipsis" aria-hidden="true">
+                …
+              </span>
+            ) : page === safeCurrentPage ? (
+              <span
+                class="common-pagination-button is-current"
+                aria-current="page"
+              >
+                {page}
+              </span>
+            ) : (
+              <a
+                href={createUrl(page)}
+                class="common-pagination-button"
+                aria-label={`Go to page ${page}`}
+              >
+                {page}
+              </a>
+            ),
+          )}
+        </div>
+
+        {safeCurrentPage < totalPages ? (
+          <a
+            href={createUrl(safeCurrentPage + 1)}
+            class="common-pagination-button common-pagination-button-arrow"
+            aria-label="Next page"
+          >
+            <span class="common-pagination-button-label">Next</span>
+            <span aria-hidden="true">›</span>
+          </a>
+        ) : (
+          <span
+            class="common-pagination-button common-pagination-button-arrow is-disabled"
+            aria-disabled="true"
+          >
+            <span class="common-pagination-button-label">Next</span>
+            <span aria-hidden="true">›</span>
+          </span>
+        )}
+      </div>
+    </nav>
+  )
+}

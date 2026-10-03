@@ -1,0 +1,27 @@
+---
+export const prerender = false;
+
+if (Astro.request.method === "POST") {
+  await Astro.session?.destroy();
+
+  return Astro.redirect("/admin/auth/login");
+}
+
+return Astro.redirect("/admin");
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="robots"
+      content="noindex, nofollow"
+    />
+    <title>Logout | Tokyo Station Guide</title>
+  </head>
+
+  <body>
+    <p>Logging out...</p>
+  </body>
+</html>

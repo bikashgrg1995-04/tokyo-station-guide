@@ -1,0 +1,29 @@
+---
+import { deleteOperator } from "../../../../lib/db/operators";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+const db = env.DB;
+
+const id = Number(Astro.params.id);
+
+if (!Number.isInteger(id) || id <= 0) {
+  return Astro.redirect("/admin/operators");
+}
+
+if (Astro.request.method !== "POST") {
+  return Astro.redirect("/admin/operators");
+}
+
+try {
+  await deleteOperator(db, id);
+
+  return Astro.redirect("/admin/operators");
+} catch (err) {
+  console.error("Failed to delete operator:", err);
+
+  return Astro.redirect("/admin/operators?error=delete");
+}
+---

@@ -7,25 +7,29 @@ import "../../styles/gallery.css";
 import "../../styles/footer.css";
 import "../../styles/responsive.css";
 
-import { stations } from "../../data/stations";
+import { getStationBySlug } from "../../lib/db/stations";
 
-export const prerender = true;
+export const prerender = false;
 
-export function getStaticPaths() {
-  return stations.map((station) => ({
-    params: {
-      slug: station.slug,
-    },
-    props: {
-      station,
-    },
-  }));
+const { env } = await import("cloudflare:workers");
+const db = env.DB;
+
+const { slug } = Astro.params;
+
+const station = slug ? await getStationBySlug(db, slug) : null;
+
+if (!station) {
+  Astro.response.status = 404;
 }
 
-const { station } = Astro.props;
+const pageTitle = station
+  ? `${station.name} Station Guide | Tokyo Station Guide`
+  : "Station Not Found | Tokyo Station Guide";
 
-const pageTitle = station.seo.title;
-const pageDescription = station.seo.description;
+const pageDescription = station
+  ? station.description ??
+    `Complete guide to ${station.name} Station in Tokyo.`
+  : "The requested station could not be found.";
 ---
 
 <!doctype html>
@@ -56,234 +60,217 @@ const pageDescription = station.seo.description;
     </header>
 
     <main>
-      <!-- Station Introduction -->
-      <section class="station-hero">
-        <div class="container">
-          <p class="eyebrow">STATION GUIDE</p>
-
-          <h1>{station.name}</h1>
-
-          <p class="station-location">
-            {station.area}
-          </p>
-
-          <p class="hero-description">
-            {station.description}
-          </p>
-        </div>
-      </section>
-
-      <!-- Station Hero Image -->
       {
-        station.images.hero && (
-          <div class="container">
-            <div class="station-hero-image">
-              <img
-                src={station.images.hero}
-                alt={`${station.name} station`}
-                loading="eager"
-              />
-            </div>
-          </div>
-        )
-      }
+        station ? (
+          <>
+            <!-- Station Introduction -->
+            <section class="station-hero">
+              <div class="container">
+                <p class="eyebrow">STATION GUIDE</p>
 
-      <!-- Station Gallery -->
-      {
-        station.images.gallery.length > 0 && (
-          <section class="station-gallery">
-            <div class="container">
-              <div class="section-heading">
-                <div>
-                  <p class="eyebrow">PHOTOS</p>
-                  <h2>{station.name} Station Photos</h2>
+                <h1>{station.name}</h1>
+
+                {station.name_japanese && (
+                  <p class="station-location">
+                    {station.name_japanese}
+                  </p>
+                )}
+
+                {station.description && (
+                  <p class="hero-description">
+                    {station.description}
+                  </p>
+                )}
+              </div>
+            </section>
+
+            <!-- Train Lines -->
+            <section class="section">
+              <div class="container">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">TRANSPORT</p>
+                    <h2>Train Lines</h2>
+                  </div>
+                </div>
+
+                {station.lines.length > 0 ? (
+                  <div class="feature-grid">
+                    {station.lines.map((line) => (
+                      <article class="feature-card">
+                        <div class="feature-icon" aria-hidden="true">
+                          🚆
+                        </div>
+
+                        <h3>{line.name}</h3>
+
+                        {line.code && <p>Line code: {line.code}</p>}
+
+                        <p>
+                          Operated by {line.operator_name}.
+                        </p>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p>
+                    No train lines have been assigned to this station yet.
+                  </p>
+                )}
+              </div>
+            </section>
+
+            <!-- Station Information -->
+            <section class="section section-light">
+              <div class="container">
+                <div class="section-heading">
+                  <div>
+                    <p class="eyebrow">STATION INFORMATION</p>
+                    <h2>Station Details</h2>
+                  </div>
+                </div>
+
+                <div class="place-grid">
+                  <article class="place-card">
+                    <h3>Station Name</h3>
+                    <p>{station.name}</p>
+                  </article>
+
+                  {station.name_japanese && (
+                    <article class="place-card">
+                      <h3>Japanese Name</h3>
+                      <p>{station.name_japanese}</p>
+                    </article>
+                  )}
+
+                  {station.latitude !== null &&
+                    station.longitude !== null && (
+                      <article class="place-card">
+                        <h3>Coordinates</h3>
+                        <p>
+                          {station.latitude}, {station.longitude}
+                        </p>
+                      </article>
+                    )}
                 </div>
               </div>
+            </section>
 
-              <div class="gallery-grid">
-                {station.images.gallery.map((image, index) => (
-                  <div class="gallery-item">
-                    <img
-                      src={image}
-                      alt={`${station.name} station photo ${index + 1}`}
-                      loading="lazy"
-                    />
+            <!-- Station Exits -->
+            <section class="station-section">
+              <div class="container">
+                <div class="section-heading">
+                  <div>
+                    <p class="section-label">Station information</p>
+                    <h2>Station Exits</h2>
                   </div>
-                ))}
+                </div>
+
+                <p>
+                  Exit information will be available here once station exits
+                  are added through the admin panel.
+                </p>
               </div>
+            </section>
+
+            <!-- Nearby Attractions -->
+            <section class="station-section">
+              <div class="container">
+                <div class="section-heading">
+                  <div>
+                    <p class="section-label">Things to do</p>
+                    <h2>Nearby Attractions</h2>
+                  </div>
+                </div>
+
+                <p>
+                  Nearby attractions will be displayed here once station
+                  content is added.
+                </p>
+              </div>
+            </section>
+
+            <!-- Restaurants -->
+            <section class="station-section">
+              <div class="container">
+                <div class="section-heading">
+                  <div>
+                    <p class="section-label">Food</p>
+                    <h2>Nearby Restaurants & Food Areas</h2>
+                  </div>
+                </div>
+
+                <p>
+                  Restaurant information will be displayed here once station
+                  content is added.
+                </p>
+              </div>
+            </section>
+
+            <!-- Hotels -->
+            <section class="station-section">
+              <div class="container">
+                <div class="section-heading">
+                  <div>
+                    <p class="section-label">Stay nearby</p>
+                    <h2>Nearby Hotels</h2>
+                  </div>
+                </div>
+
+                <p>
+                  Hotel information will be displayed here once station
+                  content is added.
+                </p>
+              </div>
+            </section>
+
+            <!-- FAQ -->
+            <section class="station-section">
+              <div class="container">
+                <div class="section-heading">
+                  <div>
+                    <p class="section-label">Common questions</p>
+                    <h2>Frequently Asked Questions</h2>
+                  </div>
+                </div>
+
+                <p>
+                  Frequently asked questions will be added through the admin
+                  panel.
+                </p>
+              </div>
+            </section>
+
+            <!-- Explore Nearby -->
+            <section class="about-section">
+              <div class="container about-content">
+                <p class="eyebrow">EXPLORE NEARBY</p>
+
+                <h2>Places near {station.name}</h2>
+
+                <p>
+                  Nearby attractions, restaurants, hotels, shopping areas,
+                  and other useful places will be displayed here.
+                </p>
+              </div>
+            </section>
+          </>
+        ) : (
+          <section class="station-hero">
+            <div class="container">
+              <p class="eyebrow">STATION GUIDE</p>
+
+              <h1>Station Not Found</h1>
+
+              <p class="hero-description">
+                The station you are looking for does not exist.
+              </p>
+
+              <a href="/stations">Back to Stations</a>
             </div>
           </section>
         )
       }
-
-      <!-- Train Lines -->
-      <section class="section">
-        <div class="container">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">TRANSPORT</p>
-              <h2>Train Lines</h2>
-            </div>
-          </div>
-
-          <div class="feature-grid">
-            {
-              station.lines.map((line) => (
-                <article class="feature-card">
-                  <div class="feature-icon" aria-hidden="true">
-                    🚆
-                  </div>
-
-                  <h3>{line}</h3>
-
-                  <p>
-                    This train line serves {station.name} and connects
-                    passengers with other areas of Tokyo.
-                  </p>
-                </article>
-              ))
-            }
-          </div>
-        </div>
-      </section>
-
-      <!-- Station Exits -->
-      <section class="section section-light">
-        <div class="container">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">STATION INFORMATION</p>
-              <h2>Station Exits</h2>
-            </div>
-          </div>
-
-          <div class="feature-grid">
-            {
-              station.exits.map((exit) => (
-                <article class="feature-card">
-                  <div class="feature-icon" aria-hidden="true">
-                    📍
-                  </div>
-
-                  <h3>{exit}</h3>
-
-                  <p>Useful information about this exit will be added here.</p>
-                </article>
-              ))
-            }
-          </div>
-        </div>
-      </section>
-
-      <!-- Nearby Attractions -->
-      <section class="station-section">
-        <div class="container">
-          <div class="section-heading">
-            <div>
-              <p class="section-label">Things to do</p>
-              <h2>Nearby Attractions</h2>
-            </div>
-          </div>
-
-          <div class="place-grid">
-            {
-              station.attractions.map((attraction) => (
-                <article class="place-card">
-                  <h3>{attraction}</h3>
-
-                  <p>Explore this popular place near {station.name}.</p>
-                </article>
-              ))
-            }
-          </div>
-        </div>
-      </section>
-
-      <!-- Restaurants -->
-      <section class="station-section">
-        <div class="container">
-          <div class="section-heading">
-            <div>
-              <p class="section-label">Food</p>
-              <h2>Nearby Restaurants & Food Areas</h2>
-            </div>
-          </div>
-
-          <div class="place-grid">
-            {
-              station.restaurants.map((restaurant) => (
-                <article class="place-card">
-                  <h3>{restaurant}</h3>
-
-                  <p>Find food and dining options near {station.name}.</p>
-                </article>
-              ))
-            }
-          </div>
-        </div>
-      </section>
-
-      <!-- Hotels -->
-      <section class="station-section">
-        <div class="container">
-          <div class="section-heading">
-            <div>
-              <p class="section-label">Stay nearby</p>
-              <h2>Nearby Hotels</h2>
-            </div>
-          </div>
-
-          <div class="place-grid">
-            {
-              station.hotels.map((hotel) => (
-                <article class="place-card">
-                  <h3>{hotel}</h3>
-
-                  <p>Accommodation option near {station.name}.</p>
-                </article>
-              ))
-            }
-          </div>
-        </div>
-      </section>
-
-      <!-- FAQ -->
-      <section class="station-section">
-        <div class="container">
-          <div class="section-heading">
-            <div>
-              <p class="section-label">Common questions</p>
-              <h2>Frequently Asked Questions</h2>
-            </div>
-          </div>
-
-          <div class="faq-list">
-            {
-              station.faqs.map((faq) => (
-                <details class="faq-item">
-                  <summary>{faq.question}</summary>
-
-                  <p>{faq.answer}</p>
-                </details>
-              ))
-            }
-          </div>
-        </div>
-      </section>
-
-      <!-- Explore Nearby -->
-      <section class="about-section">
-        <div class="container about-content">
-          <p class="eyebrow">EXPLORE NEARBY</p>
-
-          <h2>Places near {station.name}</h2>
-
-          <p>
-            Nearby attractions, restaurants, hotels, shopping areas, and other
-            useful places will be displayed here.
-          </p>
-        </div>
-      </section>
     </main>
 
     <footer class="site-footer">

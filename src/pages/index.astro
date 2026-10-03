@@ -1,11 +1,18 @@
 ---
-import { stations } from "../data/stations";
+import { getStations } from "../lib/db/stations";
 
 import "../styles/global.css";
 import "../styles/header.css";
 import "../styles/home.css";
 import "../styles/footer.css";
 import "../styles/responsive.css";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+const db = env.DB;
+
+const stations = await getStations(db);
 
 const siteName = "Tokyo Station Guide";
 
@@ -49,6 +56,7 @@ const searchableStations = stations.map((station) => ({
     </header>
 
     <main>
+      <!-- Hero -->
       <section class="hero">
         <div class="container hero-content">
           <p class="eyebrow">TOKYO TRAVEL GUIDE</p>
@@ -105,6 +113,7 @@ const searchableStations = stations.map((station) => ({
         </div>
       </section>
 
+      <!-- Stations -->
       <section id="stations" class="section">
         <div class="container">
           <div class="section-heading">
@@ -116,23 +125,39 @@ const searchableStations = stations.map((station) => ({
             <a href="/stations" class="view-all"> View all → </a>
           </div>
 
-          <div class="station-grid">
-            {
-              stations.slice(0, 6).map((station) => (
-                <a href={`/stations/${station.slug}`} class="station-card">
-                  <div class="station-icon">{station.name.charAt(0)}</div>
+          {
+            stations.length > 0 ? (
+              <div class="station-grid">
+                {stations.slice(0, 6).map((station) => (
+                  <a
+                    href={`/stations/${station.slug}`}
+                    class="station-card"
+                  >
+                    <div class="station-icon">
+                      {station.name.charAt(0)}
+                    </div>
 
-                  <div>
-                    <h3>{station.name}</h3>
-                    <p>{station.area}</p>
-                  </div>
-                </a>
-              ))
-            }
-          </div>
+                    <div>
+                      <h3>{station.name}</h3>
+
+                      <p>
+                        {station.name_japanese ?? "Tokyo"}
+                      </p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p>
+                No stations have been added yet. Station information will
+                appear here once it is added through the admin panel.
+              </p>
+            )
+          }
         </div>
       </section>
 
+      <!-- Explore -->
       <section id="explore" class="section section-light">
         <div class="container">
           <div class="section-heading">
@@ -179,6 +204,7 @@ const searchableStations = stations.map((station) => ({
         </div>
       </section>
 
+      <!-- About -->
       <section id="about" class="about-section">
         <div class="container about-content">
           <p class="eyebrow">ABOUT THE GUIDE</p>
@@ -191,8 +217,8 @@ const searchableStations = stations.map((station) => ({
           </p>
 
           <p>
-            From major railway hubs to smaller stations, each station guide will
-            provide practical information for travellers.
+            From major railway hubs to smaller stations, each station guide
+            will provide practical information for travellers.
           </p>
         </div>
       </section>
@@ -211,7 +237,9 @@ const searchableStations = stations.map((station) => ({
 
     <script define:vars={{ searchableStations }}>
       const searchInput = document.querySelector("#station-search");
-      const searchResults = document.querySelector("#station-search-results");
+      const searchResults = document.querySelector(
+        "#station-search-results",
+      );
 
       const stations = searchableStations;
 

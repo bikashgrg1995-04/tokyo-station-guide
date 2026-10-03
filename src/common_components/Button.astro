@@ -1,0 +1,75 @@
+---
+import "../styles/common/buttons.css";
+
+export interface Props {
+  type?: "button" | "submit" | "reset";
+  variant?: "primary" | "secondary" | "danger" | "warning" | "ghost";
+  size?: "small" | "medium" | "large";
+  fullWidth?: boolean;
+  disabled?: boolean;
+
+  id?: string;
+  name?: string;
+  value?: string;
+  form?: string;
+
+  ariaLabel?: string;
+
+  /**
+   * When provided, the component renders an <a>
+   * instead of a <button>.
+   */
+  href?: string;
+}
+
+const {
+  type = "button",
+  variant = "primary",
+  size = "medium",
+  fullWidth = false,
+  disabled = false,
+  id,
+  name,
+  value,
+  form,
+  ariaLabel,
+  href,
+} = Astro.props as Props;
+
+const classes = [
+  "common-button",
+  `common-button-${variant}`,
+  `common-button-${size}`,
+  fullWidth ? "common-button-full" : "",
+]
+  .filter(Boolean)
+  .join(" ");
+---
+
+{
+  href ? (
+    <a
+      href={href}
+      id={id}
+      aria-label={ariaLabel}
+      class={classes}
+      aria-disabled={disabled ? "true" : undefined}
+      tabindex={disabled ? -1 : undefined}
+    >
+      <slot />
+    </a>
+  ) : (
+    <button
+      type={type}
+      id={id}
+      name={name}
+      value={value}
+      form={form}
+      aria-label={ariaLabel}
+      disabled={disabled}
+      class={classes}
+    >
+      <slot />
+    </button>
+  )
+}

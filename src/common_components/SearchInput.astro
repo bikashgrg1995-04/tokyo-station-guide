@@ -1,0 +1,51 @@
+---
+import "../styles/common/search-input.css";
+
+export interface Props {
+  name?: string;
+  id?: string;
+  value?: string;
+  placeholder?: string;
+  ariaLabel?: string;
+  autocomplete?: string;
+  form?: string;
+}
+
+const {
+  name = "search",
+  id,
+  value = "",
+  placeholder = "Search...",
+  ariaLabel = "Search",
+  autocomplete = "off",
+  form,
+} = Astro.props;
+---
+
+<div class="common-search">
+  <svg
+    class="common-search-icon"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <path
+      d="m21 21-4.35-4.35m1.35-5.15a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+    />
+  </svg>
+
+  <input
+    type="search"
+    name={name}
+    id={id}
+    value={value}
+    placeholder={placeholder}
+    aria-label={ariaLabel}
+    autocomplete={autocomplete}
+    form={form}
+    class="common-search-input"
+  />
+</div>

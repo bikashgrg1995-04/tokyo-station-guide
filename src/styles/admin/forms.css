@@ -1,0 +1,345 @@
+/* ========================================
+   Admin Forms
+======================================== */
+
+/* ========================================
+   Form
+======================================== */
+
+.admin-form {
+  width: 100%;
+}
+
+.admin-form-group {
+  margin-bottom: 18px;
+}
+
+.admin-form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* ========================================
+   Labels
+======================================== */
+
+.admin-form-group label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #374151;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-form-group small {
+  display: block;
+
+  margin-top: 6px;
+
+  color: var(--admin-muted);
+
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ========================================
+   Inputs
+======================================== */
+
+.admin-form-group input,
+.admin-form-group textarea,
+.admin-form-group select {
+  width: 100%;
+
+  padding: 12px 13px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+
+  outline: none;
+
+  background: #ffffff;
+  color: var(--admin-text);
+
+  font: inherit;
+  font-size: 13px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.admin-form-group textarea {
+  min-height: 120px;
+
+  resize: vertical;
+
+  line-height: 1.5;
+}
+
+.admin-form-group select {
+  cursor: pointer;
+}
+
+/* ========================================
+   Placeholder
+======================================== */
+
+.admin-form-group input::placeholder,
+.admin-form-group textarea::placeholder {
+  color: #9ca3af;
+}
+
+/* ========================================
+   Focus
+======================================== */
+
+.admin-form-group input:focus,
+.admin-form-group textarea:focus,
+.admin-form-group select:focus {
+  border-color: var(--admin-primary);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(37, 99, 235, 0.1);
+}
+
+/* ========================================
+   Disabled
+======================================== */
+
+.admin-form-group input:disabled,
+.admin-form-group textarea:disabled,
+.admin-form-group select:disabled {
+  background: #f3f4f6;
+
+  color: #9ca3af;
+
+  cursor: not-allowed;
+}
+
+/* ========================================
+   Error State
+======================================== */
+
+.admin-form-group.has-error input,
+.admin-form-group.has-error textarea,
+.admin-form-group.has-error select {
+  border-color: var(--admin-danger-hover);
+}
+
+.admin-form-error {
+  display: block;
+
+  margin-top: 6px;
+
+  color: var(--admin-danger-hover);
+
+  font-size: 11px;
+}
+
+/* ========================================
+   Checkbox
+======================================== */
+
+.admin-form-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+
+  margin-bottom: 18px;
+}
+
+.admin-form-checkbox input {
+  width: 16px;
+  height: 16px;
+
+  margin: 2px 0 0;
+
+  accent-color: var(--admin-primary);
+
+  cursor: pointer;
+}
+
+.admin-form-checkbox label {
+  margin: 0;
+
+  color: #374151;
+
+  font-size: 13px;
+  line-height: 1.5;
+
+  cursor: pointer;
+}
+
+/* ========================================
+   Form Actions
+======================================== */
+
+.admin-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+
+  margin-top: 24px;
+  padding-top: 20px;
+
+  border-top: 1px solid var(--admin-border);
+}
+
+/* ========================================
+   Buttons
+======================================== */
+
+.admin-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  min-height: 38px;
+
+  padding: 9px 15px;
+
+  border: 1px solid transparent;
+  border-radius: 9px;
+
+  background: var(--admin-primary);
+  color: #ffffff;
+
+  text-decoration: none;
+
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.admin-button:hover {
+  background: var(--admin-primary-dark);
+}
+
+.admin-button:active {
+  transform: translateY(1px);
+}
+
+.admin-button:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.3);
+  outline-offset: 2px;
+}
+
+/* ========================================
+   Secondary Button
+======================================== */
+
+.admin-button-secondary {
+  background: #ffffff;
+
+  border-color: var(--admin-border);
+
+  color: var(--admin-text);
+}
+
+.admin-button-secondary:hover {
+  background: #f8fafc;
+
+  border-color: #cbd5e1;
+
+  color: var(--admin-text);
+}
+
+/* ========================================
+   Danger Button
+======================================== */
+
+.admin-button-danger {
+  background: var(--admin-danger-hover);
+
+  color: #ffffff;
+}
+
+.admin-button-danger:hover {
+  background: #dc2626;
+}
+
+/* ========================================
+   Alert
+======================================== */
+
+.admin-alert {
+  margin-bottom: 20px;
+
+  padding: 12px 14px;
+
+  border: 1px solid transparent;
+  border-radius: 9px;
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-alert-error {
+  background: var(--admin-danger-bg);
+
+  border-color: var(--admin-danger-border);
+
+  color: var(--admin-danger-hover);
+}
+
+.admin-alert-success {
+  background: #ecfdf5;
+
+  border-color: #a7f3d0;
+
+  color: #047857;
+}
+
+/* ========================================
+   Form Grid
+======================================== */
+
+.admin-form-grid {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 18px;
+}
+
+.admin-form-grid .full-width {
+  grid-column: 1 / -1;
+}
+
+/* ========================================
+   Responsive
+======================================== */
+
+@media (max-width: 760px) {
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form-grid .full-width {
+    grid-column: auto;
+  }
+
+  .admin-form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .admin-form-actions .admin-button {
+    width: 100%;
+  }
+}

@@ -1,0 +1,202 @@
+---
+import "../../styles/admin/shared.css";
+import "../../styles/admin/dashboard.css";
+
+import AdminNavigation from "../../common_components/AdminNavigation.astro";
+import Button from "../../common_components/Button.astro";
+
+export const prerender = false;
+
+const title = "Admin Dashboard";
+
+const { env } = await import("cloudflare:workers");
+
+const db = env.DB;
+
+const admin = await Astro.session?.get<{
+  id: number;
+  email: string;
+  name: string;
+}>("admin");
+
+const operatorCount = await db
+  .prepare("SELECT COUNT(*) AS count FROM operators")
+  .first<{ count: number }>();
+
+const lineCount = await db
+  .prepare("SELECT COUNT(*) AS count FROM lines")
+  .first<{ count: number }>();
+
+const stationCount = await db
+  .prepare("SELECT COUNT(*) AS count FROM stations")
+  .first<{ count: number }>();
+
+const lineStationCount = await db
+  .prepare("SELECT COUNT(*) AS count FROM line_stations")
+  .first<{ count: number }>();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <meta name="robots" content="noindex, nofollow" />
+
+    <title>{title} | Tokyo Station Guide</title>
+  </head>
+
+  <body>
+    <div class="admin-shell">
+      <!-- Sidebar -->
+      <AdminNavigation activePath="/admin" />
+
+      <!-- Main -->
+      <main class="admin-main">
+        <!-- Topbar -->
+        <header class="admin-topbar">
+          <div class="admin-user">
+            <div class="admin-avatar">
+              {
+                admin?.name
+                  ? admin.name
+                      .split(" ")
+                      .map((part) => part.charAt(0))
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()
+                  : "AD"
+              }
+            </div>
+
+            <div class="admin-user-info">
+              <strong>
+                {admin?.name ?? "Administrator"}
+              </strong>
+
+              <span> Tokyo Station Guide </span>
+            </div>
+          </div>
+        </header>
+
+        <!-- Content -->
+        <div class="admin-content">
+          <!-- Page Header -->
+          <div class="admin-page-header">
+            <div>
+              <h2>Dashboard</h2>
+
+              <p>Manage stations, railway lines and operators.</p>
+            </div>
+
+            <Button href="/admin/stations/new" variant="primary">
+              + Add Station
+            </Button>
+          </div>
+
+          <!-- Stats -->
+          <section class="admin-stats">
+            <div class="admin-stat-card">
+              <span class="admin-stat-label"> Operators </span>
+
+              <strong class="admin-stat-value">
+                {operatorCount?.count ?? 0}
+              </strong>
+            </div>
+
+            <div class="admin-stat-card">
+              <span class="admin-stat-label"> Railway Lines </span>
+
+              <strong class="admin-stat-value">
+                {lineCount?.count ?? 0}
+              </strong>
+            </div>
+
+            <div class="admin-stat-card">
+              <span class="admin-stat-label"> Stations </span>
+
+              <strong class="admin-stat-value">
+                {stationCount?.count ?? 0}
+              </strong>
+            </div>
+
+            <div class="admin-stat-card">
+              <span class="admin-stat-label"> Line Connections </span>
+
+              <strong class="admin-stat-value">
+                {lineStationCount?.count ?? 0}
+              </strong>
+            </div>
+          </section>
+
+          <!-- Dashboard Panels -->
+          <section class="admin-dashboard-grid">
+            <!-- Quick Actions -->
+            <div class="admin-panel">
+              <div class="admin-panel-header">
+                <div>
+                  <h3>Quick Actions</h3>
+
+                  <p>Manage your station guide content.</p>
+                </div>
+              </div>
+
+              <div class="admin-panel-body">
+                <div class="admin-quick-actions">
+                  <Button href="/admin/stations/new" variant="primary">
+                    + Add Station
+                  </Button>
+
+                  <Button href="/admin/lines/new" variant="secondary">
+                    + Add Line
+                  </Button>
+
+                  <Button href="/admin/operators/new" variant="secondary">
+                    + Add Operator
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Content Management -->
+            <div class="admin-panel">
+              <div class="admin-panel-header">
+                <div>
+                  <h3>Content Management</h3>
+
+                  <p>Manage the core railway data.</p>
+                </div>
+              </div>
+
+              <div class="admin-panel-body">
+                <div class="admin-dashboard-links">
+                  <a href="/admin/stations">
+                    <strong> Stations </strong>
+
+                    <span>
+                      Manage station information, coordinates and descriptions.
+                    </span>
+                  </a>
+
+                  <a href="/admin/lines">
+                    <strong> Railway Lines </strong>
+
+                    <span> Manage railway lines and their station order. </span>
+                  </a>
+
+                  <a href="/admin/operators">
+                    <strong> Operators </strong>
+
+                    <span> Manage railway operators and websites. </span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

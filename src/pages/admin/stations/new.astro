@@ -1,0 +1,379 @@
+---
+import "../../../styles/admin/shared.css";
+import "../../../styles/admin/stations.css";
+import "../../../styles/admin/forms.css";
+
+import { createStation } from "../../../lib/db/stations";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+const db = env.DB;
+
+let error = "";
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+
+  const name = String(formData.get("name") ?? "").trim();
+
+  const nameJapanese = String(
+    formData.get("name_japanese") ?? "",
+  ).trim();
+
+  const slug = String(
+    formData.get("slug") ?? "",
+  )
+    .trim()
+    .toLowerCase();
+
+  const latitudeValue = String(
+    formData.get("latitude") ?? "",
+  ).trim();
+
+  const longitudeValue = String(
+    formData.get("longitude") ?? "",
+  ).trim();
+
+  const description = String(
+    formData.get("description") ?? "",
+  ).trim();
+
+  const latitude =
+    latitudeValue === ""
+      ? null
+      : Number(latitudeValue);
+
+  const longitude =
+    longitudeValue === ""
+      ? null
+      : Number(longitudeValue);
+
+  if (!name || !slug) {
+    error = "Station name and slug are required.";
+  } else if (
+    latitude !== null &&
+    !Number.isFinite(latitude)
+  ) {
+    error = "Latitude must be a valid number.";
+  } else if (
+    longitude !== null &&
+    !Number.isFinite(longitude)
+  ) {
+    error = "Longitude must be a valid number.";
+  } else if (
+    latitude !== null &&
+    (latitude < -90 || latitude > 90)
+  ) {
+    error = "Latitude must be between -90 and 90.";
+  } else if (
+    longitude !== null &&
+    (longitude < -180 || longitude > 180)
+  ) {
+    error = "Longitude must be between -180 and 180.";
+  } else {
+    try {
+      await createStation(db, {
+        name,
+        nameJapanese: nameJapanese || null,
+        slug,
+        latitude,
+        longitude,
+        description: description || null,
+      });
+
+      return Astro.redirect("/admin/stations");
+    } catch {
+      error =
+        "Unable to create station. The slug may already exist.";
+    }
+  }
+}
+
+const admin = await Astro.session?.get<{
+  id: number;
+  email: string;
+  name: string;
+}>("admin");
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
+    <meta
+      name="robots"
+      content="noindex, nofollow"
+    />
+
+    <title>New Station | Tokyo Station Guide</title>
+  </head>
+
+  <body>
+    <div class="admin-shell">
+      <!-- Sidebar -->
+      <aside class="admin-sidebar">
+        <div class="admin-brand">
+          <div class="admin-brand-top">
+            <div class="admin-logo">
+              T
+            </div>
+
+            <div>
+              <h1>Tokyo Station Guide</h1>
+              <p>Administration</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-section-label">
+          Overview
+        </div>
+
+        <nav class="admin-nav">
+          <a href="/admin">
+            <span class="admin-nav-icon">⌂</span>
+            Dashboard
+          </a>
+        </nav>
+
+        <div class="admin-section-label">
+          Content
+        </div>
+
+        <nav class="admin-nav">
+          <a href="/admin/operators">
+            <span class="admin-nav-icon">◉</span>
+            Operators
+          </a>
+
+          <a href="/admin/lines">
+            <span class="admin-nav-icon">↔</span>
+            Lines
+          </a>
+
+          <a
+            href="/admin/stations"
+            class="active"
+          >
+            <span class="admin-nav-icon">⌖</span>
+            Stations
+          </a>
+        </nav>
+
+        <div class="admin-sidebar-bottom">
+          <form
+            method="POST"
+            action="/admin/logout"
+            class="admin-logout-form"
+          >
+            <button
+              type="submit"
+              class="admin-logout-button"
+            >
+              <span class="admin-nav-icon">↪</span>
+              Logout
+            </button>
+          </form>
+
+          <a
+            href="/"
+            class="admin-back-link"
+          >
+            ← Back to website
+          </a>
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <main class="admin-main">
+        <!-- Topbar -->
+        <header class="admin-topbar">
+          <div class="admin-breadcrumb">
+            <a href="/admin">Admin</a>
+            <span>/</span>
+            <a href="/admin/stations">
+              Stations
+            </a>
+            <span>/</span>
+            <strong>New</strong>
+          </div>
+
+          {
+            admin && (
+              <div class="admin-user">
+                <div class="admin-avatar">
+                  {admin.name
+                    .split(" ")
+                    .map((part) => part[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </div>
+
+                <div class="admin-user-info">
+                  <strong>{admin.name}</strong>
+                  <span>{admin.email}</span>
+                </div>
+              </div>
+            )
+          }
+        </header>
+
+        <!-- Content -->
+        <div class="admin-content">
+          <section class="admin-station-form">
+            <div class="admin-station-form-card">
+              <div class="admin-station-form-header">
+                <p class="admin-eyebrow">
+                  Station Management
+                </p>
+
+                <h2>Create New Station</h2>
+
+                <p>
+                  Add a railway or subway station to Tokyo
+                  Station Guide.
+                </p>
+              </div>
+
+              {
+                error && (
+                  <div class="admin-alert admin-alert-error">
+                    {error}
+                  </div>
+                )
+              }
+
+              <form
+                method="POST"
+                class="admin-form"
+              >
+                <div class="admin-form-grid">
+                  <div class="admin-form-group">
+                    <label for="name">
+                      Station Name
+                    </label>
+
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      placeholder="e.g. Tokyo Station"
+                      required
+                    />
+                  </div>
+
+                  <div class="admin-form-group">
+                    <label for="name_japanese">
+                      Japanese Name
+                    </label>
+
+                    <input
+                      id="name_japanese"
+                      name="name_japanese"
+                      type="text"
+                      class="admin-station-japanese-input"
+                      placeholder="e.g. 東京駅"
+                    />
+                  </div>
+
+                  <div class="admin-form-group full-width">
+                    <label for="slug">
+                      Slug
+                    </label>
+
+                    <input
+                      id="slug"
+                      name="slug"
+                      type="text"
+                      placeholder="e.g. tokyo-station"
+                      required
+                    />
+
+                    <small>
+                      Used in the station URL. Use lowercase
+                      letters, numbers, and hyphens.
+                    </small>
+                  </div>
+
+                  <div class="admin-form-group">
+                    <label for="latitude">
+                      Latitude
+                    </label>
+
+                    <input
+                      id="latitude"
+                      name="latitude"
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 35.681236"
+                    />
+
+                    <small>
+                      Optional. Range: -90 to 90.
+                    </small>
+                  </div>
+
+                  <div class="admin-form-group">
+                    <label for="longitude">
+                      Longitude
+                    </label>
+
+                    <input
+                      id="longitude"
+                      name="longitude"
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 139.767125"
+                    />
+
+                    <small>
+                      Optional. Range: -180 to 180.
+                    </small>
+                  </div>
+
+                  <div class="admin-form-group full-width">
+                    <label for="description">
+                      Description
+                    </label>
+
+                    <textarea
+                      id="description"
+                      name="description"
+                      class="admin-station-description"
+                      placeholder="Brief description of this station..."
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div class="admin-form-actions">
+                  <a
+                    href="/admin/stations"
+                    class="admin-button admin-button-secondary"
+                  >
+                    Cancel
+                  </a>
+
+                  <button
+                    type="submit"
+                    class="admin-button"
+                  >
+                    Create Station
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

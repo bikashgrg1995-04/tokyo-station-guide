@@ -1,0 +1,359 @@
+---
+import "../../../../styles/admin/shared.css";
+import "../../../../styles/admin/lines.css";
+import "../../../../styles/admin/forms.css";
+
+import {
+  getLineById,
+  updateLine,
+} from "../../../../lib/db/lines";
+
+import { getOperators } from "../../../../lib/db/operators";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+const db = env.DB;
+
+const id = Number(Astro.params.id);
+
+if (!id || id <= 0) {
+  return Astro.redirect("/admin/lines");
+}
+
+const line = await getLineById(db, id);
+
+if (!line) {
+  return Astro.redirect("/admin/lines");
+}
+
+const operators = await getOperators(db);
+
+let error = "";
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+
+  const operatorId = Number(formData.get("operator_id") ?? 0);
+  const name = String(formData.get("name") ?? "").trim();
+  const slug = String(formData.get("slug") ?? "").trim().toLowerCase();
+  const code = String(formData.get("code") ?? "").trim();
+  const description = String(
+    formData.get("description") ?? "",
+  ).trim();
+  const color = String(formData.get("color") ?? "").trim();
+
+  if (!operatorId || !name || !slug) {
+    error = "Operator, name, and slug are required.";
+  } else {
+    try {
+      await updateLine(db, id, {
+        operatorId,
+        name,
+        slug,
+        code: code || null,
+        description: description || null,
+        color: color || null,
+      });
+
+      return Astro.redirect("/admin/lines");
+    } catch {
+      error =
+        "Unable to update line. The name or slug may already exist.";
+    }
+  }
+}
+
+const admin = await Astro.session?.get<{
+  id: number;
+  email: string;
+  name: string;
+}>("admin");
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
+    <meta
+      name="robots"
+      content="noindex, nofollow"
+    />
+
+    <title>Edit {line.name} | Tokyo Station Guide</title>
+  </head>
+
+  <body>
+    <div class="admin-shell">
+      <!-- Sidebar -->
+      <aside class="admin-sidebar">
+        <div class="admin-brand">
+          <div class="admin-brand-top">
+            <div class="admin-logo">
+              T
+            </div>
+
+            <div>
+              <h1>Tokyo Station Guide</h1>
+              <p>Administration</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-section-label">
+          Overview
+        </div>
+
+        <nav class="admin-nav">
+          <a href="/admin">
+            <span class="admin-nav-icon">⌂</span>
+            Dashboard
+          </a>
+        </nav>
+
+        <div class="admin-section-label">
+          Content
+        </div>
+
+        <nav class="admin-nav">
+          <a href="/admin/operators">
+            <span class="admin-nav-icon">◉</span>
+            Operators
+          </a>
+
+          <a
+            href="/admin/lines"
+            class="active"
+          >
+            <span class="admin-nav-icon">↔</span>
+            Lines
+          </a>
+
+          <a href="/admin/stations">
+            <span class="admin-nav-icon">⌖</span>
+            Stations
+          </a>
+        </nav>
+
+        <div class="admin-sidebar-bottom">
+          <form
+            method="POST"
+            action="/admin/logout"
+            class="admin-logout-form"
+          >
+            <button
+              type="submit"
+              class="admin-logout-button"
+            >
+              <span class="admin-nav-icon">↪</span>
+              Logout
+            </button>
+          </form>
+
+          <a
+            href="/"
+            class="admin-back-link"
+          >
+            ← Back to website
+          </a>
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <main class="admin-main">
+        <!-- Topbar -->
+        <header class="admin-topbar">
+          <div class="admin-breadcrumb">
+            <a href="/admin">Admin</a>
+            <span>/</span>
+            <a href="/admin/lines">Lines</a>
+            <span>/</span>
+            <strong>Edit</strong>
+          </div>
+
+          {
+            admin && (
+              <div class="admin-user">
+                <div class="admin-avatar">
+                  {admin.name
+                    .split(" ")
+                    .map((part) => part[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </div>
+
+                <div class="admin-user-info">
+                  <strong>{admin.name}</strong>
+                  <span>{admin.email}</span>
+                </div>
+              </div>
+            )
+          }
+        </header>
+
+        <!-- Content -->
+        <div class="admin-content">
+          <section class="admin-line-form">
+            <div class="admin-line-form-card">
+              <div class="admin-line-form-header">
+                <p class="admin-eyebrow">
+                  Line Management
+                </p>
+
+                <h2>Edit Line</h2>
+
+                <p>
+                  Update the details for
+                  <strong>{line.name}</strong>.
+                </p>
+              </div>
+
+              {
+                error && (
+                  <div class="admin-alert admin-alert-error">
+                    {error}
+                  </div>
+                )
+              }
+
+              <form
+                method="POST"
+                class="admin-form"
+              >
+                <div class="admin-form-grid">
+                  <div class="admin-form-group">
+                    <label for="operator_id">
+                      Operator
+                    </label>
+
+                    <select
+                      id="operator_id"
+                      name="operator_id"
+                      required
+                    >
+                      <option value="">
+                        Select operator
+                      </option>
+
+                      {operators.map((operator) => (
+                        <option
+                          value={operator.id}
+                          selected={
+                            operator.id ===
+                            line.operator_id
+                          }
+                        >
+                          {operator.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div class="admin-form-group">
+                    <label for="name">
+                      Line Name
+                    </label>
+
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      value={line.name}
+                      required
+                    />
+                  </div>
+
+                  <div class="admin-form-group">
+                    <label for="slug">
+                      Slug
+                    </label>
+
+                    <input
+                      id="slug"
+                      name="slug"
+                      type="text"
+                      value={line.slug}
+                      required
+                    />
+
+                    <small>
+                      Used in URLs. Use lowercase letters,
+                      numbers, and hyphens.
+                    </small>
+                  </div>
+
+                  <div class="admin-form-group">
+                    <label for="code">
+                      Line Code
+                    </label>
+
+                    <input
+                      id="code"
+                      name="code"
+                      type="text"
+                      value={line.code ?? ""}
+                    />
+                  </div>
+
+                  <div class="admin-form-group">
+                    <label for="color">
+                      Line Color
+                    </label>
+
+                    <div class="admin-line-color-input">
+                      <input
+                        id="color"
+                        name="color"
+                        type="color"
+                        value={line.color ?? "#2563eb"}
+                      />
+
+                      <span class="admin-table-muted">
+                        Select the official line color.
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="admin-form-group full-width">
+                    <label for="description">
+                      Description
+                    </label>
+
+                    <textarea
+                      id="description"
+                      name="description"
+                    >{line.description ?? ""}</textarea>
+                  </div>
+                </div>
+
+                <div class="admin-form-actions">
+                  <a
+                    href="/admin/lines"
+                    class="admin-button admin-button-secondary"
+                  >
+                    Cancel
+                  </a>
+
+                  <button
+                    type="submit"
+                    class="admin-button"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

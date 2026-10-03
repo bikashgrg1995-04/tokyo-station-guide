@@ -1,0 +1,248 @@
+/* ========================================
+   Admin Stations
+======================================== */
+
+/* Stations Page */
+.admin-stations-page {
+  width: 100%;
+}
+
+/* Stations Header */
+.admin-station-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.admin-station-header h2 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.7px;
+}
+
+.admin-station-header p {
+  margin: 7px 0 0;
+  color: var(--admin-muted);
+  font-size: 14px;
+}
+
+/* Stations Card */
+.admin-station-card {
+  overflow: hidden;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+}
+
+/* Station Card Header */
+.admin-station-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-station-card-header h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.admin-station-card-header p {
+  margin: 4px 0 0;
+  color: var(--admin-muted);
+  font-size: 12px;
+}
+
+/* Station Name */
+.admin-station-name {
+  font-weight: 600;
+}
+
+.admin-station-japanese {
+  margin-top: 3px;
+  color: var(--admin-muted);
+  font-size: 12px;
+}
+
+/* Station Slug */
+.admin-station-slug {
+  color: var(--admin-muted);
+  font-family: monospace;
+  font-size: 12px;
+}
+
+/* Coordinates */
+.admin-station-coordinates {
+  color: var(--admin-muted);
+  font-family: monospace;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* Station Actions */
+.admin-station-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-station-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 32px;
+  padding: 6px 10px;
+
+  border: 1px solid var(--admin-border);
+  border-radius: 7px;
+
+  background: var(--admin-surface);
+  color: var(--admin-text);
+
+  text-decoration: none;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.admin-station-action:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.admin-station-action.edit {
+  color: var(--admin-primary);
+}
+
+.admin-station-action.edit:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.admin-station-action.delete {
+  color: var(--admin-danger-hover);
+}
+
+.admin-station-action.delete:hover {
+  background: var(--admin-danger-bg);
+  border-color: var(--admin-danger-border);
+}
+
+/* Station Empty State */
+.admin-station-empty {
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.admin-station-empty h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.admin-station-empty p {
+  margin: 7px 0 0;
+  color: var(--admin-muted);
+  font-size: 13px;
+}
+
+/* Station Form */
+.admin-station-form {
+  max-width: 900px;
+}
+
+.admin-station-form-card {
+  padding: 24px;
+
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+}
+
+/* Station Form Header */
+.admin-station-form-header {
+  margin-bottom: 24px;
+}
+
+.admin-station-form-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.admin-station-form-header p {
+  margin: 6px 0 0;
+  color: var(--admin-muted);
+  font-size: 13px;
+}
+
+/* Japanese Name */
+.admin-station-japanese-input {
+  font-size: 14px;
+}
+
+/* Coordinates */
+.admin-station-coordinate-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+/* Map Preview */
+.admin-station-map-preview {
+  min-height: 180px;
+
+  display: grid;
+  place-items: center;
+
+  margin-top: 18px;
+  padding: 24px;
+
+  border: 1px dashed var(--admin-border);
+  border-radius: 10px;
+
+  background: #f8fafc;
+
+  color: var(--admin-muted);
+  text-align: center;
+  font-size: 12px;
+}
+
+/* Station Description */
+.admin-station-description {
+  min-height: 160px !important;
+}
+
+/* Responsive */
+@media (max-width: 760px) {
+  .admin-station-header {
+    flex-direction: column;
+  }
+
+  .admin-station-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-station-form-card {
+    padding: 18px;
+  }
+
+  .admin-station-coordinate-group {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-station-actions {
+    flex-wrap: wrap;
+  }
+}

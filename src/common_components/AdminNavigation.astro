@@ -1,0 +1,272 @@
+---
+import "../styles/common/admin-navigation.css";
+import ConfirmDialog from "./ConfirmDialog.astro";
+
+export interface Props {
+  activePath?: string;
+}
+
+const {
+  activePath = "/admin",
+} = Astro.props;
+
+const isActive = (path: string) => {
+  if (path === "/admin") {
+    return activePath === "/admin";
+  }
+
+  return activePath.startsWith(path);
+};
+---
+
+<aside class="admin-sidebar">
+
+  <!-- Brand -->
+  <div class="admin-brand">
+    <div class="admin-brand-top">
+
+      <div class="admin-logo">
+        T
+      </div>
+
+      <div>
+        <h1>
+          Tokyo Station Guide
+        </h1>
+
+        <p>
+          Content Management
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- Management -->
+  <div class="admin-section-label">
+    Management
+  </div>
+
+  <nav
+    class="admin-nav"
+    aria-label="Management"
+  >
+
+    <a
+      href="/admin"
+      class:list={{
+        active: isActive("/admin"),
+      }}
+      aria-current={
+        isActive("/admin")
+          ? "page"
+          : undefined
+      }
+    >
+      <span
+        class="admin-nav-icon"
+        aria-hidden="true"
+      >
+        ⌂
+      </span>
+
+      <span>
+        Dashboard
+      </span>
+    </a>
+
+
+    <a
+      href="/admin/operators"
+      class:list={{
+        active: isActive("/admin/operators"),
+      }}
+      aria-current={
+        isActive("/admin/operators")
+          ? "page"
+          : undefined
+      }
+    >
+      <span
+        class="admin-nav-icon"
+        aria-hidden="true"
+      >
+        ◉
+      </span>
+
+      <span>
+        Operators
+      </span>
+    </a>
+
+
+    <a
+      href="/admin/lines"
+      class:list={{
+        active: isActive("/admin/lines"),
+      }}
+      aria-current={
+        isActive("/admin/lines")
+          ? "page"
+          : undefined
+      }
+    >
+      <span
+        class="admin-nav-icon"
+        aria-hidden="true"
+      >
+        ↔
+      </span>
+
+      <span>
+        Lines
+      </span>
+    </a>
+
+
+    <a
+      href="/admin/stations"
+      class:list={{
+        active: isActive("/admin/stations"),
+      }}
+      aria-current={
+        isActive("/admin/stations")
+          ? "page"
+          : undefined
+      }
+    >
+      <span
+        class="admin-nav-icon"
+        aria-hidden="true"
+      >
+        ◎
+      </span>
+
+      <span>
+        Stations
+      </span>
+    </a>
+
+  </nav>
+
+
+  <!-- System -->
+  <div class="admin-section-label">
+    System
+  </div>
+
+  <nav
+    class="admin-nav"
+    aria-label="System"
+  >
+
+    <a href="#">
+      <span
+        class="admin-nav-icon"
+        aria-hidden="true"
+      >
+        ⚙
+      </span>
+
+      <span>
+        Settings
+      </span>
+    </a>
+
+
+    <form
+      method="POST"
+      action="/admin/auth/logout"
+      class="admin-logout-form"
+      id="admin-logout-form"
+    >
+      <button
+        type="submit"
+        class="admin-logout-button"
+        id="admin-logout-button"
+      >
+        <span
+          class="admin-nav-icon"
+          aria-hidden="true"
+        >
+          ↪
+        </span>
+
+        <span>
+          Logout
+        </span>
+      </button>
+    </form>
+
+  </nav>
+
+
+  <!-- Sidebar Bottom -->
+  <div class="admin-sidebar-bottom">
+
+    <a
+      href="/"
+      class="admin-back-link"
+    >
+      ← Back to website
+    </a>
+
+  </div>
+
+</aside>
+
+
+<!-- Logout Confirmation -->
+<ConfirmDialog
+  id="admin-logout-dialog"
+  title="Logout"
+  description="Are you sure you want to logout from the admin panel?"
+  confirmText="Logout"
+  cancelText="Cancel"
+  variant="danger"
+/>
+
+
+<script>
+  const logoutForm =
+    document.getElementById(
+      "admin-logout-form",
+    );
+
+  const logoutDialog =
+    document.getElementById(
+      "admin-logout-dialog",
+    );
+
+  if (
+    logoutForm instanceof HTMLFormElement &&
+    logoutDialog instanceof HTMLDivElement
+  ) {
+    let confirmed = false;
+
+    logoutForm.addEventListener(
+      "submit",
+      (event) => {
+        if (confirmed) {
+          return;
+        }
+
+        event.preventDefault();
+
+        logoutDialog.dispatchEvent(
+          new CustomEvent("dialog:open"),
+        );
+      },
+    );
+
+    logoutDialog.addEventListener(
+      "confirm",
+      () => {
+        confirmed = true;
+
+        logoutForm.submit();
+      },
+    );
+  }
+</script>

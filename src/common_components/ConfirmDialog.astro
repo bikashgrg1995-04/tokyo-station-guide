@@ -1,0 +1,284 @@
+---
+import "../styles/common/dialogs.css";
+
+export interface Props {
+  id: string;
+  title: string;
+  description: string;
+
+  confirmText?: string;
+  cancelText?: string;
+
+  variant?: "primary" | "danger" | "warning";
+
+  /**
+   * Optional highlighted value such as an operator/station name.
+   */
+  name?: string;
+
+  /**
+   * Optional warning/help text displayed below the highlighted name.
+   */
+  warning?: string;
+
+  /**
+   * Optional icon/text shown inside the dialog icon.
+   */
+  icon?: string;
+
+  /**
+   * Optional form id.
+   *
+   * If provided, clicking confirm will submit that form.
+   */
+  formId?: string;
+}
+
+const props = Astro.props as Props;
+
+const {
+  id,
+  title,
+  description,
+  name,
+  warning,
+  icon,
+  formId,
+} = props;
+
+const confirmText =
+  props.confirmText ?? "Confirm";
+
+const cancelText =
+  props.cancelText ?? "Cancel";
+
+const variant: NonNullable<Props["variant"]> =
+  props.variant ?? "primary";
+
+const defaultIcons: Record<
+  NonNullable<Props["variant"]>,
+  string
+> = {
+  primary: "✓",
+  danger: "!",
+  warning: "!",
+};
+
+const dialogIcon =
+  icon ?? defaultIcons[variant];
+
+const confirmButtonClasses: Record<
+  NonNullable<Props["variant"]>,
+  string
+> = {
+  primary:
+    "common-dialog-button common-dialog-button-primary",
+
+  danger:
+    "common-dialog-button common-dialog-button-danger",
+
+  warning:
+    "common-dialog-button common-dialog-button-warning",
+};
+
+const confirmButtonClass =
+  confirmButtonClasses[variant];
+---
+
+<div
+  class="common-dialog-backdrop"
+  id={id}
+  data-common-confirm-dialog
+  data-form-id={formId}
+  hidden
+>
+  <div
+    class="common-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby={`${id}-title`}
+    aria-describedby={`${id}-description`}
+  >
+    <div
+      class:list={[
+        "common-dialog-icon",
+        `common-dialog-icon-${variant}`,
+      ]}
+      aria-hidden="true"
+    >
+      {dialogIcon}
+    </div>
+
+    <div class="common-dialog-content">
+      <h2 id={`${id}-title`}>
+        {title}
+      </h2>
+
+      <p id={`${id}-description`}>
+        {description}
+      </p>
+
+      {
+        name && (
+          <strong class="common-dialog-name">
+            {name}
+          </strong>
+        )
+      }
+
+      {
+        warning && (
+          <p class="common-dialog-warning">
+            {warning}
+          </p>
+        )
+      }
+    </div>
+
+    <div class="common-dialog-actions">
+      <button
+        type="button"
+        class="common-dialog-button common-dialog-button-secondary"
+        data-dialog-cancel
+      >
+        {cancelText}
+      </button>
+
+      <button
+        type="button"
+        class={confirmButtonClass}
+        data-dialog-confirm
+      >
+        {confirmText}
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const initializeConfirmDialogs = () => {
+    const dialogs =
+      document.querySelectorAll<HTMLElement>(
+        "[data-common-confirm-dialog]",
+      );
+
+    dialogs.forEach((dialog) => {
+      if (dialog.dataset.initialized === "true") {
+        return;
+      }
+
+      dialog.dataset.initialized = "true";
+
+      const cancelButton =
+        dialog.querySelector<HTMLButtonElement>(
+          "[data-dialog-cancel]",
+        );
+
+      const confirmButton =
+        dialog.querySelector<HTMLButtonElement>(
+          "[data-dialog-confirm]",
+        );
+
+      if (!cancelButton || !confirmButton) {
+        return;
+      }
+
+      let previousFocusedElement: HTMLElement | null =
+        null;
+
+      const close = () => {
+        dialog.classList.remove("is-open");
+
+        window.setTimeout(() => {
+          dialog.hidden = true;
+        }, 150);
+
+        if (
+          previousFocusedElement instanceof HTMLElement
+        ) {
+          previousFocusedElement.focus();
+        }
+
+        previousFocusedElement = null;
+      };
+
+      const confirm = () => {
+        const formId = dialog.dataset.formId;
+
+        if (formId) {
+          const form = document.getElementById(formId);
+
+          if (form instanceof HTMLFormElement) {
+            form.requestSubmit();
+            return;
+          }
+        }
+
+        dialog.dispatchEvent(
+          new CustomEvent("confirm", {
+            bubbles: true,
+          }),
+        );
+
+        close();
+      };
+
+      const open = () => {
+        previousFocusedElement =
+          document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null;
+
+        dialog.hidden = false;
+
+        requestAnimationFrame(() => {
+          dialog.classList.add("is-open");
+          cancelButton.focus();
+        });
+      };
+
+      dialog.addEventListener(
+        "dialog:open",
+        open,
+      );
+
+      dialog.addEventListener(
+        "dialog:close",
+        close,
+      );
+
+      cancelButton.addEventListener(
+        "click",
+        close,
+      );
+
+      confirmButton.addEventListener(
+        "click",
+        confirm,
+      );
+
+      dialog.addEventListener(
+        "click",
+        (event) => {
+          if (event.target === dialog) {
+            close();
+          }
+        },
+      );
+
+      document.addEventListener(
+        "keydown",
+        (event) => {
+          if (
+            event.key === "Escape" &&
+            !dialog.hidden
+          ) {
+            close();
+          }
+        },
+      );
+    });
+  };
+
+  initializeConfirmDialogs();
+</script>

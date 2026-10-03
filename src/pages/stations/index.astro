@@ -5,7 +5,14 @@ import "../../styles/home.css";
 import "../../styles/footer.css";
 import "../../styles/responsive.css";
 
-import { stations } from "../../data/stations";
+import { getStations } from "../../lib/db/stations";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+const db = env.DB;
+
+const stations = await getStations(db);
 
 const siteName = "Tokyo Station Guide";
 const pageTitle = "All Tokyo Stations | Tokyo Station Guide";
@@ -30,7 +37,7 @@ const pageDescription =
   <body>
     <header class="site-header">
       <div class="container header-inner">
-        <a href="/" class="logo">
+        <a href="/" class="logo" aria-label="Tokyo Station Guide home">
           <span class="logo-mark">T</span>
           <span>{siteName}</span>
         </a>
@@ -58,20 +65,34 @@ const pageDescription =
             lines, exits, nearby attractions, restaurants, and hotels.
           </p>
 
-          <div class="station-grid">
-            {
-              stations.map((station) => (
-                <a href={`/stations/${station.slug}`} class="station-card">
-                  <div class="station-icon">{station.name.charAt(0)}</div>
+          {
+            stations.length > 0 ? (
+              <div class="station-grid">
+                {stations.map((station) => (
+                  <a
+                    href={`/stations/${station.slug}`}
+                    class="station-card"
+                  >
+                    <div class="station-icon">
+                      {station.name.charAt(0)}
+                    </div>
 
-                  <div>
-                    <h3>{station.name}</h3>
-                    <p>{station.area}</p>
-                  </div>
-                </a>
-              ))
-            }
-          </div>
+                    <div>
+                      <h3>{station.name}</h3>
+                      <p>
+                        {station.name_japanese ?? "Tokyo"}
+                      </p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p>
+                No stations have been added yet. Station information will
+                appear here once it is added through the admin panel.
+              </p>
+            )
+          }
         </div>
       </section>
     </main>

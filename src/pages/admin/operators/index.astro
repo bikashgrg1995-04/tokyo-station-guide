@@ -1,0 +1,479 @@
+---
+import "../../../styles/admin/shared.css";
+import "../../../styles/admin/tables.css";
+import "../../../styles/admin/operators.css";
+
+import AdminNavigation from "../../../common_components/AdminNavigation.astro";
+import Button from "../../../common_components/Button.astro";
+import SearchInput from "../../../common_components/SearchInput.astro";
+import ConfirmDialog from "../../../common_components/ConfirmDialog.astro";
+import Pagination from "../../../common_components/Pagination.astro";
+
+import { getOperatorsPaginated } from "../../../lib/db/operators";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+const db = env.DB;
+
+
+/* ========================================
+   Query Parameters
+======================================== */
+
+const searchParam =
+  Astro.url.searchParams.get("search")?.trim() ?? "";
+
+const pageParam =
+  Astro.url.searchParams.get("page");
+
+const parsedPage = Number(pageParam);
+
+const currentPage =
+  Number.isInteger(parsedPage) && parsedPage > 0
+    ? parsedPage
+    : 1;
+
+
+/* ========================================
+   Pagination
+======================================== */
+
+const perPage = 10;
+
+const {
+  items: operators,
+  totalItems,
+  currentPage: safeCurrentPage,
+  totalPages,
+} = await getOperatorsPaginated(db, {
+  page: currentPage,
+  perPage,
+  search: searchParam,
+});
+
+
+/* ========================================
+   Pagination URL
+======================================== */
+
+const paginationUrl = new URL(
+  "/admin/operators",
+  Astro.url,
+);
+
+if (searchParam) {
+  paginationUrl.searchParams.set(
+    "search",
+    searchParam,
+  );
+}
+
+
+/* ========================================
+   Admin
+======================================== */
+
+const admin = await Astro.session?.get<{
+  id: number;
+  email: string;
+  name: string;
+}>("admin");
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
+    <meta
+      name="robots"
+      content="noindex, nofollow"
+    />
+
+    <title>
+      Operators | Admin | Tokyo Station Guide
+    </title>
+  </head>
+
+  <body>
+    <div class="admin-shell">
+
+      <!-- Admin Navigation -->
+      <AdminNavigation
+        activePath="/admin/operators"
+      />
+
+      <main class="admin-main">
+
+        <div class="admin-content">
+
+          <!-- Page Header -->
+          <div class="admin-page-header">
+
+            <div>
+              <h2>Operators</h2>
+
+              <p>
+                Manage the railway operators used throughout
+                the Tokyo Station Guide. Changes made here can
+                affect how operators are displayed on railway
+                lines, station information, and related
+                navigation across the website.
+              </p>
+            </div>
+
+          </div>
+
+
+          <!-- Search / Action Bar -->
+          <div class="admin-list-toolbar">
+
+            <form
+              class="admin-search-form"
+              method="GET"
+              action="/admin/operators"
+              role="search"
+            >
+
+              <SearchInput
+                id="operator-search"
+                name="search"
+                value={searchParam}
+                placeholder="Search operators..."
+                ariaLabel="Search operators"
+              />
+
+              <Button
+                type="submit"
+                variant="secondary"
+                size="medium"
+              >
+                Search
+              </Button>
+
+            </form>
+
+            <Button
+              href="/admin/operators/new"
+              variant="primary"
+            >
+              + Add Operator
+            </Button>
+
+          </div>
+
+
+          <!-- Operators Table -->
+          <section class="admin-panel">
+
+            <div
+              class="admin-panel-body admin-table-panel-body"
+            >
+
+              <!-- Table Meta -->
+              <div class="admin-table-meta">
+
+                <span>
+                  {totalItems} • Total Operators
+                </span>
+
+              </div>
+
+
+              {
+                operators.length > 0 ? (
+                  <>
+
+                    <!-- Table -->
+                    <div class="admin-table-wrapper">
+
+                      <table class="admin-table">
+
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Operator</th>
+                            <th>Slug</th>
+                            <th>Website</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+
+                          {
+                            operators.map((operator) => (
+                              <tr>
+
+                                <td class="admin-table-id">
+                                  {operator.id}
+                                </td>
+
+                                <td>
+                                  <div class="admin-operator-name">
+                                    {operator.name}
+                                  </div>
+                                </td>
+
+                                <td class="admin-table-code">
+                                  {operator.slug}
+                                </td>
+
+                                <td>
+
+                                  {
+                                    operator.website_url ? (
+                                      <a
+                                        href={operator.website_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="admin-operator-website"
+                                      >
+                                        Website
+                                      </a>
+                                    ) : (
+                                      <span class="admin-table-muted">
+                                        —
+                                      </span>
+                                    )
+                                  }
+
+                                </td>
+
+                                <td>
+
+                                  <div class="admin-table-actions">
+
+                                    <a
+                                      href={`/admin/operators/${operator.id}/edit`}
+                                      class="admin-table-action admin-table-action-edit"
+                                    >
+                                      Edit
+                                    </a>
+
+                                    <button
+                                      type="button"
+                                      class="admin-table-action admin-table-action-delete js-delete-operator"
+                                      data-operator-id={operator.id}
+                                      data-operator-name={operator.name}
+                                    >
+                                      Delete
+                                    </button>
+
+                                  </div>
+
+                                </td>
+
+                              </tr>
+                            ))
+                          }
+
+                        </tbody>
+
+                      </table>
+
+                    </div>
+
+
+                    <!-- Table Footer -->
+                    <div class="admin-table-footer">
+
+                      <span>
+  {
+    totalItems > 0
+      ? `Page ${safeCurrentPage} of ${totalPages}`
+      : "No operators found"
+  }
+</span>
+
+                      <Pagination
+                        currentPage={safeCurrentPage}
+                        totalPages={totalPages}
+                        baseUrl={`${paginationUrl.pathname}${paginationUrl.search}`}
+                        totalItems={totalItems}
+                        perPage={perPage}
+                      />
+
+                    </div>
+
+                  </>
+                ) : (
+                  <div class="admin-empty">
+
+                    <div class="admin-empty-icon">
+                      ◉
+                    </div>
+
+                    <h3>
+                      {
+                        searchParam
+                          ? "No operators found"
+                          : "No operators yet"
+                      }
+                    </h3>
+
+                    <p>
+                      {
+                        searchParam
+                          ? "Try a different search term."
+                          : "Add your first railway operator to get started."
+                      }
+                    </p>
+
+                  </div>
+                )
+              }
+
+            </div>
+
+          </section>
+
+        </div>
+
+      </main>
+
+    </div>
+
+
+    <!-- Delete Confirmation Dialog -->
+    <ConfirmDialog
+      id="delete-operator-dialog"
+      title="Delete Operator"
+      description="Are you sure you want to delete this operator?"
+      confirmText="Delete Operator"
+      cancelText="Cancel"
+      variant="danger"
+      warning="This action cannot be undone."
+    />
+
+
+    <!-- Delete Form -->
+    <form
+      method="POST"
+      id="delete-operator-form"
+      hidden
+    ></form>
+
+
+    <script>
+      /*
+       * Delete confirmation
+       */
+
+      const deleteDialog =
+        document.getElementById(
+          "delete-operator-dialog",
+        );
+
+      const deleteForm =
+        document.getElementById(
+          "delete-operator-form",
+        );
+
+      const deleteButtons =
+        document.querySelectorAll(
+          ".js-delete-operator",
+        );
+
+      let selectedOperatorId: string | null =
+        null;
+
+
+      if (
+        deleteDialog instanceof HTMLDivElement &&
+        deleteForm instanceof HTMLFormElement
+      ) {
+
+        deleteButtons.forEach((button) => {
+
+          if (
+            !(button instanceof HTMLButtonElement)
+          ) {
+            return;
+          }
+
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              const operatorId =
+                button.dataset.operatorId;
+
+              const operatorName =
+                button.dataset.operatorName;
+
+
+              if (
+                !operatorId ||
+                !operatorName
+              ) {
+                return;
+              }
+
+
+              selectedOperatorId =
+                operatorId;
+
+
+              const nameElement =
+                deleteDialog.querySelector(
+                  ".common-dialog-name",
+                );
+
+
+              if (
+                nameElement instanceof HTMLElement
+              ) {
+
+                nameElement.textContent =
+                  operatorName;
+
+              }
+
+
+              deleteDialog.dispatchEvent(
+                new CustomEvent(
+                  "dialog:open",
+                ),
+              );
+
+            },
+          );
+
+        });
+
+
+        deleteDialog.addEventListener(
+          "confirm",
+          () => {
+
+            if (!selectedOperatorId) {
+              return;
+            }
+
+
+            deleteForm.action =
+              `/admin/operators/${selectedOperatorId}/delete`;
+
+
+            deleteForm.submit();
+
+
+            selectedOperatorId = null;
+
+          },
+        );
+
+      }
+    </script>
+
+  </body>
+</html>

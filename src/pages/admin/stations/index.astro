@@ -1,0 +1,303 @@
+---
+import "../../../styles/admin/shared.css";
+import "../../../styles/admin/stations.css";
+import "../../../styles/admin/tables.css";
+
+import {
+  getAdminStations,
+  deleteStation,
+} from "../../../lib/db/stations";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+const db = env.DB;
+
+let error = "";
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+
+  const action = String(formData.get("action") ?? "");
+  const id = Number(formData.get("id") ?? 0);
+
+  if (action === "delete" && id > 0) {
+    try {
+      await deleteStation(db, id);
+
+      return Astro.redirect("/admin/stations");
+    } catch {
+      error =
+        "Unable to delete this station. It may already be connected to one or more lines.";
+    }
+  }
+}
+
+const stations = await getAdminStations(db);
+
+const admin = await Astro.session?.get<{
+  id: number;
+  email: string;
+  name: string;
+}>("admin");
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <meta
+      name="robots"
+      content="noindex, nofollow"
+    />
+
+    <title>Stations | Admin | Tokyo Station Guide</title>
+  </head>
+
+  <body>
+    <div class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="admin-brand">
+          <div class="admin-brand-top">
+            <div class="admin-logo">T</div>
+
+            <div>
+              <h1>Tokyo Station Guide</h1>
+              <p>Content Management</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-section-label">Management</div>
+
+        <nav class="admin-nav">
+          <a href="/admin">
+            <span class="admin-nav-icon">⌂</span>
+            Dashboard
+          </a>
+
+          <a href="/admin/operators">
+            <span class="admin-nav-icon">◉</span>
+            Operators
+          </a>
+
+          <a href="/admin/lines">
+            <span class="admin-nav-icon">↔</span>
+            Lines
+          </a>
+
+          <a href="/admin/stations" class="active">
+            <span class="admin-nav-icon">◎</span>
+            Stations
+          </a>
+        </nav>
+
+        <div class="admin-section-label">System</div>
+
+        <nav class="admin-nav">
+          <a href="#">
+            <span class="admin-nav-icon">⚙</span>
+            Settings
+          </a>
+
+          <form
+            method="POST"
+            action="/admin/auth/logout"
+            class="admin-logout-form"
+          >
+            <button type="submit" class="admin-logout-button">
+              <span class="admin-nav-icon">↪</span>
+              <span>Logout</span>
+            </button>
+          </form>
+        </nav>
+
+        <div class="admin-sidebar-bottom">
+          <a href="/" class="admin-back-link">
+            ← Back to website
+          </a>
+        </div>
+      </aside>
+
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <div class="admin-breadcrumb">
+            <span>Admin</span>
+            <span>/</span>
+            <strong>Stations</strong>
+          </div>
+
+          <div class="admin-user">
+            <div class="admin-avatar">
+              {
+                admin?.name
+                  ? admin.name
+                      .split(" ")
+                      .map((part) => part.charAt(0))
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()
+                  : "AD"
+              }
+            </div>
+
+            <div class="admin-user-info">
+              <strong>{admin?.name ?? "Administrator"}</strong>
+              <span>Tokyo Station Guide</span>
+            </div>
+          </div>
+        </header>
+
+        <div class="admin-content">
+          <div class="admin-page-header">
+            <div>
+              <h2>Stations</h2>
+              <p>
+                Manage railway and subway stations across Tokyo Station Guide.
+              </p>
+            </div>
+
+            <a
+              href="/admin/stations/new"
+              class="admin-primary-button"
+            >
+              + Add Station
+            </a>
+          </div>
+
+          {error && (
+            <div class="admin-alert admin-alert-error">
+              {error}
+            </div>
+          )}
+
+          <section class="admin-panel">
+            <div class="admin-panel-header">
+              <div>
+                <h3>All Stations</h3>
+                <p>
+                  {stations.length} station
+                  {stations.length === 1 ? "" : "s"}
+                </p>
+              </div>
+            </div>
+
+            <div class="admin-panel-body">
+              {
+                stations.length > 0 ? (
+                  <div class="admin-table-wrapper">
+                    <table class="admin-table">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Station</th>
+                          <th>Slug</th>
+                          <th>Coordinates</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {stations.map((station) => (
+                          <tr>
+                            <td>
+                              <span class="admin-table-id">
+                                #{station.id}
+                              </span>
+                            </td>
+
+                            <td>
+                              <div class="admin-station-name">
+                                {station.name}
+                              </div>
+
+                              {station.name_japanese && (
+                                <div class="admin-station-japanese">
+                                  {station.name_japanese}
+                                </div>
+                              )}
+                            </td>
+
+                            <td>
+                              <span class="admin-station-slug">
+                                {station.slug}
+                              </span>
+                            </td>
+
+                            <td>
+                              {station.latitude !== null &&
+                              station.longitude !== null ? (
+                                <div class="admin-station-coordinates">
+                                  <div>{station.latitude}</div>
+                                  <div>{station.longitude}</div>
+                                </div>
+                              ) : (
+                                <span class="admin-table-muted">
+                                  —
+                                </span>
+                              )}
+                            </td>
+
+                            <td>
+                              <div class="admin-table-actions">
+                                <a
+                                  href={`/admin/stations/${station.id}/edit`}
+                                  class="admin-table-action admin-table-action-edit"
+                                >
+                                  Edit
+                                </a>
+
+                                <form
+                                  method="POST"
+                                  onsubmit="return confirm('Are you sure you want to delete this station?');"
+                                >
+                                  <input
+                                    type="hidden"
+                                    name="action"
+                                    value="delete"
+                                  />
+
+                                  <input
+                                    type="hidden"
+                                    name="id"
+                                    value={station.id}
+                                  />
+
+                                  <button
+                                    type="submit"
+                                    class="admin-table-action admin-table-action-delete"
+                                  >
+                                    Delete
+                                  </button>
+                                </form>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div class="admin-empty">
+                    <div class="admin-empty-icon">◎</div>
+
+                    <h3>No stations yet</h3>
+
+                    <p>
+                      Create your first station to get started.
+                    </p>
+                  </div>
+                )
+              }
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

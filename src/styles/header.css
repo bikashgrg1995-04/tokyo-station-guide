@@ -46,9 +46,7 @@
   font-size: 0.95rem;
   font-weight: 600;
   color: #4b5563;
-  transition:
-    color 0.2s ease,
-    background 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .main-nav a:hover {

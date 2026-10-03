@@ -1,0 +1,506 @@
+/* ========================================
+   Admin Tables
+======================================== */
+
+/* ========================================
+   Table Wrapper
+======================================== */
+
+.admin-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* ========================================
+   Table
+======================================== */
+
+.admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+/* ========================================
+   Table Header
+======================================== */
+
+.admin-table thead {
+  background: #f8fafc;
+}
+
+.admin-table th {
+  height: 46px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--admin-border);
+  color: #667085;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.admin-table th:first-child {
+  padding-left: 22px;
+}
+
+.admin-table th:last-child {
+  padding-right: 22px;
+  text-align: right;
+}
+
+/* ========================================
+   Table Body
+======================================== */
+
+.admin-table td {
+  height: 70px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #edf0f4;
+  color: var(--admin-text);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.admin-table tbody tr {
+  background: var(--admin-surface);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.admin-table tbody tr:hover {
+  background: #fbfcfe;
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ========================================
+   Table Links
+======================================== */
+
+.admin-table a {
+  color: var(--admin-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.admin-table a:hover {
+  color: var(--admin-primary-dark);
+  text-decoration: none;
+}
+
+/* ========================================
+   Table Actions
+======================================== */
+
+.admin-table-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.admin-table-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  height: 32px;
+  padding: 0 11px;
+  border: 1px solid #dfe3e8;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #475467;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.admin-table-action:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: var(--admin-text);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.admin-table-action:active {
+  transform: translateY(0);
+}
+
+/* ========================================
+   Edit Action
+======================================== */
+
+.admin-table-action-edit {
+  border-color: #dbeafe;
+  background: #f8fbff;
+  color: var(--admin-primary);
+}
+
+.admin-table-action-edit:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: var(--admin-primary-dark);
+}
+
+/* ========================================
+   Delete Action
+======================================== */
+
+.admin-table-action-delete {
+  border-color: #fee2e2;
+  background: #fffafa;
+  color: var(--admin-danger-hover);
+}
+
+.admin-table-action-delete:hover {
+  border-color: #fecaca;
+  background: var(--admin-danger-bg);
+  color: #dc2626;
+}
+
+/* ========================================
+   Table Status
+======================================== */
+
+.admin-table-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.admin-table-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.admin-table-status-active {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.admin-table-status-inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.admin-table-status-warning {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.admin-table-status-danger {
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger-hover);
+}
+
+/* ========================================
+   Common Table Cell Helpers
+======================================== */
+
+.admin-table-id {
+  width: 60px;
+  color: #98a2b3;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.admin-table-muted {
+  color: var(--admin-muted);
+}
+
+.admin-table-primary {
+  color: var(--admin-text);
+  font-weight: 600;
+}
+
+.admin-table-code {
+  color: #667085;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+  font-size: 11px;
+}
+
+/* ========================================
+   Table Toolbar
+======================================== */
+
+.admin-list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.admin-search-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-search-input-wrapper {
+  position: relative;
+  width: 300px;
+}
+
+.admin-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  z-index: 1;
+  color: #98a2b3;
+  font-size: 17px;
+  line-height: 1;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.admin-search-input-wrapper input {
+  width: 100%;
+  height: 40px;
+  padding: 0 13px 0 36px;
+  border: 1px solid var(--admin-border);
+  border-radius: 9px;
+  outline: none;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  font-family: inherit;
+  font-size: 13px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.admin-search-input-wrapper input::placeholder {
+  color: #98a2b3;
+}
+
+.admin-search-input-wrapper input:focus {
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.admin-search-button {
+  height: 40px;
+  min-height: 40px;
+  padding: 0 15px;
+}
+
+/* ========================================
+   Table Panel
+======================================== */
+
+.admin-table-panel-body {
+  padding: 0;
+}
+
+/* ========================================
+   Table Meta
+======================================== */
+
+.admin-table-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 48px;
+  padding: 0 22px;
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-table-meta span {
+  white-space: nowrap;
+}
+
+/* ========================================
+   Table Footer
+======================================== */
+
+.admin-table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 58px;
+  padding: 0 22px;
+  border-top: 1px solid var(--admin-border);
+  color: var(--admin-muted);
+  font-size: 12px;
+}
+
+.admin-table-pagination {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.admin-pagination-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: 7px;
+  background: var(--admin-surface);
+  color: #667085;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.admin-pagination-button:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: var(--admin-text);
+}
+
+.admin-pagination-button.active {
+  border-color: var(--admin-primary);
+  background: var(--admin-primary);
+  color: #ffffff;
+}
+
+.admin-pagination-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   Empty State
+======================================== */
+
+.admin-table-empty {
+  padding: 56px 24px;
+  color: var(--admin-muted);
+  text-align: center;
+}
+
+.admin-table-empty h3 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.admin-table-empty p {
+  margin: 7px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ========================================
+   Responsive
+======================================== */
+
+@media (max-width: 760px) {
+  .admin-list-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-search-form {
+    width: 100%;
+  }
+
+  .admin-search-input-wrapper {
+    flex: 1;
+    width: auto;
+  }
+
+  .admin-list-toolbar .admin-primary-button {
+    width: 100%;
+  }
+
+  .admin-table {
+    min-width: 680px;
+  }
+
+  .admin-table th {
+    height: 42px;
+    padding: 0 14px;
+  }
+
+  .admin-table td {
+    height: 66px;
+    padding: 10px 14px;
+  }
+
+  .admin-table th:first-child {
+    padding-left: 16px;
+  }
+
+  .admin-table th:last-child {
+    padding-right: 16px;
+  }
+
+  .admin-table-actions {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+  }
+
+  .admin-table-meta {
+    justify-content: flex-start;
+    min-height: 44px;
+    padding: 0 16px;
+  }
+
+  .admin-table-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .admin-table-pagination {
+    align-self: flex-end;
+  }
+}

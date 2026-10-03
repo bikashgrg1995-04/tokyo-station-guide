@@ -1,0 +1,343 @@
+---
+import "../../../styles/admin/shared.css";
+import "../../../styles/admin/forms.css";
+import "../../../styles/admin/operators.css";
+
+import AdminNavigation from "../../../common_components/AdminNavigation.astro";
+import Button from "../../../common_components/Button.astro";
+
+import { createOperator } from "../../../lib/db/operators";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+const db = env.DB;
+
+let formError = "";
+
+let name = "";
+let slug = "";
+let description = "";
+let websiteUrl = "";
+
+const errors = {
+  name: "",
+  slug: "",
+  description: "",
+  websiteUrl: "",
+};
+
+const admin = await Astro.session?.get<{
+  id: number;
+  email: string;
+  name: string;
+}>("admin");
+
+/* ========================================
+   Form Submission
+======================================== */
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+
+  name = String(formData.get("name") ?? "").trim();
+
+  slug = String(formData.get("slug") ?? "").trim();
+
+  description = String(formData.get("description") ?? "").trim();
+
+  websiteUrl = String(formData.get("website_url") ?? "").trim();
+
+  /* ========================================
+     Name Validation
+  ======================================== */
+
+  if (!name) {
+    errors.name = "Name is required.";
+  } else if (name.length > 150) {
+    errors.name = "Name must be 150 characters or less.";
+  }
+
+  /* ========================================
+     Slug Validation
+  ======================================== */
+
+  if (!slug) {
+    errors.slug = "Slug is required.";
+  } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+    errors.slug =
+      "Slug can only contain lowercase letters, numbers, and hyphens.";
+  } else if (slug.length > 150) {
+    errors.slug = "Slug must be 150 characters or less.";
+  }
+
+  /* ========================================
+     Description Validation
+  ======================================== */
+
+  if (description.length > 1000) {
+    errors.description = "Description must be 1000 characters or less.";
+  }
+
+  /* ========================================
+     Website Validation
+  ======================================== */
+
+  if (websiteUrl) {
+    try {
+      const url = new URL(websiteUrl);
+
+      if (!["http:", "https:"].includes(url.protocol)) {
+        errors.websiteUrl = "Website URL must start with http:// or https://.";
+      }
+    } catch {
+      errors.websiteUrl = "Please enter a valid website URL.";
+    }
+  }
+
+  /* ========================================
+     Create Operator
+  ======================================== */
+
+  const hasValidationErrors = Object.values(errors).some(
+    (message) => message.length > 0,
+  );
+
+  if (!hasValidationErrors) {
+    try {
+      await createOperator(db, {
+        name,
+        slug,
+        description: description || null,
+        websiteUrl: websiteUrl || null,
+      });
+
+      return Astro.redirect("/admin/operators");
+    } catch (err) {
+      console.error(err);
+
+      const message = err instanceof Error ? err.message.toLowerCase() : "";
+
+      /* ========================================
+         Duplicate Name
+      ======================================== */
+
+      if (
+        message.includes("unique constraint failed") &&
+        message.includes("operators.name")
+      ) {
+        errors.name = "An operator with this name already exists.";
+      }
+
+      /* ========================================
+         Duplicate Slug
+      ======================================== */
+      else if (
+        message.includes("unique constraint failed") &&
+        message.includes("operators.slug")
+      ) {
+        errors.slug = "An operator with this slug already exists.";
+      }
+
+      /* ========================================
+         Unexpected Database Error
+      ======================================== */
+      else {
+        formError =
+          "Unable to create operator because of an unexpected database error.";
+      }
+    }
+  }
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <meta name="robots" content="noindex, nofollow" />
+
+    <title>Add Operator | Admin | Tokyo Station Guide</title>
+  </head>
+
+  <body>
+    <div class="admin-shell">
+      <!-- Admin Navigation -->
+      <AdminNavigation activePath="/admin/operators" />
+
+      <main class="admin-main">
+        <!-- Topbar -->
+        <header class="admin-topbar">
+          <div class="admin-breadcrumb">
+            <Button href="/admin/operators" variant="secondary">
+              ← 
+            </Button>
+            <a href="/admin/operators"> Operators </a>
+
+            <span> / </span>
+
+            <strong> Add Operator </strong>
+          </div>
+        </header>
+
+        <!-- Content -->
+        <div class="admin-content">
+          <!-- Page Header -->
+          <div class="admin-page-header">
+            <div>
+              <h2>Add Operator</h2>
+
+              <p>
+                Create a new railway operator to use throughout the Tokyo
+                Station Guide.
+              </p>
+            </div>
+          </div>
+
+          <!-- Form Panel -->
+          <section class="admin-panel">
+            <div class="admin-panel-body">
+              <div class="admin-operator-form">
+                <!-- Form Header -->
+                <div class="admin-operator-form-header">
+                  <h2>Operator Details</h2>
+
+                  <p>Enter the basic information for this railway operator.</p>
+                </div>
+
+                <!-- General Error -->
+                {
+                  formError && (
+                    <div class="admin-alert admin-alert-error">{formError}</div>
+                  )
+                }
+
+                <!-- Operator Form -->
+                <form method="POST" class="admin-form">
+                  <!-- Name -->
+                  <div class="admin-form-group">
+                    <label for="name"> Name </label>
+
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      required
+                      maxlength="150"
+                      value={name}
+                      placeholder="JR East"
+                      aria-invalid={errors.name ? "true" : "false"}
+                      aria-describedby={errors.name ? "name-error" : undefined}
+                    />
+
+                    {
+                      errors.name && (
+                        <small id="name-error" class="admin-form-error">
+                          {errors.name}
+                        </small>
+                      )
+                    }
+                  </div>
+
+                  <!-- Slug -->
+                  <div class="admin-form-group">
+                    <label for="slug"> Slug </label>
+
+                    <input
+                      id="slug"
+                      name="slug"
+                      type="text"
+                      required
+                      maxlength="150"
+                      value={slug}
+                      placeholder="jr-east"
+                      aria-invalid={errors.slug ? "true" : "false"}
+                      aria-describedby={errors.slug ? "slug-error" : undefined}
+                    />
+
+                    {
+                      errors.slug ? (
+                        <small id="slug-error" class="admin-form-error">
+                          {errors.slug}
+                        </small>
+                      ) : (
+                        <small>
+                          Use lowercase letters, numbers and hyphens.
+                        </small>
+                      )
+                    }
+                  </div>
+
+                  <!-- Description -->
+                  <div class="admin-form-group">
+                    <label for="description"> Description </label>
+
+                    <textarea
+                      id="description"
+                      name="description"
+                      rows="5"
+                      maxlength="1000"
+                      placeholder="Short description of the operator..."
+                      aria-invalid={errors.description ? "true" : "false"}
+                      aria-describedby={errors.description
+                        ? "description-error"
+                        : undefined}>{description}</textarea
+                    >
+
+                    {
+                      errors.description && (
+                        <small id="description-error" class="admin-form-error">
+                          {errors.description}
+                        </small>
+                      )
+                    }
+                  </div>
+
+                  <!-- Website -->
+                  <div class="admin-form-group">
+                    <label for="website_url"> Website URL </label>
+
+                    <input
+                      id="website_url"
+                      name="website_url"
+                      type="url"
+                      value={websiteUrl}
+                      placeholder="https://www.jreast.co.jp/"
+                      aria-invalid={errors.websiteUrl ? "true" : "false"}
+                      aria-describedby={errors.websiteUrl
+                        ? "website-url-error"
+                        : undefined}
+                    />
+
+                    {
+                      errors.websiteUrl && (
+                        <small id="website-url-error" class="admin-form-error">
+                          {errors.websiteUrl}
+                        </small>
+                      )
+                    }
+                  </div>
+
+                  <!-- Actions -->
+                  <div class="admin-form-actions">
+                    <Button href="/admin/operators" variant="secondary">
+                      Cancel
+                    </Button>
+
+                    <Button type="submit" variant="primary">
+                      Create Operator
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
