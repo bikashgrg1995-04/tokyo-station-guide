@@ -1,0 +1,90 @@
+---
+import "../../styles/global.css";
+import "../../styles/header.css";
+import "../../styles/home.css";
+import "../../styles/footer.css";
+import "../../styles/responsive.css";
+
+import { stations } from "../../data/stations";
+
+const siteName = "Tokyo Station Guide";
+const pageTitle = "All Tokyo Stations | Tokyo Station Guide";
+const pageDescription =
+  "Explore Tokyo stations, train lines, exits, nearby attractions, restaurants, hotels, and useful travel information.";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+
+    <meta name="description" content={pageDescription} />
+    <meta name="robots" content="index, follow" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <title>{pageTitle}</title>
+  </head>
+
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a href="/" class="logo">
+          <span class="logo-mark">T</span>
+          <span>{siteName}</span>
+        </a>
+
+        <nav class="main-nav" aria-label="Main navigation">
+          <a href="/stations">Stations</a>
+          <a href="/#explore">Explore</a>
+          <a href="/#about">About</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="section">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">STATIONS</p>
+              <h1>All Tokyo Stations</h1>
+            </div>
+          </div>
+
+          <p class="hero-description">
+            Explore Tokyo stations and discover useful information about train
+            lines, exits, nearby attractions, restaurants, and hotels.
+          </p>
+
+          <div class="station-grid">
+            {
+              stations.map((station) => (
+                <a href={`/stations/${station.slug}`} class="station-card">
+                  <div class="station-icon">{station.name.charAt(0)}</div>
+
+                  <div>
+                    <h3>{station.name}</h3>
+                    <p>{station.area}</p>
+                  </div>
+                </a>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <p>© 2026 Tokyo Station Guide</p>
+
+        <div class="footer-links">
+          <a href="/">Home</a>
+          <a href="/stations">Stations</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

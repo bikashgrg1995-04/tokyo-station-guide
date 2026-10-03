@@ -1,0 +1,300 @@
+---
+import "../../styles/global.css";
+import "../../styles/header.css";
+import "../../styles/home.css";
+import "../../styles/station.css";
+import "../../styles/gallery.css";
+import "../../styles/footer.css";
+import "../../styles/responsive.css";
+
+import { stations } from "../../data/stations";
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  return stations.map((station) => ({
+    params: {
+      slug: station.slug,
+    },
+    props: {
+      station,
+    },
+  }));
+}
+
+const { station } = Astro.props;
+
+const pageTitle = station.seo.title;
+const pageDescription = station.seo.description;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    <meta name="robots" content="index, follow" />
+  </head>
+
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a href="/" class="logo" aria-label="Tokyo Station Guide home">
+          <span class="logo-mark">T</span>
+          <span>Tokyo Station Guide</span>
+        </a>
+
+        <nav class="main-nav" aria-label="Main navigation">
+          <a href="/">Home</a>
+          <a href="/#stations">Stations</a>
+          <a href="/#explore">Explore Tokyo</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <!-- Station Introduction -->
+      <section class="station-hero">
+        <div class="container">
+          <p class="eyebrow">STATION GUIDE</p>
+
+          <h1>{station.name}</h1>
+
+          <p class="station-location">
+            {station.area}
+          </p>
+
+          <p class="hero-description">
+            {station.description}
+          </p>
+        </div>
+      </section>
+
+      <!-- Station Hero Image -->
+      {
+        station.images.hero && (
+          <div class="container">
+            <div class="station-hero-image">
+              <img
+                src={station.images.hero}
+                alt={`${station.name} station`}
+                loading="eager"
+              />
+            </div>
+          </div>
+        )
+      }
+
+      <!-- Station Gallery -->
+      {
+        station.images.gallery.length > 0 && (
+          <section class="station-gallery">
+            <div class="container">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">PHOTOS</p>
+                  <h2>{station.name} Station Photos</h2>
+                </div>
+              </div>
+
+              <div class="gallery-grid">
+                {station.images.gallery.map((image, index) => (
+                  <div class="gallery-item">
+                    <img
+                      src={image}
+                      alt={`${station.name} station photo ${index + 1}`}
+                      loading="lazy"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )
+      }
+
+      <!-- Train Lines -->
+      <section class="section">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">TRANSPORT</p>
+              <h2>Train Lines</h2>
+            </div>
+          </div>
+
+          <div class="feature-grid">
+            {
+              station.lines.map((line) => (
+                <article class="feature-card">
+                  <div class="feature-icon" aria-hidden="true">
+                    🚆
+                  </div>
+
+                  <h3>{line}</h3>
+
+                  <p>
+                    This train line serves {station.name} and connects
+                    passengers with other areas of Tokyo.
+                  </p>
+                </article>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- Station Exits -->
+      <section class="section section-light">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">STATION INFORMATION</p>
+              <h2>Station Exits</h2>
+            </div>
+          </div>
+
+          <div class="feature-grid">
+            {
+              station.exits.map((exit) => (
+                <article class="feature-card">
+                  <div class="feature-icon" aria-hidden="true">
+                    📍
+                  </div>
+
+                  <h3>{exit}</h3>
+
+                  <p>Useful information about this exit will be added here.</p>
+                </article>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- Nearby Attractions -->
+      <section class="station-section">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="section-label">Things to do</p>
+              <h2>Nearby Attractions</h2>
+            </div>
+          </div>
+
+          <div class="place-grid">
+            {
+              station.attractions.map((attraction) => (
+                <article class="place-card">
+                  <h3>{attraction}</h3>
+
+                  <p>Explore this popular place near {station.name}.</p>
+                </article>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- Restaurants -->
+      <section class="station-section">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="section-label">Food</p>
+              <h2>Nearby Restaurants & Food Areas</h2>
+            </div>
+          </div>
+
+          <div class="place-grid">
+            {
+              station.restaurants.map((restaurant) => (
+                <article class="place-card">
+                  <h3>{restaurant}</h3>
+
+                  <p>Find food and dining options near {station.name}.</p>
+                </article>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- Hotels -->
+      <section class="station-section">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="section-label">Stay nearby</p>
+              <h2>Nearby Hotels</h2>
+            </div>
+          </div>
+
+          <div class="place-grid">
+            {
+              station.hotels.map((hotel) => (
+                <article class="place-card">
+                  <h3>{hotel}</h3>
+
+                  <p>Accommodation option near {station.name}.</p>
+                </article>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section class="station-section">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="section-label">Common questions</p>
+              <h2>Frequently Asked Questions</h2>
+            </div>
+          </div>
+
+          <div class="faq-list">
+            {
+              station.faqs.map((faq) => (
+                <details class="faq-item">
+                  <summary>{faq.question}</summary>
+
+                  <p>{faq.answer}</p>
+                </details>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- Explore Nearby -->
+      <section class="about-section">
+        <div class="container about-content">
+          <p class="eyebrow">EXPLORE NEARBY</p>
+
+          <h2>Places near {station.name}</h2>
+
+          <p>
+            Nearby attractions, restaurants, hotels, shopping areas, and other
+            useful places will be displayed here.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <p>© 2026 Tokyo Station Guide</p>
+
+        <div class="footer-links">
+          <a href="/">Home</a>
+          <a href="/#stations">Stations</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

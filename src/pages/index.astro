@@ -1,17 +1,275 @@
 ---
+import { stations } from "../data/stations";
 
+import "../styles/global.css";
+import "../styles/header.css";
+import "../styles/home.css";
+import "../styles/footer.css";
+import "../styles/responsive.css";
+
+const siteName = "Tokyo Station Guide";
+
+const description =
+  "Explore Tokyo stations, train lines, exits, nearby attractions, restaurants, hotels, and useful travel information.";
+
+const searchableStations = stations.map((station) => ({
+  name: station.name,
+  slug: station.slug,
+}));
 ---
 
+<!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+
+    <meta name="description" content={description} />
+    <meta name="robots" content="index, follow" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <title>{siteName} | Tokyo Railway & Station Guide</title>
+  </head>
+
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a href="/" class="logo" aria-label="Tokyo Station Guide home">
+          <span class="logo-mark">T</span>
+          <span>{siteName}</span>
+        </a>
+
+        <nav class="main-nav" aria-label="Main navigation">
+          <a href="/stations">Stations</a>
+          <a href="#explore">Explore Tokyo</a>
+          <a href="#about">About</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container hero-content">
+          <p class="eyebrow">TOKYO TRAVEL GUIDE</p>
+
+          <h1>
+            Your guide to
+            <span>Tokyo stations</span>
+          </h1>
+
+          <p class="hero-description">
+            Find stations, train lines, exits, nearby attractions, restaurants,
+            hotels, and everything you need to navigate Tokyo.
+          </p>
+
+          <div class="search-wrapper">
+            <form id="station-search-form" class="search-box">
+              <label for="station-search" class="sr-only">
+                Search for a Tokyo station
+              </label>
+
+              <span class="search-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <path d="m20 20-4-4"></path>
+                </svg>
+              </span>
+
+              <input
+                id="station-search"
+                name="q"
+                type="search"
+                placeholder="Search a station, e.g. Shibuya"
+                autocomplete="off"
+                aria-autocomplete="list"
+                aria-controls="station-search-results"
+              />
+            </form>
+
+            <div
+              id="station-search-results"
+              class="station-search-results"
+              role="listbox"
+              aria-label="Station search results"
+            >
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="stations" class="section">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">STATIONS</p>
+              <h2>Popular Tokyo Stations</h2>
+            </div>
+
+            <a href="/stations" class="view-all"> View all → </a>
+          </div>
+
+          <div class="station-grid">
+            {
+              stations.slice(0, 6).map((station) => (
+                <a href={`/stations/${station.slug}`} class="station-card">
+                  <div class="station-icon">{station.name.charAt(0)}</div>
+
+                  <div>
+                    <h3>{station.name}</h3>
+                    <p>{station.area}</p>
+                  </div>
+                </a>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+
+      <section id="explore" class="section section-light">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">EXPLORE</p>
+              <h2>Plan your Tokyo trip</h2>
+            </div>
+          </div>
+
+          <div class="feature-grid">
+            <article class="feature-card">
+              <div class="feature-icon" aria-hidden="true">🚆</div>
+
+              <h3>Train Lines</h3>
+
+              <p>
+                Discover the train and subway lines serving each station and
+                plan your route around Tokyo.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <div class="feature-icon" aria-hidden="true">📍</div>
+
+              <h3>Station Exits</h3>
+
+              <p>
+                Find useful station exits and understand which exit is closest
+                to your destination.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <div class="feature-icon" aria-hidden="true">🗺️</div>
+
+              <h3>Nearby Places</h3>
+
+              <p>
+                Explore attractions, restaurants, hotels, and other useful
+                places around each station.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" class="about-section">
+        <div class="container about-content">
+          <p class="eyebrow">ABOUT THE GUIDE</p>
+
+          <h2>Explore Tokyo, one station at a time.</h2>
+
+          <p>
+            Tokyo Station Guide is designed to make exploring Tokyo easier by
+            bringing useful station information together in one place.
+          </p>
+
+          <p>
+            From major railway hubs to smaller stations, each station guide will
+            provide practical information for travellers.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <p>© 2026 {siteName}</p>
+
+        <div class="footer-links">
+          <a href="#about">About</a>
+          <a href="/stations">Stations</a>
+        </div>
+      </div>
+    </footer>
+
+    <script define:vars={{ searchableStations }}>
+      const searchInput = document.querySelector("#station-search");
+      const searchResults = document.querySelector("#station-search-results");
+
+      const stations = searchableStations;
+
+      function showSearchResults(query) {
+        const searchTerm = query.trim().toLowerCase();
+
+        searchResults.innerHTML = "";
+
+        if (!searchTerm) {
+          searchResults.style.display = "none";
+          return;
+        }
+
+        const matches = stations.filter((station) =>
+          station.name.toLowerCase().includes(searchTerm),
+        );
+
+        if (matches.length === 0) {
+          searchResults.style.display = "none";
+          return;
+        }
+
+        matches.forEach((station) => {
+          const link = document.createElement("a");
+
+          link.href = `/stations/${station.slug}`;
+          link.className = "station-search-result";
+          link.setAttribute("role", "option");
+
+          const icon = document.createElement("span");
+          icon.className = "station-search-result-icon";
+          icon.textContent = station.name.charAt(0);
+
+          const name = document.createElement("span");
+          name.className = "station-search-result-name";
+          name.textContent = station.name;
+
+          link.appendChild(icon);
+          link.appendChild(name);
+
+          searchResults.appendChild(link);
+        });
+
+        searchResults.style.display = "block";
+      }
+
+      searchInput.addEventListener("input", () => {
+        showSearchResults(searchInput.value);
+      });
+
+      document.addEventListener("click", (event) => {
+        if (
+          !searchInput.contains(event.target) &&
+          !searchResults.contains(event.target)
+        ) {
+          searchResults.style.display = "none";
+        }
+      });
+    </script>
+  </body>
 </html>
