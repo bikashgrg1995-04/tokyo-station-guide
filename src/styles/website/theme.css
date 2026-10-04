@@ -1,0 +1,38 @@
+/* ==========================================================================
+   Theme tokens — colors, shadows. Light is default; dark via [data-theme].
+   ========================================================================== */
+:root {
+  --line: #9caf31; /* overwritten at runtime by the active line color */
+  --bg: #e6e8ec;
+  --grid-hi: rgba(255, 255, 255, 0.75);
+  --grid-lo: rgba(20, 30, 50, 0.07);
+  --surface: #ffffff;
+  --surface-2: #f6f7f2;
+  --ink: #111418;
+  --muted: #5d6673;
+  --edge: rgba(20, 30, 50, 0.1);
+  --shadow: 0 6px 20px rgba(20, 30, 50, 0.12);
+  --shadow-up: 0 -6px 24px rgba(20, 30, 50, 0.1);
+  --accent-red: #ff1010;
+  --rail-bed: #6f757e;
+  --pill-edge: rgba(20, 30, 50, 0.1);
+  --stop-fill: #ffffff;
+  --stop-ring: rgba(255, 255, 255, 0.75);
+}
+
+:root[data-theme="dark"] {
+  --bg: #0c1017;
+  --grid-hi: rgba(255, 255, 255, 0.025);
+  --grid-lo: rgba(0, 0, 0, 0.22);
+  --surface: #141922;
+  --surface-2: #1c222c;
+  --ink: #f2f4f7;
+  --muted: #9aa4b2;
+  --edge: rgba(255, 255, 255, 0.1);
+  --shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  --shadow-up: 0 -6px 24px rgba(0, 0, 0, 0.45);
+  --rail-bed: #131920;
+  --pill-edge: rgba(255, 255, 255, 0.12);
+  --stop-fill: #8f96a3;
+  --stop-ring: #0a0d13;
+}

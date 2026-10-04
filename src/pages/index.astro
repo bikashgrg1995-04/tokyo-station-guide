@@ -1,27 +1,60 @@
----
-import { getStations } from "../lib/db/stations";
+﻿---
+import { getLines } from "../lib/db/lines.ts";
+import { getStations } from "../lib/db/stations.ts";
+import { getStationsForLine } from "../lib/db/line-stations.ts";
 
-import "../styles/global.css";
-import "../styles/header.css";
-import "../styles/home.css";
-import "../styles/footer.css";
-import "../styles/responsive.css";
+import "../styles/website/global.css";
+import "../styles/website/theme.css";
+import "../styles/website/base.css";
+import "../styles/website/header.css";
+import "../styles/website/transit.css";
+import "../styles/website/station-board.css";
+import "../styles/website/search.css";
+import "../styles/website/responsive.css";
 
 export const prerender = false;
 
 const { env } = await import("cloudflare:workers");
 const db = env.DB;
 
+const siteName = "Tokyo Station Guide";
+const description =
+  "Explore Tokyo railway stations, train lines, station codes, exits, nearby attractions, restaurants, hotels, and useful travel information.";
+
+const lines = await getLines(db);
 const stations = await getStations(db);
 
-const siteName = "Tokyo Station Guide";
+// Load stations for every line so line switching works without extra requests
+const stationsByLine: Record<string, any[]> = {};
+await Promise.all(
+  lines.map(async (line) => {
+    const list = await getStationsForLine(db, line.id);
+    stationsByLine[line.id] = list.map((s) => ({
+      name: s.station_name,
+      jp: s.station_name_japanese,
+      slug: s.station_slug,
+      code: s.station_code,
+      order: s.station_order,
+    }));
+  }),
+);
 
-const description =
-  "Explore Tokyo stations, train lines, exits, nearby attractions, restaurants, hotels, and useful travel information.";
+const transitData = {
+  lines: lines.map((l) => ({
+    id: l.id,
+    name: l.name,
+    code: l.code,
+    color: l.color || "#9caf31",
+    // Yamanote (JY) is a loop. Change this rule if other loop lines exist.
+    loop: l.code === "JY" || /yamanote/i.test(l.name),
+  })),
+  stationsByLine,
+};
 
-const searchableStations = stations.map((station) => ({
-  name: station.name,
-  slug: station.slug,
+const searchable = stations.map((s) => ({
+  name: s.name,
+  jp: s.name_japanese,
+  slug: s.slug,
 }));
 ---
 
@@ -29,275 +62,967 @@ const searchableStations = stations.map((station) => ({
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <meta name="robots" content="index, follow" />
-
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-
+    <link rel="icon" href="/favicon.svg" />
     <title>{siteName} | Tokyo Railway & Station Guide</title>
   </head>
 
   <body>
-    <header class="site-header">
-      <div class="container header-inner">
-        <a href="/" class="logo" aria-label="Tokyo Station Guide home">
-          <span class="logo-mark">T</span>
-          <span>{siteName}</span>
-        </a>
-
-        <nav class="main-nav" aria-label="Main navigation">
-          <a href="/stations">Stations</a>
-          <a href="#explore">Explore Tokyo</a>
-          <a href="#about">About</a>
-        </nav>
+    <header class="topbar">
+      <a href="/" class="brand" aria-label={siteName}>
+        <span class="brand-jp">東<i></i>京</span>
+        <span class="brand-en">TOKYO</span>
+      </a>
+      <div class="top-actions">
+        <button class="round" id="open-search" aria-label="Search stations">
+          <svg viewBox="0 0 24 24"
+            ><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"
+            ></path></svg
+          >
+        </button>
+        <button class="round" id="theme-toggle" aria-label="Toggle theme">
+          <svg viewBox="0 0 24 24"
+            ><circle cx="12" cy="12" r="4"></circle><path
+              d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"
+            ></path></svg
+          >
+        </button>
       </div>
     </header>
 
-    <main>
-      <!-- Hero -->
-      <section class="hero">
-        <div class="container hero-content">
-          <p class="eyebrow">TOKYO TRAVEL GUIDE</p>
+    <main class="stage" id="stage">
+      <svg
+        id="map"
+        role="img"
+        aria-label="Railway line map"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <defs>
+          <pattern
+            id="grid"
+            width="40"
+            height="40"
+            patternUnits="userSpaceOnUse"
+          >
+            <path d="M40 0H0V40" class="grid-lo" transform="translate(1 1)"
+            ></path>
+            <path d="M40 0H0V40" class="grid-hi"></path>
+          </pattern>
+          <linearGradient id="car-grad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#c9d0d9"></stop>
+            <stop offset="0.16" stop-color="#f6f8fa"></stop>
+            <stop offset="0.5" stop-color="#ffffff"></stop>
+            <stop offset="0.84" stop-color="#f0f3f6"></stop>
+            <stop offset="1" stop-color="#c6cdd6"></stop>
+          </linearGradient>
+          <linearGradient id="ac-grad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#aeb6c1"></stop>
+            <stop offset="0.5" stop-color="#cfd5dd"></stop>
+            <stop offset="1" stop-color="#aab2bd"></stop>
+          </linearGradient>
+          <linearGradient id="glass-grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#45596d"></stop>
+            <stop offset="1" stop-color="#1c2835"></stop>
+          </linearGradient>
+          <linearGradient id="beam-grad" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stop-color="#fff3c4" stop-opacity="0.75"></stop>
+            <stop offset="1" stop-color="#fff3c4" stop-opacity="0"></stop>
+          </linearGradient>
+          <radialGradient id="glow-grad">
+            <stop offset="0" stop-color="#f3ecb0" stop-opacity="0.7"></stop>
+            <stop offset="0.5" stop-color="#f3ecb0" stop-opacity="0.28"></stop>
+            <stop offset="1" stop-color="#fff0b0" stop-opacity="0"></stop>
+          </radialGradient>
+        </defs>
+        <rect x="-3000" y="-3000" width="7000" height="7000" fill="url(#grid)"
+        ></rect>
+        <g id="track"></g>
+        <g id="glow"></g>
+        <g id="labels"></g>
+        <g id="train"></g>
+      </svg>
 
-          <h1>
-            Your guide to
-            <span>Tokyo stations</span>
-          </h1>
+      <div class="rail-tools left">
+        <button class="tool" id="zoom-in" aria-label="Zoom in">+</button>
+        <button class="tool" id="zoom-out" aria-label="Zoom out">−</button>
+        <button class="tool" id="zoom-reset" aria-label="Reset view">
+          <svg viewBox="0 0 24 24"
+            ><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4.5h4.5"></path></svg
+          >
+        </button>
+      </div>
 
-          <p class="hero-description">
-            Find stations, train lines, exits, nearby attractions, restaurants,
-            hotels, and everything you need to navigate Tokyo.
-          </p>
-
-          <div class="search-wrapper">
-            <form id="station-search-form" class="search-box">
-              <label for="station-search" class="sr-only">
-                Search for a Tokyo station
-              </label>
-
-              <span class="search-icon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <circle cx="11" cy="11" r="7"></circle>
-                  <path d="m20 20-4-4"></path>
-                </svg>
-              </span>
-
-              <input
-                id="station-search"
-                name="q"
-                type="search"
-                placeholder="Search a station, e.g. Shibuya"
-                autocomplete="off"
-                aria-autocomplete="list"
-                aria-controls="station-search-results"
-              />
-            </form>
-
-            <div
-              id="station-search-results"
-              class="station-search-results"
-              role="listbox"
-              aria-label="Station search results"
-            >
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Stations -->
-      <section id="stations" class="section">
-        <div class="container">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">STATIONS</p>
-              <h2>Popular Tokyo Stations</h2>
-            </div>
-
-            <a href="/stations" class="view-all"> View all → </a>
-          </div>
-
-          {
-            stations.length > 0 ? (
-              <div class="station-grid">
-                {stations.slice(0, 6).map((station) => (
-                  <a
-                    href={`/stations/${station.slug}`}
-                    class="station-card"
-                  >
-                    <div class="station-icon">
-                      {station.name.charAt(0)}
-                    </div>
-
-                    <div>
-                      <h3>{station.name}</h3>
-
-                      <p>
-                        {station.name_japanese ?? "Tokyo"}
-                      </p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            ) : (
-              <p>
-                No stations have been added yet. Station information will
-                appear here once it is added through the admin panel.
-              </p>
-            )
-          }
-        </div>
-      </section>
-
-      <!-- Explore -->
-      <section id="explore" class="section section-light">
-        <div class="container">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">EXPLORE</p>
-              <h2>Plan your Tokyo trip</h2>
-            </div>
-          </div>
-
-          <div class="feature-grid">
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">🚆</div>
-
-              <h3>Train Lines</h3>
-
-              <p>
-                Discover the train and subway lines serving each station and
-                plan your route around Tokyo.
-              </p>
-            </article>
-
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">📍</div>
-
-              <h3>Station Exits</h3>
-
-              <p>
-                Find useful station exits and understand which exit is closest
-                to your destination.
-              </p>
-            </article>
-
-            <article class="feature-card">
-              <div class="feature-icon" aria-hidden="true">🗺️</div>
-
-              <h3>Nearby Places</h3>
-
-              <p>
-                Explore attractions, restaurants, hotels, and other useful
-                places around each station.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <!-- About -->
-      <section id="about" class="about-section">
-        <div class="container about-content">
-          <p class="eyebrow">ABOUT THE GUIDE</p>
-
-          <h2>Explore Tokyo, one station at a time.</h2>
-
-          <p>
-            Tokyo Station Guide is designed to make exploring Tokyo easier by
-            bringing useful station information together in one place.
-          </p>
-
-          <p>
-            From major railway hubs to smaller stations, each station guide
-            will provide practical information for travellers.
-          </p>
-        </div>
-      </section>
+      <div class="rail-tools right">
+        <a class="tool" id="info-link" href="#" aria-label="Open station page">
+          <svg viewBox="0 0 24 24"
+            ><circle cx="12" cy="12" r="9"></circle><path
+              d="M12 11v5.5M12 7.8v.1"></path></svg
+          >
+        </a>
+      </div>
     </main>
 
-    <footer class="site-footer">
-      <div class="container footer-inner">
-        <p>© 2026 {siteName}</p>
+    <section class="board" aria-live="polite">
+      <div class="line-panel" id="line-panel" hidden></div>
 
-        <div class="footer-links">
-          <a href="#about">About</a>
-          <a href="/stations">Stations</a>
+      <button
+        class="line-pill"
+        id="line-toggle"
+        aria-expanded="false"
+        aria-controls="line-panel"
+      >
+        <i class="dot"></i>
+        <span id="line-name">Select line</span>
+        <svg viewBox="0 0 24 24"
+          ><path d="M7 9l-3 3 3 3M17 9l3 3-3 3M4 12h16"></path></svg
+        >
+      </button>
+
+      <div class="board-row">
+        <button class="side prev" id="prev-btn">
+          <span class="arrow">←</span>
+          <span class="badge" id="prev-num"></span>
+          <span class="side-text">
+            <b id="prev-jp"></b>
+            <small id="prev-en"></small>
+          </span>
+        </button>
+
+        <div class="current">
+          <span class="code" id="cur-code"></span>
+          <strong id="cur-jp">—</strong>
+          <span class="cur-en" id="cur-en"></span>
         </div>
+
+        <button class="side next" id="next-btn">
+          <span class="side-text">
+            <b id="next-jp"></b>
+            <small id="next-en"></small>
+          </span>
+          <span class="badge" id="next-num"></span>
+          <span class="arrow">→</span>
+        </button>
       </div>
-    </footer>
+    </section>
 
-    <script define:vars={{ searchableStations }}>
-      const searchInput = document.querySelector("#station-search");
-      const searchResults = document.querySelector(
-        "#station-search-results",
-      );
+    <div class="search-overlay" id="search-overlay" hidden>
+      <div class="search-backdrop" id="search-backdrop"></div>
+      <div class="search-panel">
+        <div class="search-head">
+          <h2>Where are you going?</h2>
+          <button class="round" id="close-search" aria-label="Close search"
+            >×</button
+          >
+        </div>
+        <form id="search-form" autocomplete="off">
+          <input
+            type="search"
+            id="search-input"
+            placeholder="Station name or Japanese name"
+            aria-label="Search stations"
+          />
+        </form>
+        <div id="search-results" class="search-results"></div>
+      </div>
+    </div>
 
-      const stations = searchableStations;
+    <script
+      type="application/json"
+      id="transit-data"
+      set:html={JSON.stringify(transitData)}
+    />
+    <script
+      type="application/json"
+      id="search-data"
+      set:html={JSON.stringify(searchable)}
+    />
 
-      function showSearchResults(query) {
-        const searchTerm = query.trim().toLowerCase();
+    <script is:inline>
+      (function () {
+        var NS = "http://www.w3.org/2000/svg";
+        var $ = function (s) {
+          return document.querySelector(s);
+        };
+        var data = JSON.parse($("#transit-data").textContent);
+        var searchable = JSON.parse($("#search-data").textContent);
 
-        searchResults.innerHTML = "";
-
-        if (!searchTerm) {
-          searchResults.style.display = "none";
-          return;
+        /* ---------- Theme ---------- */
+        function applyTheme(t) {
+          document.documentElement.setAttribute("data-theme", t);
+          try {
+            localStorage.setItem("tokyo-theme", t);
+          } catch (e) {}
         }
-
-        const matches = stations.filter((station) =>
-          station.name.toLowerCase().includes(searchTerm),
-        );
-
-        if (matches.length === 0) {
-          searchResults.style.display = "none";
-          return;
-        }
-
-        matches.forEach((station) => {
-          const link = document.createElement("a");
-
-          link.href = `/stations/${station.slug}`;
-          link.className = "station-search-result";
-          link.setAttribute("role", "option");
-
-          const icon = document.createElement("span");
-          icon.className = "station-search-result-icon";
-          icon.textContent = station.name.charAt(0);
-
-          const name = document.createElement("span");
-          name.className = "station-search-result-name";
-          name.textContent = station.name;
-
-          link.appendChild(icon);
-          link.appendChild(name);
-
-          searchResults.appendChild(link);
+        try {
+          var saved = localStorage.getItem("tokyo-theme");
+          if (saved) applyTheme(saved);
+        } catch (e) {}
+        $("#theme-toggle").addEventListener("click", function () {
+          applyTheme(
+            document.documentElement.getAttribute("data-theme") === "dark"
+              ? "light"
+              : "dark",
+          );
         });
 
-        searchResults.style.display = "block";
-      }
+        /* ---------- Geometry (stadium loop) ---------- */
+        var W = 800,
+          H = 960;
+        var CX = 400,
+          R = 140,
+          STRAIGHT = 440;
+        var TOP_Y = 260,
+          BOT_Y = TOP_Y + STRAIGHT;
+        var RX = CX + R,
+          LX = CX - R;
+        var ARC = Math.PI * R;
+        var L = STRAIGHT * 2 + ARC * 2;
 
-      searchInput.addEventListener("input", () => {
-        showSearchResults(searchInput.value);
-      });
-
-      document.addEventListener("click", (event) => {
-        if (
-          !searchInput.contains(event.target) &&
-          !searchResults.contains(event.target)
-        ) {
-          searchResults.style.display = "none";
+        // Counter-clockwise: up the right side, over the top, down the left, under the bottom
+        function pointAt(s) {
+          s = ((s % L) + L) % L;
+          if (s < STRAIGHT) return { x: RX, y: BOT_Y - s, nx: 1, ny: 0 };
+          s -= STRAIGHT;
+          if (s < ARC) {
+            var a = s / R;
+            return {
+              x: CX + R * Math.cos(a),
+              y: TOP_Y - R * Math.sin(a),
+              nx: Math.cos(a),
+              ny: -Math.sin(a),
+            };
+          }
+          s -= ARC;
+          if (s < STRAIGHT) return { x: LX, y: TOP_Y + s, nx: -1, ny: 0 };
+          s -= STRAIGHT;
+          var b = s / R;
+          return {
+            x: CX - R * Math.cos(b),
+            y: BOT_Y + R * Math.sin(b),
+            nx: -Math.cos(b),
+            ny: Math.sin(b),
+          };
         }
-      });
+
+        var trackD =
+          "M" +
+          RX +
+          " " +
+          BOT_Y +
+          " L" +
+          RX +
+          " " +
+          TOP_Y +
+          " A" +
+          R +
+          " " +
+          R +
+          " 0 0 0 " +
+          LX +
+          " " +
+          TOP_Y +
+          " L" +
+          LX +
+          " " +
+          BOT_Y +
+          " A" +
+          R +
+          " " +
+          R +
+          " 0 0 0 " +
+          RX +
+          " " +
+          BOT_Y +
+          " Z";
+
+        /* ---------- State ---------- */
+        var lineIdx = 0;
+        var idx = 0;
+        var zoom = 1;
+        var svg = $("#map");
+
+        function line() {
+          return data.lines[lineIdx];
+        }
+        function list() {
+          return data.stationsByLine[line().id] || [];
+        }
+
+        function el(name, attrs, parent) {
+          var n = document.createElementNS(NS, name);
+          for (var k in attrs) n.setAttribute(k, attrs[k]);
+          if (parent) parent.appendChild(n);
+          return n;
+        }
+
+        function num(code) {
+          var m = String(code || "").match(/(\d+)\s*$/);
+          return m ? m[1] : "";
+        }
+
+        // distance along the track where station i sits
+        function sOf(i) {
+          var n = list().length;
+          if (line().loop) return STRAIGHT / 2 + (i / n) * L;
+          return n > 1 ? (i / (n - 1)) * (L * 0.9) : 0;
+        }
+
+        function positions() {
+          return list().map(function (_, i) {
+            return pointAt(sOf(i));
+          });
+        }
+
+        /* ---------- Draw map ---------- */
+        function drawMap() {
+          var color = line().color;
+          document.documentElement.style.setProperty("--line", color);
+
+          var track = $("#track");
+          var labels = $("#labels");
+          track.innerHTML = "";
+          labels.innerHTML = "";
+
+          var bed = el(
+            "path",
+            { d: trackD, class: "rail-bed", pathLength: L },
+            track,
+          );
+          var core = el(
+            "path",
+            { d: trackD, class: "rail-base", pathLength: L },
+            track,
+          );
+          if (!line().loop) {
+            var dash = L * 0.9 + " " + L; // open line: leave the last 10% of the loop undrawn
+            bed.setAttribute("stroke-dasharray", dash);
+            core.setAttribute("stroke-dasharray", dash);
+          }
+
+          var pts = positions();
+          pts.forEach(function (p, i) {
+            var side = i % 2 === 0 ? 30 : 52;
+            var ex = p.x + p.nx * side;
+            var ey = p.y + p.ny * side;
+            var g = el(
+              "g",
+              {
+                class: "stn",
+                "data-i": i,
+                tabindex: 0,
+                role: "button",
+                "aria-label": list()[i].name,
+              },
+              labels,
+            );
+
+            el(
+              "line",
+              { x1: p.x, y1: p.y, x2: ex, y2: ey, class: "leader" },
+              g,
+            );
+            el("circle", { cx: p.x, cy: p.y, r: 16, class: "halo" }, g);
+            el("circle", { cx: p.x, cy: p.y, r: 9.5, class: "stop-ring" }, g);
+            el("circle", { cx: p.x, cy: p.y, r: 6, class: "stop" }, g);
+
+            var anchor =
+              p.nx > 0.35 ? "start" : p.nx < -0.35 ? "end" : "middle";
+            var tx =
+              ex + (anchor === "start" ? 12 : anchor === "end" ? -12 : 0);
+            var ty = ey + (anchor === "middle" ? (p.ny < 0 ? -12 : 18) : 5);
+
+            var rect = el("rect", { class: "pill", rx: 10, ry: 10 }, g);
+            var text = el(
+              "text",
+              { x: tx, y: ty, "text-anchor": anchor, class: "label" },
+              g,
+            );
+            text.textContent = list()[i].name;
+            var bb = text.getBBox();
+            rect.setAttribute("x", bb.x - 11);
+            rect.setAttribute("y", bb.y - 4);
+            rect.setAttribute("width", bb.width + 22);
+            rect.setAttribute("height", bb.height + 8);
+            rect.setAttribute("rx", (bb.height + 8) / 2);
+            rect.setAttribute("ry", (bb.height + 8) / 2);
+
+            g.addEventListener("click", function () {
+              go(i);
+            });
+            g.addEventListener("keydown", function (e) {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                go(i);
+              }
+            });
+          });
+        }
+
+        /* ---------- Train + highlight + viewBox ---------- */
+        // The train is three articulated cars, so it bends with the curves.
+        //   NEXT     -> outer lane (+1), heading forward
+        //   PREVIOUS -> inner lane (-1), heading backward
+        var LANE_OFFSET = 9.5;
+        var LIGHT_REACH = 80; // headlight distance in map units (bigger = lights further ahead)
+        var carEls = [],
+          glowEl = null,
+          carPitch = 30;
+        var trainS = 0,
+          trainLane = 1,
+          trainDir = 1,
+          anim = null;
+        var reduceMotion =
+          window.matchMedia &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        // One car, drawn top-down; local -y is the direction of travel.
+        // k: 0 = leading car, 1 = middle, 2 = last
+        function buildCar(k, len) {
+          var g = el("g", { class: "train-car" }, $("#train"));
+          var h = len / 2;
+          el(
+            "rect",
+            {
+              x: -6.5,
+              y: -h,
+              width: 13,
+              height: len,
+              rx: 3.4,
+              class: "car-body",
+            },
+            g,
+          );
+          el(
+            "rect",
+            {
+              x: -5.9,
+              y: -h + 5,
+              width: 0.8,
+              height: len - 10,
+              class: "car-stripe-l",
+            },
+            g,
+          );
+          el(
+            "rect",
+            {
+              x: 5.1,
+              y: -h + 5,
+              width: 0.8,
+              height: len - 10,
+              class: "car-stripe",
+            },
+            g,
+          );
+
+          // roof air-conditioning panels
+          var spots =
+            k === 0 ? [0.27, 0.58] : k === 1 ? [0.14, 0.54] : [0.12, 0.46];
+          spots.forEach(function (f) {
+            var y = -h + len * f,
+              ph = len * 0.25;
+            el(
+              "rect",
+              { x: -3.7, y: y, width: 7.4, height: ph, rx: 1.4, class: "ac" },
+              g,
+            );
+            for (var i = 1; i <= 3; i++) {
+              el(
+                "rect",
+                {
+                  x: -3,
+                  y: y + (ph * i) / 4 - 0.25,
+                  width: 6,
+                  height: 0.5,
+                  class: "ac-line",
+                },
+                g,
+              );
+            }
+          });
+
+          // joints between cars
+          if (k > 0)
+            el(
+              "rect",
+              {
+                x: -4.5,
+                y: -h - 1.8,
+                width: 9,
+                height: 3.6,
+                rx: 1.2,
+                class: "joint",
+              },
+              g,
+            );
+          if (k < 2)
+            el(
+              "rect",
+              {
+                x: -4.5,
+                y: h - 1.8,
+                width: 9,
+                height: 3.6,
+                rx: 1.2,
+                class: "joint",
+              },
+              g,
+            );
+
+          if (k === 0) {
+            // front cab: black nose, windshield, headlamps
+            el(
+              "path",
+              {
+                d:
+                  "M-6.5," +
+                  (-h + 7.5) +
+                  " L-6.5," +
+                  (-h + 3.4) +
+                  " Q-6.5," +
+                  -h +
+                  " -3.1," +
+                  -h +
+                  " L3.1," +
+                  -h +
+                  " Q6.5," +
+                  -h +
+                  " 6.5," +
+                  (-h + 3.4) +
+                  " L6.5," +
+                  (-h + 7.5) +
+                  " Z",
+                class: "cab",
+              },
+              g,
+            );
+            el(
+              "rect",
+              {
+                x: -4.8,
+                y: -h + 1.9,
+                width: 9.6,
+                height: 3.6,
+                rx: 1.6,
+                class: "glass",
+              },
+              g,
+            );
+            el(
+              "rect",
+              {
+                x: -3.8,
+                y: -h + 2.5,
+                width: 3.2,
+                height: 0.7,
+                rx: 0.35,
+                class: "glint",
+              },
+              g,
+            );
+            el("circle", { cx: -5, cy: -h + 1.1, r: 1.15, class: "lamp" }, g);
+            el("circle", { cx: 5, cy: -h + 1.1, r: 1.15, class: "lamp" }, g);
+          }
+          if (k === 2) {
+            // rear cab: black end, tail lights
+            el(
+              "path",
+              {
+                d:
+                  "M-6.5," +
+                  (h - 7.5) +
+                  " L-6.5," +
+                  (h - 3.4) +
+                  " Q-6.5," +
+                  h +
+                  " -3.1," +
+                  h +
+                  " L3.1," +
+                  h +
+                  " Q6.5," +
+                  h +
+                  " 6.5," +
+                  (h - 3.4) +
+                  " L6.5," +
+                  (h - 7.5) +
+                  " Z",
+                class: "cab",
+              },
+              g,
+            );
+            el(
+              "rect",
+              {
+                x: -4.8,
+                y: h - 5.5,
+                width: 9.6,
+                height: 3.6,
+                rx: 1.6,
+                class: "glass",
+              },
+              g,
+            );
+            el("circle", { cx: -5, cy: h - 1.1, r: 1.15, class: "tail" }, g);
+            el("circle", { cx: 5, cy: h - 1.1, r: 1.15, class: "tail" }, g);
+          }
+          return g;
+        }
+
+        function initTrain() {
+          $("#train").innerHTML = "";
+          $("#glow").innerHTML = "";
+
+          // total length follows station spacing so it reads well on any line
+          var spacing = list().length > 1 ? Math.abs(sOf(1) - sOf(0)) : 60;
+          var total = Math.max(50, Math.min(spacing * 1.68, 150));
+          var gap = 3;
+          var carLen = (total - gap * 2) / 3;
+          carPitch = carLen + gap;
+
+          carEls = [
+            buildCar(0, carLen),
+            buildCar(1, carLen),
+            buildCar(2, carLen),
+          ];
+
+          // headlight beam + glow (visible in dark theme only), sits under the labels
+          glowEl = el("g", { class: "headlight" }, $("#glow"));
+          var y0 = -carLen / 2;
+          [-1, 1].forEach(function (sx) {
+            // one thin beam per headlamp
+            el(
+              "polygon",
+              {
+                points:
+                  sx * 5.8 +
+                  "," +
+                  y0 +
+                  " " +
+                  sx * 3.6 +
+                  "," +
+                  y0 +
+                  " " +
+                  sx * 9 +
+                  "," +
+                  (y0 - LIGHT_REACH) +
+                  " " +
+                  sx * 18 +
+                  "," +
+                  (y0 - LIGHT_REACH),
+                fill: "url(#beam-grad)",
+              },
+              glowEl,
+            );
+          });
+          el(
+            "ellipse",
+            {
+              cx: 0,
+              cy: y0 - LIGHT_REACH * 0.78,
+              rx: 38,
+              ry: LIGHT_REACH * 0.85,
+              fill: "url(#glow-grad)",
+            },
+            glowEl,
+          );
+
+          if (anim) {
+            cancelAnimationFrame(anim);
+            anim = null;
+          }
+          trainS = sOf(idx);
+          trainLane = 1;
+          trainDir = 1;
+          drawTrain(trainS, trainLane, trainDir);
+        }
+
+        function clampS(s) {
+          return line().loop ? s : Math.max(0, Math.min(s, L * 0.9));
+        }
+
+        // Each car is placed on the track on its own, so it follows the curve.
+        function drawTrain(s, lane, dir) {
+          for (var k = 0; k < 3; k++) {
+            var p = pointAt(clampS(s + dir * (1 - k) * carPitch));
+            var x = p.x + p.nx * lane * LANE_OFFSET;
+            var y = p.y + p.ny * lane * LANE_OFFSET;
+            var ang = (Math.atan2(dir * p.ny, dir * p.nx) * 180) / Math.PI;
+            var t = "translate(" + x + " " + y + ") rotate(" + ang + ")";
+            carEls[k].setAttribute("transform", t);
+            if (k === 0) glowEl.setAttribute("transform", t);
+          }
+          return pointAt(s);
+        }
+
+        function moveTrain() {
+          var target = sOf(idx);
+          var from = trainS;
+          if (anim) {
+            cancelAnimationFrame(anim);
+            anim = null;
+          }
+
+          if (from === target) {
+            setView(drawTrain(trainS, trainLane, trainDir));
+            return;
+          }
+
+          var fromLane = trainLane;
+          var toDir = target > from ? 1 : -1;
+          trainDir = toDir; // face the way we are going
+          var dist = Math.abs(target - from);
+          var dur = reduceMotion
+            ? 0
+            : Math.min(1600, Math.max(500, dist * 1.8));
+
+          if (dur === 0) {
+            trainS = target;
+            trainLane = toDir;
+            setView(drawTrain(trainS, trainLane, trainDir));
+            return;
+          }
+
+          var t0 = performance.now();
+          function step(now) {
+            var k = Math.min(1, (now - t0) / dur);
+            var e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; // ease in-out
+            trainS = from + (target - from) * e;
+            trainLane = fromLane + (toDir - fromLane) * Math.min(1, k * 3); // slide into the lane early
+            setView(drawTrain(trainS, trainLane, trainDir));
+            anim = k < 1 ? requestAnimationFrame(step) : null;
+          }
+          anim = requestAnimationFrame(step);
+        }
+
+        function refreshView() {
+          if (list().length) setView(pointAt(trainS));
+        }
+
+        function updateMap() {
+          document.querySelectorAll(".stn").forEach(function (g) {
+            // use the station index, not the DOM position (DOM order changes when the current one is raised)
+            g.classList.toggle(
+              "current",
+              Number(g.getAttribute("data-i")) === idx,
+            );
+          });
+          // move current station to the top of the paint order
+          var cur = document.querySelector('.stn[data-i="' + idx + '"]');
+          if (cur) cur.parentNode.appendChild(cur);
+          moveTrain();
+        }
+
+        function setView(p) {
+          var vw = W / zoom,
+            vh = H / zoom;
+          var fx = W / 2,
+            fy = H / 2;
+          if (zoom > 1 && p) {
+            fx = p.x;
+            fy = p.y;
+          }
+          var x = Math.min(Math.max(fx - vw / 2, 0), W - vw);
+          var y = Math.min(Math.max(fy - vh / 2, 0), H - vh);
+          svg.setAttribute("viewBox", x + " " + y + " " + vw + " " + vh);
+        }
+
+        /* ---------- Board ---------- */
+        function updateBoard() {
+          var l = list();
+          var cur = l[idx],
+            prev = l[idx - 1],
+            next = l[idx + 1];
+          $("#line-name").textContent = line().name;
+          $("#cur-jp").textContent = cur ? cur.jp || cur.name : "—";
+          $("#cur-en").textContent = cur ? cur.name : "";
+          $("#cur-code").textContent = cur ? cur.code || "" : "";
+          $("#cur-code").hidden = !(cur && cur.code);
+
+          function side(prefix, s) {
+            var btn = $("#" + prefix + "-btn");
+            btn.disabled = !s;
+            $("#" + prefix + "-jp").textContent = s ? s.jp || s.name : "";
+            $("#" + prefix + "-en").textContent = s ? s.name : "";
+            $("#" + prefix + "-num").textContent = s ? num(s.code) : "";
+            $("#" + prefix + "-num").hidden = !s;
+          }
+          side("prev", prev);
+          side("next", next);
+
+          var info = $("#info-link");
+          if (cur && cur.slug)
+            info.href = "/stations/" + encodeURIComponent(cur.slug);
+        }
+
+        function go(i) {
+          var n = list().length;
+          if (!n) return;
+          idx = Math.max(0, Math.min(i, n - 1));
+          updateBoard();
+          updateMap();
+        }
+
+        function setLine(i) {
+          lineIdx = i;
+          idx = 0;
+          zoom = 1;
+          drawMap();
+          initTrain();
+          updateBoard();
+          updateMap();
+          document.querySelectorAll(".line-opt").forEach(function (b, k) {
+            b.classList.toggle("active", k === i);
+          });
+        }
+
+        /* ---------- Controls ---------- */
+        $("#prev-btn").addEventListener("click", function () {
+          go(idx - 1);
+        });
+        $("#next-btn").addEventListener("click", function () {
+          go(idx + 1);
+        });
+        var MAX_ZOOM = 6;
+        $("#zoom-in").addEventListener("click", function () {
+          zoom = Math.min(zoom * 1.5, MAX_ZOOM);
+          refreshView();
+        });
+        $("#zoom-out").addEventListener("click", function () {
+          zoom = Math.max(zoom / 1.5, 1);
+          refreshView();
+        });
+        // Mouse wheel / trackpad zoom on the map (the view stays centred on the train)
+        $("#stage").addEventListener(
+          "wheel",
+          function (e) {
+            e.preventDefault();
+            var step = e.deltaMode === 1 ? 0.05 : 0.0015; // lines vs pixels
+            zoom = Math.min(
+              MAX_ZOOM,
+              Math.max(1, zoom * Math.exp(-e.deltaY * step)),
+            );
+            refreshView();
+          },
+          { passive: false },
+        );
+        $("#zoom-reset").addEventListener("click", function () {
+          zoom = 1;
+          go(0);
+        });
+
+        document.addEventListener("keydown", function (e) {
+          if (!$("#search-overlay").hidden) return;
+          if (e.key === "ArrowLeft") go(idx - 1);
+          if (e.key === "ArrowRight") go(idx + 1);
+        });
+
+        // Line picker
+        var panel = $("#line-panel");
+        var toggle = $("#line-toggle");
+        data.lines.forEach(function (l, i) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "line-opt";
+          b.style.setProperty("--c", l.color);
+          b.innerHTML = '<i class="dot"></i><span></span><em></em>';
+          b.querySelector("span").textContent = l.name;
+          b.querySelector("em").textContent = l.code || "";
+          b.addEventListener("click", function () {
+            setLine(i);
+            panel.hidden = true;
+            toggle.setAttribute("aria-expanded", "false");
+          });
+          panel.appendChild(b);
+        });
+        toggle.addEventListener("click", function () {
+          var open = panel.hidden;
+          panel.hidden = !open;
+          toggle.setAttribute("aria-expanded", String(open));
+        });
+
+        /* ---------- Search ---------- */
+        var overlay = $("#search-overlay");
+        var input = $("#search-input");
+        var results = $("#search-results");
+
+        function esc(v) {
+          return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+            return {
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            }[c];
+          });
+        }
+        function openSearch() {
+          overlay.hidden = false;
+          setTimeout(function () {
+            input.focus();
+          }, 30);
+        }
+        function closeSearch() {
+          overlay.hidden = true;
+        }
+
+        input.addEventListener("input", function () {
+          var q = input.value.trim().toLowerCase();
+          if (!q) {
+            results.innerHTML = "";
+            return;
+          }
+          var m = searchable
+            .filter(function (s) {
+              return (
+                (s.name || "").toLowerCase().includes(q) ||
+                (s.jp || "").toLowerCase().includes(q) ||
+                (s.slug || "").toLowerCase().includes(q)
+              );
+            })
+            .slice(0, 10);
+          results.innerHTML = m.length
+            ? m
+                .map(function (s) {
+                  return (
+                    '<a class="result" href="/stations/' +
+                    encodeURIComponent(s.slug) +
+                    '"><b>' +
+                    esc(s.jp || "") +
+                    "</b><span>" +
+                    esc(s.name) +
+                    "</span></a>"
+                  );
+                })
+                .join("")
+            : '<p class="empty">No stations found. Try the English or Japanese name.</p>';
+        });
+        $("#search-form").addEventListener("submit", function (e) {
+          e.preventDefault();
+          var first = results.querySelector("a");
+          if (first) window.location.href = first.getAttribute("href");
+        });
+        $("#open-search").addEventListener("click", openSearch);
+        $("#close-search").addEventListener("click", closeSearch);
+        $("#search-backdrop").addEventListener("click", closeSearch);
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") closeSearch();
+        });
+
+        /* ---------- Init ---------- */
+        if (data.lines.length) {
+          var start = 0;
+          for (var k = 0; k < data.lines.length; k++) {
+            if (data.lines[k].loop) {
+              start = k;
+              break;
+            }
+          }
+          setLine(start);
+        } else $("#line-name").textContent = "No lines available";
+      })();
     </script>
   </body>
 </html>
