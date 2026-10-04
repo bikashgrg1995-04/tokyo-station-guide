@@ -1,7 +1,10 @@
 ---
 import "../../../styles/admin/shared.css";
-import "../../../styles/admin/lines.css";
 import "../../../styles/admin/forms.css";
+import "../../../styles/admin/lines.css";
+
+import AdminNavigation from "../../../common_components/AdminNavigation.astro";
+import Button from "../../../common_components/Button.astro";
 
 import { createLine } from "../../../lib/db/lines";
 import { getOperators } from "../../../lib/db/operators";
@@ -12,52 +15,227 @@ const { env } = await import("cloudflare:workers");
 
 const db = env.DB;
 
+let formError = "";
+
+let operatorId = "";
+let name = "";
+let slug = "";
+let code = "";
+let color = "";
+let description = "";
+
+const errors = {
+  operatorId: "",
+  name: "",
+  slug: "",
+  code: "",
+  color: "",
+  description: "",
+};
+
 const operators = await getOperators(db);
 
-let error = "";
+/* ========================================
+   Form Submission
+======================================== */
 
 if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
+  const formData =
+    await Astro.request.formData();
 
-  const operatorId = Number(formData.get("operator_id") ?? 0);
-  const name = String(formData.get("name") ?? "").trim();
-  const slug = String(formData.get("slug") ?? "").trim().toLowerCase();
-  const code = String(formData.get("code") ?? "").trim();
-  const description = String(
-    formData.get("description") ?? "",
-  ).trim();
-  const color = String(formData.get("color") ?? "").trim();
+  operatorId =
+    String(formData.get("operator_id") ?? "").trim();
 
-  if (!operatorId || !name || !slug) {
-    error = "Operator, name, and slug are required.";
-  } else {
+  name =
+    String(formData.get("name") ?? "").trim();
+
+  slug =
+    String(formData.get("slug") ?? "").trim();
+
+  code =
+    String(formData.get("code") ?? "").trim();
+
+  color =
+    String(formData.get("color") ?? "").trim();
+
+  description =
+    String(formData.get("description") ?? "").trim();
+
+
+  /* ========================================
+     Operator Validation
+  ======================================== */
+
+  const parsedOperatorId =
+    Number(operatorId);
+
+  if (!operatorId) {
+    errors.operatorId =
+      "Operator is required.";
+  } else if (
+    !Number.isInteger(parsedOperatorId) ||
+    parsedOperatorId <= 0
+  ) {
+    errors.operatorId =
+      "Please select a valid operator.";
+  } else if (
+    !operators.some(
+      (operator) =>
+        operator.id === parsedOperatorId,
+    )
+  ) {
+    errors.operatorId =
+      "Selected operator does not exist.";
+  }
+
+
+  /* ========================================
+     Name Validation
+  ======================================== */
+
+  if (!name) {
+    errors.name =
+      "Name is required.";
+  } else if (name.length > 150) {
+    errors.name =
+      "Name must be 150 characters or less.";
+  }
+
+
+  /* ========================================
+     Slug Validation
+  ======================================== */
+
+  if (!slug) {
+    errors.slug =
+      "Slug is required.";
+  } else if (
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+  ) {
+    errors.slug =
+      "Slug can only contain lowercase letters, numbers, and hyphens.";
+  } else if (slug.length > 150) {
+    errors.slug =
+      "Slug must be 150 characters or less.";
+  }
+
+
+  /* ========================================
+     Code Validation
+  ======================================== */
+
+  if (code.length > 50) {
+    errors.code =
+      "Code must be 50 characters or less.";
+  }
+
+
+  /* ========================================
+     Color Validation
+  ======================================== */
+
+  if (color) {
+    if (!/^#[0-9a-fA-F]{6}$/.test(color)) {
+      errors.color =
+        "Color must be a valid hex color, such as #00A650.";
+    }
+  }
+
+
+  /* ========================================
+     Description Validation
+  ======================================== */
+
+  if (description.length > 1000) {
+    errors.description =
+      "Description must be 1000 characters or less.";
+  }
+
+
+  /* ========================================
+     Create Line
+  ======================================== */
+
+  const hasValidationErrors =
+    Object.values(errors).some(
+      (message) =>
+        message.length > 0,
+    );
+
+  if (!hasValidationErrors) {
     try {
       await createLine(db, {
-        operatorId,
+        operatorId: parsedOperatorId,
         name,
         slug,
         code: code || null,
-        description: description || null,
+        description:
+          description || null,
         color: color || null,
       });
 
-      return Astro.redirect("/admin/lines");
-    } catch {
-      error =
-        "Unable to create line. The name or slug may already exist.";
+      return Astro.redirect(
+        "/admin/lines",
+      );
+    } catch (err) {
+      console.error(err);
+
+      const message =
+        err instanceof Error
+          ? err.message.toLowerCase()
+          : "";
+
+
+      /* ========================================
+         Duplicate Slug
+      ======================================== */
+
+      if (
+        message.includes(
+          "unique constraint failed",
+        ) &&
+        message.includes(
+          "lines.slug",
+        )
+      ) {
+        errors.slug =
+          "A line with this slug already exists.";
+      }
+
+
+      /* ========================================
+         Duplicate Code
+      ======================================== */
+
+      else if (
+        message.includes(
+          "unique constraint failed",
+        ) &&
+        message.includes(
+          "lines.code",
+        )
+      ) {
+        errors.code =
+          "A line with this code already exists.";
+      }
+
+
+      /* ========================================
+         Unexpected Database Error
+      ======================================== */
+
+      else {
+        formError =
+          "Unable to create line because of an unexpected database error.";
+      }
     }
   }
 }
-
-const admin = await Astro.session?.get<{
-  id: number;
-  email: string;
-  name: string;
-}>("admin");
 ---
 
 <!doctype html>
 <html lang="en">
+
   <head>
     <meta charset="UTF-8" />
 
@@ -71,149 +249,125 @@ const admin = await Astro.session?.get<{
       content="noindex, nofollow"
     />
 
-    <title>New Line | Tokyo Station Guide</title>
+    <title>
+      Add Line | Admin | Tokyo Station Guide
+    </title>
   </head>
 
+
   <body>
+
     <div class="admin-shell">
-      <!-- Sidebar -->
-      <aside class="admin-sidebar">
-        <div class="admin-brand">
-          <div class="admin-brand-top">
-            <div class="admin-logo">
-              T
-            </div>
 
-            <div>
-              <h1>Tokyo Station Guide</h1>
-              <p>Administration</p>
-            </div>
-          </div>
-        </div>
+      <!-- Admin Navigation -->
 
-        <div class="admin-section-label">
-          Overview
-        </div>
+      <AdminNavigation
+        activePath="/admin/lines"
+      />
 
-        <nav class="admin-nav">
-          <a href="/admin">
-            <span class="admin-nav-icon">⌂</span>
-            Dashboard
-          </a>
-        </nav>
 
-        <div class="admin-section-label">
-          Content
-        </div>
-
-        <nav class="admin-nav">
-          <a href="/admin/operators">
-            <span class="admin-nav-icon">◉</span>
-            Operators
-          </a>
-
-          <a
-            href="/admin/lines"
-            class="active"
-          >
-            <span class="admin-nav-icon">↔</span>
-            Lines
-          </a>
-
-          <a href="/admin/stations">
-            <span class="admin-nav-icon">⌖</span>
-            Stations
-          </a>
-        </nav>
-
-        <div class="admin-sidebar-bottom">
-          <form
-            method="POST"
-            action="/admin/logout"
-            class="admin-logout-form"
-          >
-            <button
-              type="submit"
-              class="admin-logout-button"
-            >
-              <span class="admin-nav-icon">↪</span>
-              Logout
-            </button>
-          </form>
-
-          <a
-            href="/"
-            class="admin-back-link"
-          >
-            ← Back to website
-          </a>
-        </div>
-      </aside>
-
-      <!-- Main -->
       <main class="admin-main">
+
         <!-- Topbar -->
+
         <header class="admin-topbar">
+
           <div class="admin-breadcrumb">
-            <a href="/admin">Admin</a>
-            <span>/</span>
-            <a href="/admin/lines">Lines</a>
-            <span>/</span>
-            <strong>New</strong>
+
+            <Button
+              href="/admin/lines"
+              variant="secondary"
+            >
+              ←
+            </Button>
+
+            <a href="/admin/lines">
+              Lines
+            </a>
+
+            <span> / </span>
+
+            <strong>
+              Add Line
+            </strong>
+
           </div>
 
-          {
-            admin && (
-              <div class="admin-user">
-                <div class="admin-avatar">
-                  {admin.name
-                    .split(" ")
-                    .map((part) => part[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
-
-                <div class="admin-user-info">
-                  <strong>{admin.name}</strong>
-                  <span>{admin.email}</span>
-                </div>
-              </div>
-            )
-          }
         </header>
 
+
         <!-- Content -->
+
         <div class="admin-content">
-          <section class="admin-line-form">
-            <div class="admin-line-form-card">
-              <div class="admin-line-form-header">
-                <p class="admin-eyebrow">
-                  Line Management
-                </p>
 
-                <h2>Create New Line</h2>
+          <!-- Page Header -->
 
-                <p>
-                  Add a train or subway line to Tokyo Station
-                  Guide.
-                </p>
-              </div>
+          <div class="admin-page-header">
 
-              {
-                error && (
-                  <div class="admin-alert admin-alert-error">
-                    {error}
-                  </div>
-                )
-              }
+            <div>
 
-              <form
-                method="POST"
-                class="admin-form"
-              >
-                <div class="admin-form-grid">
+              <h2>
+                Add Line
+              </h2>
+
+              <p>
+                Create a new railway line to use
+                throughout the Tokyo Station Guide.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <!-- Form Panel -->
+
+          <section class="admin-panel">
+
+            <div class="admin-panel-body">
+
+              <div class="admin-line-form">
+
+                <!-- Form Header -->
+
+                <div class="admin-line-form-header">
+
+                  <h2>
+                    Line Details
+                  </h2>
+
+                  <p>
+                    Enter the basic information
+                    for this railway line.
+                  </p>
+
+                </div>
+
+
+                <!-- General Error -->
+
+                {
+                  formError && (
+                    <div
+                      class="admin-alert admin-alert-error"
+                    >
+                      {formError}
+                    </div>
+                  )
+                }
+
+
+                <!-- Line Form -->
+
+                <form
+                  method="POST"
+                  class="admin-form"
+                >
+
+                  <!-- Operator -->
+
                   <div class="admin-form-group">
+
                     <label for="operator_id">
                       Operator
                     </label>
@@ -222,36 +376,104 @@ const admin = await Astro.session?.get<{
                       id="operator_id"
                       name="operator_id"
                       required
+                      aria-invalid={
+                        errors.operatorId
+                          ? "true"
+                          : "false"
+                      }
+                      aria-describedby={
+                        errors.operatorId
+                          ? "operator-error"
+                          : undefined
+                      }
                     >
+
                       <option value="">
-                        Select operator
+                        Select an operator
                       </option>
 
-                      {operators.map((operator) => (
-                        <option
-                          value={operator.id}
-                        >
-                          {operator.name}
-                        </option>
-                      ))}
+                      {
+                        operators.map(
+                          (operator) => (
+                            <option
+                              value={operator.id}
+                              selected={
+                                operatorId ===
+                                String(
+                                  operator.id,
+                                )
+                              }
+                            >
+                              {operator.name}
+                            </option>
+                          ),
+                        )
+                      }
+
                     </select>
+
+
+                    {
+                      errors.operatorId && (
+                        <small
+                          id="operator-error"
+                          class="admin-form-error"
+                        >
+                          {errors.operatorId}
+                        </small>
+                      )
+                    }
+
                   </div>
 
+
+                  <!-- Name -->
+
                   <div class="admin-form-group">
+
                     <label for="name">
-                      Line Name
+                      Name
                     </label>
 
                     <input
                       id="name"
                       name="name"
                       type="text"
-                      placeholder="e.g. Yamanote Line"
                       required
+                      maxlength="150"
+                      value={name}
+                      placeholder="Yamanote Line"
+                      aria-invalid={
+                        errors.name
+                          ? "true"
+                          : "false"
+                      }
+                      aria-describedby={
+                        errors.name
+                          ? "name-error"
+                          : undefined
+                      }
                     />
+
+
+                    {
+                      errors.name && (
+                        <small
+                          id="name-error"
+                          class="admin-form-error"
+                        >
+                          {errors.name}
+                        </small>
+                      )
+                    }
+
                   </div>
 
+
+                  <!-- Slug -->
+
                   <div class="admin-form-group">
+
                     <label for="slug">
                       Slug
                     </label>
@@ -260,53 +482,135 @@ const admin = await Astro.session?.get<{
                       id="slug"
                       name="slug"
                       type="text"
-                      placeholder="e.g. yamanote-line"
                       required
+                      maxlength="150"
+                      value={slug}
+                      placeholder="yamanote-line"
+                      aria-invalid={
+                        errors.slug
+                          ? "true"
+                          : "false"
+                      }
+                      aria-describedby={
+                        errors.slug
+                          ? "slug-error"
+                          : undefined
+                      }
                     />
 
-                    <small>
-                      Used in URLs. Use lowercase letters,
-                      numbers, and hyphens.
-                    </small>
+
+                    {
+                      errors.slug ? (
+                        <small
+                          id="slug-error"
+                          class="admin-form-error"
+                        >
+                          {errors.slug}
+                        </small>
+                      ) : (
+                        <small>
+                          Use lowercase letters,
+                          numbers and hyphens.
+                        </small>
+                      )
+                    }
+
                   </div>
 
+
+                  <!-- Code -->
+
                   <div class="admin-form-group">
+
                     <label for="code">
-                      Line Code
+                      Code
                     </label>
 
                     <input
                       id="code"
                       name="code"
                       type="text"
-                      placeholder="e.g. JY"
+                      maxlength="50"
+                      value={code}
+                      placeholder="JY"
+                      aria-invalid={
+                        errors.code
+                          ? "true"
+                          : "false"
+                      }
+                      aria-describedby={
+                        errors.code
+                          ? "code-error"
+                          : undefined
+                      }
                     />
 
-                    <small>
-                      Optional railway or subway line code.
-                    </small>
+
+                    {
+                      errors.code && (
+                        <small
+                          id="code-error"
+                          class="admin-form-error"
+                        >
+                          {errors.code}
+                        </small>
+                      )
+                    }
+
                   </div>
 
+
+                  <!-- Color -->
+
                   <div class="admin-form-group">
+
                     <label for="color">
                       Line Color
                     </label>
 
-                    <div class="admin-line-color-input">
-                      <input
-                        id="color"
-                        name="color"
-                        type="color"
-                        value="#2563eb"
-                      />
+                    <input
+                      id="color"
+                      name="color"
+                      type="text"
+                      maxlength="7"
+                      value={color}
+                      placeholder="#00A650"
+                      aria-invalid={
+                        errors.color
+                          ? "true"
+                          : "false"
+                      }
+                      aria-describedby={
+                        errors.color
+                          ? "color-error"
+                          : undefined
+                      }
+                    />
 
-                      <span class="admin-table-muted">
-                        Select the official line color.
-                      </span>
-                    </div>
+
+                    {
+                      errors.color ? (
+                        <small
+                          id="color-error"
+                          class="admin-form-error"
+                        >
+                          {errors.color}
+                        </small>
+                      ) : (
+                        <small>
+                          Use a 6-digit hexadecimal
+                          color, such as #00A650.
+                        </small>
+                      )
+                    }
+
                   </div>
 
-                  <div class="admin-form-group full-width">
+
+                  <!-- Description -->
+
+                  <div class="admin-form-group">
+
                     <label for="description">
                       Description
                     </label>
@@ -314,31 +618,71 @@ const admin = await Astro.session?.get<{
                     <textarea
                       id="description"
                       name="description"
-                      placeholder="Brief description of this line..."
-                    ></textarea>
+                      rows="5"
+                      maxlength="1000"
+                      placeholder="Short description of the railway line..."
+                      aria-invalid={
+                        errors.description
+                          ? "true"
+                          : "false"
+                      }
+                      aria-describedby={
+                        errors.description
+                          ? "description-error"
+                          : undefined
+                      }
+                    >{description}</textarea>
+
+
+                    {
+                      errors.description && (
+                        <small
+                          id="description-error"
+                          class="admin-form-error"
+                        >
+                          {errors.description}
+                        </small>
+                      )
+                    }
+
                   </div>
-                </div>
 
-                <div class="admin-form-actions">
-                  <a
-                    href="/admin/lines"
-                    class="admin-button admin-button-secondary"
-                  >
-                    Cancel
-                  </a>
 
-                  <button
-                    type="submit"
-                    class="admin-button"
-                  >
-                    Create Line
-                  </button>
-                </div>
-              </form>
+                  <!-- Actions -->
+
+                  <div class="admin-form-actions">
+
+                    <Button
+                      href="/admin/lines"
+                      variant="secondary"
+                    >
+                      Cancel
+                    </Button>
+
+
+                    <Button
+                      type="submit"
+                      variant="primary"
+                    >
+                      Create Line
+                    </Button>
+
+                  </div>
+
+                </form>
+
+              </div>
+
             </div>
+
           </section>
+
         </div>
+
       </main>
+
     </div>
+
   </body>
+
 </html>

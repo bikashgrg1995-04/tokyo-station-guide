@@ -1,9 +1,15 @@
 ---
 import "../../../styles/admin/shared.css";
-import "../../../styles/admin/lines.css";
 import "../../../styles/admin/tables.css";
+import "../../../styles/admin/lines.css";
 
-import { getLines, deleteLine } from "../../../lib/db/lines";
+import AdminNavigation from "../../../common_components/AdminNavigation.astro";
+import Button from "../../../common_components/Button.astro";
+import SearchInput from "../../../common_components/SearchInput.astro";
+import ConfirmDialog from "../../../common_components/ConfirmDialog.astro";
+import Pagination from "../../../common_components/Pagination.astro";
+
+import { getLinesPaginated } from "../../../lib/db/lines";
 
 export const prerender = false;
 
@@ -11,27 +17,63 @@ const { env } = await import("cloudflare:workers");
 
 const db = env.DB;
 
-let error = "";
 
-if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
+/* ========================================
+   Query Parameters
+======================================== */
 
-  const action = String(formData.get("action") ?? "");
-  const id = Number(formData.get("id") ?? 0);
+const searchParam =
+  Astro.url.searchParams.get("search")?.trim() ?? "";
 
-  if (action === "delete" && id > 0) {
-    try {
-      await deleteLine(db, id);
+const pageParam =
+  Astro.url.searchParams.get("page");
 
-      return Astro.redirect("/admin/lines");
-    } catch {
-      error =
-        "Unable to delete this line. It may already be used by stations.";
-    }
-  }
+const parsedPage = Number(pageParam);
+
+const currentPage =
+  Number.isInteger(parsedPage) && parsedPage > 0
+    ? parsedPage
+    : 1;
+
+
+/* ========================================
+   Pagination
+======================================== */
+
+const perPage = 10;
+
+const {
+  items: lines,
+  totalItems,
+  currentPage: safeCurrentPage,
+  totalPages,
+} = await getLinesPaginated(db, {
+  page: currentPage,
+  perPage,
+  search: searchParam,
+});
+
+
+/* ========================================
+   Pagination URL
+======================================== */
+
+const paginationUrl = new URL(
+  "/admin/lines",
+  Astro.url,
+);
+
+if (searchParam) {
+  paginationUrl.searchParams.set(
+    "search",
+    searchParam,
+  );
 }
 
-const lines = await getLines(db);
+
+/* ========================================
+   Admin
+======================================== */
 
 const admin = await Astro.session?.get<{
   id: number;
@@ -44,267 +86,458 @@ const admin = await Astro.session?.get<{
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="robots" content="noindex, nofollow" />
 
-    <title>Lines | Admin | Tokyo Station Guide</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
+    <meta
+      name="robots"
+      content="noindex, nofollow"
+    />
+
+    <title>
+      Lines | Admin | Tokyo Station Guide
+    </title>
   </head>
 
   <body>
     <div class="admin-shell">
-      <aside class="admin-sidebar">
-        <div class="admin-brand">
-          <div class="admin-brand-top">
-            <div class="admin-logo">T</div>
 
-            <div>
-              <h1>Tokyo Station Guide</h1>
-              <p>Content Management</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="admin-section-label">Management</div>
-
-        <nav class="admin-nav">
-          <a href="/admin">
-            <span class="admin-nav-icon">⌂</span>
-            Dashboard
-          </a>
-
-          <a href="/admin/operators">
-            <span class="admin-nav-icon">◉</span>
-            Operators
-          </a>
-
-          <a href="/admin/lines" class="active">
-            <span class="admin-nav-icon">↔</span>
-            Lines
-          </a>
-
-          <a href="/admin/stations">
-            <span class="admin-nav-icon">◎</span>
-            Stations
-          </a>
-        </nav>
-
-        <div class="admin-section-label">System</div>
-
-        <nav class="admin-nav">
-          <a href="#">
-            <span class="admin-nav-icon">⚙</span>
-            Settings
-          </a>
-
-          <form
-            method="POST"
-            action="/admin/auth/logout"
-            class="admin-logout-form"
-          >
-            <button type="submit" class="admin-logout-button">
-              <span class="admin-nav-icon">↪</span>
-              <span>Logout</span>
-            </button>
-          </form>
-        </nav>
-
-        <div class="admin-sidebar-bottom">
-          <a href="/" class="admin-back-link">
-            ← Back to website
-          </a>
-        </div>
-      </aside>
+      <!-- Admin Navigation -->
+      <AdminNavigation
+        activePath="/admin/lines"
+      />
 
       <main class="admin-main">
-        <header class="admin-topbar">
-          <div class="admin-breadcrumb">
-            <span>Admin</span>
-            <span>/</span>
-            <strong>Lines</strong>
-          </div>
-
-          <div class="admin-user">
-            <div class="admin-avatar">
-              {
-                admin?.name
-                  ? admin.name
-                      .split(" ")
-                      .map((part) => part.charAt(0))
-                      .join("")
-                      .slice(0, 2)
-                      .toUpperCase()
-                  : "AD"
-              }
-            </div>
-
-            <div class="admin-user-info">
-              <strong>{admin?.name ?? "Administrator"}</strong>
-              <span>Tokyo Station Guide</span>
-            </div>
-          </div>
-        </header>
 
         <div class="admin-content">
+
+          <!-- Page Header -->
           <div class="admin-page-header">
+
             <div>
               <h2>Lines</h2>
+
               <p>
-                Manage train and subway lines used across Tokyo Station Guide.
+                Manage the railway lines used throughout
+                the Tokyo Station Guide. Changes made here
+                can affect station information, line
+                navigation, and related content across
+                the website.
               </p>
             </div>
 
-            <a
-              href="/admin/lines/new"
-              class="admin-primary-button"
-            >
-              + Add Line
-            </a>
           </div>
 
-          {error && (
-            <div class="admin-alert admin-alert-error">
-              {error}
-            </div>
-          )}
 
+          <!-- Search / Action Bar -->
+          <div class="admin-list-toolbar">
+
+            <form
+              class="admin-search-form"
+              method="GET"
+              action="/admin/lines"
+              role="search"
+            >
+
+              <SearchInput
+                id="line-search"
+                name="search"
+                value={searchParam}
+                placeholder="Search lines..."
+                ariaLabel="Search lines"
+              />
+
+              <Button
+                type="submit"
+                variant="secondary"
+                size="medium"
+              >
+                Search
+              </Button>
+
+              {
+                searchParam && (
+                  <Button
+                    href="/admin/lines"
+                    variant="ghost"
+                    size="medium"
+                  >
+                    Clear
+                  </Button>
+                )
+              }
+
+            </form>
+
+            <Button
+              href="/admin/lines/new"
+              variant="primary"
+            >
+              + Add Line
+            </Button>
+
+          </div>
+
+
+          <!-- Lines Table -->
           <section class="admin-panel">
-            <div class="admin-panel-header">
-              <div>
-                <h3>All Lines</h3>
-                <p>
-                  {lines.length} line{lines.length === 1 ? "" : "s"}
-                </p>
-              </div>
-            </div>
 
-            <div class="admin-panel-body">
+            <div
+              class="admin-panel-body admin-table-panel-body"
+            >
+
+              <!-- Table Meta -->
+              <div class="admin-table-meta">
+
+                <span>
+                  {totalItems} • Total Lines
+                </span>
+
+              </div>
+
+
               {
                 lines.length > 0 ? (
-                  <div class="admin-table-wrapper">
-                    <table class="admin-table">
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Line</th>
-                          <th>Operator</th>
-                          <th>Code</th>
-                          <th>Color</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
+                  <>
 
-                      <tbody>
-                        {lines.map((line) => (
+                    <!-- Table -->
+                    <div class="admin-table-wrapper">
+
+                      <table class="admin-table">
+
+                        <thead>
                           <tr>
-                            <td>
-                              <span class="admin-table-id">
-                                #{line.id}
-                              </span>
-                            </td>
-
-                            <td>
-                              <div class="admin-table-primary">
-                                {line.name}
-                              </div>
-
-                              <div class="admin-line-slug">
-                                {line.slug}
-                              </div>
-                            </td>
-
-                            <td>
-                              <span class="admin-line-operator">
-                                {line.operator_name}
-                              </span>
-                            </td>
-
-                            <td>
-                              {line.code ? (
-                                <span class="admin-line-code">
-                                  {line.code}
-                                </span>
-                              ) : (
-                                <span class="admin-table-muted">—</span>
-                              )}
-                            </td>
-
-                            <td>
-                              {line.color ? (
-                                <span class="admin-line-color">
-                                  <span
-                                    class="admin-line-color-swatch"
-                                    style={`background-color: ${line.color};`}
-                                  />
-
-                                  {line.color}
-                                </span>
-                              ) : (
-                                <span class="admin-table-muted">—</span>
-                              )}
-                            </td>
-
-                            <td>
-                              <div class="admin-table-actions">
-                                <a
-                                  href={`/admin/lines/${line.id}/stations`}
-                                  class="admin-table-action"
-                                >
-                                  Stations
-                                </a>
-
-                                <a
-                                  href={`/admin/lines/${line.id}/edit`}
-                                  class="admin-table-action admin-table-action-edit"
-                                >
-                                  Edit
-                                </a>
-
-                                <form
-                                  method="POST"
-                                  onsubmit="return confirm('Are you sure you want to delete this line?');"
-                                >
-                                  <input
-                                    type="hidden"
-                                    name="action"
-                                    value="delete"
-                                  />
-
-                                  <input
-                                    type="hidden"
-                                    name="id"
-                                    value={line.id}
-                                  />
-
-                                  <button
-                                    type="submit"
-                                    class="admin-table-action admin-table-action-delete"
-                                  >
-                                    Delete
-                                  </button>
-                                </form>
-                              </div>
-                            </td>
+                            <th>ID</th>
+                            <th>Line</th>
+                            <th>Operator</th>
+                            <th>Code</th>
+                            <th>Color</th>
+                            <th>Actions</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+
+                        <tbody>
+
+                          {
+                            lines.map((line) => (
+                              <tr>
+
+                                <td class="admin-table-id">
+                                  {line.id}
+                                </td>
+
+                                <td>
+                                  <div class="admin-line-name">
+                                    {line.name}
+                                  </div>
+
+                                  <div class="admin-line-slug">
+                                    {line.slug}
+                                  </div>
+                                </td>
+
+                                <td>
+                                  <span class="admin-line-operator">
+                                    {line.operator_name}
+                                  </span>
+                                </td>
+
+                                <td>
+
+                                  {
+                                    line.code ? (
+                                      <span class="admin-line-code">
+                                        {line.code}
+                                      </span>
+                                    ) : (
+                                      <span class="admin-table-muted">
+                                        —
+                                      </span>
+                                    )
+                                  }
+
+                                </td>
+
+                                <td>
+
+                                  {
+                                    line.color ? (
+                                      <span class="admin-line-color">
+
+                                        <span
+                                          class="admin-line-color-swatch"
+                                          style={`background-color: ${line.color};`}
+                                          aria-hidden="true"
+                                        />
+
+                                        {line.color}
+
+                                      </span>
+                                    ) : (
+                                      <span class="admin-table-muted">
+                                        —
+                                      </span>
+                                    )
+                                  }
+
+                                </td>
+
+                                <td>
+
+                                  <div class="admin-table-actions">
+
+                                    <a
+                                      href={`/admin/lines/${line.id}/stations`}
+                                      class="admin-table-action"
+                                    >
+                                      Stations
+                                    </a>
+
+                                    <a
+                                      href={`/admin/lines/${line.id}/edit`}
+                                      class="admin-table-action admin-table-action-edit"
+                                    >
+                                      Edit
+                                    </a>
+
+                                    <button
+                                      type="button"
+                                      class="admin-table-action admin-table-action-delete js-delete-line"
+                                      data-line-id={line.id}
+                                      data-line-name={line.name}
+                                    >
+                                      Delete
+                                    </button>
+
+                                  </div>
+
+                                </td>
+
+                              </tr>
+                            ))
+                          }
+
+                        </tbody>
+
+                      </table>
+
+                    </div>
+
+
+                    <!-- Table Footer -->
+                    <div class="admin-table-footer">
+
+                      <span>
+                        {
+                          totalItems > 0
+                            ? `Page ${safeCurrentPage} of ${totalPages}`
+                            : "No lines found"
+                        }
+                      </span>
+
+                      <Pagination
+                        currentPage={safeCurrentPage}
+                        totalPages={totalPages}
+                        baseUrl={`${paginationUrl.pathname}${paginationUrl.search}`}
+                        totalItems={totalItems}
+                        perPage={perPage}
+                      />
+
+                    </div>
+
+                  </>
                 ) : (
                   <div class="admin-empty">
-                    <div class="admin-empty-icon">↔</div>
 
-                    <h3>No lines yet</h3>
+                    <div
+                      class="admin-empty-icon"
+                      aria-hidden="true"
+                    >
+                      ↔
+                    </div>
+
+                    <h3>
+                      {
+                        searchParam
+                          ? "No lines found"
+                          : "No lines yet"
+                      }
+                    </h3>
 
                     <p>
-                      Create your first train or subway line to get started.
+                      {
+                        searchParam
+                          ? "Try a different search term."
+                          : "Add your first railway line to get started."
+                      }
                     </p>
+
+                    {
+                      searchParam && (
+                        <div class="admin-empty-action">
+
+                          <Button
+                            href="/admin/lines"
+                            variant="secondary"
+                            size="small"
+                          >
+                            Clear Search
+                          </Button>
+
+                        </div>
+                      )
+                    }
+
                   </div>
                 )
               }
+
             </div>
+
           </section>
+
         </div>
+
       </main>
+
     </div>
+
+
+    <!-- Delete Confirmation Dialog -->
+    <ConfirmDialog
+      id="delete-line-dialog"
+      title="Delete Line"
+      description="Are you sure you want to delete this line?"
+      confirmText="Delete Line"
+      cancelText="Cancel"
+      variant="danger"
+      warning="This action cannot be undone."
+    />
+
+
+    <!-- Delete Form -->
+    <form
+      method="POST"
+      id="delete-line-form"
+      hidden
+    ></form>
+
+
+    <script>
+      /*
+       * Delete confirmation
+       */
+
+      const deleteDialog =
+        document.getElementById(
+          "delete-line-dialog",
+        );
+
+      const deleteForm =
+        document.getElementById(
+          "delete-line-form",
+        );
+
+      const deleteButtons =
+        document.querySelectorAll(
+          ".js-delete-line",
+        );
+
+      let selectedLineId: string | null =
+        null;
+
+
+      if (
+        deleteDialog instanceof HTMLDivElement &&
+        deleteForm instanceof HTMLFormElement
+      ) {
+
+        deleteButtons.forEach((button) => {
+
+          if (
+            !(button instanceof HTMLButtonElement)
+          ) {
+            return;
+          }
+
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              const lineId =
+                button.dataset.lineId;
+
+              const lineName =
+                button.dataset.lineName;
+
+
+              if (
+                !lineId ||
+                !lineName
+              ) {
+                return;
+              }
+
+
+              selectedLineId =
+                lineId;
+
+
+              const nameElement =
+                deleteDialog.querySelector(
+                  ".common-dialog-name",
+                );
+
+
+              if (
+                nameElement instanceof HTMLElement
+              ) {
+
+                nameElement.textContent =
+                  lineName;
+
+              }
+
+
+              deleteDialog.dispatchEvent(
+                new CustomEvent(
+                  "dialog:open",
+                ),
+              );
+
+            },
+          );
+
+        });
+
+
+        deleteDialog.addEventListener(
+          "confirm",
+          () => {
+
+            if (!selectedLineId) {
+              return;
+            }
+
+
+            deleteForm.action =
+              `/admin/lines/${selectedLineId}/delete`;
+
+
+            deleteForm.submit();
+
+
+            selectedLineId = null;
+
+          },
+        );
+
+      }
+    </script>
+
   </body>
 </html>

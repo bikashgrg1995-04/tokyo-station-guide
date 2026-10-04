@@ -1,7 +1,10 @@
 ---
 import "../../../styles/admin/shared.css";
-import "../../../styles/admin/stations.css";
 import "../../../styles/admin/forms.css";
+import "../../../styles/admin/stations.css";
+
+import AdminNavigation from "../../../common_components/AdminNavigation.astro";
+import Button from "../../../common_components/Button.astro";
 
 import { createStation } from "../../../lib/db/stations";
 
@@ -13,66 +16,80 @@ const db = env.DB;
 
 let error = "";
 
+let name = "";
+let nameJapanese = "";
+let slug = "";
+let latitudeValue = "";
+let longitudeValue = "";
+let description = "";
+
+const errors = {
+  name: "",
+  nameJapanese: "",
+  slug: "",
+  latitude: "",
+  longitude: "",
+  description: "",
+};
+
 if (Astro.request.method === "POST") {
   const formData = await Astro.request.formData();
 
-  const name = String(formData.get("name") ?? "").trim();
+  name = String(formData.get("name") ?? "").trim();
 
-  const nameJapanese = String(
-    formData.get("name_japanese") ?? "",
-  ).trim();
+  nameJapanese = String(formData.get("name_japanese") ?? "").trim();
 
-  const slug = String(
-    formData.get("slug") ?? "",
-  )
+  slug = String(formData.get("slug") ?? "")
     .trim()
     .toLowerCase();
 
-  const latitudeValue = String(
-    formData.get("latitude") ?? "",
-  ).trim();
+  latitudeValue = String(formData.get("latitude") ?? "").trim();
 
-  const longitudeValue = String(
-    formData.get("longitude") ?? "",
-  ).trim();
+  longitudeValue = String(formData.get("longitude") ?? "").trim();
 
-  const description = String(
-    formData.get("description") ?? "",
-  ).trim();
+  description = String(formData.get("description") ?? "").trim();
 
-  const latitude =
-    latitudeValue === ""
-      ? null
-      : Number(latitudeValue);
+  const latitude = latitudeValue === "" ? null : Number(latitudeValue);
 
-  const longitude =
-    longitudeValue === ""
-      ? null
-      : Number(longitudeValue);
+  const longitude = longitudeValue === "" ? null : Number(longitudeValue);
 
-  if (!name || !slug) {
-    error = "Station name and slug are required.";
-  } else if (
-    latitude !== null &&
-    !Number.isFinite(latitude)
-  ) {
-    error = "Latitude must be a valid number.";
-  } else if (
-    longitude !== null &&
-    !Number.isFinite(longitude)
-  ) {
-    error = "Longitude must be a valid number.";
-  } else if (
-    latitude !== null &&
-    (latitude < -90 || latitude > 90)
-  ) {
-    error = "Latitude must be between -90 and 90.";
-  } else if (
-    longitude !== null &&
-    (longitude < -180 || longitude > 180)
-  ) {
-    error = "Longitude must be between -180 and 180.";
-  } else {
+  if (!name) {
+    errors.name = "Station name is required.";
+  } else if (name.length > 150) {
+    errors.name = "Station name must be 150 characters or less.";
+  }
+
+  if (nameJapanese.length > 150) {
+    errors.nameJapanese = "Japanese name must be 150 characters or less.";
+  }
+
+  if (!slug) {
+    errors.slug = "Station slug is required.";
+  } else if (slug.length > 150) {
+    errors.slug = "Station slug must be 150 characters or less.";
+  } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+    errors.slug = "Use lowercase letters, numbers, and hyphens only.";
+  }
+
+  if (latitude !== null && !Number.isFinite(latitude)) {
+    errors.latitude = "Latitude must be a valid number.";
+  } else if (latitude !== null && (latitude < -90 || latitude > 90)) {
+    errors.latitude = "Latitude must be between -90 and 90.";
+  }
+
+  if (longitude !== null && !Number.isFinite(longitude)) {
+    errors.longitude = "Longitude must be a valid number.";
+  } else if (longitude !== null && (longitude < -180 || longitude > 180)) {
+    errors.longitude = "Longitude must be between -180 and 180.";
+  }
+
+  if (description.length > 1000) {
+    errors.description = "Description must be 1000 characters or less.";
+  }
+
+  const hasErrors = Object.values(errors).some((value) => value !== "");
+
+  if (!hasErrors) {
     try {
       await createStation(db, {
         name,
@@ -84,9 +101,10 @@ if (Astro.request.method === "POST") {
       });
 
       return Astro.redirect("/admin/stations");
-    } catch {
-      error =
-        "Unable to create station. The slug may already exist.";
+    } catch (err) {
+      console.error(err);
+
+      error = "Unable to create station. The slug may already exist.";
     }
   }
 }
@@ -103,178 +121,91 @@ const admin = await Astro.session?.get<{
   <head>
     <meta charset="UTF-8" />
 
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <meta
-      name="robots"
-      content="noindex, nofollow"
-    />
+    <meta name="robots" content="noindex, nofollow" />
 
-    <title>New Station | Tokyo Station Guide</title>
+    <title>Add Station | Admin | Tokyo Station Guide</title>
   </head>
 
   <body>
     <div class="admin-shell">
-      <!-- Sidebar -->
-      <aside class="admin-sidebar">
-        <div class="admin-brand">
-          <div class="admin-brand-top">
-            <div class="admin-logo">
-              T
-            </div>
+      <AdminNavigation activePath="/admin/stations" />
 
-            <div>
-              <h1>Tokyo Station Guide</h1>
-              <p>Administration</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="admin-section-label">
-          Overview
-        </div>
-
-        <nav class="admin-nav">
-          <a href="/admin">
-            <span class="admin-nav-icon">⌂</span>
-            Dashboard
-          </a>
-        </nav>
-
-        <div class="admin-section-label">
-          Content
-        </div>
-
-        <nav class="admin-nav">
-          <a href="/admin/operators">
-            <span class="admin-nav-icon">◉</span>
-            Operators
-          </a>
-
-          <a href="/admin/lines">
-            <span class="admin-nav-icon">↔</span>
-            Lines
-          </a>
-
-          <a
-            href="/admin/stations"
-            class="active"
-          >
-            <span class="admin-nav-icon">⌖</span>
-            Stations
-          </a>
-        </nav>
-
-        <div class="admin-sidebar-bottom">
-          <form
-            method="POST"
-            action="/admin/logout"
-            class="admin-logout-form"
-          >
-            <button
-              type="submit"
-              class="admin-logout-button"
-            >
-              <span class="admin-nav-icon">↪</span>
-              Logout
-            </button>
-          </form>
-
-          <a
-            href="/"
-            class="admin-back-link"
-          >
-            ← Back to website
-          </a>
-        </div>
-      </aside>
-
-      <!-- Main -->
       <main class="admin-main">
-        <!-- Topbar -->
         <header class="admin-topbar">
+
+         
           <div class="admin-breadcrumb">
-            <a href="/admin">Admin</a>
+            <div class="admin-add-back">
+            <Button href="/admin/stations" variant="secondary" size="small">
+              ← 
+            </Button>
+          </div>
+            <a href="/admin/stations"> Stations </a>
+
             <span>/</span>
-            <a href="/admin/stations">
-              Stations
-            </a>
-            <span>/</span>
-            <strong>New</strong>
+
+            <strong>Add Station</strong>
           </div>
 
-          {
-            admin && (
-              <div class="admin-user">
-                <div class="admin-avatar">
-                  {admin.name
-                    .split(" ")
-                    .map((part) => part[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
-
-                <div class="admin-user-info">
-                  <strong>{admin.name}</strong>
-                  <span>{admin.email}</span>
-                </div>
-              </div>
-            )
-          }
+         
         </header>
 
-        <!-- Content -->
         <div class="admin-content">
-          <section class="admin-station-form">
-            <div class="admin-station-form-card">
-              <div class="admin-station-form-header">
-                <p class="admin-eyebrow">
-                  Station Management
-                </p>
+          
 
-                <h2>Create New Station</h2>
+          <div class="admin-page-header">
+            <div>
+              <h2>Add Station</h2>
 
-                <p>
-                  Add a railway or subway station to Tokyo
-                  Station Guide.
-                </p>
+              <p>Add a railway or subway station to the Tokyo Station Guide.</p>
+            </div>
+          </div>
+
+          <section class="admin-panel admin-station-form-card">
+            <div class="admin-panel-header">
+              <div>
+                <h3>Station Details</h3>
+
+                <p>Enter the basic information for this station.</p>
               </div>
+            </div>
 
+            <div class="admin-panel-body">
               {
                 error && (
-                  <div class="admin-alert admin-alert-error">
-                    {error}
-                  </div>
+                  <div class="admin-alert admin-alert-error">{error}</div>
                 )
               }
 
-              <form
-                method="POST"
-                class="admin-form"
-              >
+              <form method="POST" class="admin-form admin-station-form">
                 <div class="admin-form-grid">
                   <div class="admin-form-group">
-                    <label for="name">
-                      Station Name
-                    </label>
+                    <label for="name"> Station Name </label>
 
                     <input
                       id="name"
                       name="name"
                       type="text"
                       placeholder="e.g. Tokyo Station"
+                      value={name}
                       required
+                      aria-invalid={errors.name ? "true" : undefined}
+                      aria-describedby={errors.name ? "name-error" : undefined}
                     />
+
+                    {
+                      errors.name && (
+                        <small id="name-error" class="admin-form-error">
+                          {errors.name}
+                        </small>
+                      )
+                    }
                   </div>
 
                   <div class="admin-form-group">
-                    <label for="name_japanese">
-                      Japanese Name
-                    </label>
+                    <label for="name_japanese"> Japanese Name </label>
 
                     <input
                       id="name_japanese"
@@ -282,32 +213,55 @@ const admin = await Astro.session?.get<{
                       type="text"
                       class="admin-station-japanese-input"
                       placeholder="e.g. 東京駅"
+                      value={nameJapanese}
+                      aria-invalid={errors.nameJapanese ? "true" : undefined}
+                      aria-describedby={errors.nameJapanese
+                        ? "name-japanese-error"
+                        : undefined}
                     />
+
+                    {
+                      errors.nameJapanese && (
+                        <small
+                          id="name-japanese-error"
+                          class="admin-form-error"
+                        >
+                          {errors.nameJapanese}
+                        </small>
+                      )
+                    }
                   </div>
 
                   <div class="admin-form-group full-width">
-                    <label for="slug">
-                      Slug
-                    </label>
+                    <label for="slug"> Slug </label>
 
                     <input
                       id="slug"
                       name="slug"
                       type="text"
                       placeholder="e.g. tokyo-station"
+                      value={slug}
                       required
+                      aria-invalid={errors.slug ? "true" : undefined}
+                      aria-describedby={errors.slug ? "slug-error" : undefined}
                     />
 
-                    <small>
-                      Used in the station URL. Use lowercase
-                      letters, numbers, and hyphens.
-                    </small>
+                    {
+                      errors.slug ? (
+                        <small id="slug-error" class="admin-form-error">
+                          {errors.slug}
+                        </small>
+                      ) : (
+                        <small>
+                          Used in the station URL. Use lowercase letters,
+                          numbers, and hyphens.
+                        </small>
+                      )
+                    }
                   </div>
 
                   <div class="admin-form-group">
-                    <label for="latitude">
-                      Latitude
-                    </label>
+                    <label for="latitude"> Latitude </label>
 
                     <input
                       id="latitude"
@@ -315,17 +269,26 @@ const admin = await Astro.session?.get<{
                       type="number"
                       step="any"
                       placeholder="e.g. 35.681236"
+                      value={latitudeValue}
+                      aria-invalid={errors.latitude ? "true" : undefined}
+                      aria-describedby={errors.latitude
+                        ? "latitude-error"
+                        : undefined}
                     />
 
-                    <small>
-                      Optional. Range: -90 to 90.
-                    </small>
+                    {
+                      errors.latitude ? (
+                        <small id="latitude-error" class="admin-form-error">
+                          {errors.latitude}
+                        </small>
+                      ) : (
+                        <small>Optional. Range: -90 to 90.</small>
+                      )
+                    }
                   </div>
 
                   <div class="admin-form-group">
-                    <label for="longitude">
-                      Longitude
-                    </label>
+                    <label for="longitude"> Longitude </label>
 
                     <input
                       id="longitude"
@@ -333,41 +296,57 @@ const admin = await Astro.session?.get<{
                       type="number"
                       step="any"
                       placeholder="e.g. 139.767125"
+                      value={longitudeValue}
+                      aria-invalid={errors.longitude ? "true" : undefined}
+                      aria-describedby={errors.longitude
+                        ? "longitude-error"
+                        : undefined}
                     />
 
-                    <small>
-                      Optional. Range: -180 to 180.
-                    </small>
+                    {
+                      errors.longitude ? (
+                        <small id="longitude-error" class="admin-form-error">
+                          {errors.longitude}
+                        </small>
+                      ) : (
+                        <small>Optional. Range: -180 to 180.</small>
+                      )
+                    }
                   </div>
 
                   <div class="admin-form-group full-width">
-                    <label for="description">
-                      Description
-                    </label>
+                    <label for="description"> Description </label>
 
                     <textarea
                       id="description"
                       name="description"
+                      rows="5"
                       class="admin-station-description"
                       placeholder="Brief description of this station..."
-                    ></textarea>
+                      aria-invalid={errors.description ? "true" : undefined}
+                      aria-describedby={errors.description
+                        ? "description-error"
+                        : undefined}>{description}</textarea
+                    >
+
+                    {
+                      errors.description && (
+                        <small id="description-error" class="admin-form-error">
+                          {errors.description}
+                        </small>
+                      )
+                    }
                   </div>
                 </div>
 
                 <div class="admin-form-actions">
-                  <a
-                    href="/admin/stations"
-                    class="admin-button admin-button-secondary"
-                  >
+                  <Button href="/admin/stations" variant="secondary">
                     Cancel
-                  </a>
+                  </Button>
 
-                  <button
-                    type="submit"
-                    class="admin-button"
-                  >
+                  <Button type="submit" variant="primary">
                     Create Station
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>

@@ -1,8 +1,12 @@
 ---
 import "../../../../styles/admin/shared.css";
+import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/lines.css";
 import "../../../../styles/admin/tables.css";
-import "../../../../styles/admin/forms.css";
+
+import AdminNavigation from "../../../../common_components/AdminNavigation.astro";
+import Button from "../../../../common_components/Button.astro";
+import ConfirmDialog from "../../../../common_components/ConfirmDialog.astro";
 
 import { getLineById } from "../../../../lib/db/lines";
 
@@ -22,7 +26,7 @@ const db = env.DB;
 
 const lineId = Number(Astro.params.id);
 
-if (!lineId || lineId <= 0) {
+if (!Number.isInteger(lineId) || lineId <= 0) {
   return Astro.redirect("/admin/lines");
 }
 
@@ -34,14 +38,22 @@ if (!line) {
 
 let error = "";
 
-if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
+/* ========================================
+   Form Submission
+======================================== */
 
-  const action = String(
-    formData.get("action") ?? "",
-  );
+if (Astro.request.method === "POST") {
+  const formData =
+    await Astro.request.formData();
+
+  const action =
+    String(formData.get("action") ?? "");
 
   try {
+    /* ========================================
+       Add Station
+    ======================================== */
+
     if (action === "add") {
       const stationId = Number(
         formData.get("station_id") ?? 0,
@@ -55,7 +67,7 @@ if (Astro.request.method === "POST") {
         formData.get("station_code") ?? "",
       ).trim();
 
-      if (!stationId) {
+      if (!Number.isInteger(stationId) || stationId <= 0) {
         error = "Please select a station.";
       } else if (
         !Number.isInteger(stationOrder) ||
@@ -63,6 +75,9 @@ if (Astro.request.method === "POST") {
       ) {
         error =
           "Station order must be a positive whole number.";
+      } else if (stationCode.length > 50) {
+        error =
+          "Station code must be 50 characters or less.";
       } else {
         await addStationToLine(
           db,
@@ -76,7 +91,14 @@ if (Astro.request.method === "POST") {
           `/admin/lines/${lineId}/stations`,
         );
       }
-    } else if (action === "update") {
+    }
+
+
+    /* ========================================
+       Update Station
+    ======================================== */
+
+    else if (action === "update") {
       const id = Number(
         formData.get("id") ?? 0,
       );
@@ -89,7 +111,7 @@ if (Astro.request.method === "POST") {
         formData.get("station_code") ?? "",
       ).trim();
 
-      if (!id || id <= 0) {
+      if (!Number.isInteger(id) || id <= 0) {
         error = "Invalid line station.";
       } else if (
         !Number.isInteger(stationOrder) ||
@@ -97,6 +119,9 @@ if (Astro.request.method === "POST") {
       ) {
         error =
           "Station order must be a positive whole number.";
+      } else if (stationCode.length > 50) {
+        error =
+          "Station code must be 50 characters or less.";
       } else {
         await updateLineStation(
           db,
@@ -109,12 +134,19 @@ if (Astro.request.method === "POST") {
           `/admin/lines/${lineId}/stations`,
         );
       }
-    } else if (action === "remove") {
+    }
+
+
+    /* ========================================
+       Remove Station
+    ======================================== */
+
+    else if (action === "remove") {
       const id = Number(
         formData.get("id") ?? 0,
       );
 
-      if (id <= 0) {
+      if (!Number.isInteger(id) || id <= 0) {
         error = "Invalid station.";
       } else {
         await removeStationFromLine(
@@ -127,16 +159,32 @@ if (Astro.request.method === "POST") {
         );
       }
     }
-  } catch {
-    error =
-      "Unable to update this line's stations. Check the station order and make sure the station is not already connected to this line.";
+  } catch (err) {
+    console.error(err);
+
+    const message =
+      err instanceof Error
+        ? err.message.toLowerCase()
+        : "";
+
+    if (
+      message.includes("unique") ||
+      message.includes("constraint")
+    ) {
+      error =
+        "Unable to update this line's stations. The station order may already be in use, or the station may already be connected to this line.";
+    } else {
+      error =
+        "Unable to update this line's stations because of an unexpected database error.";
+    }
   }
 }
 
-const stations = await getStationsForLine(
-  db,
-  lineId,
-);
+const stations =
+  await getStationsForLine(
+    db,
+    lineId,
+  );
 
 const availableStations =
   await getAvailableStationsForLine(
@@ -152,472 +200,812 @@ const admin = await Astro.session?.get<{
 ---
 
 <!doctype html>
-
 <html lang="en">
+
   <head>
     <meta charset="UTF-8" />
 
-```
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0"
-/>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
 
-<meta
-  name="robots"
-  content="noindex, nofollow"
-/>
+    <meta
+      name="robots"
+      content="noindex, nofollow"
+    />
 
-<title>
-  {line.name} Stations | Tokyo Station Guide
-</title>
-```
-
+    <title>
+      {line.name} Stations | Admin | Tokyo Station Guide
+    </title>
   </head>
 
+
   <body>
+
     <div class="admin-shell">
+
       <!-- Sidebar -->
-      <aside class="admin-sidebar">
-        <div class="admin-brand">
-          <div class="admin-brand-top">
-            <div class="admin-logo">
-              T
-            </div>
+      <AdminNavigation
+        activePath="/admin/lines"
+      />
 
-```
-        <div>
-          <h1>Tokyo Station Guide</h1>
-          <p>Administration</p>
-        </div>
-      </div>
-    </div>
 
-    <div class="admin-section-label">
-      Overview
-    </div>
+      <!-- Main -->
+      <main class="admin-main">
 
-    <nav class="admin-nav">
-      <a href="/admin">
-        <span class="admin-nav-icon">⌂</span>
-        Dashboard
-      </a>
-    </nav>
+        <!-- Topbar -->
+        <header class="admin-topbar">
 
-    <div class="admin-section-label">
-      Content
-    </div>
+          <div class="admin-breadcrumb">
 
-    <nav class="admin-nav">
-      <a href="/admin/operators">
-        <span class="admin-nav-icon">◉</span>
-        Operators
-      </a>
+            <Button
+              href="/admin/lines"
+              variant="secondary"
+            >
+              ←
+            </Button>
 
-      <a
-        href="/admin/lines"
-        class="active"
-      >
-        <span class="admin-nav-icon">↔</span>
-        Lines
-      </a>
+            <a href="/admin/lines">
+              Lines
+            </a>
 
-      <a href="/admin/stations">
-        <span class="admin-nav-icon">⌖</span>
-        Stations
-      </a>
-    </nav>
+            <span>/</span>
 
-    <div class="admin-sidebar-bottom">
-      <form
-        method="POST"
-        action="/admin/auth/logout"
-        class="admin-logout-form"
-      >
-        <button
-          type="submit"
-          class="admin-logout-button"
-        >
-          <span class="admin-nav-icon">↪</span>
-          Logout
-        </button>
-      </form>
+            <strong>
+              {line.name}
+            </strong>
 
-      <a
-        href="/"
-        class="admin-back-link"
-      >
-        ← Back to website
-      </a>
-    </div>
-  </aside>
+          </div>
 
-  <!-- Main -->
-  <main class="admin-main">
-    <header class="admin-topbar">
-      <div class="admin-breadcrumb">
-        <a href="/admin">Admin</a>
 
-        <span>/</span>
-
-        <a href="/admin/lines">
-          Lines
-        </a>
-
-        <span>/</span>
-
-        <strong>{line.name}</strong>
-      </div>
-
-      {
-        admin && (
           <div class="admin-user">
+
             <div class="admin-avatar">
-              {admin.name
-                .split(" ")
-                .map((part) => part[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase()}
+              {
+                admin?.name
+                  ? admin.name
+                      .split(" ")
+                      .map(
+                        (part) =>
+                          part.charAt(0),
+                      )
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()
+                  : "AD"
+              }
             </div>
 
             <div class="admin-user-info">
-              <strong>{admin.name}</strong>
-              <span>{admin.email}</span>
+
+              <strong>
+                {admin?.name ?? "Administrator"}
+              </strong>
+
+              <span>
+                Tokyo Station Guide
+              </span>
+
             </div>
-          </div>
-        )
-      }
-    </header>
 
-    <div class="admin-content">
-      <section class="admin-lines-page">
-        <!-- Header -->
-        <div class="admin-line-header">
-          <div>
-            <p class="admin-eyebrow">
-              Line Management
-            </p>
-
-            <h2>
-              {line.name} Stations
-            </h2>
-
-            <p>
-              Manage the stations and their order on
-              this line.
-            </p>
           </div>
 
-          <div class="admin-actions">
-            <a
-              href="/admin/lines"
-              class="admin-button admin-button-secondary"
-            >
-              ← Back to Lines
-            </a>
-          </div>
+        </header>
+
+
+        <!-- Content -->
+        <div class="admin-content">
+
+          <section class="admin-lines-page">
+
+
+            <!-- Page Header -->
+            <div class="admin-page-header">
+
+              <div>
+
+                <h2>
+                  {line.name} Stations
+                </h2>
+
+                <p>
+                  Manage the stations and their
+                  order on this railway line.
+                </p>
+
+              </div>
+
+              <Button
+                href="/admin/lines"
+                variant="secondary"
+              >
+                ← Back to Lines
+              </Button>
+
+            </div>
+
+
+            <!-- Error -->
+            {
+              error && (
+                <div class="admin-alert admin-alert-error">
+                  {error}
+                </div>
+              )
+            }
+
+
+            <!-- Add Station -->
+            <section class="admin-panel">
+
+              <div class="admin-panel-body">
+
+                <div class="admin-line-form">
+
+                  <div class="admin-line-form-header">
+
+                    <h2>
+                      Add Station
+                    </h2>
+
+                    <p>
+                      Add an existing station to
+                      {line.name}.
+                    </p>
+
+                  </div>
+
+
+                  {
+                    availableStations.length > 0 ? (
+                      <form
+                        method="POST"
+                        class="admin-form"
+                        id="add-station-form"
+                      >
+
+                        <input
+                          type="hidden"
+                          name="action"
+                          value="add"
+                        />
+
+
+                        <!-- Station -->
+                        <div class="admin-form-group">
+
+                          <label for="station_id">
+                            Station
+                          </label>
+
+                          <select
+                            id="station_id"
+                            name="station_id"
+                            required
+                          >
+
+                            <option value="">
+                              Select station
+                            </option>
+
+                            {
+                              availableStations.map(
+                                (station) => (
+                                  <option
+                                    value={station.id}
+                                  >
+                                    {station.name}
+
+                                    {
+                                      station.name_japanese
+                                        ? ` — ${station.name_japanese}`
+                                        : ""
+                                    }
+                                  </option>
+                                ),
+                              )
+                            }
+
+                          </select>
+
+                        </div>
+
+
+                        <!-- Station Order -->
+                        <div class="admin-form-group">
+
+                          <label for="station_order">
+                            Station Order
+                          </label>
+
+                          <input
+                            id="station_order"
+                            name="station_order"
+                            type="number"
+                            min="1"
+                            step="1"
+                            value={
+                              stations.length + 1
+                            }
+                            required
+                          />
+
+                          <small>
+                            Determines the station
+                            order on this line.
+                          </small>
+
+                        </div>
+
+
+                        <!-- Station Code -->
+                        <div class="admin-form-group">
+
+                          <label for="station_code">
+                            Station Code
+                          </label>
+
+                          <input
+                            id="station_code"
+                            name="station_code"
+                            type="text"
+                            maxlength="50"
+                            placeholder="e.g. JY01"
+                          />
+
+                          <small>
+                            Optional line-specific
+                            station code.
+                          </small>
+
+                        </div>
+
+
+                        <!-- Actions -->
+                        <div class="admin-form-actions">
+
+                          <Button
+                            href="/admin/lines"
+                            variant="secondary"
+                          >
+                            Cancel
+                          </Button>
+
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            id="add-station-button"
+                          >
+                            Add Station
+                          </Button>
+
+                        </div>
+
+                      </form>
+                    ) : (
+                      <div class="admin-empty">
+
+                        <div class="admin-empty-icon">
+                          ◎
+                        </div>
+
+                        <h3>
+                          No Available Stations
+                        </h3>
+
+                        <p>
+                          Create a station first, or
+                          all existing stations are
+                          already connected to this line.
+                        </p>
+
+                        <div class="admin-form-actions admin-not-found-actions">
+
+                          <Button
+                            href="/admin/stations/new"
+                            variant="secondary"
+                          >
+                            Create Station
+                          </Button>
+
+                        </div>
+
+                      </div>
+                    )
+                  }
+
+                </div>
+
+              </div>
+
+            </section>
+
+
+            <!-- Current Stations -->
+            <section class="admin-panel">
+
+              <div class="admin-panel-header">
+
+                <div>
+
+                  <h3>
+                    Stations on {line.name}
+                  </h3>
+
+                  <p>
+                    {stations.length} station
+                    {stations.length === 1
+                      ? ""
+                      : "s"}
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              {
+                stations.length > 0 ? (
+                  <div class="admin-table-panel-body">
+
+                    <div class="admin-table-wrapper">
+
+                      <table class="admin-table">
+
+                        <thead>
+
+                          <tr>
+                            <th>Order</th>
+                            <th>Station</th>
+                            <th>Japanese</th>
+                            <th>Code</th>
+                            <th>Actions</th>
+                          </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                          {
+                            stations.map(
+                              (station) => {
+                                const formId =
+                                  `station-edit-${station.id}`;
+
+                                return (
+                                  <tr>
+
+                                    <!-- Order -->
+                                    <td>
+
+                                      <input
+                                        type="number"
+                                        name="station_order"
+                                        form={formId}
+                                        min="1"
+                                        step="1"
+                                        value={
+                                          station.station_order
+                                        }
+                                        class="admin-line-station-order-input"
+                                        required
+                                      />
+
+                                    </td>
+
+
+                                    <!-- Station -->
+                                    <td>
+
+                                      <div class="admin-line-name">
+                                        {station.station_name}
+                                      </div>
+
+                                      <div class="admin-line-slug">
+                                        {station.station_slug}
+                                      </div>
+
+                                    </td>
+
+
+                                    <!-- Japanese -->
+                                    <td>
+
+                                      {
+                                        station.station_name_japanese ??
+                                        "—"
+                                      }
+
+                                    </td>
+
+
+                                    <!-- Code -->
+                                    <td>
+
+                                      <input
+                                        type="text"
+                                        name="station_code"
+                                        form={formId}
+                                        maxlength="50"
+                                        value={
+                                          station.station_code ??
+                                          ""
+                                        }
+                                        class="admin-line-station-code-input"
+                                        placeholder="e.g. JY01"
+                                      />
+
+                                    </td>
+
+
+                                    <!-- Actions -->
+                                    <td>
+
+                                      <div class="admin-table-actions">
+
+                                        <form
+                                          id={formId}
+                                          method="POST"
+                                          data-station-action="save"
+                                          data-station-name={
+                                            station.station_name
+                                          }
+                                        >
+
+                                          <input
+                                            type="hidden"
+                                            name="action"
+                                            value="update"
+                                          />
+
+                                          <input
+                                            type="hidden"
+                                            name="id"
+                                            value={station.id}
+                                          />
+
+                                          <Button
+                                            type="submit"
+                                            variant="primary"
+                                            size="small"
+                                          >
+                                            Save
+                                          </Button>
+
+                                        </form>
+
+
+                                        <form
+                                          method="POST"
+                                          data-station-action="remove"
+                                          data-station-name={
+                                            station.station_name
+                                          }
+                                        >
+
+                                          <input
+                                            type="hidden"
+                                            name="action"
+                                            value="remove"
+                                          />
+
+                                          <input
+                                            type="hidden"
+                                            name="id"
+                                            value={station.id}
+                                          />
+
+                                          <Button
+                                            type="submit"
+                                            variant="danger"
+                                            size="small"
+                                          >
+                                            Remove
+                                          </Button>
+
+                                        </form>
+
+                                      </div>
+
+                                    </td>
+
+                                  </tr>
+                                );
+                              },
+                            )
+                          }
+
+                        </tbody>
+
+                      </table>
+
+                    </div>
+
+                  </div>
+                ) : (
+                  <div class="admin-empty">
+
+                    <div class="admin-empty-icon">
+                      ◎
+                    </div>
+
+                    <h3>
+                      No Stations on This Line
+                    </h3>
+
+                    <p>
+                      Add the first station using
+                      the form above.
+                    </p>
+
+                  </div>
+                )
+              }
+
+            </section>
+
+          </section>
+
         </div>
 
-        <!-- Error -->
-        {
-          error && (
-            <div class="admin-alert admin-alert-error">
-              {error}
-            </div>
-          )
+      </main>
+
+    </div>
+
+
+    <!-- Add Confirmation -->
+    {
+      availableStations.length > 0 && (
+        <ConfirmDialog
+          id="add-station-dialog"
+          title="Add Station"
+          description="Are you sure you want to add this station to the line?"
+          confirmText="Add Station"
+          cancelText="Cancel"
+          variant="primary"
+        />
+      )
+    }
+
+
+    <!-- Save Confirmation -->
+    {
+      stations.length > 0 && (
+        <ConfirmDialog
+          id="save-station-dialog"
+          title="Save Changes"
+          description="Are you sure you want to save these changes to this station?"
+          confirmText="Save Changes"
+          cancelText="Cancel"
+          variant="primary"
+        />
+      )
+    }
+
+
+    <!-- Remove Confirmation -->
+    {
+      stations.length > 0 && (
+        <ConfirmDialog
+          id="remove-station-dialog"
+          title="Remove Station"
+          description="Are you sure you want to remove this station from the line?"
+          confirmText="Remove Station"
+          cancelText="Cancel"
+          variant="danger"
+        />
+      )
+    }
+
+
+    <script>
+      const addForm =
+        document.getElementById(
+          "add-station-form",
+        );
+
+      const addDialog =
+        document.getElementById(
+          "add-station-dialog",
+        );
+
+      const addButton =
+        document.getElementById(
+          "add-station-button",
+        );
+
+
+      if (
+        addForm instanceof HTMLFormElement &&
+        addDialog instanceof HTMLDivElement &&
+        addButton instanceof HTMLButtonElement
+      ) {
+        let confirmed = false;
+
+        addForm.addEventListener(
+          "submit",
+          (event) => {
+            if (confirmed) {
+              return;
+            }
+
+            if (!addForm.checkValidity()) {
+              return;
+            }
+
+            event.preventDefault();
+
+            addDialog.dispatchEvent(
+              new CustomEvent("dialog:open"),
+            );
+          },
+        );
+
+        addDialog.addEventListener(
+          "confirm",
+          () => {
+            confirmed = true;
+
+            addForm.submit();
+          },
+        );
+      }
+
+
+      /* ========================================
+         Station Save / Remove Confirmation
+      ======================================== */
+
+      const saveDialog =
+        document.getElementById(
+          "save-station-dialog",
+        );
+
+      const removeDialog =
+        document.getElementById(
+          "remove-station-dialog",
+        );
+
+      let pendingForm:
+        | HTMLFormElement
+        | null = null;
+
+      let pendingAction:
+        | "save"
+        | "remove"
+        | null = null;
+
+
+      const openStationDialog = (
+        form: HTMLFormElement,
+        action: "save" | "remove",
+      ) => {
+        pendingForm = form;
+        pendingAction = action;
+
+        const stationName =
+          form.dataset.stationName ??
+          "this station";
+
+        const dialog =
+          action === "save"
+            ? saveDialog
+            : removeDialog;
+
+        if (!(dialog instanceof HTMLDivElement)) {
+          return;
         }
 
-        <!-- Add Station -->
-        <div class="admin-line-form-card admin-line-station-add-card">
-          <div class="admin-line-form-header">
-            <h2>Add Station</h2>
+        const nameElement =
+          dialog.querySelector(
+            ".common-dialog-name",
+          );
 
-            <p>
-              Add an existing station to {line.name}.
-            </p>
-          </div>
+        if (
+          nameElement instanceof HTMLElement
+        ) {
+          nameElement.textContent =
+            stationName;
+        }
 
-          {
-            availableStations.length > 0 ? (
-              <form
-                method="POST"
-                class="admin-form"
-              >
-                <input
-                  type="hidden"
-                  name="action"
-                  value="add"
-                />
+        dialog.dispatchEvent(
+          new CustomEvent("dialog:open"),
+        );
+      };
 
-                <div class="admin-form-grid">
-                  <!-- Station -->
-                  <div class="admin-form-group">
-                    <label for="station_id">
-                      Station
-                    </label>
 
-                    <select
-                      id="station_id"
-                      name="station_id"
-                      required
-                    >
-                      <option value="">
-                        Select station
-                      </option>
+      document
+        .querySelectorAll<HTMLFormElement>(
+          'form[data-station-action="save"]',
+        )
+        .forEach((form) => {
+          form.addEventListener(
+            "submit",
+            (event) => {
+              event.preventDefault();
 
-                      {availableStations.map(
-                        (station) => (
-                          <option
-                            value={station.id}
-                          >
-                            {station.name}
+              if (!form.checkValidity()) {
+                return;
+              }
 
-                            {
-                              station.name_japanese
-                                ? ` — ${station.name_japanese}`
-                                : ""
-                            }
-                          </option>
-                        ),
-                      )}
-                    </select>
-                  </div>
+              openStationDialog(
+                form,
+                "save",
+              );
+            },
+          );
+        });
 
-                  <!-- Order -->
-                  <div class="admin-form-group">
-                    <label for="station_order">
-                      Station Order
-                    </label>
 
-                    <input
-                      id="station_order"
-                      name="station_order"
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={
-                        stations.length + 1
-                      }
-                      required
-                    />
+      document
+        .querySelectorAll<HTMLFormElement>(
+          'form[data-station-action="remove"]',
+        )
+        .forEach((form) => {
+          form.addEventListener(
+            "submit",
+            (event) => {
+              event.preventDefault();
 
-                    <small>
-                      Determines the order on the line.
-                    </small>
-                  </div>
+              openStationDialog(
+                form,
+                "remove",
+              );
+            },
+          );
+        });
 
-                  <!-- Code -->
-                  <div class="admin-form-group">
-                    <label for="station_code">
-                      Station Code
-                    </label>
 
-                    <input
-                      id="station_code"
-                      name="station_code"
-                      type="text"
-                      placeholder="e.g. JY01"
-                    />
+      if (
+        saveDialog instanceof HTMLDivElement
+      ) {
+        saveDialog.addEventListener(
+          "confirm",
+          () => {
+            if (
+              pendingAction !== "save" ||
+              !pendingForm
+            ) {
+              return;
+            }
 
-                    <small>
-                      Optional line-specific station code.
-                    </small>
-                  </div>
-                </div>
+            const form = pendingForm;
 
-                <div class="admin-form-actions">
-                  <button
-                    type="submit"
-                    class="admin-button"
-                  >
-                    + Add Station
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div class="admin-table-empty">
-                <h3>
-                  No available stations
-                </h3>
+            pendingForm = null;
+            pendingAction = null;
 
-                <p>
-                  Create a station first, or all
-                  existing stations are already on
-                  this line.
-                </p>
-              </div>
-            )
-          }
-        </div>
+            form.submit();
+          },
+        );
+      }
 
-        <!-- Current Stations -->
-        <div class="admin-line-card">
-          <div class="admin-line-card-header">
-            <div>
-              <h3>
-                Stations on {line.name}
-              </h3>
 
-              <p>
-                {stations.length} station
-                {stations.length === 1
-                  ? ""
-                  : "s"}
-              </p>
-            </div>
-          </div>
+      if (
+        removeDialog instanceof HTMLDivElement
+      ) {
+        removeDialog.addEventListener(
+          "confirm",
+          () => {
+            if (
+              pendingAction !== "remove" ||
+              !pendingForm
+            ) {
+              return;
+            }
 
-          {
-            stations.length > 0 ? (
-              <div class="admin-table-wrapper">
-                <table class="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Order</th>
-                      <th>Station</th>
-                      <th>Japanese</th>
-                      <th>Code</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
+            const form = pendingForm;
 
-                  <tbody>
-                    {stations.map((station) => {
-                      const formId =
-                        `station-edit-${station.id}`;
+            pendingForm = null;
+            pendingAction = null;
 
-                      return (
-                        <tr>
-                          <!-- Order -->
-                          <td>
-                            <input
-                              type="number"
-                              name="station_order"
-                              form={formId}
-                              min="1"
-                              step="1"
-                              value={
-                                station.station_order
-                              }
-                              class="admin-line-station-order-input"
-                              required
-                            />
-                          </td>
-
-                          <!-- Station -->
-                          <td>
-                            <div class="admin-line-name">
-                              {station.station_name}
-                            </div>
-
-                            <div class="admin-line-slug">
-                              {station.station_slug}
-                            </div>
-                          </td>
-
-                          <!-- Japanese -->
-                          <td>
-                            {
-                              station.station_name_japanese ??
-                              "—"
-                            }
-                          </td>
-
-                          <!-- Code -->
-                          <td>
-                            <input
-                              type="text"
-                              name="station_code"
-                              form={formId}
-                              value={
-                                station.station_code ??
-                                ""
-                              }
-                              class="admin-line-station-code-input"
-                              placeholder="e.g. JY01"
-                            />
-                          </td>
-
-                          <!-- Actions -->
-                          <td>
-                            <div class="admin-table-actions">
-                              <form
-                                id={formId}
-                                method="POST"
-                                onsubmit="return confirm('Save changes to this station?');"
-                              >
-                                <input
-                                  type="hidden"
-                                  name="action"
-                                  value="update"
-                                />
-
-                                <input
-                                  type="hidden"
-                                  name="id"
-                                  value={station.id}
-                                />
-
-                                <button
-                                  type="submit"
-                                  class="admin-table-action admin-table-action-edit"
-                                >
-                                  Save
-                                </button>
-                              </form>
-
-                              <form
-                                method="POST"
-                                onsubmit="return confirm('Remove this station from the line?');"
-                              >
-                                <input
-                                  type="hidden"
-                                  name="action"
-                                  value="remove"
-                                />
-
-                                <input
-                                  type="hidden"
-                                  name="id"
-                                  value={station.id}
-                                />
-
-                                <button
-                                  type="submit"
-                                  class="admin-table-action admin-table-action-delete"
-                                >
-                                  Remove
-                                </button>
-                              </form>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div class="admin-table-empty">
-                <h3>
-                  No stations on this line
-                </h3>
-
-                <p>
-                  Add the first station using the form
-                  above.
-                </p>
-              </div>
-            )
-          }
-        </div>
-      </section>
-    </div>
-  </main>
-</div>
-```
+            form.submit();
+          },
+        );
+      }
+    </script>
 
   </body>
+
 </html>
----

@@ -1,7 +1,11 @@
 ---
 import "../../../../styles/admin/shared.css";
-import "../../../../styles/admin/lines.css";
 import "../../../../styles/admin/forms.css";
+import "../../../../styles/admin/lines.css";
+
+import AdminNavigation from "../../../../common_components/AdminNavigation.astro";
+import Button from "../../../../common_components/Button.astro";
+import ConfirmDialog from "../../../../common_components/ConfirmDialog.astro";
 
 import {
   getLineById,
@@ -18,58 +22,244 @@ const db = env.DB;
 
 const id = Number(Astro.params.id);
 
-if (!id || id <= 0) {
+if (!Number.isInteger(id) || id <= 0) {
   return Astro.redirect("/admin/lines");
 }
 
 const line = await getLineById(db, id);
 
 if (!line) {
-  return Astro.redirect("/admin/lines");
+  Astro.response.status = 404;
 }
 
 const operators = await getOperators(db);
 
-let error = "";
+let formError = "";
 
-if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
+let operatorId = line?.operator_id
+  ? String(line.operator_id)
+  : "";
 
-  const operatorId = Number(formData.get("operator_id") ?? 0);
-  const name = String(formData.get("name") ?? "").trim();
-  const slug = String(formData.get("slug") ?? "").trim().toLowerCase();
-  const code = String(formData.get("code") ?? "").trim();
-  const description = String(
-    formData.get("description") ?? "",
-  ).trim();
-  const color = String(formData.get("color") ?? "").trim();
+let name = line?.name ?? "";
+let slug = line?.slug ?? "";
+let code = line?.code ?? "";
+let color = line?.color ?? "";
+let description = line?.description ?? "";
 
-  if (!operatorId || !name || !slug) {
-    error = "Operator, name, and slug are required.";
-  } else {
-    try {
-      await updateLine(db, id, {
-        operatorId,
-        name,
-        slug,
-        code: code || null,
-        description: description || null,
-        color: color || null,
-      });
-
-      return Astro.redirect("/admin/lines");
-    } catch {
-      error =
-        "Unable to update line. The name or slug may already exist.";
-    }
-  }
-}
+const errors = {
+  operatorId: "",
+  name: "",
+  slug: "",
+  code: "",
+  color: "",
+  description: "",
+};
 
 const admin = await Astro.session?.get<{
   id: number;
   email: string;
   name: string;
 }>("admin");
+
+/* ========================================
+   Form Submission
+======================================== */
+
+if (line && Astro.request.method === "POST") {
+  const formData =
+    await Astro.request.formData();
+
+  operatorId = String(
+    formData.get("operator_id") ?? "",
+  ).trim();
+
+  name = String(
+    formData.get("name") ?? "",
+  ).trim();
+
+  slug = String(
+    formData.get("slug") ?? "",
+  ).trim();
+
+  code = String(
+    formData.get("code") ?? "",
+  ).trim();
+
+  color = String(
+    formData.get("color") ?? "",
+  ).trim();
+
+  description = String(
+    formData.get("description") ?? "",
+  ).trim();
+
+
+  /* ========================================
+     Operator Validation
+  ======================================== */
+
+  const parsedOperatorId =
+    Number(operatorId);
+
+  if (!operatorId) {
+    errors.operatorId =
+      "Operator is required.";
+  } else if (
+    !Number.isInteger(parsedOperatorId) ||
+    parsedOperatorId <= 0
+  ) {
+    errors.operatorId =
+      "Please select a valid operator.";
+  } else if (
+    !operators.some(
+      (operator) =>
+        operator.id === parsedOperatorId,
+    )
+  ) {
+    errors.operatorId =
+      "Selected operator does not exist.";
+  }
+
+
+  /* ========================================
+     Name Validation
+  ======================================== */
+
+  if (!name) {
+    errors.name = "Name is required.";
+  } else if (name.length > 150) {
+    errors.name =
+      "Name must be 150 characters or less.";
+  }
+
+
+  /* ========================================
+     Slug Validation
+  ======================================== */
+
+  if (!slug) {
+    errors.slug = "Slug is required.";
+  } else if (
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+  ) {
+    errors.slug =
+      "Slug can only contain lowercase letters, numbers, and hyphens.";
+  } else if (slug.length > 150) {
+    errors.slug =
+      "Slug must be 150 characters or less.";
+  }
+
+
+  /* ========================================
+     Code Validation
+  ======================================== */
+
+  if (code.length > 50) {
+    errors.code =
+      "Code must be 50 characters or less.";
+  }
+
+
+  /* ========================================
+     Color Validation
+  ======================================== */
+
+  if (
+    color &&
+    !/^#[0-9a-fA-F]{6}$/.test(color)
+  ) {
+    errors.color =
+      "Color must be a valid hexadecimal color such as #00A650.";
+  }
+
+
+  /* ========================================
+     Description Validation
+  ======================================== */
+
+  if (description.length > 1000) {
+    errors.description =
+      "Description must be 1000 characters or less.";
+  }
+
+
+  /* ========================================
+     Update Line
+  ======================================== */
+
+  const hasValidationErrors =
+    Object.values(errors).some(
+      (message) => message.length > 0,
+    );
+
+  if (!hasValidationErrors) {
+    try {
+      await updateLine(db, id, {
+        operatorId: parsedOperatorId,
+        name,
+        slug,
+        code: code || null,
+        color: color || null,
+        description: description || null,
+      });
+
+      return Astro.redirect(
+        "/admin/lines",
+      );
+    } catch (err) {
+      console.error(err);
+
+      const message =
+        err instanceof Error
+          ? err.message.toLowerCase()
+          : "";
+
+
+      /* ========================================
+         Duplicate Slug
+      ======================================== */
+
+      if (
+        message.includes(
+          "unique constraint failed",
+        ) &&
+        message.includes(
+          "lines.slug",
+        )
+      ) {
+        errors.slug =
+          "A line with this slug already exists.";
+      }
+
+
+      /* ========================================
+         Duplicate Code
+      ======================================== */
+
+      else if (
+        message.includes(
+          "unique constraint failed",
+        ) &&
+        message.includes(
+          "lines.code",
+        )
+      ) {
+        errors.code =
+          "A line with this code already exists.";
+      }
+
+
+      /* ========================================
+         Unexpected Database Error
+      ======================================== */
+
+      else {
+        formError =
+          "Unable to update line because of an unexpected database error.";
+      }
+    }
+  }
+}
 ---
 
 <!doctype html>
@@ -87,273 +277,602 @@ const admin = await Astro.session?.get<{
       content="noindex, nofollow"
     />
 
-    <title>Edit {line.name} | Tokyo Station Guide</title>
+    <title>
+      Edit Line | Admin | Tokyo Station Guide
+    </title>
   </head>
 
   <body>
     <div class="admin-shell">
-      <!-- Sidebar -->
-      <aside class="admin-sidebar">
-        <div class="admin-brand">
-          <div class="admin-brand-top">
-            <div class="admin-logo">
-              T
-            </div>
 
-            <div>
-              <h1>Tokyo Station Guide</h1>
-              <p>Administration</p>
-            </div>
-          </div>
-        </div>
+      <AdminNavigation
+        activePath="/admin/lines"
+      />
 
-        <div class="admin-section-label">
-          Overview
-        </div>
-
-        <nav class="admin-nav">
-          <a href="/admin">
-            <span class="admin-nav-icon">⌂</span>
-            Dashboard
-          </a>
-        </nav>
-
-        <div class="admin-section-label">
-          Content
-        </div>
-
-        <nav class="admin-nav">
-          <a href="/admin/operators">
-            <span class="admin-nav-icon">◉</span>
-            Operators
-          </a>
-
-          <a
-            href="/admin/lines"
-            class="active"
-          >
-            <span class="admin-nav-icon">↔</span>
-            Lines
-          </a>
-
-          <a href="/admin/stations">
-            <span class="admin-nav-icon">⌖</span>
-            Stations
-          </a>
-        </nav>
-
-        <div class="admin-sidebar-bottom">
-          <form
-            method="POST"
-            action="/admin/logout"
-            class="admin-logout-form"
-          >
-            <button
-              type="submit"
-              class="admin-logout-button"
-            >
-              <span class="admin-nav-icon">↪</span>
-              Logout
-            </button>
-          </form>
-
-          <a
-            href="/"
-            class="admin-back-link"
-          >
-            ← Back to website
-          </a>
-        </div>
-      </aside>
-
-      <!-- Main -->
       <main class="admin-main">
+
         <!-- Topbar -->
         <header class="admin-topbar">
+
           <div class="admin-breadcrumb">
-            <a href="/admin">Admin</a>
+
+            <Button
+              href="/admin/lines"
+              variant="secondary"
+            >
+              ←
+            </Button>
+
+            <a href="/admin/lines">
+              Lines
+            </a>
+
             <span>/</span>
-            <a href="/admin/lines">Lines</a>
-            <span>/</span>
-            <strong>Edit</strong>
+
+            <strong>
+              Edit Line
+            </strong>
+
           </div>
 
-          {
-            admin && (
-              <div class="admin-user">
-                <div class="admin-avatar">
-                  {admin.name
-                    .split(" ")
-                    .map((part) => part[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
+          <div class="admin-user">
 
-                <div class="admin-user-info">
-                  <strong>{admin.name}</strong>
-                  <span>{admin.email}</span>
-                </div>
-              </div>
-            )
-          }
+            <div class="admin-avatar">
+              {
+                admin?.name
+                  ? admin.name
+                      .split(" ")
+                      .map(
+                        (part) =>
+                          part.charAt(0),
+                      )
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()
+                  : "AD"
+              }
+            </div>
+
+            <div class="admin-user-info">
+
+              <strong>
+                {admin?.name ?? "Administrator"}
+              </strong>
+
+              <span>
+                Tokyo Station Guide
+              </span>
+
+            </div>
+
+          </div>
+
         </header>
+
 
         <!-- Content -->
         <div class="admin-content">
-          <section class="admin-line-form">
-            <div class="admin-line-form-card">
-              <div class="admin-line-form-header">
-                <p class="admin-eyebrow">
-                  Line Management
-                </p>
 
-                <h2>Edit Line</h2>
+          {
+            line ? (
+              <>
 
-                <p>
-                  Update the details for
-                  <strong>{line.name}</strong>.
-                </p>
-              </div>
+                <!-- Page Header -->
+                <div class="admin-page-header">
 
-              {
-                error && (
-                  <div class="admin-alert admin-alert-error">
-                    {error}
+                  <div>
+
+                    <h2>
+                      Edit Line
+                    </h2>
+
+                    <p>
+                      Update railway line
+                      information for the Tokyo
+                      Station Guide.
+                    </p>
+
                   </div>
-                )
-              }
 
-              <form
-                method="POST"
-                class="admin-form"
-              >
-                <div class="admin-form-grid">
-                  <div class="admin-form-group">
-                    <label for="operator_id">
-                      Operator
-                    </label>
+                </div>
 
-                    <select
-                      id="operator_id"
-                      name="operator_id"
-                      required
-                    >
-                      <option value="">
-                        Select operator
-                      </option>
 
-                      {operators.map((operator) => (
-                        <option
-                          value={operator.id}
-                          selected={
-                            operator.id ===
-                            line.operator_id
+                <!-- Form Panel -->
+                <section class="admin-panel">
+
+                  <div class="admin-panel-body">
+
+                    <div class="admin-line-form">
+
+                      <!-- Form Header -->
+                      <div class="admin-line-form-header">
+
+                        <h2>
+                          Line Details
+                        </h2>
+
+                        <p>
+                          Update the information for
+                          this railway line.
+                        </p>
+
+                      </div>
+
+
+                      <!-- General Error -->
+                      {
+                        formError && (
+                          <div class="admin-alert admin-alert-error">
+                            {formError}
+                          </div>
+                        )
+                      }
+
+
+                      <!-- Line Form -->
+                      <form
+                        method="POST"
+                        class="admin-form"
+                        id="edit-line-form"
+                      >
+
+                        <!-- Operator -->
+                        <div class="admin-form-group">
+
+                          <label for="operator_id">
+                            Operator
+                          </label>
+
+                          <select
+                            id="operator_id"
+                            name="operator_id"
+                            required
+                            aria-invalid={
+                              errors.operatorId
+                                ? "true"
+                                : "false"
+                            }
+                            aria-describedby={
+                              errors.operatorId
+                                ? "operator-id-error"
+                                : undefined
+                            }
+                          >
+
+                            <option value="">
+                              Select operator
+                            </option>
+
+                            {
+                              operators.map(
+                                (operator) => (
+                                  <option
+                                    value={operator.id}
+                                    selected={
+                                      String(
+                                        operator.id,
+                                      ) === operatorId
+                                    }
+                                  >
+                                    {operator.name}
+                                  </option>
+                                ),
+                              )
+                            }
+
+                          </select>
+
+                          {
+                            errors.operatorId && (
+                              <small
+                                id="operator-id-error"
+                                class="admin-form-error"
+                              >
+                                {errors.operatorId}
+                              </small>
+                            )
                           }
-                        >
-                          {operator.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
 
-                  <div class="admin-form-group">
-                    <label for="name">
-                      Line Name
-                    </label>
+                        </div>
 
-                    <input
-                      id="name"
-                      name="name"
-                      type="text"
-                      value={line.name}
-                      required
-                    />
-                  </div>
 
-                  <div class="admin-form-group">
-                    <label for="slug">
-                      Slug
-                    </label>
+                        <!-- Name -->
+                        <div class="admin-form-group">
 
-                    <input
-                      id="slug"
-                      name="slug"
-                      type="text"
-                      value={line.slug}
-                      required
-                    />
+                          <label for="name">
+                            Name
+                          </label>
 
-                    <small>
-                      Used in URLs. Use lowercase letters,
-                      numbers, and hyphens.
-                    </small>
-                  </div>
+                          <input
+                            id="name"
+                            name="name"
+                            type="text"
+                            required
+                            maxlength="150"
+                            value={name}
+                            aria-invalid={
+                              errors.name
+                                ? "true"
+                                : "false"
+                            }
+                            aria-describedby={
+                              errors.name
+                                ? "name-error"
+                                : undefined
+                            }
+                          />
 
-                  <div class="admin-form-group">
-                    <label for="code">
-                      Line Code
-                    </label>
+                          {
+                            errors.name && (
+                              <small
+                                id="name-error"
+                                class="admin-form-error"
+                              >
+                                {errors.name}
+                              </small>
+                            )
+                          }
 
-                    <input
-                      id="code"
-                      name="code"
-                      type="text"
-                      value={line.code ?? ""}
-                    />
-                  </div>
+                        </div>
 
-                  <div class="admin-form-group">
-                    <label for="color">
-                      Line Color
-                    </label>
 
-                    <div class="admin-line-color-input">
-                      <input
-                        id="color"
-                        name="color"
-                        type="color"
-                        value={line.color ?? "#2563eb"}
-                      />
+                        <!-- Slug -->
+                        <div class="admin-form-group">
 
-                      <span class="admin-table-muted">
-                        Select the official line color.
-                      </span>
+                          <label for="slug">
+                            Slug
+                          </label>
+
+                          <input
+                            id="slug"
+                            name="slug"
+                            type="text"
+                            required
+                            maxlength="150"
+                            value={slug}
+                            aria-invalid={
+                              errors.slug
+                                ? "true"
+                                : "false"
+                            }
+                            aria-describedby={
+                              errors.slug
+                                ? "slug-error"
+                                : undefined
+                            }
+                          />
+
+                          {
+                            errors.slug ? (
+                              <small
+                                id="slug-error"
+                                class="admin-form-error"
+                              >
+                                {errors.slug}
+                              </small>
+                            ) : (
+                              <small>
+                                Use lowercase letters,
+                                numbers and hyphens.
+                              </small>
+                            )
+                          }
+
+                        </div>
+
+
+                        <!-- Code -->
+                        <div class="admin-form-group">
+
+                          <label for="code">
+                            Code
+                          </label>
+
+                          <input
+                            id="code"
+                            name="code"
+                            type="text"
+                            maxlength="50"
+                            value={code}
+                            placeholder="JY"
+                            aria-invalid={
+                              errors.code
+                                ? "true"
+                                : "false"
+                            }
+                            aria-describedby={
+                              errors.code
+                                ? "code-error"
+                                : undefined
+                            }
+                          />
+
+                          {
+                            errors.code && (
+                              <small
+                                id="code-error"
+                                class="admin-form-error"
+                              >
+                                {errors.code}
+                              </small>
+                            )
+                          }
+
+                        </div>
+
+
+                        <!-- Color -->
+                        <div class="admin-form-group">
+
+                          <label for="color">
+                            Line Color
+                          </label>
+
+                          <input
+                            id="color"
+                            name="color"
+                            type="text"
+                            maxlength="7"
+                            value={color}
+                            placeholder="#00A650"
+                            aria-invalid={
+                              errors.color
+                                ? "true"
+                                : "false"
+                            }
+                            aria-describedby={
+                              errors.color
+                                ? "color-error"
+                                : undefined
+                            }
+                          />
+
+                          {
+                            errors.color ? (
+                              <small
+                                id="color-error"
+                                class="admin-form-error"
+                              >
+                                {errors.color}
+                              </small>
+                            ) : (
+                              <small>
+                                Use a hexadecimal color
+                                such as #00A650.
+                              </small>
+                            )
+                          }
+
+                        </div>
+
+
+                        <!-- Description -->
+                        <div class="admin-form-group">
+
+                          <label for="description">
+                            Description
+                          </label>
+
+                          <textarea
+                            id="description"
+                            name="description"
+                            rows="5"
+                            maxlength="1000"
+                            placeholder="Short description of the railway line..."
+                            aria-invalid={
+                              errors.description
+                                ? "true"
+                                : "false"
+                            }
+                            aria-describedby={
+                              errors.description
+                                ? "description-error"
+                                : undefined
+                            }
+                          >{description}</textarea>
+
+                          {
+                            errors.description && (
+                              <small
+                                id="description-error"
+                                class="admin-form-error"
+                              >
+                                {errors.description}
+                              </small>
+                            )
+                          }
+
+                        </div>
+
+
+                        <!-- Actions -->
+                        <div class="admin-form-actions">
+
+                          <Button
+                            href="/admin/lines"
+                            variant="secondary"
+                          >
+                            Cancel
+                          </Button>
+
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            id="save-line-button"
+                          >
+                            Save Changes
+                          </Button>
+
+                        </div>
+
+                      </form>
+
                     </div>
+
                   </div>
 
-                  <div class="admin-form-group full-width">
-                    <label for="description">
-                      Description
-                    </label>
+                </section>
 
-                    <textarea
-                      id="description"
-                      name="description"
-                    >{line.description ?? ""}</textarea>
+              </>
+            ) : (
+              <>
+
+                <!-- Not Found Header -->
+                <div class="admin-page-header">
+
+                  <div>
+
+                    <h2>
+                      Edit Line
+                    </h2>
+
+                    <p>
+                      The requested line could
+                      not be found.
+                    </p>
+
                   </div>
-                </div>
 
-                <div class="admin-form-actions">
-                  <a
+                  <Button
                     href="/admin/lines"
-                    class="admin-button admin-button-secondary"
+                    variant="secondary"
                   >
-                    Cancel
-                  </a>
+                    ← Back to Lines
+                  </Button>
 
-                  <button
-                    type="submit"
-                    class="admin-button"
-                  >
-                    Save Changes
-                  </button>
                 </div>
-              </form>
-            </div>
-          </section>
+
+
+                <!-- Not Found Panel -->
+                <section class="admin-panel">
+
+                  <div class="admin-panel-body">
+
+                    <div class="admin-empty">
+
+                      <div class="admin-empty-icon">
+                        ⚠
+                      </div>
+
+                      <h3>
+                        Line Not Found
+                      </h3>
+
+                      <p>
+                        The requested line does not
+                        exist or may have been removed.
+                      </p>
+
+                      <div class="admin-form-actions admin-not-found-actions">
+
+                        <Button
+                          href="/admin/lines"
+                          variant="secondary"
+                        >
+                          Back to Lines
+                        </Button>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </section>
+
+              </>
+            )
+          }
+
         </div>
+
       </main>
+
     </div>
+
+
+    {
+      line && (
+        <ConfirmDialog
+          id="save-line-dialog"
+          title="Save Changes"
+          description="Are you sure you want to save these changes to this line?"
+          confirmText="Save Changes"
+          cancelText="Cancel"
+          variant="primary"
+        />
+      )
+    }
+
+
+    <script>
+      const editForm =
+        document.getElementById(
+          "edit-line-form",
+        );
+
+      const saveDialog =
+        document.getElementById(
+          "save-line-dialog",
+        );
+
+      const saveButton =
+        document.getElementById(
+          "save-line-button",
+        );
+
+      if (
+        editForm instanceof HTMLFormElement &&
+        saveDialog instanceof HTMLDivElement &&
+        saveButton instanceof HTMLButtonElement
+      ) {
+        let confirmed = false;
+
+        editForm.addEventListener(
+          "submit",
+          (event) => {
+            if (confirmed) {
+              return;
+            }
+
+            if (!editForm.checkValidity()) {
+              return;
+            }
+
+            event.preventDefault();
+
+            const nameInput =
+              document.getElementById("name");
+
+            const nameElement =
+              saveDialog.querySelector(
+                ".common-dialog-name",
+              );
+
+            if (
+              nameInput instanceof HTMLInputElement &&
+              nameElement instanceof HTMLElement
+            ) {
+              nameElement.textContent =
+                nameInput.value.trim();
+            }
+
+            saveDialog.dispatchEvent(
+              new CustomEvent("dialog:open"),
+            );
+          },
+        );
+
+        saveDialog.addEventListener(
+          "confirm",
+          () => {
+            confirmed = true;
+
+            editForm.submit();
+          },
+        );
+      }
+    </script>
+
   </body>
 </html>

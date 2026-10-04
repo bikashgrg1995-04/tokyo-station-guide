@@ -60,6 +60,14 @@ export interface UpdateStationInput {
   description?: string | null;
 }
 
+export interface PaginatedStations {
+  items: StationAdminListItem[];
+  totalItems: number;
+  currentPage: number;
+  totalPages: number;
+  perPage: number;
+}
+
 /* ========================================
    Get Station By Slug
 ======================================== */
@@ -124,9 +132,7 @@ export async function getStationBySlug(
    Get Stations
 ======================================== */
 
-export async function getStations(
-  db: D1Database,
-): Promise<StationListItem[]> {
+export async function getStations(db: D1Database): Promise<StationListItem[]> {
   const result = await db
     .prepare(
       `
@@ -171,6 +177,94 @@ export async function getAdminStations(
     .all<StationAdminListItem>();
 
   return result.results;
+}
+
+/* ========================================
+   Get Stations For Admin - Paginated
+======================================== */
+
+export async function getAdminStationsPaginated(
+  db: D1Database,
+  options: {
+    page?: number;
+    perPage?: number;
+    search?: string;
+  } = {},
+): Promise<PaginatedStations> {
+  const perPage = Math.max(1, options.perPage ?? 10);
+
+  const requestedPage = Math.max(1, options.page ?? 1);
+
+  const search = options.search?.trim() ?? "";
+
+  const searchValue = `%${search}%`;
+
+  const countResult = await db
+    .prepare(
+      `
+        SELECT COUNT(*) AS total
+        FROM stations
+        WHERE
+          ? = ''
+          OR name LIKE ?
+          OR name_japanese LIKE ?
+          OR slug LIKE ?
+          OR description LIKE ?
+      `,
+    )
+    .bind(search, searchValue, searchValue, searchValue, searchValue)
+    .first<{ total: number }>();
+
+  const totalItems = Number(countResult?.total ?? 0);
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / perPage));
+
+  const currentPage = Math.min(requestedPage, totalPages);
+
+  const offset = (currentPage - 1) * perPage;
+
+  const result = await db
+    .prepare(
+      `
+        SELECT
+          id,
+          name,
+          name_japanese,
+          slug,
+          latitude,
+          longitude,
+          description,
+          created_at,
+          updated_at
+        FROM stations
+        WHERE
+          ? = ''
+          OR name LIKE ?
+          OR name_japanese LIKE ?
+          OR slug LIKE ?
+          OR description LIKE ?
+        ORDER BY name ASC
+        LIMIT ? OFFSET ?
+      `,
+    )
+    .bind(
+      search,
+      searchValue,
+      searchValue,
+      searchValue,
+      searchValue,
+      perPage,
+      offset,
+    )
+    .all<StationAdminListItem>();
+
+  return {
+    items: result.results,
+    totalItems,
+    currentPage,
+    totalPages,
+    perPage,
+  };
 }
 
 /* ========================================
@@ -280,10 +374,7 @@ export async function updateStation(
    Delete Station
 ======================================== */
 
-export async function deleteStation(
-  db: D1Database,
-  id: number,
-): Promise<void> {
+export async function deleteStation(db: D1Database, id: number): Promise<void> {
   await db
     .prepare(
       `

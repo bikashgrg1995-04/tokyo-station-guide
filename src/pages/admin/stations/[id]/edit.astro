@@ -1,22 +1,22 @@
 ---
 import "../../../../styles/admin/shared.css";
-import "../../../../styles/admin/stations.css";
 import "../../../../styles/admin/forms.css";
+import "../../../../styles/admin/stations.css";
 
-import {
-  getStationById,
-  updateStation,
-} from "../../../../lib/db/stations";
+import AdminNavigation from "../../../../common_components/AdminNavigation.astro";
+import Button from "../../../../common_components/Button.astro";
+import ConfirmDialog from "../../../../common_components/ConfirmDialog.astro";
+
+import { getStationById, updateStation } from "../../../../lib/db/stations";
 
 export const prerender = false;
 
 const { env } = await import("cloudflare:workers");
-
 const db = env.DB;
 
 const id = Number(Astro.params.id);
 
-if (!id || id <= 0) {
+if (!Number.isInteger(id) || id <= 0) {
   return Astro.redirect("/admin/stations");
 }
 
@@ -26,70 +26,88 @@ if (!station) {
   return Astro.redirect("/admin/stations");
 }
 
-let error = "";
+let formError = "";
+
+let name = station.name;
+let nameJapanese = station.name_japanese ?? "";
+let slug = station.slug;
+let latitudeValue = station.latitude !== null ? String(station.latitude) : "";
+let longitudeValue =
+  station.longitude !== null ? String(station.longitude) : "";
+let description = station.description ?? "";
+
+const errors = {
+  name: "",
+  nameJapanese: "",
+  slug: "",
+  latitude: "",
+  longitude: "",
+  description: "",
+};
+
+let confirmed = false;
 
 if (Astro.request.method === "POST") {
   const formData = await Astro.request.formData();
 
-  const name = String(
-    formData.get("name") ?? "",
-  ).trim();
+  name = String(formData.get("name") ?? "").trim();
 
-  const nameJapanese = String(
-    formData.get("name_japanese") ?? "",
-  ).trim();
+  nameJapanese = String(formData.get("name_japanese") ?? "").trim();
 
-  const slug = String(
-    formData.get("slug") ?? "",
-  )
+  slug = String(formData.get("slug") ?? "")
     .trim()
     .toLowerCase();
 
-  const latitudeValue = String(
-    formData.get("latitude") ?? "",
-  ).trim();
+  latitudeValue = String(formData.get("latitude") ?? "").trim();
 
-  const longitudeValue = String(
-    formData.get("longitude") ?? "",
-  ).trim();
+  longitudeValue = String(formData.get("longitude") ?? "").trim();
 
-  const description = String(
-    formData.get("description") ?? "",
-  ).trim();
+  description = String(formData.get("description") ?? "").trim();
 
-  const latitude =
-    latitudeValue === ""
-      ? null
-      : Number(latitudeValue);
+  const latitude = latitudeValue === "" ? null : Number(latitudeValue);
 
-  const longitude =
-    longitudeValue === ""
-      ? null
-      : Number(longitudeValue);
+  const longitude = longitudeValue === "" ? null : Number(longitudeValue);
 
-  if (!name || !slug) {
-    error = "Station name and slug are required.";
-  } else if (
-    latitude !== null &&
-    !Number.isFinite(latitude)
-  ) {
-    error = "Latitude must be a valid number.";
-  } else if (
-    longitude !== null &&
-    !Number.isFinite(longitude)
-  ) {
-    error = "Longitude must be a valid number.";
-  } else if (
-    latitude !== null &&
-    (latitude < -90 || latitude > 90)
-  ) {
-    error = "Latitude must be between -90 and 90.";
-  } else if (
-    longitude !== null &&
-    (longitude < -180 || longitude > 180)
-  ) {
-    error = "Longitude must be between -180 and 180.";
-  } else {
+  if (!name) {
+    errors.name = "Station name is required.";
+  } else if (name.length > 150) {
+    errors.name = "Station name must be 150 characters or less.";
+  }
+
+  if (nameJapanese.length > 150) {
+    errors.nameJapanese = "Japanese name must be 150 characters or less.";
+  }
+
+  if (!slug) {
+    errors.slug = "Slug is required.";
+  } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+    errors.slug =
+      "Slug can only contain lowercase letters, numbers, and hyphens.";
+  } else if (slug.length > 150) {
+    errors.slug = "Slug must be 150 characters or less.";
+  }
+
+  if (latitude !== null && !Number.isFinite(latitude)) {
+    errors.latitude = "Latitude must be a valid number.";
+  } else if (latitude !== null && (latitude < -90 || latitude > 90)) {
+    errors.latitude = "Latitude must be between -90 and 90.";
+  }
+
+  if (longitude !== null && !Number.isFinite(longitude)) {
+    errors.longitude = "Longitude must be a valid number.";
+  } else if (longitude !== null && (longitude < -180 || longitude > 180)) {
+    errors.longitude = "Longitude must be between -180 and 180.";
+  }
+
+  if (description.length > 1000) {
+    errors.description = "Description must be 1000 characters or less.";
+  }
+
+  const hasValidationErrors = Object.values(errors).some(
+    (message) => message.length > 0,
+  );
+
+  if (!hasValidationErrors) {
     try {
       await updateStation(db, id, {
         name,
@@ -101,9 +119,11 @@ if (Astro.request.method === "POST") {
       });
 
       return Astro.redirect("/admin/stations");
-    } catch {
-      error =
-        "Unable to update station. The slug may already exist.";
+    } catch (err) {
+      console.error(err);
+
+      formError =
+        "Unable to update station. The name or slug may already exist.";
     }
   }
 }
@@ -120,278 +140,228 @@ const admin = await Astro.session?.get<{
   <head>
     <meta charset="UTF-8" />
 
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <meta
-      name="robots"
-      content="noindex, nofollow"
-    />
+    <meta name="robots" content="noindex, nofollow" />
 
     <title>
-      Edit {station.name} | Tokyo Station Guide
+      Edit {station.name} | Admin | Tokyo Station Guide
     </title>
   </head>
 
   <body>
     <div class="admin-shell">
-      <!-- Sidebar -->
-      <aside class="admin-sidebar">
-        <div class="admin-brand">
-          <div class="admin-brand-top">
-            <div class="admin-logo">
-              T
-            </div>
+      <AdminNavigation activePath="/admin/stations" />
 
-            <div>
-              <h1>Tokyo Station Guide</h1>
-              <p>Administration</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="admin-section-label">
-          Overview
-        </div>
-
-        <nav class="admin-nav">
-          <a href="/admin">
-            <span class="admin-nav-icon">⌂</span>
-            Dashboard
-          </a>
-        </nav>
-
-        <div class="admin-section-label">
-          Content
-        </div>
-
-        <nav class="admin-nav">
-          <a href="/admin/operators">
-            <span class="admin-nav-icon">◉</span>
-            Operators
-          </a>
-
-          <a href="/admin/lines">
-            <span class="admin-nav-icon">↔</span>
-            Lines
-          </a>
-
-          <a
-            href="/admin/stations"
-            class="active"
-          >
-            <span class="admin-nav-icon">⌖</span>
-            Stations
-          </a>
-        </nav>
-
-        <div class="admin-sidebar-bottom">
-          <form
-            method="POST"
-            action="/admin/logout"
-            class="admin-logout-form"
-          >
-            <button
-              type="submit"
-              class="admin-logout-button"
-            >
-              <span class="admin-nav-icon">↪</span>
-              Logout
-            </button>
-          </form>
-
-          <a
-            href="/"
-            class="admin-back-link"
-          >
-            ← Back to website
-          </a>
-        </div>
-      </aside>
-
-      <!-- Main -->
       <main class="admin-main">
-        <!-- Topbar -->
         <header class="admin-topbar">
           <div class="admin-breadcrumb">
-            <a href="/admin">Admin</a>
+            <Button href="/admin/stations" variant="secondary"> ← </Button>
+
+            <a href="/admin/stations"> Stations </a>
+
             <span>/</span>
-            <a href="/admin/stations">
-              Stations
-            </a>
-            <span>/</span>
-            <strong>Edit</strong>
+
+            <strong>Edit Station</strong>
           </div>
-
-          {
-            admin && (
-              <div class="admin-user">
-                <div class="admin-avatar">
-                  {admin.name
-                    .split(" ")
-                    .map((part) => part[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
-
-                <div class="admin-user-info">
-                  <strong>{admin.name}</strong>
-                  <span>{admin.email}</span>
-                </div>
-              </div>
-            )
-          }
         </header>
 
-        <!-- Content -->
         <div class="admin-content">
-          <section class="admin-station-form">
-            <div class="admin-station-form-card">
-              <div class="admin-station-form-header">
-                <p class="admin-eyebrow">
-                  Station Management
-                </p>
+          <h2>Edit Station</h2>
 
-                <h2>Edit Station</h2>
+          <p>
+            Update the railway station information for the Tokyo Station Guide.
+          </p>
 
-                <p>
-                  Update the details for
-                  <strong>{station.name}</strong>.
-                </p>
+          <section class="admin-panel">
+            <div class="admin-panel-body">
+              <div class="admin-station-form">
+                <div class="admin-station-form-header">
+                  <h3>Station Details</h3>
+
+                  <p>
+                    Update the information for
+                    <strong>{station.name}</strong>.
+                  </p>
+                </div>
+
+                {
+                  formError && (
+                    <div class="admin-alert admin-alert-error">{formError}</div>
+                  )
+                }
+
+                <form method="POST" class="admin-form" id="edit-station-form">
+                  <div class="admin-form-grid">
+                    <div class="admin-form-group">
+                      <label for="name"> Station Name </label>
+
+                      <input
+                        id="name"
+                        name="name"
+                        type="text"
+                        required
+                        value={name}
+                        aria-invalid={errors.name ? "true" : "false"}
+                        aria-describedby={errors.name
+                          ? "name-error"
+                          : undefined}
+                      />
+
+                      {
+                        errors.name && (
+                          <small id="name-error" class="admin-form-error">
+                            {errors.name}
+                          </small>
+                        )
+                      }
+                    </div>
+
+                    <div class="admin-form-group">
+                      <label for="name_japanese"> Japanese Name </label>
+
+                      <input
+                        id="name_japanese"
+                        name="name_japanese"
+                        type="text"
+                        class="admin-station-japanese-input"
+                        value={nameJapanese}
+                        aria-invalid={errors.nameJapanese ? "true" : "false"}
+                        aria-describedby={errors.nameJapanese
+                          ? "name-japanese-error"
+                          : undefined}
+                      />
+
+                      {
+                        errors.nameJapanese && (
+                          <small
+                            id="name-japanese-error"
+                            class="admin-form-error"
+                          >
+                            {errors.nameJapanese}
+                          </small>
+                        )
+                      }
+                    </div>
+
+                    <div class="admin-form-group full-width">
+                      <label for="slug"> Slug </label>
+
+                      <input
+                        id="slug"
+                        name="slug"
+                        type="text"
+                        required
+                        value={slug}
+                        aria-invalid={errors.slug ? "true" : "false"}
+                        aria-describedby={errors.slug
+                          ? "slug-error"
+                          : "slug-help"}
+                      />
+
+                      {
+                        errors.slug ? (
+                          <small id="slug-error" class="admin-form-error">
+                            {errors.slug}
+                          </small>
+                        ) : (
+                          <small id="slug-help">
+                            Use lowercase letters, numbers and hyphens.
+                          </small>
+                        )
+                      }
+                    </div>
+
+                    <div class="admin-form-group">
+                      <label for="latitude"> Latitude </label>
+
+                      <input
+                        id="latitude"
+                        name="latitude"
+                        type="number"
+                        step="any"
+                        value={latitudeValue}
+                        aria-invalid={errors.latitude ? "true" : "false"}
+                        aria-describedby="latitude-help"
+                      />
+
+                      {
+                        errors.latitude ? (
+                          <small class="admin-form-error">
+                            {errors.latitude}
+                          </small>
+                        ) : (
+                          <small id="latitude-help">
+                            Optional. Range: -90 to 90.
+                          </small>
+                        )
+                      }
+                    </div>
+
+                    <div class="admin-form-group">
+                      <label for="longitude"> Longitude </label>
+
+                      <input
+                        id="longitude"
+                        name="longitude"
+                        type="number"
+                        step="any"
+                        value={longitudeValue}
+                        aria-invalid={errors.longitude ? "true" : "false"}
+                        aria-describedby="longitude-help"
+                      />
+
+                      {
+                        errors.longitude ? (
+                          <small class="admin-form-error">
+                            {errors.longitude}
+                          </small>
+                        ) : (
+                          <small id="longitude-help">
+                            Optional. Range: -180 to 180.
+                          </small>
+                        )
+                      }
+                    </div>
+
+                    <div class="admin-form-group full-width">
+                      <label for="description"> Description </label>
+
+                      <textarea
+                        id="description"
+                        name="description"
+                        rows="5"
+                        class="admin-station-description"
+                        aria-invalid={errors.description ? "true" : "false"}
+                        aria-describedby={errors.description
+                          ? "description-error"
+                          : undefined}>{description}</textarea
+                      >
+
+                      {
+                        errors.description && (
+                          <small
+                            id="description-error"
+                            class="admin-form-error"
+                          >
+                            {errors.description}
+                          </small>
+                        )
+                      }
+                    </div>
+                  </div>
+
+                  <div class="admin-form-actions">
+                    <Button href="/admin/stations" variant="secondary">
+                      Cancel
+                    </Button>
+
+                    <Button type="submit" variant="primary">
+                      Save Changes
+                    </Button>
+                  </div>
+                </form>
               </div>
-
-              {
-                error && (
-                  <div class="admin-alert admin-alert-error">
-                    {error}
-                  </div>
-                )
-              }
-
-              <form
-                method="POST"
-                class="admin-form"
-              >
-                <div class="admin-form-grid">
-                  <div class="admin-form-group">
-                    <label for="name">
-                      Station Name
-                    </label>
-
-                    <input
-                      id="name"
-                      name="name"
-                      type="text"
-                      value={station.name}
-                      required
-                    />
-                  </div>
-
-                  <div class="admin-form-group">
-                    <label for="name_japanese">
-                      Japanese Name
-                    </label>
-
-                    <input
-                      id="name_japanese"
-                      name="name_japanese"
-                      type="text"
-                      class="admin-station-japanese-input"
-                      value={station.name_japanese ?? ""}
-                    />
-                  </div>
-
-                  <div class="admin-form-group full-width">
-                    <label for="slug">
-                      Slug
-                    </label>
-
-                    <input
-                      id="slug"
-                      name="slug"
-                      type="text"
-                      value={station.slug}
-                      required
-                    />
-
-                    <small>
-                      Used in the station URL. Use lowercase
-                      letters, numbers, and hyphens.
-                    </small>
-                  </div>
-
-                  <div class="admin-form-group">
-                    <label for="latitude">
-                      Latitude
-                    </label>
-
-                    <input
-                      id="latitude"
-                      name="latitude"
-                      type="number"
-                      step="any"
-                      value={
-                        station.latitude ?? ""
-                      }
-                    />
-
-                    <small>
-                      Optional. Range: -90 to 90.
-                    </small>
-                  </div>
-
-                  <div class="admin-form-group">
-                    <label for="longitude">
-                      Longitude
-                    </label>
-
-                    <input
-                      id="longitude"
-                      name="longitude"
-                      type="number"
-                      step="any"
-                      value={
-                        station.longitude ?? ""
-                      }
-                    />
-
-                    <small>
-                      Optional. Range: -180 to 180.
-                    </small>
-                  </div>
-
-                  <div class="admin-form-group full-width">
-                    <label for="description">
-                      Description
-                    </label>
-
-                    <textarea
-                      id="description"
-                      name="description"
-                      class="admin-station-description"
-                    >{station.description ?? ""}</textarea>
-                  </div>
-                </div>
-
-                <div class="admin-form-actions">
-                  <a
-                    href="/admin/stations"
-                    class="admin-button admin-button-secondary"
-                  >
-                    Cancel
-                  </a>
-
-                  <button
-                    type="submit"
-                    class="admin-button"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </form>
             </div>
           </section>
         </div>
@@ -399,3 +369,42 @@ const admin = await Astro.session?.get<{
     </div>
   </body>
 </html>
+
+<ConfirmDialog
+  id="edit-station-confirm-dialog"
+  title="Save Changes"
+  description="Are you sure you want to save these station changes?"
+  confirmText="Save Changes"
+  cancelText="Cancel"
+  variant="primary"
+/>
+
+<script>
+  const editStationForm = document.getElementById("edit-station-form");
+
+  const editStationDialog = document.getElementById(
+    "edit-station-confirm-dialog",
+  );
+
+  if (
+    editStationForm instanceof HTMLFormElement &&
+    editStationDialog instanceof HTMLDivElement
+  ) {
+    let confirmed = false;
+
+    editStationForm.addEventListener("submit", (event) => {
+      if (confirmed) {
+        return;
+      }
+
+      event.preventDefault();
+
+      editStationDialog.dispatchEvent(new CustomEvent("dialog:open"));
+    });
+
+    editStationDialog.addEventListener("confirm", () => {
+      confirmed = true;
+      editStationForm.submit();
+    });
+  }
+</script>

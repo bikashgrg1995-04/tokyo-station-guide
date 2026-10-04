@@ -2,80 +2,60 @@
    Admin Stations
 ======================================== */
 
-/* Stations Page */
+/* ========================================
+   Station Page
+======================================== */
+
 .admin-stations-page {
   width: 100%;
 }
 
-/* Stations Header */
-.admin-station-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
+.admin-stations-page .admin-page-header {
   margin-bottom: 28px;
 }
 
-.admin-station-header h2 {
+.admin-stations-page .admin-page-header > div {
+  min-width: 0;
+}
+
+.admin-stations-page .admin-page-header h2 {
   margin: 0;
   font-size: 28px;
+  line-height: 1.2;
   letter-spacing: -0.7px;
 }
 
-.admin-station-header p {
+.admin-stations-page .admin-page-header p {
+  max-width: 760px;
   margin: 7px 0 0;
   color: var(--admin-muted);
   font-size: 14px;
+  line-height: 1.5;
 }
 
-/* Stations Card */
-.admin-station-card {
-  overflow: hidden;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: 14px;
-}
+/* ========================================
+   Station List
+======================================== */
 
-/* Station Card Header */
-.admin-station-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
-  border-bottom: 1px solid var(--admin-border);
-}
-
-.admin-station-card-header h3 {
-  margin: 0;
-  font-size: 15px;
-}
-
-.admin-station-card-header p {
-  margin: 4px 0 0;
-  color: var(--admin-muted);
-  font-size: 12px;
-}
-
-/* Station Name */
 .admin-station-name {
+  color: var(--admin-text);
   font-weight: 600;
+  line-height: 1.4;
 }
 
 .admin-station-japanese {
   margin-top: 3px;
   color: var(--admin-muted);
   font-size: 12px;
+  line-height: 1.4;
 }
 
-/* Station Slug */
 .admin-station-slug {
   color: var(--admin-muted);
   font-family: monospace;
   font-size: 12px;
 }
 
-/* Coordinates */
 .admin-station-coordinates {
   color: var(--admin-muted);
   font-family: monospace;
@@ -83,155 +63,191 @@
   line-height: 1.5;
 }
 
-/* Station Actions */
-.admin-station-actions {
+.admin-station-coordinates div {
+  white-space: nowrap;
+}
+
+/* ========================================
+   Search / Action Toolbar
+======================================== */
+
+.admin-list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 24px;
+  margin-bottom: 18px;
+}
+
+/* ========================================
+   Search Form
+======================================== */
+
+.admin-search-form {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: auto;
+  max-width: none;
+  min-width: 0;
 }
 
-.admin-station-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+/* ========================================
+   Station Form
+======================================== */
 
-  min-height: 32px;
-  padding: 6px 10px;
-
-  border: 1px solid var(--admin-border);
-  border-radius: 7px;
-
-  background: var(--admin-surface);
-  color: var(--admin-text);
-
-  text-decoration: none;
-
-  font-size: 12px;
-  font-weight: 500;
-
-  cursor: pointer;
-
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease;
-}
-
-.admin-station-action:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
-
-.admin-station-action.edit {
-  color: var(--admin-primary);
-}
-
-.admin-station-action.edit:hover {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-}
-
-.admin-station-action.delete {
-  color: var(--admin-danger-hover);
-}
-
-.admin-station-action.delete:hover {
-  background: var(--admin-danger-bg);
-  border-color: var(--admin-danger-border);
-}
-
-/* Station Empty State */
-.admin-station-empty {
-  padding: 48px 24px;
-  text-align: center;
-}
-
-.admin-station-empty h3 {
-  margin: 0;
-  font-size: 16px;
-}
-
-.admin-station-empty p {
-  margin: 7px 0 0;
-  color: var(--admin-muted);
-  font-size: 13px;
-}
-
-/* Station Form */
 .admin-station-form {
+  width: 100%;
   max-width: 900px;
 }
 
 .admin-station-form-card {
   padding: 24px;
-
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: 14px;
 }
 
-/* Station Form Header */
+/* ========================================
+   Form Header
+======================================== */
+
 .admin-station-form-header {
   margin-bottom: 24px;
 }
 
-.admin-station-form-header h2 {
+.admin-station-form-header h2,
+.admin-station-form-header h3 {
   margin: 0;
   font-size: 18px;
+  line-height: 1.35;
 }
 
 .admin-station-form-header p {
   margin: 6px 0 0;
   color: var(--admin-muted);
   font-size: 13px;
+  line-height: 1.5;
 }
 
-/* Japanese Name */
+.admin-station-form-header strong {
+  color: var(--admin-text);
+  font-weight: 600;
+}
+
+/* ========================================
+   Japanese Name
+======================================== */
+
 .admin-station-japanese-input {
   font-size: 14px;
 }
 
-/* Coordinates */
+/* ========================================
+   Coordinate Group
+======================================== */
+
 .admin-station-coordinate-group {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
 }
 
-/* Map Preview */
-.admin-station-map-preview {
-  min-height: 180px;
+/* ========================================
+   Station Description
+======================================== */
 
-  display: grid;
-  place-items: center;
-
-  margin-top: 18px;
-  padding: 24px;
-
-  border: 1px dashed var(--admin-border);
-  border-radius: 10px;
-
-  background: #f8fafc;
-
-  color: var(--admin-muted);
-  text-align: center;
-  font-size: 12px;
-}
-
-/* Station Description */
 .admin-station-description {
   min-height: 160px !important;
+  resize: vertical;
 }
 
-/* Responsive */
+/* ========================================
+   Form Validation
+======================================== */
+
+.admin-station-form .admin-form-error {
+  display: block;
+  margin-top: 6px;
+  color: var(--admin-danger-hover);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.admin-station-form input[aria-invalid="true"],
+.admin-station-form textarea[aria-invalid="true"] {
+  border-color: var(--admin-danger);
+}
+
+.admin-station-form input[aria-invalid="true"]:focus,
+.admin-station-form textarea[aria-invalid="true"]:focus {
+  border-color: var(--admin-danger);
+  box-shadow: 0 0 0 3px var(--admin-danger-bg);
+}
+
+/* ========================================
+   Empty State
+======================================== */
+
+.admin-station-empty {
+  padding: 52px 24px;
+  text-align: center;
+}
+
+.admin-station-empty h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.admin-station-empty p {
+  max-width: 460px;
+  margin: 7px auto 0;
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-station-empty .admin-empty-action {
+  margin-top: 18px;
+}
+
+/* ========================================
+   Responsive
+======================================== */
+
+@media (max-width: 1000px) {
+  .admin-search-form {
+    width: auto;
+    flex-basis: auto;
+  }
+}
+
 @media (max-width: 760px) {
-  .admin-station-header {
+  .admin-list-toolbar {
+    align-items: stretch;
     flex-direction: column;
+    gap: 12px;
   }
 
-  .admin-station-card-header {
-    align-items: flex-start;
-    flex-direction: column;
+  .admin-search-form {
+    width: 100%;
+    max-width: none;
+    flex-basis: auto;
+  }
+
+  .admin-search-form .common-search {
+    flex: 1;
+    width: auto;
+    max-width: none;
+  }
+
+  .admin-search-form .common-button {
+    flex: 0 0 auto;
+  }
+
+  .admin-list-toolbar > .common-button {
+    width: 100%;
   }
 
   .admin-station-form-card {
@@ -242,7 +258,7 @@
     grid-template-columns: 1fr;
   }
 
-  .admin-station-actions {
-    flex-wrap: wrap;
+  .admin-station-description {
+    min-height: 140px !important;
   }
 }
