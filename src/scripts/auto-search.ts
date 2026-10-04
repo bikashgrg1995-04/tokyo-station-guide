@@ -39,8 +39,6 @@ export function initializeAutoSearch(options: AutoSearchOptions): void {
 
   let requestController: AbortController | null = null;
 
-  let isLoading = false;
-
   let lastSearchValue = searchInput.value.trim();
 
   /* ========================================
@@ -98,8 +96,6 @@ export function initializeAutoSearch(options: AutoSearchOptions): void {
   ======================================== */
 
   const setLoading = (loading: boolean): void => {
-    isLoading = loading;
-
     content.setAttribute("aria-busy", loading ? "true" : "false");
   };
 

@@ -1,6 +1,6 @@
 /* ========================================
    Line Stations Database Helpers
-======================================== */
+================================ */
 
 export interface LineStation {
   id: number;
@@ -29,12 +29,54 @@ export interface AvailableStation {
 
 /* ========================================
    Get Stations For A Line
-======================================== */
+================================ */
 
 export async function getStationsForLine(
   db: D1Database,
   lineId: number,
+  search?: string,
 ): Promise<LineStationItem[]> {
+  const searchValue = search?.trim() ?? "";
+
+  if (searchValue) {
+    const searchPattern = `%${searchValue}%`;
+
+    const result = await db
+      .prepare(
+        `
+          SELECT
+            ls.id,
+            s.id AS station_id,
+            s.name AS station_name,
+            s.name_japanese AS station_name_japanese,
+            s.slug AS station_slug,
+            ls.station_order,
+            ls.station_code
+          FROM line_stations ls
+          INNER JOIN stations s
+            ON s.id = ls.station_id
+          WHERE ls.line_id = ?
+            AND (
+              s.name LIKE ?
+              OR s.name_japanese LIKE ?
+              OR s.slug LIKE ?
+              OR ls.station_code LIKE ?
+            )
+          ORDER BY ls.station_order ASC
+        `,
+      )
+      .bind(
+        lineId,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+      )
+      .all<LineStationItem>();
+
+    return result.results;
+  }
+
   const result = await db
     .prepare(
       `
@@ -61,7 +103,7 @@ export async function getStationsForLine(
 
 /* ========================================
    Get Available Stations For A Line
-======================================== */
+================================ */
 
 export async function getAvailableStationsForLine(
   db: D1Database,
@@ -93,7 +135,7 @@ export async function getAvailableStationsForLine(
 
 /* ========================================
    Add Station To Line
-======================================== */
+================================ */
 
 export async function addStationToLine(
   db: D1Database,
@@ -127,7 +169,7 @@ export async function addStationToLine(
 
 /* ========================================
    Update Line Station
-======================================== */
+================================ */
 
 export async function updateLineStation(
   db: D1Database,
@@ -155,7 +197,7 @@ export async function updateLineStation(
 
 /* ========================================
    Remove Station From Line
-======================================== */
+================================ */
 
 export async function removeStationFromLine(
   db: D1Database,
@@ -174,7 +216,7 @@ export async function removeStationFromLine(
 
 /* ========================================
    Get Line Station
-======================================== */
+================================ */
 
 export async function getLineStationById(
   db: D1Database,

@@ -5,33 +5,14 @@ export interface Props {
   id: string;
   title: string;
   description: string;
-
   confirmText?: string;
   cancelText?: string;
-
   variant?: "primary" | "danger" | "warning";
-
-  /**
-   * Optional highlighted value such as an operator/station name.
-   */
   name?: string;
-
-  /**
-   * Optional warning/help text displayed below the highlighted name.
-   */
   warning?: string;
-
-  /**
-   * Optional icon/text shown inside the dialog icon.
-   */
   icon?: string;
-
-  /**
-   * Optional form id.
-   *
-   * If provided, clicking confirm will submit that form.
-   */
   formId?: string;
+  showName?: boolean;
 }
 
 const props = Astro.props as Props;
@@ -44,14 +25,11 @@ const {
   warning,
   icon,
   formId,
+  showName = false,
 } = props;
 
-const confirmText =
-  props.confirmText ?? "Confirm";
-
-const cancelText =
-  props.cancelText ?? "Cancel";
-
+const confirmText = props.confirmText ?? "Confirm";
+const cancelText = props.cancelText ?? "Cancel";
 const variant: NonNullable<Props["variant"]> =
   props.variant ?? "primary";
 
@@ -73,16 +51,17 @@ const confirmButtonClasses: Record<
 > = {
   primary:
     "common-dialog-button common-dialog-button-primary",
-
   danger:
     "common-dialog-button common-dialog-button-danger",
-
   warning:
     "common-dialog-button common-dialog-button-warning",
 };
 
 const confirmButtonClass =
   confirmButtonClasses[variant];
+
+const shouldRenderName =
+  showName || Boolean(name);
 ---
 
 <div
@@ -119,9 +98,9 @@ const confirmButtonClass =
       </p>
 
       {
-        name && (
+        shouldRenderName && (
           <strong class="common-dialog-name">
-            {name}
+            {name ?? ""}
           </strong>
         )
       }
@@ -163,7 +142,9 @@ const confirmButtonClass =
       );
 
     dialogs.forEach((dialog) => {
-      if (dialog.dataset.initialized === "true") {
+      if (
+        dialog.dataset.initialized === "true"
+      ) {
         return;
       }
 
@@ -183,8 +164,9 @@ const confirmButtonClass =
         return;
       }
 
-      let previousFocusedElement: HTMLElement | null =
-        null;
+      let previousFocusedElement:
+        | HTMLElement
+        | null = null;
 
       const close = () => {
         dialog.classList.remove("is-open");
@@ -194,7 +176,8 @@ const confirmButtonClass =
         }, 150);
 
         if (
-          previousFocusedElement instanceof HTMLElement
+          previousFocusedElement instanceof
+          HTMLElement
         ) {
           previousFocusedElement.focus();
         }
@@ -203,12 +186,16 @@ const confirmButtonClass =
       };
 
       const confirm = () => {
-        const formId = dialog.dataset.formId;
+        const formId =
+          dialog.dataset.formId;
 
         if (formId) {
-          const form = document.getElementById(formId);
+          const form =
+            document.getElementById(formId);
 
-          if (form instanceof HTMLFormElement) {
+          if (
+            form instanceof HTMLFormElement
+          ) {
             form.requestSubmit();
             return;
           }
@@ -225,7 +212,8 @@ const confirmButtonClass =
 
       const open = () => {
         previousFocusedElement =
-          document.activeElement instanceof HTMLElement
+          document.activeElement instanceof
+          HTMLElement
             ? document.activeElement
             : null;
 
