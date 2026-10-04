@@ -17,7 +17,6 @@ const { env } = await import("cloudflare:workers");
 
 const db = env.DB;
 
-
 /* ========================================
    Query Parameters
 ======================================== */
@@ -34,7 +33,6 @@ const currentPage =
   Number.isInteger(parsedPage) && parsedPage > 0
     ? parsedPage
     : 1;
-
 
 /* ========================================
    Pagination
@@ -53,7 +51,6 @@ const {
   search: searchParam,
 });
 
-
 /* ========================================
    Pagination URL
 ======================================== */
@@ -69,7 +66,6 @@ if (searchParam) {
     searchParam,
   );
 }
-
 
 /* ========================================
    Admin
@@ -131,17 +127,16 @@ const admin = await Astro.session?.get<{
 
           </div>
 
-
           <!-- Search / Action Bar -->
           <div class="admin-list-toolbar">
 
             <form
+              id="line-search-form"
               class="admin-search-form"
               method="GET"
               action="/admin/lines"
               role="search"
             >
-
               <SearchInput
                 id="line-search"
                 name="search"
@@ -149,27 +144,6 @@ const admin = await Astro.session?.get<{
                 placeholder="Search lines..."
                 ariaLabel="Search lines"
               />
-
-              <Button
-                type="submit"
-                variant="secondary"
-                size="medium"
-              >
-                Search
-              </Button>
-
-              {
-                searchParam && (
-                  <Button
-                    href="/admin/lines"
-                    variant="ghost"
-                    size="medium"
-                  >
-                    Clear
-                  </Button>
-                )
-              }
-
             </form>
 
             <Button
@@ -181,23 +155,20 @@ const admin = await Astro.session?.get<{
 
           </div>
 
-
           <!-- Lines Table -->
           <section class="admin-panel">
 
             <div
+              id="lines-table-content"
               class="admin-panel-body admin-table-panel-body"
             >
 
               <!-- Table Meta -->
               <div class="admin-table-meta">
-
                 <span>
                   {totalItems} • Total Lines
                 </span>
-
               </div>
-
 
               {
                 lines.length > 0 ? (
@@ -220,7 +191,6 @@ const admin = await Astro.session?.get<{
                         </thead>
 
                         <tbody>
-
                           {
                             lines.map((line) => (
                               <tr>
@@ -246,7 +216,6 @@ const admin = await Astro.session?.get<{
                                 </td>
 
                                 <td>
-
                                   {
                                     line.code ? (
                                       <span class="admin-line-code">
@@ -258,11 +227,9 @@ const admin = await Astro.session?.get<{
                                       </span>
                                     )
                                   }
-
                                 </td>
 
                                 <td>
-
                                   {
                                     line.color ? (
                                       <span class="admin-line-color">
@@ -282,11 +249,9 @@ const admin = await Astro.session?.get<{
                                       </span>
                                     )
                                   }
-
                                 </td>
 
                                 <td>
-
                                   <div class="admin-table-actions">
 
                                     <a
@@ -313,19 +278,16 @@ const admin = await Astro.session?.get<{
                                     </button>
 
                                   </div>
-
                                 </td>
 
                               </tr>
                             ))
                           }
-
                         </tbody>
 
                       </table>
 
                     </div>
-
 
                     <!-- Table Footer -->
                     <div class="admin-table-footer">
@@ -405,7 +367,6 @@ const admin = await Astro.session?.get<{
 
     </div>
 
-
     <!-- Delete Confirmation Dialog -->
     <ConfirmDialog
       id="delete-line-dialog"
@@ -417,7 +378,6 @@ const admin = await Astro.session?.get<{
       warning="This action cannot be undone."
     />
 
-
     <!-- Delete Form -->
     <form
       method="POST"
@@ -425,11 +385,12 @@ const admin = await Astro.session?.get<{
       hidden
     ></form>
 
-
     <script>
-      /*
-       * Delete confirmation
-       */
+      import { initializeAutoSearch } from "../../../scripts/auto-search";
+
+      /* ========================================
+         Delete Confirmation
+      ======================================== */
 
       const deleteDialog =
         document.getElementById(
@@ -441,102 +402,117 @@ const admin = await Astro.session?.get<{
           "delete-line-form",
         );
 
-      const deleteButtons =
-        document.querySelectorAll(
-          ".js-delete-line",
+      let selectedLineId:
+        string | null = null;
+
+      const initializeDeleteButtons = () => {
+        if (
+          !(deleteDialog instanceof HTMLDivElement) ||
+          !(deleteForm instanceof HTMLFormElement)
+        ) {
+          return;
+        }
+
+        const deleteButtons =
+          document.querySelectorAll(
+            ".js-delete-line",
+          );
+
+        deleteButtons.forEach(
+          (button) => {
+            if (
+              !(button instanceof HTMLButtonElement)
+            ) {
+              return;
+            }
+
+            if (
+              button.dataset
+                .deleteInitialized === "true"
+            ) {
+              return;
+            }
+
+            button.dataset.deleteInitialized =
+              "true";
+
+            button.addEventListener(
+              "click",
+              () => {
+                const lineId =
+                  button.dataset.lineId;
+
+                const lineName =
+                  button.dataset.lineName;
+
+                if (
+                  !lineId ||
+                  !lineName
+                ) {
+                  return;
+                }
+
+                selectedLineId =
+                  lineId;
+
+                const nameElement =
+                  deleteDialog.querySelector(
+                    ".common-dialog-name",
+                  );
+
+                if (
+                  nameElement instanceof HTMLElement
+                ) {
+                  nameElement.textContent =
+                    lineName;
+                }
+
+                deleteDialog.dispatchEvent(
+                  new CustomEvent(
+                    "dialog:open",
+                  ),
+                );
+              },
+            );
+          },
         );
-
-      let selectedLineId: string | null =
-        null;
-
+      };
 
       if (
         deleteDialog instanceof HTMLDivElement &&
         deleteForm instanceof HTMLFormElement
       ) {
-
-        deleteButtons.forEach((button) => {
-
-          if (
-            !(button instanceof HTMLButtonElement)
-          ) {
-            return;
-          }
-
-
-          button.addEventListener(
-            "click",
-            () => {
-
-              const lineId =
-                button.dataset.lineId;
-
-              const lineName =
-                button.dataset.lineName;
-
-
-              if (
-                !lineId ||
-                !lineName
-              ) {
-                return;
-              }
-
-
-              selectedLineId =
-                lineId;
-
-
-              const nameElement =
-                deleteDialog.querySelector(
-                  ".common-dialog-name",
-                );
-
-
-              if (
-                nameElement instanceof HTMLElement
-              ) {
-
-                nameElement.textContent =
-                  lineName;
-
-              }
-
-
-              deleteDialog.dispatchEvent(
-                new CustomEvent(
-                  "dialog:open",
-                ),
-              );
-
-            },
-          );
-
-        });
-
-
         deleteDialog.addEventListener(
           "confirm",
           () => {
-
             if (!selectedLineId) {
               return;
             }
 
-
             deleteForm.action =
               `/admin/lines/${selectedLineId}/delete`;
 
-
             deleteForm.submit();
 
-
             selectedLineId = null;
-
           },
         );
-
       }
+
+      initializeDeleteButtons();
+
+      /* ========================================
+         Auto Search
+      ======================================== */
+
+      initializeAutoSearch({
+        inputId: "line-search",
+        formId: "line-search-form",
+        contentId: "lines-table-content",
+        debounceMs: 350,
+        onContentUpdated:
+          initializeDeleteButtons,
+      });
     </script>
 
   </body>

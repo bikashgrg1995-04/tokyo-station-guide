@@ -17,7 +17,6 @@ const { env } = await import("cloudflare:workers");
 
 const db = env.DB;
 
-
 /* ========================================
    Query Parameters
 ======================================== */
@@ -34,7 +33,6 @@ const currentPage =
   Number.isInteger(parsedPage) && parsedPage > 0
     ? parsedPage
     : 1;
-
 
 /* ========================================
    Pagination
@@ -53,7 +51,6 @@ const {
   search: searchParam,
 });
 
-
 /* ========================================
    Pagination URL
 ======================================== */
@@ -69,7 +66,6 @@ if (searchParam) {
     searchParam,
   );
 }
-
 
 /* ========================================
    Admin
@@ -131,17 +127,16 @@ const admin = await Astro.session?.get<{
 
           </div>
 
-
           <!-- Search / Action Bar -->
           <div class="admin-list-toolbar">
 
             <form
+              id="operator-search-form"
               class="admin-search-form"
               method="GET"
               action="/admin/operators"
               role="search"
             >
-
               <SearchInput
                 id="operator-search"
                 name="search"
@@ -149,15 +144,6 @@ const admin = await Astro.session?.get<{
                 placeholder="Search operators..."
                 ariaLabel="Search operators"
               />
-
-              <Button
-                type="submit"
-                variant="secondary"
-                size="medium"
-              >
-                Search
-              </Button>
-
             </form>
 
             <Button
@@ -169,11 +155,11 @@ const admin = await Astro.session?.get<{
 
           </div>
 
-
           <!-- Operators Table -->
           <section class="admin-panel">
 
             <div
+              id="operators-table-content"
               class="admin-panel-body admin-table-panel-body"
             >
 
@@ -185,7 +171,6 @@ const admin = await Astro.session?.get<{
                 </span>
 
               </div>
-
 
               {
                 operators.length > 0 ? (
@@ -281,17 +266,16 @@ const admin = await Astro.session?.get<{
 
                     </div>
 
-
                     <!-- Table Footer -->
                     <div class="admin-table-footer">
 
                       <span>
-  {
-    totalItems > 0
-      ? `Page ${safeCurrentPage} of ${totalPages}`
-      : "No operators found"
-  }
-</span>
+                        {
+                          totalItems > 0
+                            ? `Page ${safeCurrentPage} of ${totalPages}`
+                            : "No operators found"
+                        }
+                      </span>
 
                       <Pagination
                         currentPage={safeCurrentPage}
@@ -341,7 +325,6 @@ const admin = await Astro.session?.get<{
 
     </div>
 
-
     <!-- Delete Confirmation Dialog -->
     <ConfirmDialog
       id="delete-operator-dialog"
@@ -353,7 +336,6 @@ const admin = await Astro.session?.get<{
       warning="This action cannot be undone."
     />
 
-
     <!-- Delete Form -->
     <form
       method="POST"
@@ -361,11 +343,11 @@ const admin = await Astro.session?.get<{
       hidden
     ></form>
 
-
     <script>
-      /*
-       * Delete confirmation
-       */
+  import { initializeAutoSearch } from "../../../scripts/auto-search";
+      /* ========================================
+         Delete Confirmation
+      ======================================== */
 
       const deleteDialog =
         document.getElementById(
@@ -377,102 +359,124 @@ const admin = await Astro.session?.get<{
           "delete-operator-form",
         );
 
-      const deleteButtons =
-        document.querySelectorAll(
-          ".js-delete-operator",
+      let selectedOperatorId:
+        string | null = null;
+
+      const initializeDeleteButtons = () => {
+        if (
+          !(deleteDialog instanceof HTMLDivElement) ||
+          !(deleteForm instanceof HTMLFormElement)
+        ) {
+          return;
+        }
+
+        const deleteButtons =
+          document.querySelectorAll(
+            ".js-delete-operator",
+          );
+
+        deleteButtons.forEach(
+          (button) => {
+            if (
+              !(button instanceof HTMLButtonElement)
+            ) {
+              return;
+            }
+
+            /*
+             * Prevent duplicate click handlers
+             * when search replaces the table.
+             */
+            if (
+              button.dataset
+                .deleteInitialized === "true"
+            ) {
+              return;
+            }
+
+            button.dataset.deleteInitialized =
+              "true";
+
+            button.addEventListener(
+              "click",
+              () => {
+                const operatorId =
+                  button.dataset.operatorId;
+
+                const operatorName =
+                  button.dataset.operatorName;
+
+                if (
+                  !operatorId ||
+                  !operatorName
+                ) {
+                  return;
+                }
+
+                selectedOperatorId =
+                  operatorId;
+
+                const nameElement =
+                  deleteDialog.querySelector(
+                    ".common-dialog-name",
+                  );
+
+                if (
+                  nameElement instanceof HTMLElement
+                ) {
+                  nameElement.textContent =
+                    operatorName;
+                }
+
+                deleteDialog.dispatchEvent(
+                  new CustomEvent(
+                    "dialog:open",
+                  ),
+                );
+              },
+            );
+          },
         );
-
-      let selectedOperatorId: string | null =
-        null;
-
+      };
 
       if (
         deleteDialog instanceof HTMLDivElement &&
         deleteForm instanceof HTMLFormElement
       ) {
-
-        deleteButtons.forEach((button) => {
-
-          if (
-            !(button instanceof HTMLButtonElement)
-          ) {
-            return;
-          }
-
-
-          button.addEventListener(
-            "click",
-            () => {
-
-              const operatorId =
-                button.dataset.operatorId;
-
-              const operatorName =
-                button.dataset.operatorName;
-
-
-              if (
-                !operatorId ||
-                !operatorName
-              ) {
-                return;
-              }
-
-
-              selectedOperatorId =
-                operatorId;
-
-
-              const nameElement =
-                deleteDialog.querySelector(
-                  ".common-dialog-name",
-                );
-
-
-              if (
-                nameElement instanceof HTMLElement
-              ) {
-
-                nameElement.textContent =
-                  operatorName;
-
-              }
-
-
-              deleteDialog.dispatchEvent(
-                new CustomEvent(
-                  "dialog:open",
-                ),
-              );
-
-            },
-          );
-
-        });
-
-
         deleteDialog.addEventListener(
           "confirm",
           () => {
-
             if (!selectedOperatorId) {
               return;
             }
 
-
             deleteForm.action =
               `/admin/operators/${selectedOperatorId}/delete`;
 
-
             deleteForm.submit();
 
-
             selectedOperatorId = null;
-
           },
         );
-
       }
+
+      /*
+       * Initialize current page buttons.
+       */
+      initializeDeleteButtons();
+
+      /* ========================================
+         Auto Search
+      ======================================== */
+
+      initializeAutoSearch({
+        inputId: "operator-search",
+        formId: "operator-search-form",
+        contentId: "operators-table-content",
+        debounceMs: 350,
+        onContentUpdated:
+          initializeDeleteButtons,
+      });
     </script>
 
   </body>

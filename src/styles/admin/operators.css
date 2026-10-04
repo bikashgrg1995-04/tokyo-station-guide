@@ -93,9 +93,7 @@
 .admin-search-form {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: auto;
-  max-width: none;
+  width: 300px;
   min-width: 0;
 }
 

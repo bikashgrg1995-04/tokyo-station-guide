@@ -14,6 +14,7 @@ import { getAdminStationsPaginated } from "../../../lib/db/stations";
 export const prerender = false;
 
 const { env } = await import("cloudflare:workers");
+
 const db = env.DB;
 
 /* ========================================
@@ -126,41 +127,37 @@ const admin = await Astro.session?.get<{
 
           <!-- Search / Action Bar -->
           <div class="admin-list-toolbar">
-  <form
-    class="admin-search-form"
-    method="GET"
-    action="/admin/stations"
-    role="search"
-  >
-    <SearchInput
-      id="station-search"
-      name="search"
-      value={searchParam}
-      placeholder="Search stations..."
-      ariaLabel="Search stations"
-    />
 
-    <Button
-      type="submit"
-      variant="secondary"
-      size="medium"
-    >
-      Search
-    </Button>
-  </form>
+            <form
+              id="station-search-form"
+              class="admin-search-form"
+              method="GET"
+              action="/admin/stations"
+              role="search"
+            >
+              <SearchInput
+                id="station-search"
+                name="search"
+                value={searchParam}
+                placeholder="Search stations..."
+                ariaLabel="Search stations"
+              />
+            </form>
 
-  <Button
-    href="/admin/stations/new"
-    variant="primary"
-  >
-    + Add Station
-  </Button>
-</div>
+            <Button
+              href="/admin/stations/new"
+              variant="primary"
+            >
+              + Add Station
+            </Button>
+
+          </div>
 
           <!-- Stations Table -->
           <section class="admin-panel">
 
             <div
+              id="stations-table-content"
               class="admin-panel-body admin-table-panel-body"
             >
 
@@ -193,7 +190,6 @@ const admin = await Astro.session?.get<{
                         </thead>
 
                         <tbody>
-
                           {
                             stations.map((station) => (
                               <tr>
@@ -227,6 +223,7 @@ const admin = await Astro.session?.get<{
                                     station.latitude !== null &&
                                     station.longitude !== null ? (
                                       <div class="admin-station-coordinates">
+
                                         <div>
                                           {station.latitude}
                                         </div>
@@ -234,6 +231,7 @@ const admin = await Astro.session?.get<{
                                         <div>
                                           {station.longitude}
                                         </div>
+
                                       </div>
                                     ) : (
                                       <span class="admin-table-muted">
@@ -268,7 +266,6 @@ const admin = await Astro.session?.get<{
                               </tr>
                             ))
                           }
-
                         </tbody>
 
                       </table>
@@ -320,6 +317,22 @@ const admin = await Astro.session?.get<{
                       }
                     </p>
 
+                    {
+                      searchParam && (
+                        <div class="admin-empty-action">
+
+                          <Button
+                            href="/admin/stations"
+                            variant="secondary"
+                            size="small"
+                          >
+                            Clear Search
+                          </Button>
+
+                        </div>
+                      )
+                    }
+
                   </div>
                 )
               }
@@ -353,9 +366,11 @@ const admin = await Astro.session?.get<{
     ></form>
 
     <script>
-      /*
-       * Delete confirmation
-       */
+      import { initializeAutoSearch } from "../../../scripts/auto-search";
+
+      /* ========================================
+         Delete Confirmation
+      ======================================== */
 
       const deleteDialog =
         document.getElementById(
@@ -367,73 +382,89 @@ const admin = await Astro.session?.get<{
           "delete-station-form",
         );
 
-      const deleteButtons =
-        document.querySelectorAll(
-          ".js-delete-station",
-        );
+      let selectedStationId:
+        string | null = null;
 
-      let selectedStationId: string | null =
-        null;
+      const initializeDeleteButtons = () => {
+        if (
+          !(deleteDialog instanceof HTMLDivElement) ||
+          !(deleteForm instanceof HTMLFormElement)
+        ) {
+          return;
+        }
+
+        const deleteButtons =
+          document.querySelectorAll(
+            ".js-delete-station",
+          );
+
+        deleteButtons.forEach(
+          (button) => {
+            if (
+              !(button instanceof HTMLButtonElement)
+            ) {
+              return;
+            }
+
+            if (
+              button.dataset
+                .deleteInitialized === "true"
+            ) {
+              return;
+            }
+
+            button.dataset.deleteInitialized =
+              "true";
+
+            button.addEventListener(
+              "click",
+              () => {
+                const stationId =
+                  button.dataset.stationId;
+
+                const stationName =
+                  button.dataset.stationName;
+
+                if (
+                  !stationId ||
+                  !stationName
+                ) {
+                  return;
+                }
+
+                selectedStationId =
+                  stationId;
+
+                const nameElement =
+                  deleteDialog.querySelector(
+                    ".common-dialog-name",
+                  );
+
+                if (
+                  nameElement instanceof HTMLElement
+                ) {
+                  nameElement.textContent =
+                    stationName;
+                }
+
+                deleteDialog.dispatchEvent(
+                  new CustomEvent(
+                    "dialog:open",
+                  ),
+                );
+              },
+            );
+          },
+        );
+      };
 
       if (
         deleteDialog instanceof HTMLDivElement &&
         deleteForm instanceof HTMLFormElement
       ) {
-        deleteButtons.forEach((button) => {
-
-          if (
-            !(button instanceof HTMLButtonElement)
-          ) {
-            return;
-          }
-
-          button.addEventListener(
-            "click",
-            () => {
-
-              const stationId =
-                button.dataset.stationId;
-
-              const stationName =
-                button.dataset.stationName;
-
-              if (
-                !stationId ||
-                !stationName
-              ) {
-                return;
-              }
-
-              selectedStationId =
-                stationId;
-
-              const nameElement =
-                deleteDialog.querySelector(
-                  ".common-dialog-name",
-                );
-
-              if (
-                nameElement instanceof HTMLElement
-              ) {
-                nameElement.textContent =
-                  stationName;
-              }
-
-              deleteDialog.dispatchEvent(
-                new CustomEvent(
-                  "dialog:open",
-                ),
-              );
-
-            },
-          );
-
-        });
-
         deleteDialog.addEventListener(
           "confirm",
           () => {
-
             if (!selectedStationId) {
               return;
             }
@@ -444,10 +475,24 @@ const admin = await Astro.session?.get<{
             deleteForm.submit();
 
             selectedStationId = null;
-
           },
         );
       }
+
+      initializeDeleteButtons();
+
+      /* ========================================
+         Auto Search
+      ======================================== */
+
+      initializeAutoSearch({
+        inputId: "station-search",
+        formId: "station-search-form",
+        contentId: "stations-table-content",
+        debounceMs: 350,
+        onContentUpdated:
+          initializeDeleteButtons,
+      });
     </script>
 
   </body>
