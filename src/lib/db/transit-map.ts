@@ -26,6 +26,17 @@ export interface TransitMapStation {
   slug: string;
   code: string | null;
   order: number;
+
+  /*
+   * Station detail popup fields.
+   *
+   * facilities / top_picks / connections are JSON strings
+   * stored in D1. The popup parses them in the browser.
+   */
+  about: string | null;
+  facilities: string | null;
+  top_picks: string | null;
+  connections: string | null;
 }
 
 export interface TransitSearchStation {
@@ -48,6 +59,10 @@ export interface TransitMapData {
 
 interface TransitStationRow extends LineStationItem {
   line_id: number | null;
+  station_about: string | null;
+  station_facilities: string | null;
+  station_top_picks: string | null;
+  station_connections: string | null;
 }
 
 /* ========================================
@@ -89,6 +104,10 @@ export async function getTransitMapData(
           s.name AS station_name,
           s.name_japanese AS station_name_japanese,
           s.slug AS station_slug,
+          s.about AS station_about,
+          s.facilities AS station_facilities,
+          s.top_picks AS station_top_picks,
+          s.connections AS station_connections,
           ls.station_order,
           ls.station_code
         FROM stations s
@@ -134,6 +153,10 @@ export async function getTransitMapData(
       slug: row.station_slug,
       code: row.station_code,
       order: row.station_order,
+      about: row.station_about,
+      facilities: row.station_facilities,
+      top_picks: row.station_top_picks,
+      connections: row.station_connections,
     });
   }
 

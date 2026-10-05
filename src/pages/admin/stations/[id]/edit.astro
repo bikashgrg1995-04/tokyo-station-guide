@@ -7,7 +7,15 @@ import AdminNavigation from "../../../../common_components/AdminNavigation.astro
 import Button from "../../../../common_components/Button.astro";
 import ConfirmDialog from "../../../../common_components/ConfirmDialog.astro";
 
-import { getStationById, updateStation } from "../../../../lib/db/stations";
+import {
+  getStationById,
+  updateStation,
+  linesToJson,
+  jsonToLines,
+  connectionsToJson,
+  jsonToConnections,
+  validateLineList,
+} from "../../../../lib/db/stations";
 
 export const prerender = false;
 
@@ -35,6 +43,10 @@ let latitudeValue = station.latitude !== null ? String(station.latitude) : "";
 let longitudeValue =
   station.longitude !== null ? String(station.longitude) : "";
 let description = station.description ?? "";
+let about = station.about ?? "";
+let facilitiesText = jsonToLines(station.facilities);
+let topPicksText = jsonToLines(station.top_picks);
+let connectionsText = jsonToConnections(station.connections);
 
 const errors = {
   name: "",
@@ -43,9 +55,11 @@ const errors = {
   latitude: "",
   longitude: "",
   description: "",
+  about: "",
+  facilities: "",
+  topPicks: "",
+  connections: "",
 };
-
-let confirmed = false;
 
 if (Astro.request.method === "POST") {
   const formData = await Astro.request.formData();
@@ -63,6 +77,14 @@ if (Astro.request.method === "POST") {
   longitudeValue = String(formData.get("longitude") ?? "").trim();
 
   description = String(formData.get("description") ?? "").trim();
+
+  about = String(formData.get("about") ?? "").trim();
+
+  facilitiesText = String(formData.get("facilities") ?? "");
+
+  topPicksText = String(formData.get("top_picks") ?? "");
+
+  connectionsText = String(formData.get("connections") ?? "");
 
   const latitude = latitudeValue === "" ? null : Number(latitudeValue);
 
@@ -103,6 +125,18 @@ if (Astro.request.method === "POST") {
     errors.description = "Description must be 1000 characters or less.";
   }
 
+  if (about.length > 1000) {
+    errors.about = "About must be 1000 characters or less.";
+  }
+
+  errors.facilities = validateLineList(facilitiesText, "Facilities");
+
+  errors.topPicks = validateLineList(topPicksText, "Top picks");
+
+  const connectionsResult = connectionsToJson(connectionsText);
+
+  errors.connections = connectionsResult.error;
+
   const hasValidationErrors = Object.values(errors).some(
     (message) => message.length > 0,
   );
@@ -116,6 +150,10 @@ if (Astro.request.method === "POST") {
         latitude,
         longitude,
         description: description || null,
+        about: about || null,
+        facilities: linesToJson(facilitiesText),
+        topPicks: linesToJson(topPicksText),
+        connections: connectionsResult.json,
       });
 
       return Astro.redirect("/admin/stations");
@@ -345,6 +383,116 @@ const admin = await Astro.session?.get<{
                             class="admin-form-error"
                           >
                             {errors.description}
+                          </small>
+                        )
+                      }
+                    </div>
+
+                    <div class="admin-form-group full-width">
+                      <label for="about"> About (station popup) </label>
+
+                      <textarea
+                        id="about"
+                        name="about"
+                        rows="4"
+                        class="admin-station-description"
+                        placeholder="Short text shown in the About section of the station popup..."
+                        aria-invalid={errors.about ? "true" : "false"}
+                        aria-describedby={errors.about
+                          ? "about-error"
+                          : undefined}>{about}</textarea
+                      >
+
+                      {
+                        errors.about ? (
+                          <small id="about-error" class="admin-form-error">
+                            {errors.about}
+                          </small>
+                        ) : (
+                          <small>Optional. Up to 1000 characters.</small>
+                        )
+                      }
+                    </div>
+
+                    <div class="admin-form-group">
+                      <label for="facilities"> Facilities </label>
+
+                      <textarea
+                        id="facilities"
+                        name="facilities"
+                        rows="5"
+                        placeholder={"Coin Lockers\nTicket Office\nWi-Fi"}
+                        aria-invalid={errors.facilities ? "true" : "false"}
+                        aria-describedby={errors.facilities
+                          ? "facilities-error"
+                          : undefined}>{facilitiesText}</textarea
+                      >
+
+                      {
+                        errors.facilities ? (
+                          <small
+                            id="facilities-error"
+                            class="admin-form-error"
+                          >
+                            {errors.facilities}
+                          </small>
+                        ) : (
+                          <small>One item per line.</small>
+                        )
+                      }
+                    </div>
+
+                    <div class="admin-form-group">
+                      <label for="top_picks"> Top Picks </label>
+
+                      <textarea
+                        id="top_picks"
+                        name="top_picks"
+                        rows="5"
+                        placeholder={"Imperial Palace\nRamen Street"}
+                        aria-invalid={errors.topPicks ? "true" : "false"}
+                        aria-describedby={errors.topPicks
+                          ? "top-picks-error"
+                          : undefined}>{topPicksText}</textarea
+                      >
+
+                      {
+                        errors.topPicks ? (
+                          <small id="top-picks-error" class="admin-form-error">
+                            {errors.topPicks}
+                          </small>
+                        ) : (
+                          <small>One item per line.</small>
+                        )
+                      }
+                    </div>
+
+                    <div class="admin-form-group full-width">
+                      <label for="connections"> Connections </label>
+
+                      <textarea
+                        id="connections"
+                        name="connections"
+                        rows="6"
+                        placeholder={"Chuo Line | #f15a22\nNarita Express (N'EX)"}
+                        aria-invalid={errors.connections ? "true" : "false"}
+                        aria-describedby={errors.connections
+                          ? "connections-error"
+                          : "connections-help"}>{connectionsText}</textarea
+                      >
+
+                      {
+                        errors.connections ? (
+                          <small
+                            id="connections-error"
+                            class="admin-form-error"
+                          >
+                            {errors.connections}
+                          </small>
+                        ) : (
+                          <small id="connections-help">
+                            One per line: Name | #color (color is optional).
+                            Leave empty to show other lines from the database.
                           </small>
                         )
                       }

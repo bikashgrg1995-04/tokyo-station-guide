@@ -10,6 +10,7 @@ import "../styles/website/transit.css";
 import "../styles/website/station-board.css";
 import "../styles/website/lines-dialog.css";
 import "../styles/website/search.css";
+import "../styles/website/station-sheet.css";
 import "../styles/website/responsive.css";
 
 export const prerender = false;
@@ -211,6 +212,46 @@ const transitData = {
         <h2 id="lines-title">Train Lines</h2>
         <p class="lines-sub" id="lines-sub"></p>
         <div id="lines-groups"></div>
+      </div>
+    </div>
+
+    <div class="station-sheet" id="station-sheet" hidden>
+      <div class="sheet-backdrop" id="sheet-backdrop"></div>
+
+      <div
+        class="sheet-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sheet-en"
+      >
+        <span class="sheet-grip" aria-hidden="true"></span>
+
+        <header class="sheet-head">
+          <span class="sheet-badge">
+            <small id="sheet-prefix"></small>
+            <b id="sheet-num"></b>
+          </span>
+
+          <div class="sheet-title">
+            <strong id="sheet-jp"></strong>
+            <span id="sheet-en"></span>
+          </div>
+
+          <button
+            class="round"
+            id="sheet-close"
+            type="button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </header>
+
+        <div class="sheet-body" id="sheet-body"></div>
+
+        <div class="sheet-foot">
+          <a class="sheet-cta" id="sheet-full" href="#">Full station page →</a>
+        </div>
       </div>
     </div>
 
@@ -1764,6 +1805,231 @@ const transitData = {
        Controls
     ========================================================= */
 
+        /* =========================================================
+       Station Detail Sheet (info icon)
+    ========================================================= */
+
+        var sheet = $("#station-sheet");
+
+        /*
+         * Read a field from the line's station object first,
+         * then from the matching `searchable` item.
+         * Accepts several possible field names.
+         */
+
+        function stationField(stn, names) {
+          var extra =
+            searchable.find(function (s) {
+              return s.slug === stn.slug;
+            }) || {};
+
+          for (var i = 0; i < names.length; i++) {
+            var v = stn[names[i]];
+
+            if (v == null || v === "") {
+              v = extra[names[i]];
+            }
+
+            if (v != null && v !== "") {
+              return v;
+            }
+          }
+
+          return null;
+        }
+
+        /*
+         * Accepts: array of strings, array of {name|label|title},
+         * JSON string, or comma / newline separated string.
+         */
+
+        function toList(v) {
+          if (!v) {
+            return [];
+          }
+
+          if (typeof v === "string") {
+            var t = v.trim();
+
+            if (t.charAt(0) === "[") {
+              try {
+                return toList(JSON.parse(t));
+              } catch (e) {}
+            }
+
+            return t
+              .split(/[,\n]/)
+              .map(function (s) {
+                return s.trim();
+              })
+              .filter(Boolean);
+          }
+
+          if (Array.isArray(v)) {
+            return v
+              .map(function (i) {
+                return typeof i === "string"
+                  ? i.trim()
+                  : String((i && (i.name || i.label || i.title)) || "").trim();
+              })
+              .filter(Boolean);
+          }
+
+          return [];
+        }
+
+        function stationConnections(stn) {
+          var raw = stationField(stn, ["connections"]);
+
+          if (typeof raw === "string") {
+            try {
+              raw = JSON.parse(raw);
+            } catch (e) {
+              raw = null;
+            }
+          }
+
+          var out = [];
+
+          if (Array.isArray(raw)) {
+            raw.forEach(function (i) {
+              if (typeof i === "string") {
+                out.push({ name: i });
+              } else if (i && i.name) {
+                out.push({ name: i.name, color: i.color });
+              }
+            });
+          }
+
+          if (out.length) {
+            return out;
+          }
+
+          /*
+           * Fallback: other lines that stop at this station.
+           */
+
+          findLinesForStation(stn.slug).forEach(function (m) {
+            if (m.lineIndex !== lineIdx) {
+              out.push({
+                name: m.lineName,
+                color: data.lines[m.lineIndex].color,
+              });
+            }
+          });
+
+          return out;
+        }
+
+        function sheetSection(title, inner) {
+          return (
+            '<section class="sheet-sec"><h4>' +
+            esc(title) +
+            "</h4>" +
+            inner +
+            "</section>"
+          );
+        }
+
+        function sheetChips(items) {
+          return (
+            '<div class="sheet-chips">' +
+            items
+              .map(function (t) {
+                return "<span>" + esc(t) + "</span>";
+              })
+              .join("") +
+            "</div>"
+          );
+        }
+
+        function openSheet() {
+          var stn = list()[idx];
+
+          if (!stn) {
+            return;
+          }
+
+          var m = String(stn.code || "").match(/^([A-Za-z]+)\s*-?\s*(\d+)\s*$/);
+
+          $("#sheet-prefix").textContent = m ? m[1].toUpperCase() : "";
+          $("#sheet-num").textContent = m ? m[2] : num(stn.code);
+          $("#sheet-jp").textContent = stn.jp || stn.name;
+          $("#sheet-en").textContent = stn.name;
+
+          var html = "";
+
+          var about = stationField(stn, ["about", "description", "summary"]);
+
+          if (about) {
+            html += sheetSection("About", "<p>" + esc(about) + "</p>");
+          }
+
+          var facilities = toList(stationField(stn, ["facilities"]));
+
+          if (facilities.length) {
+            html += sheetSection("Facilities", sheetChips(facilities));
+          }
+
+          var picks = toList(
+            stationField(stn, ["top_picks", "topPicks", "highlights"]),
+          );
+
+          if (picks.length) {
+            html += sheetSection("Top Picks", sheetChips(picks));
+          }
+
+          var conns = stationConnections(stn);
+
+          if (conns.length) {
+            html += sheetSection(
+              "Connections",
+              '<ul class="sheet-conns">' +
+                conns
+                  .map(function (c) {
+                    return (
+                      "<li><i" +
+                      (c.color ? ' style="--c:' + esc(c.color) + '"' : "") +
+                      "></i><b>" +
+                      esc(c.name) +
+                      "</b></li>"
+                    );
+                  })
+                  .join("") +
+                "</ul>",
+            );
+          }
+
+          $("#sheet-body").innerHTML = html;
+          $("#sheet-body").scrollTop = 0;
+
+          $("#sheet-full").href = stn.slug
+            ? "/stations/" + encodeURIComponent(stn.slug)
+            : "#";
+
+          sheet.hidden = false;
+
+          $("#sheet-close").focus();
+        }
+
+        function closeSheet() {
+          sheet.hidden = true;
+        }
+
+        $("#info-link").addEventListener("click", function (e) {
+          if (!list()[idx]) {
+            return;
+          }
+
+          e.preventDefault();
+
+          openSheet();
+        });
+
+        $("#sheet-close").addEventListener("click", closeSheet);
+
+        $("#sheet-backdrop").addEventListener("click", closeSheet);
+
         $("#prev-btn").addEventListener("click", function () {
           go(idx - 1);
         });
@@ -2103,7 +2369,11 @@ const transitData = {
     ========================================================= */
 
         document.addEventListener("keydown", function (e) {
-          if (!$("#search-overlay").hidden || !$("#lines-dialog").hidden) {
+          if (
+            !$("#search-overlay").hidden ||
+            !$("#lines-dialog").hidden ||
+            !$("#station-sheet").hidden
+          ) {
             return;
           }
 
@@ -2654,7 +2924,9 @@ const transitData = {
             return;
           }
 
-          if (!dlg.hidden) {
+          if (!sheet.hidden) {
+            closeSheet();
+          } else if (!dlg.hidden) {
             closeLines();
           } else if (!overlay.hidden) {
             closeSearch();

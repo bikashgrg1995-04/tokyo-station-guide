@@ -1,0 +1,284 @@
+/* =========================================================
+   Station Detail Sheet (compact)
+   Place in: src/styles/website/station-sheet.css
+   Accent colour follows the current line via var(--line).
+========================================================= */
+
+.station-sheet {
+  --sheet-bg: #ffffff;
+  --sheet-text: #1b1f23;
+  --sheet-muted: #5b636b;
+  --sheet-border: #e9ebee;
+  --sheet-chip-bg: #f3f4f5;
+  --sheet-chip-border: #e3e6e9;
+  --sheet-close-bg: #e6e8eb;
+
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.station-sheet[hidden] {
+  display: none;
+}
+
+html[data-theme="dark"] .station-sheet {
+  --sheet-bg: #161a1f;
+  --sheet-text: #f1f3f5;
+  --sheet-muted: #a4acb4;
+  --sheet-border: #262c33;
+  --sheet-chip-bg: #20262c;
+  --sheet-chip-border: #2d343b;
+  --sheet-close-bg: #2a3037;
+}
+
+.sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 24, 28, 0.4);
+  animation: sheet-fade 0.15s ease-out;
+}
+
+.sheet-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(360px, 100%);
+  max-height: min(480px, calc(100dvh - 24px));
+  background: var(--sheet-bg);
+  color: var(--sheet-text);
+  border-radius: 18px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.26);
+  overflow: hidden;
+  animation: sheet-pop 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.sheet-grip {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 32px;
+  height: 3px;
+  margin-left: -16px;
+  border-radius: 3px;
+  background: var(--sheet-border);
+}
+
+/* ---------- Header ---------- */
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 14px 10px;
+  border-bottom: 1px solid var(--sheet-border);
+}
+
+.sheet-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--line, #9caf2f);
+  border-radius: 9px;
+  color: var(--sheet-text);
+  line-height: 1;
+}
+
+.sheet-badge small {
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--line, #9caf2f);
+}
+
+.sheet-badge b {
+  margin-top: 2px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sheet-title {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sheet-title strong {
+  font-size: 16px;
+  line-height: 1.15;
+}
+
+.sheet-title span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--line, #9caf2f);
+}
+
+#sheet-close {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sheet-close-bg);
+  color: var(--sheet-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* ---------- Body ---------- */
+
+.sheet-body {
+  flex: 1;
+  min-height: 0;
+  padding: 0 14px 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sheet-sec {
+  padding-top: 10px;
+}
+
+.sheet-sec h4 {
+  margin: 0 0 5px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--line, #9caf2f);
+}
+
+.sheet-sec p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.sheet-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.sheet-chips span {
+  padding: 3px 8px;
+  border: 1px solid var(--sheet-chip-border);
+  border-radius: 7px;
+  background: var(--sheet-chip-bg);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--sheet-muted);
+}
+
+.sheet-conns {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sheet-conns li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--sheet-border);
+}
+
+.sheet-conns li:last-child {
+  border-bottom: 0;
+}
+
+.sheet-conns i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c, var(--sheet-muted));
+  box-shadow: 0 0 0 1.5px var(--sheet-bg), 0 0 0 2.5px var(--sheet-border);
+}
+
+.sheet-conns b {
+  font-size: 11px;
+}
+
+/* ---------- Footer button ---------- */
+
+.sheet-foot {
+  padding: 8px 14px 14px;
+}
+
+.sheet-cta {
+  display: block;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--line, #9caf2f);
+  color: #fff;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.sheet-cta:hover {
+  filter: brightness(1.06);
+}
+
+/* ---------- Mobile: bottom sheet ---------- */
+
+@media (max-width: 600px) {
+  .station-sheet {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .sheet-panel {
+    width: 100%;
+    max-height: 78dvh;
+    border-radius: 18px 18px 0 0;
+    animation-name: sheet-rise;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@keyframes sheet-rise {
+  from {
+    transform: translateY(32px);
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-backdrop,
+  .sheet-panel {
+    animation: none;
+  }
+}
