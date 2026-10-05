@@ -1,0 +1,412 @@
+---
+import "../../../styles/admin/shared.css";
+import "../../../styles/admin/tables.css";
+import "../../../styles/admin/stations.css";
+
+import AdminNavigation from "../../../common_components/AdminNavigation.astro";
+import Button from "../../../common_components/Button.astro";
+import ConfirmDialog from "../../../common_components/ConfirmDialog.astro";
+
+import { getFeaturedStations } from "../../../lib/db/featured-stations";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+const db = env.DB;
+
+/* ========================================
+   Featured Stations
+======================================== */
+
+const featuredStations = await getFeaturedStations(
+  db,
+  false,
+);
+
+/* ========================================
+   Admin
+======================================== */
+
+const admin = await Astro.session?.get<{
+  id: number;
+  email: string;
+  name: string;
+}>("admin");
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
+    <meta
+      name="robots"
+      content="noindex, nofollow"
+    />
+
+    <title>
+      Featured Stations | Admin | Tokyo Station Guide
+    </title>
+  </head>
+
+  <body>
+    <div class="admin-shell">
+
+      <!-- Admin Navigation -->
+      <AdminNavigation
+        activePath="/admin/featured-stations"
+      />
+
+      <!-- Main -->
+      <main class="admin-main">
+
+        <div class="admin-content">
+
+          <!-- Page Header -->
+          <div class="admin-page-header">
+
+            <div>
+              <h2>Featured Stations</h2>
+
+              <p>
+                Manage the station hubs shown in
+                Popular Station Hubs.
+              </p>
+            </div>
+
+          </div>
+
+          <!-- Action Bar -->
+          <div class="admin-list-toolbar">
+
+            <div>
+              <span class="admin-table-muted">
+                {featuredStations.length} • Total Featured Stations
+              </span>
+            </div>
+
+            <Button
+              href="/admin/featured-stations/new"
+              variant="primary"
+            >
+              + Add Featured Station
+            </Button>
+
+          </div>
+
+          <!-- Featured Stations Table -->
+          <section class="admin-panel">
+
+            <div class="admin-panel-body admin-table-panel-body">
+
+              {
+                featuredStations.length > 0 ? (
+                  <div class="admin-table-wrapper">
+
+                    <table class="admin-table">
+
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Station</th>
+                          <th>Image</th>
+                          <th>Order</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {
+                          featuredStations.map(
+                            (station) => (
+                              <tr>
+
+                                <!-- ID -->
+                                <td class="admin-table-id">
+                                  {station.id}
+                                </td>
+
+                                <!-- Station -->
+                                <td>
+                                  <div class="admin-station-name">
+                                    {station.station_name}
+                                  </div>
+
+                                  {
+                                    station.station_name_japanese && (
+                                      <div class="admin-station-japanese">
+                                        {station.station_name_japanese}
+                                      </div>
+                                    )
+                                  }
+
+                                  {
+                                    station.description && (
+                                      <div class="admin-table-muted">
+                                        {station.description}
+                                      </div>
+                                    )
+                                  }
+                                </td>
+
+                                <!-- Image -->
+                                <td>
+                                  <div
+                                    style="
+                                      width: 72px;
+                                      height: 48px;
+                                      overflow: hidden;
+                                      border-radius: 6px;
+                                      background: var(--admin-surface-muted, #f3f4f6);
+                                    "
+                                  >
+                                    <img
+                                      src={station.image_url}
+                                      alt={station.station_name}
+                                      loading="lazy"
+                                      style="
+                                        width: 100%;
+                                        height: 100%;
+                                        object-fit: cover;
+                                        display: block;
+                                      "
+                                    />
+                                  </div>
+                                </td>
+
+                                <!-- Sort Order -->
+                                <td class="admin-table-id">
+                                  {station.sort_order}
+                                </td>
+
+                                <!-- Status -->
+                                <td>
+                                  {
+                                    station.is_active === 1 ? (
+                                      <span class="admin-table-status admin-table-status-active">
+                                        Active
+                                      </span>
+                                    ) : (
+                                      <span class="admin-table-status admin-table-status-inactive">
+                                        Inactive
+                                      </span>
+                                    )
+                                  }
+                                </td>
+
+                                <!-- Actions -->
+                                <td>
+                                  <div class="admin-table-actions">
+
+                                    <a
+                                      href={`/admin/featured-stations/${station.id}/edit`}
+                                      class="admin-table-action admin-table-action-edit"
+                                    >
+                                      Edit
+                                    </a>
+
+                                    <button
+                                      type="button"
+                                      class="admin-table-action admin-table-action-delete js-delete-featured-station"
+                                      data-featured-id={station.id}
+                                      data-station-name={station.station_name}
+                                    >
+                                      Delete
+                                    </button>
+
+                                  </div>
+                                </td>
+
+                              </tr>
+                            ),
+                          )
+                        }
+                      </tbody>
+
+                    </table>
+
+                  </div>
+                ) : (
+                  <div class="admin-empty">
+
+                    <div class="admin-empty-icon">
+                      ◎
+                    </div>
+
+                    <h3>
+                      No featured stations yet
+                    </h3>
+
+                    <p>
+                      Add your first featured station
+                      to populate Popular Station Hubs.
+                    </p>
+
+                    <div class="admin-empty-action">
+
+                      <Button
+                        href="/admin/featured-stations/new"
+                        variant="primary"
+                        size="small"
+                      >
+                        + Add Featured Station
+                      </Button>
+
+                    </div>
+
+                  </div>
+                )
+              }
+
+            </div>
+
+          </section>
+
+        </div>
+
+      </main>
+
+    </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <ConfirmDialog
+      id="delete-featured-station-dialog"
+      title="Delete Featured Station"
+      description="Are you sure you want to remove this station from Popular Station Hubs?"
+      confirmText="Delete"
+      cancelText="Cancel"
+      variant="danger"
+      warning="This will only remove the featured entry. The station itself will not be deleted."
+    />
+
+    <!-- Delete Form -->
+    <form
+      method="POST"
+      id="delete-featured-station-form"
+      hidden
+    ></form>
+
+    <script>
+      /* ========================================
+         Delete Confirmation
+      ======================================== */
+
+      const deleteDialog =
+        document.getElementById(
+          "delete-featured-station-dialog",
+        );
+
+      const deleteForm =
+        document.getElementById(
+          "delete-featured-station-form",
+        );
+
+      let selectedFeaturedId:
+        string | null = null;
+
+      const initializeDeleteButtons = () => {
+        if (
+          !(deleteDialog instanceof HTMLDivElement) ||
+          !(deleteForm instanceof HTMLFormElement)
+        ) {
+          return;
+        }
+
+        const deleteButtons =
+          document.querySelectorAll(
+            ".js-delete-featured-station",
+          );
+
+        deleteButtons.forEach(
+          (button) => {
+            if (
+              !(button instanceof HTMLButtonElement)
+            ) {
+              return;
+            }
+
+            if (
+              button.dataset
+                .deleteInitialized === "true"
+            ) {
+              return;
+            }
+
+            button.dataset.deleteInitialized =
+              "true";
+
+            button.addEventListener(
+              "click",
+              () => {
+                const featuredId =
+                  button.dataset.featuredId;
+
+                const stationName =
+                  button.dataset.stationName;
+
+                if (
+                  !featuredId ||
+                  !stationName
+                ) {
+                  return;
+                }
+
+                selectedFeaturedId =
+                  featuredId;
+
+                const nameElement =
+                  deleteDialog.querySelector(
+                    ".common-dialog-name",
+                  );
+
+                if (
+                  nameElement instanceof HTMLElement
+                ) {
+                  nameElement.textContent =
+                    stationName;
+                }
+
+                deleteDialog.dispatchEvent(
+                  new CustomEvent(
+                    "dialog:open",
+                  ),
+                );
+              },
+            );
+          },
+        );
+      };
+
+      if (
+        deleteDialog instanceof HTMLDivElement &&
+        deleteForm instanceof HTMLFormElement
+      ) {
+        deleteDialog.addEventListener(
+          "confirm",
+          () => {
+            if (!selectedFeaturedId) {
+              return;
+            }
+
+            deleteForm.action =
+              `/admin/featured-stations/${selectedFeaturedId}/delete`;
+
+            deleteForm.submit();
+
+            selectedFeaturedId = null;
+          },
+        );
+      }
+
+      initializeDeleteButtons();
+    </script>
+
+  </body>
+</html>

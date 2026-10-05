@@ -1,0 +1,26 @@
+---
+import { deleteFeaturedStation } from "../../../../lib/db/featured-stations";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+const db = env.DB;
+
+const id = Number(Astro.params.id);
+
+if (!Number.isInteger(id) || id <= 0) {
+  return Astro.redirect("/admin/featured-stations");
+}
+
+if (Astro.request.method !== "POST") {
+  return Astro.redirect("/admin/featured-stations");
+}
+
+try {
+  await deleteFeaturedStation(db, id);
+} catch (error) {
+  console.error("Failed to delete featured station:", error);
+}
+
+return Astro.redirect("/admin/featured-stations");
+---

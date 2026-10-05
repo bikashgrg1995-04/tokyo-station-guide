@@ -1,5 +1,6 @@
 ﻿---
 import { getTransitMapData } from "../lib/db/transit-map.ts";
+import { getFeaturedStations } from "../lib/db/featured-stations";
 
 import "../styles/website/global.css";
 import "../styles/website/theme.css";
@@ -25,6 +26,8 @@ const description =
 ======================================== */
 
 const { lines, stationsByLine, searchable } = await getTransitMapData(db);
+
+const featuredStations = await getFeaturedStations(db);
 
 const transitData = {
   lines,
@@ -213,21 +216,57 @@ const transitData = {
 
     <div class="search-overlay" id="search-overlay" hidden>
       <div class="search-backdrop" id="search-backdrop"></div>
+
       <div class="search-panel">
         <div class="search-head">
           <h2>Where are you going?</h2>
-          <button class="round" id="close-search" aria-label="Close search"
-            >×</button
+
+          <button
+            class="round"
+            id="close-search"
+            aria-label="Close search"
+            type="button"
           >
+            ×
+          </button>
         </div>
+
         <form id="search-form" autocomplete="off">
           <input
             type="search"
             id="search-input"
-            placeholder="Station name or Japanese name"
-            aria-label="Search stations"
+            placeholder="Search stations or codes"
+            aria-label="Search stations or codes"
           />
         </form>
+
+        <div id="search-home">
+          <section
+            class="search-section"
+            id="featured-section"
+            aria-labelledby="featured-title"
+          >
+            <div class="search-section-head">
+              <h3 id="featured-title">Popular Station Hubs</h3>
+            </div>
+
+            <div id="featured-stations" class="featured-stations"></div>
+          </section>
+
+          <section
+            class="search-section"
+            id="recent-section"
+            aria-labelledby="recent-title"
+            hidden
+          >
+            <div class="search-section-head">
+              <h3 id="recent-title">Recent</h3>
+            </div>
+
+            <div id="recent-stations" class="recent-stations"></div>
+          </section>
+        </div>
+
         <div id="search-results" class="search-results"></div>
       </div>
     </div>
@@ -242,6 +281,11 @@ const transitData = {
       id="search-data"
       set:html={JSON.stringify(searchable)}
     />
+    <script
+      type="application/json"
+      id="featured-stations-data"
+      set:html={JSON.stringify(featuredStations)}
+    />
 
     <script is:inline>
       (function () {
@@ -251,6 +295,9 @@ const transitData = {
         };
         var data = JSON.parse($("#transit-data").textContent);
         var searchable = JSON.parse($("#search-data").textContent);
+        var featuredStations = JSON.parse(
+          $("#featured-stations-data").textContent,
+        );
 
         /* ---------- Theme ---------- */
         function applyTheme(t) {
@@ -1425,6 +1472,14 @@ const transitData = {
         var overlay = $("#search-overlay");
         var input = $("#search-input");
         var results = $("#search-results");
+        var searchHome = $("#search-home");
+        var featuredSection = $("#featured-section");
+        var featuredHost = $("#featured-stations");
+        var recentSection = $("#recent-section");
+        var recentHost = $("#recent-stations");
+
+        var RECENT_SEARCH_KEY = "tokyo-recent-stations";
+        var MAX_RECENT = 6;
 
         function esc(v) {
           return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
@@ -1437,59 +1492,261 @@ const transitData = {
             }[c];
           });
         }
+
+        function getRecentStations() {
+          try {
+            var raw = localStorage.getItem(RECENT_SEARCH_KEY);
+            if (!raw) return [];
+
+            var slugs = JSON.parse(raw);
+
+            if (!Array.isArray(slugs)) return [];
+
+            return slugs
+              .map(function (slug) {
+                return searchable.find(function (s) {
+                  return s.slug === slug;
+                });
+              })
+              .filter(Boolean)
+              .slice(0, MAX_RECENT);
+          } catch (e) {
+            return [];
+          }
+        }
+
+        function saveRecentStation(slug) {
+          if (!slug) return;
+
+          try {
+            var recent = [];
+
+            var raw = localStorage.getItem(RECENT_SEARCH_KEY);
+
+            if (raw) {
+              var parsed = JSON.parse(raw);
+
+              if (Array.isArray(parsed)) {
+                recent = parsed;
+              }
+            }
+
+            recent = recent.filter(function (item) {
+              return item !== slug;
+            });
+
+            recent.unshift(slug);
+
+            localStorage.setItem(
+              RECENT_SEARCH_KEY,
+              JSON.stringify(recent.slice(0, MAX_RECENT)),
+            );
+          } catch (e) {}
+        }
+
+        function getStationCode(station) {
+          if (!station.codes || !station.codes.length) {
+            return "";
+          }
+
+          return station.codes[0];
+        }
+
+        function stationHref(slug) {
+          return "/stations/" + encodeURIComponent(slug);
+        }
+
+        function getSearchableStation(slug) {
+          return searchable.find(function (s) {
+            return s.slug === slug;
+          });
+        }
+
+        function renderFeaturedStations() {
+          featuredHost.innerHTML = "";
+
+          if (!featuredStations.length) {
+            featuredSection.hidden = true;
+            return;
+          }
+
+          featuredSection.hidden = false;
+
+          featuredStations.forEach(function (station) {
+            var a = document.createElement("a");
+
+            a.className = "featured-station";
+            a.href = stationHref(station.station_slug);
+
+            a.innerHTML =
+              '<span class="featured-image-wrap">' +
+              '<img src="' +
+              esc(station.image_url) +
+              '" alt="" loading="lazy">' +
+              "</span>" +
+              '<span class="featured-info">' +
+              "<b>" +
+              esc(station.station_name) +
+              (station.station_name_japanese
+                ? " " + esc(station.station_name_japanese)
+                : "") +
+              "</b>" +
+              (station.description
+                ? "<small>" + esc(station.description) + "</small>"
+                : "") +
+              "</span>";
+
+            a.addEventListener("click", function () {
+              saveRecentStation(station.station_slug);
+            });
+
+            featuredHost.appendChild(a);
+          });
+        }
+
+        function renderRecentStations() {
+          var recent = getRecentStations();
+
+          recentHost.innerHTML = "";
+
+          if (!recent.length) {
+            recentSection.hidden = true;
+            return;
+          }
+
+          recentSection.hidden = false;
+
+          recent.forEach(function (station) {
+            var a = document.createElement("a");
+
+            a.className = "recent-station";
+            a.href = stationHref(station.slug);
+
+            var code = getStationCode(station);
+
+            a.innerHTML =
+              '<span class="recent-station-name">' +
+              "<b>" +
+              esc(station.jp || station.name) +
+              "</b>" +
+              "<span>" +
+              esc(station.name) +
+              "</span>" +
+              "</span>" +
+              '<span class="recent-station-code">' +
+              esc(code) +
+              "</span>" +
+              '<span class="recent-station-arrow" aria-hidden="true">→</span>';
+
+            a.addEventListener("click", function () {
+              saveRecentStation(station.slug);
+            });
+
+            recentHost.appendChild(a);
+          });
+        }
+
+        function showSearchHome() {
+          searchHome.hidden = false;
+          results.innerHTML = "";
+
+          renderFeaturedStations();
+          renderRecentStations();
+        }
+
+        function showSearchResults(matches) {
+          searchHome.hidden = true;
+
+          results.innerHTML = matches.length
+            ? matches
+                .map(function (s) {
+                  return (
+                    '<a class="result" href="' +
+                    stationHref(s.slug) +
+                    '" data-slug="' +
+                    esc(s.slug) +
+                    '">' +
+                    "<b>" +
+                    esc(s.jp || "") +
+                    "</b>" +
+                    "<span>" +
+                    esc(s.name) +
+                    "</span>" +
+                    "</a>"
+                  );
+                })
+                .join("")
+            : '<p class="empty">No stations found. Try the English or Japanese name.</p>';
+
+          results.querySelectorAll("a.result").forEach(function (a) {
+            a.addEventListener("click", function () {
+              saveRecentStation(a.getAttribute("data-slug"));
+            });
+          });
+        }
+
         function openSearch() {
           overlay.hidden = false;
+
+          input.value = "";
+
+          showSearchHome();
+
           setTimeout(function () {
             input.focus();
           }, 30);
         }
+
         function closeSearch() {
           overlay.hidden = true;
         }
 
         input.addEventListener("input", function () {
           var q = input.value.trim().toLowerCase();
+
           if (!q) {
-            results.innerHTML = "";
+            showSearchHome();
             return;
           }
+
           var m = searchable
             .filter(function (s) {
+              var codeMatch = (s.codes || []).some(function (code) {
+                return code.toLowerCase().includes(q);
+              });
+
               return (
                 (s.name || "").toLowerCase().includes(q) ||
                 (s.jp || "").toLowerCase().includes(q) ||
-                (s.slug || "").toLowerCase().includes(q)
+                (s.slug || "").toLowerCase().includes(q) ||
+                codeMatch
               );
             })
             .slice(0, 10);
-          results.innerHTML = m.length
-            ? m
-                .map(function (s) {
-                  return (
-                    '<a class="result" href="/stations/' +
-                    encodeURIComponent(s.slug) +
-                    '"><b>' +
-                    esc(s.jp || "") +
-                    "</b><span>" +
-                    esc(s.name) +
-                    "</span></a>"
-                  );
-                })
-                .join("")
-            : '<p class="empty">No stations found. Try the English or Japanese name.</p>';
+
+          showSearchResults(m);
         });
+
         $("#search-form").addEventListener("submit", function (e) {
           e.preventDefault();
-          var first = results.querySelector("a");
-          if (first) window.location.href = first.getAttribute("href");
+
+          var first = results.querySelector("a.result");
+
+          if (first) {
+            saveRecentStation(first.getAttribute("data-slug"));
+            window.location.href = first.getAttribute("href");
+          }
         });
+
         $("#open-search").addEventListener("click", openSearch);
         $("#close-search").addEventListener("click", closeSearch);
         $("#search-backdrop").addEventListener("click", closeSearch);
+
         document.addEventListener("keydown", function (e) {
           if (e.key !== "Escape") return;
+
           if (!dlg.hidden) closeLines();
-          else closeSearch();
+          else if (!overlay.hidden) closeSearch();
         });
 
         /* ---------- Init ---------- */

@@ -6,9 +6,7 @@ export interface Props {
   activePath?: string;
 }
 
-const {
-  activePath = "/admin",
-} = Astro.props;
+const { activePath = "/admin" } = Astro.props;
 
 const isActive = (path: string) => {
   if (path === "/admin") {
@@ -20,160 +18,93 @@ const isActive = (path: string) => {
 ---
 
 <aside class="admin-sidebar">
-
   <!-- Brand -->
   <div class="admin-brand">
     <div class="admin-brand-top">
-
-      <div class="admin-logo">
-        T
-      </div>
+      <div class="admin-logo">T</div>
 
       <div>
-        <h1>
-          Tokyo Station Guide
-        </h1>
+        <h1>Tokyo Station Guide</h1>
 
-        <p>
-          Content Management
-        </p>
+        <p>Content Management</p>
       </div>
-
     </div>
   </div>
 
-
   <!-- Management -->
-  <div class="admin-section-label">
-    Management
-  </div>
+  <div class="admin-section-label">Management</div>
 
-  <nav
-    class="admin-nav"
-    aria-label="Management"
-  >
-
+  <nav class="admin-nav" aria-label="Management">
     <a
       href="/admin"
       class:list={{
         active: isActive("/admin"),
       }}
-      aria-current={
-        isActive("/admin")
-          ? "page"
-          : undefined
-      }
+      aria-current={isActive("/admin") ? "page" : undefined}
     >
-      <span
-        class="admin-nav-icon"
-        aria-hidden="true"
-      >
-        ⌂
-      </span>
+      <span class="admin-nav-icon" aria-hidden="true"> ⌂ </span>
 
-      <span>
-        Dashboard
-      </span>
+      <span> Dashboard </span>
     </a>
-
 
     <a
       href="/admin/operators"
       class:list={{
         active: isActive("/admin/operators"),
       }}
-      aria-current={
-        isActive("/admin/operators")
-          ? "page"
-          : undefined
-      }
+      aria-current={isActive("/admin/operators") ? "page" : undefined}
     >
-      <span
-        class="admin-nav-icon"
-        aria-hidden="true"
-      >
-        ◉
-      </span>
+      <span class="admin-nav-icon" aria-hidden="true"> ◉ </span>
 
-      <span>
-        Operators
-      </span>
+      <span> Operators </span>
     </a>
-
 
     <a
       href="/admin/lines"
       class:list={{
         active: isActive("/admin/lines"),
       }}
-      aria-current={
-        isActive("/admin/lines")
-          ? "page"
-          : undefined
-      }
+      aria-current={isActive("/admin/lines") ? "page" : undefined}
     >
-      <span
-        class="admin-nav-icon"
-        aria-hidden="true"
-      >
-        ↔
-      </span>
+      <span class="admin-nav-icon" aria-hidden="true"> ↔ </span>
 
-      <span>
-        Lines
-      </span>
+      <span> Lines </span>
     </a>
-
 
     <a
       href="/admin/stations"
       class:list={{
         active: isActive("/admin/stations"),
       }}
-      aria-current={
-        isActive("/admin/stations")
-          ? "page"
-          : undefined
-      }
+      aria-current={isActive("/admin/stations") ? "page" : undefined}
     >
-      <span
-        class="admin-nav-icon"
-        aria-hidden="true"
-      >
-        ◎
-      </span>
+      <span class="admin-nav-icon" aria-hidden="true"> ◎ </span>
 
-      <span>
-        Stations
-      </span>
+      <span> Stations </span>
     </a>
 
+    <a
+      href="/admin/featured-stations"
+      class:list={{
+        active: isActive("/admin/featured-stations"),
+      }}
+      aria-current={isActive("/admin/featured-stations") ? "page" : undefined}
+    >
+      <span class="admin-nav-icon" aria-hidden="true"> ★ </span>
+
+      <span> Featured Stations </span>
+    </a>
   </nav>
 
-
   <!-- System -->
-  <div class="admin-section-label">
-    System
-  </div>
+  <div class="admin-section-label">System</div>
 
-  <nav
-    class="admin-nav"
-    aria-label="System"
-  >
-
+  <nav class="admin-nav" aria-label="System">
     <a href="#">
-      <span
-        class="admin-nav-icon"
-        aria-hidden="true"
-      >
-        ⚙
-      </span>
+      <span class="admin-nav-icon" aria-hidden="true"> ⚙ </span>
 
-      <span>
-        Settings
-      </span>
+      <span> Settings </span>
     </a>
-
 
     <form
       method="POST"
@@ -186,36 +117,18 @@ const isActive = (path: string) => {
         class="admin-logout-button"
         id="admin-logout-button"
       >
-        <span
-          class="admin-nav-icon"
-          aria-hidden="true"
-        >
-          ↪
-        </span>
+        <span class="admin-nav-icon" aria-hidden="true"> ↪ </span>
 
-        <span>
-          Logout
-        </span>
+        <span> Logout </span>
       </button>
     </form>
-
   </nav>
-
 
   <!-- Sidebar Bottom -->
   <div class="admin-sidebar-bottom">
-
-    <a
-      href="/"
-      class="admin-back-link"
-    >
-      ← Back to website
-    </a>
-
+    <a href="/" class="admin-back-link"> ← Back to website </a>
   </div>
-
 </aside>
-
 
 <!-- Logout Confirmation -->
 <ConfirmDialog
@@ -227,17 +140,10 @@ const isActive = (path: string) => {
   variant="danger"
 />
 
-
 <script>
-  const logoutForm =
-    document.getElementById(
-      "admin-logout-form",
-    );
+  const logoutForm = document.getElementById("admin-logout-form");
 
-  const logoutDialog =
-    document.getElementById(
-      "admin-logout-dialog",
-    );
+  const logoutDialog = document.getElementById("admin-logout-dialog");
 
   if (
     logoutForm instanceof HTMLFormElement &&
@@ -245,28 +151,20 @@ const isActive = (path: string) => {
   ) {
     let confirmed = false;
 
-    logoutForm.addEventListener(
-      "submit",
-      (event) => {
-        if (confirmed) {
-          return;
-        }
+    logoutForm.addEventListener("submit", (event) => {
+      if (confirmed) {
+        return;
+      }
 
-        event.preventDefault();
+      event.preventDefault();
 
-        logoutDialog.dispatchEvent(
-          new CustomEvent("dialog:open"),
-        );
-      },
-    );
+      logoutDialog.dispatchEvent(new CustomEvent("dialog:open"));
+    });
 
-    logoutDialog.addEventListener(
-      "confirm",
-      () => {
-        confirmed = true;
+    logoutDialog.addEventListener("confirm", () => {
+      confirmed = true;
 
-        logoutForm.submit();
-      },
-    );
+      logoutForm.submit();
+    });
   }
 </script>

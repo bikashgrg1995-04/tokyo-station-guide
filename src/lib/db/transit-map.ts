@@ -32,6 +32,7 @@ export interface TransitSearchStation {
   name: string;
   jp: string | null;
   slug: string;
+  codes: string[];
 }
 
 export interface TransitMapData {
@@ -99,10 +100,7 @@ export async function getTransitMapData(
      Build Stations By Line
   ====================================== */
 
-  const stationsByLine: Record<
-    string,
-    TransitMapStation[]
-  > = {};
+  const stationsByLine: Record<string, TransitMapStation[]> = {};
 
   for (const line of lines) {
     stationsByLine[String(line.id)] = [];
@@ -113,8 +111,7 @@ export async function getTransitMapData(
       continue;
     }
 
-    const lineStations =
-      stationsByLine[String(row.line_id)];
+    const lineStations = stationsByLine[String(row.line_id)];
 
     if (!lineStations) {
       continue;
@@ -136,44 +133,44 @@ export async function getTransitMapData(
      so deduplicate by station id.
   ====================================== */
 
-  const searchableMap = new Map<
-    number,
-    TransitSearchStation
-  >();
+  const searchableMap = new Map<number, TransitSearchStation>();
 
   for (const row of rows) {
-    if (!searchableMap.has(row.station_id)) {
-      searchableMap.set(row.station_id, {
+    let station = searchableMap.get(row.station_id);
+
+    if (!station) {
+      station = {
         name: row.station_name,
         jp: row.station_name_japanese,
         slug: row.station_slug,
-      });
+        codes: [],
+      };
+
+      searchableMap.set(row.station_id, station);
+    }
+
+    const code = row.station_code?.trim();
+
+    if (code && !station.codes.includes(code)) {
+      station.codes.push(code);
     }
   }
 
-  const searchable = Array.from(
-    searchableMap.values(),
-  );
-
+  const searchable = Array.from(searchableMap.values());
   /* ======================================
      Build Transit Lines
   ====================================== */
 
-  const transitLines: TransitMapLine[] =
-    lines.map((line: Line) => ({
-      id: line.id,
-      name: line.name,
-      code: line.code,
-      color: line.color || "#9caf31",
-      operatorId: line.operator_id,
-      operator: line.operator_name,
-      description: line.description,
-      shape:
-        line.code === "JY" ||
-        /yamanote/i.test(line.name)
-          ? "loop"
-          : null,
-    }));
+  const transitLines: TransitMapLine[] = lines.map((line: Line) => ({
+    id: line.id,
+    name: line.name,
+    code: line.code,
+    color: line.color || "#9caf31",
+    operatorId: line.operator_id,
+    operator: line.operator_name,
+    description: line.description,
+    shape: line.code === "JY" || /yamanote/i.test(line.name) ? "loop" : null,
+  }));
 
   return {
     lines: transitLines,
