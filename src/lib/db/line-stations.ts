@@ -241,3 +241,35 @@ export async function getLineStationById(
 
   return result ?? null;
 }
+
+
+/* ========================================
+   Get All Line Stations
+================================ */
+
+export async function getAllLineStations(
+  db: D1Database,
+): Promise<LineStationItem[]> {
+  const result = await db
+    .prepare(
+      `
+        SELECT
+          ls.id,
+          s.id AS station_id,
+          s.name AS station_name,
+          s.name_japanese AS station_name_japanese,
+          s.slug AS station_slug,
+          ls.station_order,
+          ls.station_code
+        FROM line_stations ls
+        INNER JOIN stations s
+          ON s.id = ls.station_id
+        ORDER BY
+          ls.line_id ASC,
+          ls.station_order ASC
+      `,
+    )
+    .all<LineStationItem>();
+
+  return result.results;
+}

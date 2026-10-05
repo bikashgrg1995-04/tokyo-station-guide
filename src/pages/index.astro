@@ -1,7 +1,5 @@
 ﻿---
-import { getLines } from "../lib/db/lines.ts";
-import { getStations } from "../lib/db/stations.ts";
-import { getStationsForLine } from "../lib/db/line-stations.ts";
+import { getTransitMapData } from "../lib/db/transit-map.ts";
 
 import "../styles/website/global.css";
 import "../styles/website/theme.css";
@@ -22,47 +20,16 @@ const siteName = "Tokyo Station Guide";
 const description =
   "Explore Tokyo railway stations, train lines, station codes, exits, nearby attractions, restaurants, hotels, and useful travel information.";
 
-const lines = await getLines(db);
-const stations = await getStations(db);
+/* ========================================
+   Transit Map Data
+======================================== */
 
-// Load stations for every line so line switching works without extra requests
-const stationsByLine: Record<string, any[]> = {};
-await Promise.all(
-  lines.map(async (line) => {
-    const list = await getStationsForLine(db, line.id);
-    stationsByLine[line.id] = list.map((s) => ({
-      name: s.station_name,
-      jp: s.station_name_japanese,
-      slug: s.station_slug,
-      code: s.station_code,
-      order: s.station_order,
-    }));
-  }),
-);
+const { lines, stationsByLine, searchable } = await getTransitMapData(db);
 
 const transitData = {
-  lines: lines.map((l) => ({
-    id: l.id,
-    name: l.name,
-    code: l.code,
-    color: l.color || "#9caf31",
-    operatorId: l.operator_id,
-    operator: l.operator_name,
-    description: l.description,
-    // Track shape: "loop" | "u" | "line". Optional DB column `track_shape` can set it;
-    // otherwise Yamanote is a loop and the rest is chosen by station count.
-    shape:
-      (l as any).track_shape ??
-      (l.code === "JY" || /yamanote/i.test(l.name) ? "loop" : null),
-  })),
+  lines,
   stationsByLine,
 };
-
-const searchable = stations.map((s) => ({
-  name: s.name,
-  jp: s.name_japanese,
-  slug: s.slug,
-}));
 ---
 
 <!doctype html>
@@ -1089,71 +1056,271 @@ const searchable = stations.map((s) => ({
         }
 
         /* ---------- Controls ---------- */
+
         $("#prev-btn").addEventListener("click", function () {
           go(idx - 1);
         });
+
         $("#next-btn").addEventListener("click", function () {
           go(idx + 1);
         });
+
         var MAX_ZOOM = 6;
+
+        /* ---------- Zoom ---------- */
+
         $("#zoom-in").addEventListener("click", function () {
           zoom = Math.min(zoom * 1.5, MAX_ZOOM);
           refreshView();
         });
+
         $("#zoom-out").addEventListener("click", function () {
           zoom = Math.max(zoom / 1.5, 1);
           refreshView();
         });
-        // Mouse wheel / trackpad zoom on the map (the view stays centred on the train)
+
+        /* Mouse wheel zoom */
         $("#stage").addEventListener(
           "wheel",
           function (e) {
             e.preventDefault();
-            var step = e.deltaMode === 1 ? 0.05 : 0.0015; // lines vs pixels
+
+            var step = e.deltaMode === 1 ? 0.05 : 0.0015;
+
             zoom = Math.min(
               MAX_ZOOM,
               Math.max(1, zoom * Math.exp(-e.deltaY * step)),
             );
+
             refreshView();
           },
           { passive: false },
         );
 
-        // Two-finger pinch zoom on touch screens
-        var pinch = null;
-        function fingers(t) {
+        /* ---------- Pan / Drag ---------- */
+
+        var pan = {
+          active: false,
+          startX: 0,
+          startY: 0,
+          startVBX: 0,
+          startVBY: 0,
+        };
+
+        /*
+         * Convert screen movement into SVG/world movement.
+         * This keeps dragging correct at every zoom level.
+         */
+        function panBy(dx, dy) {
+          var rect = svg.getBoundingClientRect();
+
+          if (!rect.width || !rect.height) return;
+
+          var vw = VB.w / zoom;
+          var vh = VB.h / zoom;
+
+          var worldDX = (dx / rect.width) * vw;
+          var worldDY = (dy / rect.height) * vh;
+
+          var x = pan.startVBX - worldDX;
+          var y = pan.startVBY - worldDY;
+
+          x = Math.min(Math.max(x, VB.x), VB.x + VB.w - vw);
+
+          y = Math.min(Math.max(y, VB.y), VB.y + VB.h - vh);
+
+          svg.setAttribute("viewBox", x + " " + y + " " + vw + " " + vh);
+        }
+
+        /* Desktop mouse drag */
+
+        $("#stage").addEventListener("mousedown", function (e) {
+          if (e.button !== 0) return;
+
+          /*
+           * At zoom 1 the whole map is already fitted,
+           * so dragging is unnecessary.
+           */
+          if (zoom <= 1) return;
+
+          pan.active = true;
+          pan.startX = e.clientX;
+          pan.startY = e.clientY;
+
+          var viewBox = svg.getAttribute("viewBox").split(" ").map(Number);
+
+          pan.startVBX = viewBox[0];
+          pan.startVBY = viewBox[1];
+
+          $("#stage").classList.add("is-panning");
+        });
+
+        window.addEventListener("mousemove", function (e) {
+          if (!pan.active) return;
+
+          panBy(e.clientX - pan.startX, e.clientY - pan.startY);
+        });
+
+        window.addEventListener("mouseup", function () {
+          if (!pan.active) return;
+
+          pan.active = false;
+          $("#stage").classList.remove("is-panning");
+        });
+
+        /* ---------- Touch Pan + Pinch ---------- */
+
+        var touches = {
+          mode: null,
+          startX: 0,
+          startY: 0,
+          startVBX: 0,
+          startVBY: 0,
+          distance: 0,
+          zoomStart: 1,
+        };
+
+        function touchDistance(t) {
           return Math.hypot(
             t[0].clientX - t[1].clientX,
             t[0].clientY - t[1].clientY,
           );
         }
+
+        /* One finger = pan */
+
         $("#stage").addEventListener(
           "touchstart",
           function (e) {
-            if (e.touches.length === 2)
-              pinch = { d: fingers(e.touches), z: zoom };
+            if (e.touches.length === 1) {
+              if (zoom <= 1) return;
+
+              touches.mode = "pan";
+
+              touches.startX = e.touches[0].clientX;
+              touches.startY = e.touches[0].clientY;
+
+              var viewBox = svg.getAttribute("viewBox").split(" ").map(Number);
+
+              touches.startVBX = viewBox[0];
+              touches.startVBY = viewBox[1];
+
+              $("#stage").classList.add("is-panning");
+            }
+
+            /* Two fingers = pinch zoom */
+
+            if (e.touches.length === 2) {
+              touches.mode = "pinch";
+
+              touches.distance = touchDistance(e.touches);
+              touches.zoomStart = zoom;
+
+              $("#stage").classList.remove("is-panning");
+            }
           },
           { passive: true },
         );
+
         $("#stage").addEventListener(
           "touchmove",
           function (e) {
-            if (!pinch || e.touches.length !== 2) return;
-            e.preventDefault();
-            zoom = Math.min(
-              MAX_ZOOM,
-              Math.max(1, (pinch.z * fingers(e.touches)) / pinch.d),
-            );
-            refreshView();
+            /* ---------- Pinch ---------- */
+
+            if (touches.mode === "pinch" && e.touches.length === 2) {
+              e.preventDefault();
+
+              var distance = touchDistance(e.touches);
+
+              if (!touches.distance) return;
+
+              zoom = Math.min(
+                MAX_ZOOM,
+                Math.max(1, touches.zoomStart * (distance / touches.distance)),
+              );
+
+              refreshView();
+              return;
+            }
+
+            /* ---------- Pan ---------- */
+
+            if (touches.mode === "pan" && e.touches.length === 1 && zoom > 1) {
+              e.preventDefault();
+
+              pan.startX = touches.startX;
+              pan.startY = touches.startY;
+              pan.startVBX = touches.startVBX;
+              pan.startVBY = touches.startVBY;
+
+              panBy(
+                e.touches[0].clientX - touches.startX,
+                e.touches[0].clientY - touches.startY,
+              );
+            }
           },
           { passive: false },
         );
-        $("#stage").addEventListener("touchend", function (e) {
-          if (e.touches.length < 2) pinch = null;
-        });
+
+        $("#stage").addEventListener(
+          "touchend",
+          function (e) {
+            if (e.touches.length === 0) {
+              touches.mode = null;
+              $("#stage").classList.remove("is-panning");
+              return;
+            }
+
+            /*
+             * If pinch finishes with one finger remaining,
+             * start a fresh pan from that position.
+             */
+            if (e.touches.length === 1) {
+              if (zoom <= 1) {
+                touches.mode = null;
+                return;
+              }
+
+              touches.mode = "pan";
+
+              touches.startX = e.touches[0].clientX;
+              touches.startY = e.touches[0].clientY;
+
+              var viewBox = svg.getAttribute("viewBox").split(" ").map(Number);
+
+              touches.startVBX = viewBox[0];
+              touches.startVBY = viewBox[1];
+
+              $("#stage").classList.add("is-panning");
+            }
+          },
+          { passive: true },
+        );
+
+        $("#stage").addEventListener(
+          "touchcancel",
+          function () {
+            touches.mode = null;
+            $("#stage").classList.remove("is-panning");
+          },
+          { passive: true },
+        );
+
+        /* ---------- Reset ---------- */
+
         $("#zoom-reset").addEventListener("click", function () {
           zoom = 1;
           go(0);
+        });
+
+        /* ---------- Keyboard Navigation ---------- */
+
+        document.addEventListener("keydown", function (e) {
+          if (!$("#search-overlay").hidden || !$("#lines-dialog").hidden)
+            return;
+
+          if (e.key === "ArrowLeft") go(idx - 1);
+          if (e.key === "ArrowRight") go(idx + 1);
         });
 
         document.addEventListener("keydown", function (e) {

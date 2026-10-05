@@ -48,3 +48,13 @@ a:focus-visible {
   outline: 2px solid var(--line);
   outline-offset: 3px;
 }
+
+
+#stage {
+  cursor: default;
+  touch-action: none;
+}
+
+#stage.is-panning {
+  cursor: grabbing;
+}
