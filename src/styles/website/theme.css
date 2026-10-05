@@ -4,6 +4,7 @@
 :root {
   --line: #9caf31; /* overwritten at runtime by the active line color */
   --bg: #e6e8ec;
+  --bg-hi: #eff1f4;
   --grid-hi: rgba(255, 255, 255, 0.75);
   --grid-lo: rgba(20, 30, 50, 0.07);
   --surface: #ffffff;
@@ -18,10 +19,18 @@
   --pill-edge: rgba(20, 30, 50, 0.1);
   --stop-fill: #ffffff;
   --stop-ring: rgba(255, 255, 255, 0.75);
+  --tool-bg: #ffffff;
+  --tool-ink: #111418;
+  --tool-border: rgba(20, 30, 50, 0.08);
+  --tool-hover: rgba(20, 30, 50, 0.06);
+  --page: #f4f6f8;
+  --row-hover: rgba(20, 30, 50, 0.05);
+  --row-edge: rgba(20, 30, 50, 0.08);
 }
 
 :root[data-theme="dark"] {
   --bg: #0c1017;
+  --bg-hi: #121823;
   --grid-hi: rgba(255, 255, 255, 0.025);
   --grid-lo: rgba(0, 0, 0, 0.22);
   --surface: #141922;
@@ -35,4 +44,11 @@
   --pill-edge: rgba(255, 255, 255, 0.12);
   --stop-fill: #8f96a3;
   --stop-ring: #0a0d13;
+  --tool-bg: #141922;
+  --tool-ink: #ffffff;
+  --tool-border: #ffffff;
+  --tool-hover: rgba(255, 255, 255, 0.14);
+  --page: #0f141b;
+  --row-hover: rgba(255, 255, 255, 0.05);
+  --row-edge: rgba(255, 255, 255, 0.08);
 }

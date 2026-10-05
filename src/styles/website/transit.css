@@ -2,10 +2,11 @@
    Transit map — world-space grid, rail track, stations, train, tools
    ========================================================================== */
 .stage {
+  touch-action: none; /* we handle pinch zoom ourselves */
   position: relative;
   min-height: 0;
   overflow: hidden;
-  background: var(--bg);
+  background: radial-gradient(110% 80% at 50% 25%, var(--bg-hi), var(--bg));
 }
 #map {
   width: 100%;
@@ -29,12 +30,12 @@
 .rail-bed {
   fill: none;
   stroke: var(--rail-bed);
-  stroke-width: 14;
+  stroke-width: 9.5;
 }
 .rail-base {
   fill: none;
   stroke: var(--line);
-  stroke-width: 7;
+  stroke-width: 4.6;
 }
 .rail-bed,
 .rail-base {
@@ -48,7 +49,7 @@
 }
 .leader {
   stroke: var(--muted);
-  stroke-width: 1.6;
+  stroke-width: 1.2;
   opacity: 0.85;
 }
 .stop-ring {
@@ -76,21 +77,30 @@
     filter 0.18s ease;
 }
 .label {
-  font-size: 15px;
+  font-size: 11px;
   font-weight: 700;
   fill: var(--ink);
   stroke: none;
 }
 
 /* Hover / keyboard focus: line-coloured border + soft glow */
-.stn:hover .pill,
 .stn:focus-visible .pill {
   stroke: var(--line);
   stroke-width: 1.8;
   filter: drop-shadow(0 0 6px color-mix(in srgb, var(--line) 55%, transparent));
 }
-.stn:hover .stop {
-  transform: scale(1.12);
+/* hover only on devices that really hover (a tap on a phone would leave it stuck) */
+@media (hover: hover) {
+  .stn:hover .pill {
+    stroke: var(--line);
+    stroke-width: 1.8;
+    filter: drop-shadow(
+      0 0 6px color-mix(in srgb, var(--line) 55%, transparent)
+    );
+  }
+  .stn:hover .stop {
+    transform: scale(1.12);
+  }
 }
 
 /* Selected station */
@@ -174,14 +184,15 @@
 /* Floating tools (zoom, info) */
 .rail-tools {
   position: absolute;
-  bottom: 24px;
+  bottom: 14px;
   z-index: 10;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 6px;
-  background: var(--surface);
-  border-radius: 14px;
+  padding: 3px;
+  background: var(--tool-bg);
+  border: 1px solid var(--tool-border);
+  border-radius: 13px;
   box-shadow: var(--shadow);
 }
 .rail-tools.left {
@@ -192,19 +203,20 @@
 }
 
 .tool {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
-  font-size: 20px;
-  color: var(--line);
+  font-size: 16px;
+  transition: background 0.15s ease;
+  color: var(--tool-ink);
   text-decoration: none;
 }
 .tool svg {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
 }
 .tool:hover {
-  background: var(--surface-2);
+  background: var(--tool-hover);
 }

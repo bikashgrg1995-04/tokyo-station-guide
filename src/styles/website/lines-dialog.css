@@ -1,0 +1,109 @@
+/* ==========================================================================
+   Train Lines dialog — full-screen list of lines grouped by operator
+   ========================================================================== */
+.lines-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow-y: auto;
+  background: var(--page);
+  color: var(--ink);
+}
+.lines-dialog[hidden] {
+  display: none;
+}
+
+.lines-dialog-inner {
+  width: min(660px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 14px 0 64px;
+}
+
+.lines-back {
+  margin-bottom: 18px;
+}
+.lines-dialog h2 {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.lines-sub {
+  margin: 8px 0 28px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.lines-group {
+  margin-bottom: 34px;
+}
+.lines-group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.lines-group-head em {
+  font-style: normal;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.line-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 6px;
+  text-align: left;
+  border-bottom: 1px solid var(--row-edge);
+  transition: background 0.15s ease;
+}
+.line-row:hover {
+  background: var(--row-hover);
+}
+
+.line-badge {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+}
+.line-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.line-text b {
+  font-size: 15.5px;
+  font-weight: 800;
+}
+.line-text small {
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.line-row.active .line-text b {
+  color: var(--c);
+}
+.line-chevron {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}

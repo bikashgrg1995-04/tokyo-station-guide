@@ -1,14 +1,29 @@
 /* ==========================================================================
-   Responsive + motion preferences (keep last in the import order)
+   Responsive tweaks (keep last in the import order)
    ========================================================================== */
 @media (max-width: 560px) {
-  .current strong {
-    font-size: 24px;
+  .topbar {
+    inset: calc(10px + env(safe-area-inset-top, 0px))
+      calc(12px + env(safe-area-inset-right, 0px)) auto
+      calc(12px + env(safe-area-inset-left, 0px));
   }
-  .side-text b {
-    font-size: 12px;
+  .rail-tools.left {
+    left: 10px;
+  }
+  .rail-tools.right {
+    right: 10px;
   }
   .board {
-    border-radius: 22px 22px 0 0;
+    padding: 8px 10px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .board-card {
+    border-radius: 22px;
+    padding: 9px 10px 8px;
+  }
+  .current strong {
+    font-size: 22px;
+  }
+  .side-text b {
+    font-size: 11px;
   }
 }

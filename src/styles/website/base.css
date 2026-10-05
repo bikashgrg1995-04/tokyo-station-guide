@@ -7,9 +7,14 @@ body {
   height: 100%;
 }
 
+/* phones: follow the visible area as the browser toolbar shows/hides */
+body {
+  height: 100dvh;
+}
+
 body {
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: 1fr auto; /* map on top, board sheet below */
   background: var(--bg);
   color: var(--ink);
   font-family:
