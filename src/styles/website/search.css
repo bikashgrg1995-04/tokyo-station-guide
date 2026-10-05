@@ -304,32 +304,34 @@
 
 .recent-station-name {
   display: flex;
-  align-items: baseline;
-
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
   min-width: 0;
   flex: 1;
-
-  gap: 8px;
+  gap: 2px;
 }
 
 .recent-station-name b {
-  flex: 0 0 auto;
-
+  display: block;
+  min-width: 0;
+  overflow: hidden;
   color: var(--ink);
-
   font-size: 14px;
   font-weight: 700;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .recent-station-name > span {
+  display: block;
   min-width: 0;
-
+  max-width: 100%;
   overflow: hidden;
-
   color: var(--muted);
-
   font-size: 12px;
-
+  line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -446,8 +448,7 @@
    ========================================================================== */
 
 @media (max-width: 640px) {
-
-   .featured-stations {
+  .featured-stations {
     grid-template-columns: 1fr;
   }
 
@@ -527,6 +528,6 @@
   }
 
   .recent-station-name > span {
-    max-width: 110px;
+    max-width: 100px;
   }
 }

@@ -33,6 +33,7 @@ export interface TransitSearchStation {
   jp: string | null;
   slug: string;
   codes: string[];
+  lines: string[];
 }
 
 export interface TransitMapData {
@@ -61,6 +62,12 @@ export async function getTransitMapData(
   ====================================== */
 
   const lines = await getLines(db);
+
+  const lineMap = new Map(
+    lines.map(function (line) {
+      return [line.id, line];
+    }),
+  );
 
   /* ======================================
      Get All Stations + Line Relations
@@ -100,7 +107,10 @@ export async function getTransitMapData(
      Build Stations By Line
   ====================================== */
 
-  const stationsByLine: Record<string, TransitMapStation[]> = {};
+  const stationsByLine: Record<
+    string,
+    TransitMapStation[]
+  > = {};
 
   for (const line of lines) {
     stationsByLine[String(line.id)] = [];
@@ -111,7 +121,8 @@ export async function getTransitMapData(
       continue;
     }
 
-    const lineStations = stationsByLine[String(row.line_id)];
+    const lineStations =
+      stationsByLine[String(row.line_id)];
 
     if (!lineStations) {
       continue;
@@ -133,7 +144,10 @@ export async function getTransitMapData(
      so deduplicate by station id.
   ====================================== */
 
-  const searchableMap = new Map<number, TransitSearchStation>();
+  const searchableMap = new Map<
+    number,
+    TransitSearchStation
+  >();
 
   for (const row of rows) {
     let station = searchableMap.get(row.station_id);
@@ -144,33 +158,65 @@ export async function getTransitMapData(
         jp: row.station_name_japanese,
         slug: row.station_slug,
         codes: [],
+        lines: [],
       };
 
       searchableMap.set(row.station_id, station);
     }
+
+    /* ====================================
+       Add Station Code
+    ==================================== */
 
     const code = row.station_code?.trim();
 
     if (code && !station.codes.includes(code)) {
       station.codes.push(code);
     }
+
+    /* ====================================
+       Add Line Name
+    ==================================== */
+
+    if (row.line_id !== null) {
+      const line = lineMap.get(row.line_id);
+
+      if (
+        line &&
+        !station.lines.includes(line.name)
+      ) {
+        station.lines.push(line.name);
+      }
+    }
   }
 
-  const searchable = Array.from(searchableMap.values());
+  const searchable = Array.from(
+    searchableMap.values(),
+  );
+
   /* ======================================
      Build Transit Lines
   ====================================== */
 
-  const transitLines: TransitMapLine[] = lines.map((line: Line) => ({
-    id: line.id,
-    name: line.name,
-    code: line.code,
-    color: line.color || "#9caf31",
-    operatorId: line.operator_id,
-    operator: line.operator_name,
-    description: line.description,
-    shape: line.code === "JY" || /yamanote/i.test(line.name) ? "loop" : null,
-  }));
+  const transitLines: TransitMapLine[] =
+    lines.map((line: Line) => ({
+      id: line.id,
+      name: line.name,
+      code: line.code,
+      color: line.color || "#9caf31",
+      operatorId: line.operator_id,
+      operator: line.operator_name,
+      description: line.description,
+      shape:
+        line.code === "JY" ||
+        /yamanote/i.test(line.name)
+          ? "loop"
+          : null,
+    }));
+
+  /* ======================================
+     Return Transit Map Data
+  ====================================== */
 
   return {
     lines: transitLines,

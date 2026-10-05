@@ -290,26 +290,37 @@ const transitData = {
     <script is:inline>
       (function () {
         var NS = "http://www.w3.org/2000/svg";
+
         var $ = function (s) {
           return document.querySelector(s);
         };
+
         var data = JSON.parse($("#transit-data").textContent);
         var searchable = JSON.parse($("#search-data").textContent);
         var featuredStations = JSON.parse(
           $("#featured-stations-data").textContent,
         );
 
-        /* ---------- Theme ---------- */
+        /* =========================================================
+       Theme
+    ========================================================= */
+
         function applyTheme(t) {
           document.documentElement.setAttribute("data-theme", t);
+
           try {
             localStorage.setItem("tokyo-theme", t);
           } catch (e) {}
         }
+
         try {
           var saved = localStorage.getItem("tokyo-theme");
-          if (saved) applyTheme(saved);
+
+          if (saved) {
+            applyTheme(saved);
+          }
         } catch (e) {}
+
         $("#theme-toggle").addEventListener("click", function () {
           applyTheme(
             document.documentElement.getAttribute("data-theme") === "dark"
@@ -318,28 +329,49 @@ const transitData = {
           );
         });
 
-        /* ---------- Track shapes ---------- */
-        // A track is a list of straight / arc segments. Stations sit at distances
-        // along it, and every point carries a normal pointing to the RIGHT of travel.
+        /* =========================================================
+       Track Shapes
+    ========================================================= */
+
+        /*
+         * A track is a list of straight / arc segments.
+         * Stations sit at distances along it.
+         * Every point carries a normal pointing to the RIGHT
+         * of travel.
+         */
+
         function segLine(x1, y1, x2, y2) {
-          var len = Math.hypot(x2 - x1, y2 - y1),
-            tx = (x2 - x1) / len,
-            ty = (y2 - y1) / len;
+          var len = Math.hypot(x2 - x1, y2 - y1);
+
+          var tx = (x2 - x1) / len;
+          var ty = (y2 - y1) / len;
+
           return {
             len: len,
+
             d: " L" + x2 + " " + y2,
+
             at: function (u) {
-              return { x: x1 + tx * u, y: y1 + ty * u, tx: tx, ty: ty };
+              return {
+                x: x1 + tx * u,
+                y: y1 + ty * u,
+                tx: tx,
+                ty: ty,
+              };
             },
           };
         }
+
         function segArc(cx, cy, r, a0, a1) {
-          var dir = a1 >= a0 ? 1 : -1,
-            len = Math.abs(a1 - a0) * r;
-          var ex = cx + r * Math.cos(a1),
-            ey = cy + r * Math.sin(a1);
+          var dir = a1 >= a0 ? 1 : -1;
+          var len = Math.abs(a1 - a0) * r;
+
+          var ex = cx + r * Math.cos(a1);
+          var ey = cy + r * Math.sin(a1);
+
           return {
             len: len,
+
             d:
               " A" +
               r +
@@ -353,8 +385,10 @@ const transitData = {
               ex +
               " " +
               ey,
+
             at: function (u) {
               var a = a0 + (dir * u) / r;
+
               return {
                 x: cx + r * Math.cos(a),
                 y: cy + r * Math.sin(a),
@@ -364,11 +398,14 @@ const transitData = {
             },
           };
         }
+
         function makeTrack(segs, start, closed) {
           var length = 0;
+
           segs.forEach(function (sg) {
             length += sg.len;
           });
+
           var d =
             "M" +
             start.x +
@@ -380,216 +417,353 @@ const transitData = {
               })
               .join("") +
             (closed ? " Z" : "");
+
           function raw(s) {
             var acc = 0;
+
             for (var i = 0; i < segs.length; i++) {
-              if (s <= acc + segs[i].len || i === segs.length - 1)
+              if (s <= acc + segs[i].len || i === segs.length - 1) {
                 return segs[i].at(Math.max(0, Math.min(s - acc, segs[i].len)));
+              }
+
               acc += segs[i].len;
             }
           }
+
           return {
             closed: closed,
             length: length,
             d: d,
+
             pointAt: function (s) {
               var p;
+
               if (closed) {
                 s = ((s % length) + length) % length;
                 p = raw(s);
               } else if (s < 0) {
                 p = raw(0);
+
                 p = {
                   x: p.x + p.tx * s,
                   y: p.y + p.ty * s,
                   tx: p.tx,
                   ty: p.ty,
                 };
-              } // train may hang past the ends
-              else if (s > length) {
+              } else if (s > length) {
                 p = raw(length);
+
                 p = {
                   x: p.x + p.tx * (s - length),
                   y: p.y + p.ty * (s - length),
                   tx: p.tx,
                   ty: p.ty,
                 };
-              } else p = raw(s);
+              } else {
+                p = raw(s);
+              }
+
               p.nx = -p.ty;
               p.ny = p.tx;
+
               return p;
             },
           };
         }
 
         var CX = 400;
+
         function buildTrack(l, n) {
           var shape = l.shape || (n <= 8 ? "line" : "u");
+
           var t;
+
           if (shape === "loop") {
-            // stadium loop (Yamanote)
-            var R = 140,
-              S = 440,
-              rx = CX + R,
-              lx = CX - R;
+            /* Yamanote-style stadium loop */
+
+            var R = 140;
+            var S = 440;
+
+            var rx = CX + R;
+            var lx = CX - R;
+
             t = makeTrack(
               [
                 segLine(rx, S, rx, 0),
+
                 segArc(CX, 0, R, 0, -Math.PI),
+
                 segLine(lx, 0, lx, S),
+
                 segArc(CX, S, R, Math.PI, 0),
               ],
-              { x: rx, y: S },
+              {
+                x: rx,
+                y: S,
+              },
               true,
             );
+
             t.sOf = function (i) {
               return S / 2 + (i / n) * t.length;
             };
           } else if (shape === "u") {
-            // hairpin: down the left, round the bottom, up the right
-            var Ru = 100,
-              sp = n > 26 ? 50 : 64;
+            /* Hairpin */
+
+            var Ru = 100;
+
+            var sp = n > 26 ? 50 : 64;
+
             var V = Math.max(80, (sp * (n - 1) - Math.PI * Ru) / 2);
+
             t = makeTrack(
               [
                 segLine(CX - Ru, 0, CX - Ru, V),
+
                 segArc(CX, V, Ru, Math.PI, 0),
+
                 segLine(CX + Ru, V, CX + Ru, 0),
               ],
-              { x: CX - Ru, y: 0 },
+              {
+                x: CX - Ru,
+                y: 0,
+              },
               false,
             );
+
             t.sOf = function (i) {
               return n > 1 ? (i * t.length) / (n - 1) : 0;
             };
           } else {
-            // straight line, top to bottom
+            /* Straight line */
+
             var len = Math.max(90, 90 * (n - 1));
-            t = makeTrack([segLine(CX, 0, CX, len)], { x: CX, y: 0 }, false);
+
+            t = makeTrack(
+              [segLine(CX, 0, CX, len)],
+              {
+                x: CX,
+                y: 0,
+              },
+              false,
+            );
+
             t.sOf = function (i) {
               return n > 1 ? (i * len) / (n - 1) : 0;
             };
           }
+
           t.shape = shape;
+
           return t;
         }
 
-        /* ---------- State ---------- */
+        /* =========================================================
+       State
+    ========================================================= */
+
         var lineIdx = 0;
         var idx = 0;
+
         var zoom = 1;
+
         var svg = $("#map");
+
         var track = null;
-        var VB = { x: 0, y: 0, w: 800, h: 960 }; // world rectangle shown at zoom 1
+
+        var VB = {
+          x: 0,
+          y: 0,
+          w: 800,
+          h: 960,
+        };
 
         function line() {
           return data.lines[lineIdx];
         }
+
         function list() {
           return data.stationsByLine[line().id] || [];
         }
+
         function pointAt(s) {
           return track.pointAt(s);
         }
+
         function sOf(i) {
           return track.sOf(i);
         }
 
         function el(name, attrs, parent) {
           var n = document.createElementNS(NS, name);
-          for (var k in attrs) n.setAttribute(k, attrs[k]);
-          if (parent) parent.appendChild(n);
+
+          for (var k in attrs) {
+            n.setAttribute(k, attrs[k]);
+          }
+
+          if (parent) {
+            parent.appendChild(n);
+          }
+
           return n;
         }
 
         function num(code) {
           var m = String(code || "").match(/(\d+)\s*$/);
+
           return m ? m[1] : "";
         }
 
-        /* ---------- Draw map ---------- */
+        /* =========================================================
+       Draw Map
+    ========================================================= */
+
         var LABEL_LENS = [24, 42, 60];
 
         function drawMap() {
           var st = list();
+
           track = buildTrack(line(), st.length);
+
           document.documentElement.style.setProperty("--line", line().color);
 
-          var trackG = $("#track"),
-            labels = $("#labels");
+          var trackG = $("#track");
+          var labels = $("#labels");
+
           trackG.innerHTML = "";
           labels.innerHTML = "";
-          el("path", { d: track.d, class: "rail-bed" }, trackG);
-          el("path", { d: track.d, class: "rail-base" }, trackG);
 
-          // points along the track: labels must not cover them
+          el(
+            "path",
+            {
+              d: track.d,
+              class: "rail-bed",
+            },
+            trackG,
+          );
+
+          el(
+            "path",
+            {
+              d: track.d,
+              class: "rail-base",
+            },
+            trackG,
+          );
+
+          /*
+           * Points along the track.
+           * Labels must not cover them.
+           */
+
           var samples = [];
-          for (var q = 0; q <= track.length; q += 8)
+
+          for (var q = 0; q <= track.length; q += 8) {
             samples.push(track.pointAt(q));
+          }
+
           samples.push(track.pointAt(track.length));
 
           var rects = [];
+
           var box = {
             x0: Infinity,
             y0: Infinity,
             x1: -Infinity,
             y1: -Infinity,
           };
+
           function grow(x, y) {
             box.x0 = Math.min(box.x0, x);
+
             box.y0 = Math.min(box.y0, y);
+
             box.x1 = Math.max(box.x1, x);
+
             box.y1 = Math.max(box.y1, y);
           }
+
           samples.forEach(function (p) {
             grow(p.x - 10, p.y - 10);
+
             grow(p.x + 10, p.y + 10);
           });
 
           function hits(r) {
             var c = 0;
+
             rects.forEach(function (o) {
               if (
                 r.x < o.x + o.w + 4 &&
                 r.x + r.w + 4 > o.x &&
                 r.y < o.y + o.h + 4 &&
                 r.y + r.h + 4 > o.y
-              )
+              ) {
                 c++;
+              }
             });
+
             samples.forEach(function (p) {
               if (
                 p.x > r.x - 9 &&
                 p.x < r.x + r.w + 9 &&
                 p.y > r.y - 9 &&
                 p.y < r.y + r.h + 9
-              )
+              ) {
                 c++;
+              }
             });
+
             return c;
           }
 
-          // a straight line puts labels on the right first; loops and hairpins go outside first
+          /*
+           * Straight line:
+           * labels right first.
+           *
+           * Loop / hairpin:
+           * labels outside first.
+           */
+
           var prefs = track.shape === "line" ? [-1, 1] : [1, -1];
-          var probe = el("text", { x: 0, y: 0, class: "label" }, labels);
+
+          var probe = el(
+            "text",
+            {
+              x: 0,
+              y: 0,
+              class: "label",
+            },
+            labels,
+          );
 
           st.forEach(function (stn, i) {
             var p = track.pointAt(track.sOf(i));
+
             probe.textContent = stn.name;
+
             var bb = probe.getBBox();
+
             var best = null;
 
             LABEL_LENS.some(function (len) {
               return prefs.some(function (sd) {
-                var dx = p.nx * sd,
-                  dy = p.ny * sd;
-                var ex = p.x + dx * len,
-                  ey = p.y + dy * len;
+                var dx = p.nx * sd;
+
+                var dy = p.ny * sd;
+
+                var ex = p.x + dx * len;
+
+                var ey = p.y + dy * len;
+
                 var anchor =
                   dx > 0.35 ? "start" : dx < -0.35 ? "end" : "middle";
+
                 var tx =
                   ex + (anchor === "start" ? 9 : anchor === "end" ? -9 : 0);
+
                 var ty = ey + (anchor === "middle" ? (dy < 0 ? -9 : 13) : 3.8);
+
                 var left =
                   tx +
                   (anchor === "end"
@@ -597,12 +771,14 @@ const transitData = {
                     : anchor === "middle"
                       ? -bb.width / 2
                       : 0);
+
                 var c = {
                   ex: ex,
                   ey: ey,
                   tx: tx,
                   ty: ty,
                   anchor: anchor,
+
                   rect: {
                     x: left - 8,
                     y: ty + bb.y - 3,
@@ -610,14 +786,21 @@ const transitData = {
                     h: bb.height + 6,
                   },
                 };
+
                 c.score = hits(c.rect);
-                if (!best || c.score < best.score) best = c;
+
+                if (!best || c.score < best.score) {
+                  best = c;
+                }
+
                 return c.score === 0;
               });
             });
 
             rects.push(best.rect);
+
             grow(best.rect.x, best.rect.y);
+
             grow(best.rect.x + best.rect.w, best.rect.y + best.rect.h);
 
             var g = el(
@@ -631,14 +814,52 @@ const transitData = {
               },
               labels,
             );
+
             el(
               "line",
-              { x1: p.x, y1: p.y, x2: best.ex, y2: best.ey, class: "leader" },
+              {
+                x1: p.x,
+                y1: p.y,
+                x2: best.ex,
+                y2: best.ey,
+                class: "leader",
+              },
               g,
             );
-            el("circle", { cx: p.x, cy: p.y, r: 12, class: "halo" }, g);
-            el("circle", { cx: p.x, cy: p.y, r: 7, class: "stop-ring" }, g);
-            el("circle", { cx: p.x, cy: p.y, r: 4.2, class: "stop" }, g);
+
+            el(
+              "circle",
+              {
+                cx: p.x,
+                cy: p.y,
+                r: 12,
+                class: "halo",
+              },
+              g,
+            );
+
+            el(
+              "circle",
+              {
+                cx: p.x,
+                cy: p.y,
+                r: 7,
+                class: "stop-ring",
+              },
+              g,
+            );
+
+            el(
+              "circle",
+              {
+                cx: p.x,
+                cy: p.y,
+                r: 4.2,
+                class: "stop",
+              },
+              g,
+            );
+
             el(
               "rect",
               {
@@ -652,6 +873,7 @@ const transitData = {
               },
               g,
             );
+
             var text = el(
               "text",
               {
@@ -662,11 +884,17 @@ const transitData = {
               },
               g,
             );
+
             text.textContent = stn.name;
+
+            /*
+             * Existing map station click.
+             */
 
             g.addEventListener("click", function () {
               go(i);
             });
+
             g.addEventListener("keydown", function (e) {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
@@ -674,41 +902,84 @@ const transitData = {
               }
             });
           });
+
           labels.removeChild(probe);
 
-          // zoom-1 view: fit the whole line (with padding), never tiny
+          /*
+           * Zoom-1 view:
+           * fit whole line.
+           */
+
           var pad = 100;
-          var vx = box.x0 - pad,
-            vy = box.y0 - pad,
-            vw = box.x1 - box.x0 + pad * 2,
-            vh = box.y1 - box.y0 + pad * 2;
-          var mw = Math.max(vw, 600),
-            mh = Math.max(vh, 760);
-          VB = { x: vx - (mw - vw) / 2, y: vy - (mh - vh) / 2, w: mw, h: mh };
+
+          var vx = box.x0 - pad;
+
+          var vy = box.y0 - pad;
+
+          var vw = box.x1 - box.x0 + pad * 2;
+
+          var vh = box.y1 - box.y0 + pad * 2;
+
+          var mw = Math.max(vw, 600);
+
+          var mh = Math.max(vh, 760);
+
+          VB = {
+            x: vx - (mw - vw) / 2,
+
+            y: vy - (mh - vh) / 2,
+
+            w: mw,
+            h: mh,
+          };
         }
 
-        /* ---------- Train + highlight + viewBox ---------- */
-        // The train is three articulated cars, so it bends with the curves.
-        //   NEXT     -> outer lane (+1), heading forward
-        //   PREVIOUS -> inner lane (-1), heading backward
+        /* =========================================================
+       Train + Highlight + ViewBox
+    ========================================================= */
+
         var LANE_OFFSET = 7.5;
-        var LIGHT_REACH = 80; // headlight distance in map units (bigger = lights further ahead)
-        var carEls = [],
-          glowEl = null,
-          carPitch = 30;
-        var trainS = 0,
-          trainLane = 1,
-          trainDir = 1,
-          anim = null;
+
+        var LIGHT_REACH = 80;
+
+        var carEls = [];
+
+        var glowEl = null;
+
+        var carPitch = 30;
+
+        var trainS = 0;
+
+        var trainLane = 1;
+
+        var trainDir = 1;
+
+        var anim = null;
+
         var reduceMotion =
           window.matchMedia &&
           window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-        // One car, drawn top-down; local -y is the direction of travel.
-        // k: 0 = leading car, 1 = middle, 2 = last
+        /*
+         * One car, drawn top-down.
+         *
+         * k:
+         * 0 = leading car
+         * 1 = middle
+         * 2 = last
+         */
+
         function buildCar(k, len) {
-          var g = el("g", { class: "train-car" }, $("#train"));
+          var g = el(
+            "g",
+            {
+              class: "train-car",
+            },
+            $("#train"),
+          );
+
           var h = len / 2;
+
           el(
             "rect",
             {
@@ -721,6 +992,7 @@ const transitData = {
             },
             g,
           );
+
           el(
             "rect",
             {
@@ -732,6 +1004,7 @@ const transitData = {
             },
             g,
           );
+
           el(
             "rect",
             {
@@ -744,17 +1017,31 @@ const transitData = {
             g,
           );
 
-          // roof air-conditioning panels
+          /*
+           * Roof air-conditioning panels.
+           */
+
           var spots =
             k === 0 ? [0.27, 0.58] : k === 1 ? [0.14, 0.54] : [0.12, 0.46];
+
           spots.forEach(function (f) {
-            var y = -h + len * f,
-              ph = len * 0.25;
+            var y = -h + len * f;
+
+            var ph = len * 0.25;
+
             el(
               "rect",
-              { x: -3.7, y: y, width: 7.4, height: ph, rx: 1.4, class: "ac" },
+              {
+                x: -3.7,
+                y: y,
+                width: 7.4,
+                height: ph,
+                rx: 1.4,
+                class: "ac",
+              },
               g,
             );
+
             for (var i = 1; i <= 3; i++) {
               el(
                 "rect",
@@ -770,8 +1057,11 @@ const transitData = {
             }
           });
 
-          // joints between cars
-          if (k > 0)
+          /*
+           * Joints.
+           */
+
+          if (k > 0) {
             el(
               "rect",
               {
@@ -784,7 +1074,9 @@ const transitData = {
               },
               g,
             );
-          if (k < 2)
+          }
+
+          if (k < 2) {
             el(
               "rect",
               {
@@ -797,9 +1089,13 @@ const transitData = {
               },
               g,
             );
+          }
+
+          /*
+           * Front cab.
+           */
 
           if (k === 0) {
-            // front cab: black nose, windshield, headlamps
             el(
               "path",
               {
@@ -825,6 +1121,7 @@ const transitData = {
               },
               g,
             );
+
             el(
               "rect",
               {
@@ -837,6 +1134,7 @@ const transitData = {
               },
               g,
             );
+
             el(
               "rect",
               {
@@ -849,11 +1147,35 @@ const transitData = {
               },
               g,
             );
-            el("circle", { cx: -5, cy: -h + 1.1, r: 1.15, class: "lamp" }, g);
-            el("circle", { cx: 5, cy: -h + 1.1, r: 1.15, class: "lamp" }, g);
+
+            el(
+              "circle",
+              {
+                cx: -5,
+                cy: -h + 1.1,
+                r: 1.15,
+                class: "lamp",
+              },
+              g,
+            );
+
+            el(
+              "circle",
+              {
+                cx: 5,
+                cy: -h + 1.1,
+                r: 1.15,
+                class: "lamp",
+              },
+              g,
+            );
           }
+
+          /*
+           * Rear cab.
+           */
+
           if (k === 2) {
-            // rear cab: black end, tail lights
             el(
               "path",
               {
@@ -879,6 +1201,7 @@ const transitData = {
               },
               g,
             );
+
             el(
               "rect",
               {
@@ -891,9 +1214,30 @@ const transitData = {
               },
               g,
             );
-            el("circle", { cx: -5, cy: h - 1.1, r: 1.15, class: "tail" }, g);
-            el("circle", { cx: 5, cy: h - 1.1, r: 1.15, class: "tail" }, g);
+
+            el(
+              "circle",
+              {
+                cx: -5,
+                cy: h - 1.1,
+                r: 1.15,
+                class: "tail",
+              },
+              g,
+            );
+
+            el(
+              "circle",
+              {
+                cx: 5,
+                cy: h - 1.1,
+                r: 1.15,
+                class: "tail",
+              },
+              g,
+            );
           }
+
           return g;
         }
 
@@ -901,11 +1245,18 @@ const transitData = {
           $("#train").innerHTML = "";
           $("#glow").innerHTML = "";
 
-          // total length follows station spacing so it reads well on any line
+          /*
+           * Total train length follows station spacing.
+           */
+
           var spacing = list().length > 1 ? Math.abs(sOf(1) - sOf(0)) : 60;
+
           var total = Math.max(50, Math.min(spacing * 1.68, 150));
+
           var gap = 3;
+
           var carLen = (total - gap * 2) / 3;
+
           carPitch = carLen + gap;
 
           carEls = [
@@ -914,11 +1265,21 @@ const transitData = {
             buildCar(2, carLen),
           ];
 
-          // headlight beam + glow (visible in dark theme only), sits under the labels
-          glowEl = el("g", { class: "headlight" }, $("#glow"));
+          /*
+           * Headlight beam + glow.
+           */
+
+          glowEl = el(
+            "g",
+            {
+              class: "headlight",
+            },
+            $("#glow"),
+          );
+
           var y0 = -carLen / 2;
+
           [-1, 1].forEach(function (sx) {
-            // one thin beam per headlamp
             el(
               "polygon",
               {
@@ -938,11 +1299,13 @@ const transitData = {
                   sx * 18 +
                   "," +
                   (y0 - LIGHT_REACH),
+
                 fill: "url(#beam-grad)",
               },
               glowEl,
             );
           });
+
           el(
             "ellipse",
             {
@@ -957,152 +1320,449 @@ const transitData = {
 
           if (anim) {
             cancelAnimationFrame(anim);
+
             anim = null;
           }
+
           trainS = sOf(idx);
           trainLane = 1;
           trainDir = 1;
+
           drawTrain(trainS, trainLane, trainDir);
         }
 
-        // Each car is placed on the track on its own, so it follows the curve.
+        /*
+         * Each car follows the track curve.
+         */
+
         function drawTrain(s, lane, dir) {
           for (var k = 0; k < 3; k++) {
             var p = pointAt(s + dir * (1 - k) * carPitch);
+
             var x = p.x + p.nx * lane * LANE_OFFSET;
+
             var y = p.y + p.ny * lane * LANE_OFFSET;
+
             var ang = (Math.atan2(dir * p.ny, dir * p.nx) * 180) / Math.PI;
+
             var t = "translate(" + x + " " + y + ") rotate(" + ang + ")";
+
             carEls[k].setAttribute("transform", t);
-            if (k === 0) glowEl.setAttribute("transform", t);
+
+            if (k === 0) {
+              glowEl.setAttribute("transform", t);
+            }
           }
+
           return pointAt(s);
         }
 
+        /*
+         * Animate train from current position
+         * to selected station.
+         */
+
         function moveTrain() {
           var target = sOf(idx);
+
           var from = trainS;
+
           if (anim) {
             cancelAnimationFrame(anim);
+
             anim = null;
           }
 
+          /*
+           * Already there.
+           */
+
           if (from === target) {
             setView(drawTrain(trainS, trainLane, trainDir));
+
             return;
           }
 
           var fromLane = trainLane;
+
           var toDir = target > from ? 1 : -1;
-          trainDir = toDir; // face the way we are going
+
+          trainDir = toDir;
+
           var dist = Math.abs(target - from);
+
           var dur = reduceMotion
             ? 0
             : Math.min(1600, Math.max(500, dist * 1.8));
 
+          /*
+           * Reduced motion.
+           */
+
           if (dur === 0) {
             trainS = target;
+
             trainLane = toDir;
+
             setView(drawTrain(trainS, trainLane, trainDir));
+
             return;
           }
 
           var t0 = performance.now();
+
           function step(now) {
             var k = Math.min(1, (now - t0) / dur);
-            var e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; // ease in-out
+
+            var e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+
             trainS = from + (target - from) * e;
-            trainLane = fromLane + (toDir - fromLane) * Math.min(1, k * 3); // slide into the lane early
+
+            trainLane = fromLane + (toDir - fromLane) * Math.min(1, k * 3);
+
             setView(drawTrain(trainS, trainLane, trainDir));
+
             anim = k < 1 ? requestAnimationFrame(step) : null;
           }
+
           anim = requestAnimationFrame(step);
         }
 
         function refreshView() {
-          if (list().length) setView(pointAt(trainS));
+          if (list().length) {
+            setView(pointAt(trainS));
+          }
         }
 
         function updateMap() {
           document.querySelectorAll(".stn").forEach(function (g) {
-            // use the station index, not the DOM position (DOM order changes when the current one is raised)
             g.classList.toggle(
               "current",
               Number(g.getAttribute("data-i")) === idx,
             );
           });
-          // move current station to the top of the paint order
+
+          /*
+           * Move current station to the top
+           * of paint order.
+           */
+
           var cur = document.querySelector('.stn[data-i="' + idx + '"]');
-          if (cur) cur.parentNode.appendChild(cur);
+
+          if (cur) {
+            cur.parentNode.appendChild(cur);
+          }
+
           moveTrain();
         }
 
         function setView(p) {
-          var vw = VB.w / zoom,
-            vh = VB.h / zoom;
-          var fx = VB.x + VB.w / 2,
-            fy = VB.y + VB.h / 2;
+          var vw = VB.w / zoom;
+
+          var vh = VB.h / zoom;
+
+          var fx = VB.x + VB.w / 2;
+
+          var fy = VB.y + VB.h / 2;
+
+          /*
+           * When zoomed in, follow train.
+           */
+
           if (zoom > 1 && p) {
             fx = p.x;
             fy = p.y;
           }
+
           var x = Math.min(Math.max(fx - vw / 2, VB.x), VB.x + VB.w - vw);
+
           var y = Math.min(Math.max(fy - vh / 2, VB.y), VB.y + VB.h - vh);
+
           svg.setAttribute("viewBox", x + " " + y + " " + vw + " " + vh);
         }
 
-        /* ---------- Board ---------- */
+        /* =========================================================
+       Board
+    ========================================================= */
+
         function updateBoard() {
           var l = list();
-          var cur = l[idx],
-            prev = l[idx - 1],
-            next = l[idx + 1];
+
+          var cur = l[idx];
+
+          var prev = l[idx - 1];
+
+          var next = l[idx + 1];
+
           $("#line-name").textContent = line().name;
-          var cw = document.querySelector(".current"); // little pop when the station changes
+
+          var cw = document.querySelector(".current");
+
           cw.classList.remove("swap");
+
           void cw.offsetWidth;
+
           cw.classList.add("swap");
+
           $("#cur-jp").textContent = cur ? cur.jp || cur.name : "—";
+
           $("#cur-en").textContent = cur ? cur.name : "";
+
           $("#cur-code").textContent = cur ? cur.code || "" : "";
+
           $("#cur-code").hidden = !(cur && cur.code);
 
           function side(prefix, s) {
             var btn = $("#" + prefix + "-btn");
+
             btn.disabled = !s;
+
             $("#" + prefix + "-jp").textContent = s ? s.jp || s.name : "";
+
             $("#" + prefix + "-en").textContent = s ? s.name : "";
+
             $("#" + prefix + "-num").textContent = s ? num(s.code) : "";
+
             $("#" + prefix + "-num").hidden = !s;
           }
+
           side("prev", prev);
+
           side("next", next);
 
+          /*
+           * Station information page.
+           *
+           * This is now the ONLY normal route to
+           * station detail from the map UI.
+           */
+
           var info = $("#info-link");
-          if (cur && cur.slug)
+
+          if (cur && cur.slug) {
             info.href = "/stations/" + encodeURIComponent(cur.slug);
+          } else {
+            info.href = "#";
+          }
         }
 
         function go(i) {
           var n = list().length;
-          if (!n) return;
+
+          if (!n) {
+            return;
+          }
+
           idx = Math.max(0, Math.min(i, n - 1));
+
           updateBoard();
           updateMap();
         }
 
-        function setLine(i) {
+        /*
+         * setLine now accepts an optional station index.
+         *
+         * resetTrainToZero:
+         *   true  = normal manual line selection
+         *   false = search-driven line switching
+         *
+         * For search-driven switching we initialize the train
+         * at station 0, then call go(targetIndex), so the train
+         * visibly moves toward the searched station.
+         */
+
+        function setLine(i, options) {
+          options = options || {};
+
+          var targetIndex = Number.isInteger(options.stationIndex)
+            ? options.stationIndex
+            : 0;
+
+          var animateToStation = options.animateToStation === true;
+
           lineIdx = i;
-          idx = 0;
+
+          /*
+           * Normal line selection starts at station 0.
+           */
+
+          idx = animateToStation ? 0 : targetIndex;
+
           zoom = 1;
+
           drawMap();
+
           initTrain();
+
           updateBoard();
-          updateMap();
+
+          /*
+           * Search-driven line change:
+           *
+           * train starts at station 0
+           * then moves to requested station.
+           */
+
+          if (animateToStation) {
+            go(targetIndex);
+          } else {
+            updateMap();
+          }
+
           markActiveRow();
         }
 
-        /* ---------- Controls ---------- */
+        /* =========================================================
+       Search → Map Station Selection
+    ========================================================= */
+
+        /*
+         * Find a station in a specific line.
+         */
+
+        function findStationIndexInLine(lineId, slug) {
+          var stations = data.stationsByLine[lineId] || [];
+
+          for (var i = 0; i < stations.length; i++) {
+            if (stations[i].slug === slug) {
+              return i;
+            }
+          }
+
+          return -1;
+        }
+
+        /*
+         * Find every line that contains a station.
+         *
+         * A station can belong to multiple lines.
+         */
+
+        function findLinesForStation(slug) {
+          var matches = [];
+
+          data.lines.forEach(function (l, i) {
+            var stationIndex = findStationIndexInLine(String(l.id), slug);
+
+            if (stationIndex >= 0) {
+              matches.push({
+                lineIndex: i,
+                stationIndex: stationIndex,
+                lineId: l.id,
+                lineName: l.name,
+              });
+            }
+          });
+
+          return matches;
+        }
+
+        /*
+         * Select station from:
+         *
+         * - Search result
+         * - Featured station
+         * - Recent station
+         *
+         * Behavior:
+         *
+         * 1. If station exists on current line:
+         *      stay on current line.
+         *
+         * 2. If station does not exist on current line:
+         *      automatically switch to the first matching line.
+         *
+         * 3. Train animates toward selected station.
+         *
+         * Every successful selection is saved to Recent here,
+         * so callers must NOT call saveRecentStation themselves.
+         */
+
+        function selectStationOnMap(slug) {
+          if (!slug) {
+            console.warn("[select] empty slug");
+            return;
+          }
+
+          var station = searchable.find(function (s) {
+            return s.slug === slug;
+          });
+
+          if (!station) {
+            console.warn("[select] slug not in searchable:", slug);
+            return;
+          }
+
+          var matches = findLinesForStation(station.slug);
+
+          if (!matches.length) {
+            console.warn("[select] station not on any line:", station.slug);
+            return;
+          }
+
+          /*
+           * Save every successfully selected station
+           * to Recent.
+           */
+          saveRecentStation(station.slug);
+
+          /*
+           * Prefer the current line if possible.
+           */
+          var selected = matches.find(function (item) {
+            return item.lineIndex === lineIdx;
+          });
+
+          /*
+           * Otherwise use the first matching line.
+           */
+          if (!selected) {
+            selected = matches[0];
+          }
+
+          closeSearch();
+
+          /*
+           * Same line:
+           * Keep current train position and animate
+           * directly to the selected station.
+           */
+          if (selected.lineIndex === lineIdx) {
+            go(selected.stationIndex);
+            return;
+          }
+
+          /*
+           * Different line:
+           * Switch line and animate train from the
+           * beginning of that line to the station.
+           */
+          setLine(selected.lineIndex, {
+            stationIndex: selected.stationIndex,
+            animateToStation: true,
+          });
+        }
+
+        /*
+         * Search overlay sends this event.
+         *
+         * Keeping this as a CustomEvent makes the search
+         * system independent from the map internals.
+         */
+
+        document.addEventListener("station-select", function (event) {
+          var detail = event.detail;
+
+          if (!detail || !detail.slug) {
+            return;
+          }
+
+          selectStationOnMap(detail.slug);
+        });
+
+        /* =========================================================
+       Controls
+    ========================================================= */
 
         $("#prev-btn").addEventListener("click", function () {
           go(idx - 1);
@@ -1114,19 +1774,26 @@ const transitData = {
 
         var MAX_ZOOM = 6;
 
-        /* ---------- Zoom ---------- */
+        /* =========================================================
+       Zoom
+    ========================================================= */
 
         $("#zoom-in").addEventListener("click", function () {
           zoom = Math.min(zoom * 1.5, MAX_ZOOM);
+
           refreshView();
         });
 
         $("#zoom-out").addEventListener("click", function () {
           zoom = Math.max(zoom / 1.5, 1);
+
           refreshView();
         });
 
-        /* Mouse wheel zoom */
+        /*
+         * Mouse wheel zoom.
+         */
+
         $("#stage").addEventListener(
           "wheel",
           function (e) {
@@ -1141,35 +1808,46 @@ const transitData = {
 
             refreshView();
           },
-          { passive: false },
+          {
+            passive: false,
+          },
         );
 
-        /* ---------- Pan / Drag ---------- */
+        /* =========================================================
+       Pan / Drag
+    ========================================================= */
 
         var pan = {
           active: false,
+
           startX: 0,
           startY: 0,
+
           startVBX: 0,
           startVBY: 0,
         };
 
         /*
          * Convert screen movement into SVG/world movement.
-         * This keeps dragging correct at every zoom level.
          */
+
         function panBy(dx, dy) {
           var rect = svg.getBoundingClientRect();
 
-          if (!rect.width || !rect.height) return;
+          if (!rect.width || !rect.height) {
+            return;
+          }
 
           var vw = VB.w / zoom;
+
           var vh = VB.h / zoom;
 
           var worldDX = (dx / rect.width) * vw;
+
           var worldDY = (dy / rect.height) * vh;
 
           var x = pan.startVBX - worldDX;
+
           var y = pan.startVBY - worldDY;
 
           x = Math.min(Math.max(x, VB.x), VB.x + VB.w - vw);
@@ -1179,107 +1857,144 @@ const transitData = {
           svg.setAttribute("viewBox", x + " " + y + " " + vw + " " + vh);
         }
 
-        /* Desktop mouse drag */
+        /* =========================================================
+       Desktop Mouse Drag
+    ========================================================= */
 
         $("#stage").addEventListener("mousedown", function (e) {
-          if (e.button !== 0) return;
+          if (e.button !== 0) {
+            return;
+          }
 
           /*
-           * At zoom 1 the whole map is already fitted,
-           * so dragging is unnecessary.
+           * At zoom 1 the whole map is fitted.
            */
-          if (zoom <= 1) return;
+
+          if (zoom <= 1) {
+            return;
+          }
 
           pan.active = true;
+
           pan.startX = e.clientX;
+
           pan.startY = e.clientY;
 
           var viewBox = svg.getAttribute("viewBox").split(" ").map(Number);
 
           pan.startVBX = viewBox[0];
+
           pan.startVBY = viewBox[1];
 
           $("#stage").classList.add("is-panning");
         });
 
         window.addEventListener("mousemove", function (e) {
-          if (!pan.active) return;
+          if (!pan.active) {
+            return;
+          }
 
-          panBy(e.clientX - pan.startX, e.clientY - pan.startY);
+          panBy(
+            e.clientX - pan.startX,
+
+            e.clientY - pan.startY,
+          );
         });
 
         window.addEventListener("mouseup", function () {
-          if (!pan.active) return;
+          if (!pan.active) {
+            return;
+          }
 
           pan.active = false;
+
           $("#stage").classList.remove("is-panning");
         });
 
-        /* ---------- Touch Pan + Pinch ---------- */
+        /* =========================================================
+       Touch Pan + Pinch
+    ========================================================= */
 
         var touches = {
           mode: null,
+
           startX: 0,
           startY: 0,
+
           startVBX: 0,
           startVBY: 0,
+
           distance: 0,
+
           zoomStart: 1,
         };
 
         function touchDistance(t) {
           return Math.hypot(
             t[0].clientX - t[1].clientX,
+
             t[0].clientY - t[1].clientY,
           );
         }
 
-        /* One finger = pan */
+        /*
+         * One finger = pan.
+         * Two fingers = pinch.
+         */
 
         $("#stage").addEventListener(
           "touchstart",
           function (e) {
             if (e.touches.length === 1) {
-              if (zoom <= 1) return;
+              if (zoom <= 1) {
+                return;
+              }
 
               touches.mode = "pan";
 
               touches.startX = e.touches[0].clientX;
+
               touches.startY = e.touches[0].clientY;
 
               var viewBox = svg.getAttribute("viewBox").split(" ").map(Number);
 
               touches.startVBX = viewBox[0];
+
               touches.startVBY = viewBox[1];
 
               $("#stage").classList.add("is-panning");
             }
 
-            /* Two fingers = pinch zoom */
-
             if (e.touches.length === 2) {
               touches.mode = "pinch";
 
               touches.distance = touchDistance(e.touches);
+
               touches.zoomStart = zoom;
 
               $("#stage").classList.remove("is-panning");
             }
           },
-          { passive: true },
+          {
+            passive: true,
+          },
         );
 
         $("#stage").addEventListener(
           "touchmove",
           function (e) {
-            /* ---------- Pinch ---------- */
+            /*
+             * Pinch.
+             */
 
             if (touches.mode === "pinch" && e.touches.length === 2) {
               e.preventDefault();
 
               var distance = touchDistance(e.touches);
 
-              if (!touches.distance) return;
+              if (!touches.distance) {
+                return;
+              }
 
               zoom = Math.min(
                 MAX_ZOOM,
@@ -1287,26 +2002,35 @@ const transitData = {
               );
 
               refreshView();
+
               return;
             }
 
-            /* ---------- Pan ---------- */
+            /*
+             * Pan.
+             */
 
             if (touches.mode === "pan" && e.touches.length === 1 && zoom > 1) {
               e.preventDefault();
 
               pan.startX = touches.startX;
+
               pan.startY = touches.startY;
+
               pan.startVBX = touches.startVBX;
+
               pan.startVBY = touches.startVBY;
 
               panBy(
                 e.touches[0].clientX - touches.startX,
+
                 e.touches[0].clientY - touches.startY,
               );
             }
           },
-          { passive: false },
+          {
+            passive: false,
+          },
         );
 
         $("#stage").addEventListener(
@@ -1314,84 +2038,110 @@ const transitData = {
           function (e) {
             if (e.touches.length === 0) {
               touches.mode = null;
+
               $("#stage").classList.remove("is-panning");
+
               return;
             }
 
             /*
-             * If pinch finishes with one finger remaining,
-             * start a fresh pan from that position.
+             * If pinch finishes with one finger,
+             * start fresh pan.
              */
+
             if (e.touches.length === 1) {
               if (zoom <= 1) {
                 touches.mode = null;
+
                 return;
               }
 
               touches.mode = "pan";
 
               touches.startX = e.touches[0].clientX;
+
               touches.startY = e.touches[0].clientY;
 
               var viewBox = svg.getAttribute("viewBox").split(" ").map(Number);
 
               touches.startVBX = viewBox[0];
+
               touches.startVBY = viewBox[1];
 
               $("#stage").classList.add("is-panning");
             }
           },
-          { passive: true },
+          {
+            passive: true,
+          },
         );
 
         $("#stage").addEventListener(
           "touchcancel",
           function () {
             touches.mode = null;
+
             $("#stage").classList.remove("is-panning");
           },
-          { passive: true },
+          {
+            passive: true,
+          },
         );
 
-        /* ---------- Reset ---------- */
+        /* =========================================================
+       Reset
+    ========================================================= */
 
         $("#zoom-reset").addEventListener("click", function () {
           zoom = 1;
+
           go(0);
         });
 
-        /* ---------- Keyboard Navigation ---------- */
+        /* =========================================================
+       Keyboard Navigation
+    ========================================================= */
 
         document.addEventListener("keydown", function (e) {
-          if (!$("#search-overlay").hidden || !$("#lines-dialog").hidden)
+          if (!$("#search-overlay").hidden || !$("#lines-dialog").hidden) {
             return;
+          }
 
-          if (e.key === "ArrowLeft") go(idx - 1);
-          if (e.key === "ArrowRight") go(idx + 1);
+          if (e.key === "ArrowLeft") {
+            go(idx - 1);
+          }
+
+          if (e.key === "ArrowRight") {
+            go(idx + 1);
+          }
         });
 
-        document.addEventListener("keydown", function (e) {
-          if (!$("#search-overlay").hidden || !$("#lines-dialog").hidden)
-            return;
-          if (e.key === "ArrowLeft") go(idx - 1);
-          if (e.key === "ArrowRight") go(idx + 1);
-        });
+        /* =========================================================
+       Lines Dialog
+    ========================================================= */
 
-        /* ---------- Lines dialog ---------- */
         var dlg = $("#lines-dialog");
+
         var toggle = $("#line-toggle");
 
         function openLines() {
           dlg.hidden = false;
+
           toggle.setAttribute("aria-expanded", "true");
+
           dlg.scrollTop = 0;
+
           $("#lines-back").focus();
         }
+
         function closeLines() {
           dlg.hidden = true;
+
           toggle.setAttribute("aria-expanded", "false");
+
           toggle.focus();
         }
+
         function markActiveRow() {
           document.querySelectorAll(".line-row").forEach(function (r) {
             r.classList.toggle(
@@ -1400,23 +2150,40 @@ const transitData = {
             );
           });
         }
+
         function buildLinesDialog() {
-          var groups = [],
-            byOp = {};
+          var groups = [];
+
+          var byOp = {};
+
           data.lines.forEach(function (l, i) {
             var key = l.operatorId;
+
             if (!byOp[key]) {
-              byOp[key] = { id: key, name: l.operator || "Other", items: [] };
+              byOp[key] = {
+                id: key,
+
+                name: l.operator || "Other",
+
+                items: [],
+              };
+
               groups.push(byOp[key]);
             }
-            byOp[key].items.push({ l: l, i: i });
+
+            byOp[key].items.push({
+              l: l,
+              i: i,
+            });
           });
+
           groups.sort(function (a, b) {
             return a.id - b.id;
           });
+
           $("#lines-sub").textContent =
             data.lines.length +
-            " routes \u2014 " +
+            " routes — " +
             groups
               .map(function (g) {
                 return g.name;
@@ -1424,61 +2191,107 @@ const transitData = {
               .join(", ");
 
           var host = $("#lines-groups");
+
           host.innerHTML = "";
+
           groups.forEach(function (g) {
             g.items.sort(function (a, b) {
               return a.l.id - b.l.id;
             });
+
             var sec = document.createElement("section");
+
             sec.className = "lines-group";
+
             var head = document.createElement("div");
+
             head.className = "lines-group-head";
+
             head.innerHTML = "<span></span><em></em>";
+
             head.firstChild.textContent = g.name;
+
             head.lastChild.textContent =
               g.items.length + (g.items.length === 1 ? " line" : " lines");
+
             sec.appendChild(head);
 
             g.items.forEach(function (it) {
               var row = document.createElement("button");
+
               row.type = "button";
+
               row.className = "line-row";
+
               row.setAttribute("data-i", it.i);
+
               row.innerHTML =
-                '<span class="line-badge"></span><span class="line-text"><b></b><small></small></span>' +
-                '<svg class="line-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>';
+                '<span class="line-badge"></span>' +
+                '<span class="line-text">' +
+                "<b></b>" +
+                "<small></small>" +
+                "</span>" +
+                '<svg class="line-chevron" viewBox="0 0 24 24">' +
+                '<path d="M9 6l6 6-6 6"></path>' +
+                "</svg>";
+
               var badge = row.querySelector(".line-badge");
+
               badge.textContent = it.l.code || "";
+
               badge.style.background = it.l.color;
+
               var name = row.querySelector("b");
+
               name.textContent = it.l.name;
+
               name.style.setProperty("--c", it.l.color);
+
               row.querySelector("small").textContent = it.l.description || "";
+
               row.addEventListener("click", function () {
                 setLine(it.i);
+
                 closeLines();
               });
+
               sec.appendChild(row);
             });
+
             host.appendChild(sec);
           });
+
           markActiveRow();
         }
+
         buildLinesDialog();
+
         toggle.addEventListener("click", openLines);
+
         $("#lines-back").addEventListener("click", closeLines);
 
-        /* ---------- Search ---------- */
+        /* =========================================================
+       Search
+    ========================================================= */
+
         var overlay = $("#search-overlay");
+
         var input = $("#search-input");
+
         var results = $("#search-results");
+
         var searchHome = $("#search-home");
+
         var featuredSection = $("#featured-section");
+
         var featuredHost = $("#featured-stations");
+
         var recentSection = $("#recent-section");
+
         var recentHost = $("#recent-stations");
 
         var RECENT_SEARCH_KEY = "tokyo-recent-stations";
+
         var MAX_RECENT = 6;
 
         function esc(v) {
@@ -1496,11 +2309,16 @@ const transitData = {
         function getRecentStations() {
           try {
             var raw = localStorage.getItem(RECENT_SEARCH_KEY);
-            if (!raw) return [];
+
+            if (!raw) {
+              return [];
+            }
 
             var slugs = JSON.parse(raw);
 
-            if (!Array.isArray(slugs)) return [];
+            if (!Array.isArray(slugs)) {
+              return [];
+            }
 
             return slugs
               .map(function (slug) {
@@ -1516,7 +2334,9 @@ const transitData = {
         }
 
         function saveRecentStation(slug) {
-          if (!slug) return;
+          if (!slug) {
+            return;
+          }
 
           try {
             var recent = [];
@@ -1552,14 +2372,47 @@ const transitData = {
           return station.codes[0];
         }
 
+        /*
+         * Kept for the station information button.
+         *
+         * Search items no longer use this.
+         */
+
         function stationHref(slug) {
           return "/stations/" + encodeURIComponent(slug);
         }
 
-        function getSearchableStation(slug) {
-          return searchable.find(function (s) {
-            return s.slug === slug;
+        /* =========================================================
+       Featured Stations
+    ========================================================= */
+
+        /*
+         * Featured items come from a different table/query than
+         * `searchable`, so their slug may differ (case, spacing,
+         * field name). Resolve it against `searchable` by slug,
+         * then English name, then Japanese name.
+         */
+
+        function resolveFeaturedSlug(f) {
+          var norm = function (v) {
+            return String(v || "")
+              .trim()
+              .toLowerCase();
+          };
+
+          var slug = norm(f.station_slug || f.slug);
+          var name = norm(f.station_name || f.name);
+          var jp = norm(f.station_name_japanese || f.jp);
+
+          var hit = searchable.find(function (s) {
+            return (
+              (slug && norm(s.slug) === slug) ||
+              (name && norm(s.name) === name) ||
+              (jp && norm(s.jp) === jp)
+            );
           });
+
+          return hit ? hit.slug : null;
         }
 
         function renderFeaturedStations() {
@@ -1567,6 +2420,7 @@ const transitData = {
 
           if (!featuredStations.length) {
             featuredSection.hidden = true;
+
             return;
           }
 
@@ -1576,7 +2430,8 @@ const transitData = {
             var a = document.createElement("a");
 
             a.className = "featured-station";
-            a.href = stationHref(station.station_slug);
+            a.href = "#";
+            a.dataset.slug = station.station_slug || "";
 
             a.innerHTML =
               '<span class="featured-image-wrap">' +
@@ -1596,13 +2451,30 @@ const transitData = {
                 : "") +
               "</span>";
 
-            a.addEventListener("click", function () {
-              saveRecentStation(station.station_slug);
+            a.addEventListener("click", function (e) {
+              e.preventDefault();
+
+              var slug = resolveFeaturedSlug(station);
+
+              if (!slug) {
+                console.warn(
+                  "[featured] station not found in searchable:",
+                  station,
+                );
+                return;
+              }
+
+              /* selectStationOnMap also saves to Recent */
+              selectStationOnMap(slug);
             });
 
             featuredHost.appendChild(a);
           });
         }
+
+        /* =========================================================
+       Recent Stations
+    ========================================================= */
 
         function renderRecentStations() {
           var recent = getRecentStations();
@@ -1611,6 +2483,7 @@ const transitData = {
 
           if (!recent.length) {
             recentSection.hidden = true;
+
             return;
           }
 
@@ -1619,18 +2492,29 @@ const transitData = {
           recent.forEach(function (station) {
             var a = document.createElement("a");
 
+            /*
+             * Do NOT navigate to station detail.
+             */
+
+            a.href = "#";
+
             a.className = "recent-station";
-            a.href = stationHref(station.slug);
 
             var code = getStationCode(station);
+
+            var lineText = (station.lines || []).join(" · ");
 
             a.innerHTML =
               '<span class="recent-station-name">' +
               "<b>" +
-              esc(station.jp || station.name) +
+              esc(station.name) +
               "</b>" +
               "<span>" +
-              esc(station.name) +
+              esc(
+                station.jp
+                  ? station.jp + (lineText ? " · " + lineText : "")
+                  : lineText,
+              ) +
               "</span>" +
               "</span>" +
               '<span class="recent-station-code">' +
@@ -1638,16 +2522,23 @@ const transitData = {
               "</span>" +
               '<span class="recent-station-arrow" aria-hidden="true">→</span>';
 
-            a.addEventListener("click", function () {
-              saveRecentStation(station.slug);
+            a.addEventListener("click", function (e) {
+              e.preventDefault();
+
+              selectStationOnMap(station.slug);
             });
 
             recentHost.appendChild(a);
           });
         }
 
+        /* =========================================================
+       Search Results
+    ========================================================= */
+
         function showSearchHome() {
           searchHome.hidden = false;
+
           results.innerHTML = "";
 
           renderFeaturedStations();
@@ -1661,9 +2552,7 @@ const transitData = {
             ? matches
                 .map(function (s) {
                   return (
-                    '<a class="result" href="' +
-                    stationHref(s.slug) +
-                    '" data-slug="' +
+                    '<a class="result" href="#" data-slug="' +
                     esc(s.slug) +
                     '">' +
                     "<b>" +
@@ -1679,8 +2568,10 @@ const transitData = {
             : '<p class="empty">No stations found. Try the English or Japanese name.</p>';
 
           results.querySelectorAll("a.result").forEach(function (a) {
-            a.addEventListener("click", function () {
-              saveRecentStation(a.getAttribute("data-slug"));
+            a.addEventListener("click", function (e) {
+              e.preventDefault();
+
+              selectStationOnMap(a.getAttribute("data-slug"));
             });
           });
         }
@@ -1701,11 +2592,16 @@ const transitData = {
           overlay.hidden = true;
         }
 
+        /*
+         * Automatic search.
+         */
+
         input.addEventListener("input", function () {
           var q = input.value.trim().toLowerCase();
 
           if (!q) {
             showSearchHome();
+
             return;
           }
 
@@ -1727,39 +2623,67 @@ const transitData = {
           showSearchResults(m);
         });
 
+        /*
+         * Enter on search result.
+         */
+
         $("#search-form").addEventListener("submit", function (e) {
           e.preventDefault();
 
           var first = results.querySelector("a.result");
 
-          if (first) {
-            saveRecentStation(first.getAttribute("data-slug"));
-            window.location.href = first.getAttribute("href");
+          if (!first) {
+            return;
           }
+
+          selectStationOnMap(first.getAttribute("data-slug"));
         });
 
         $("#open-search").addEventListener("click", openSearch);
+
         $("#close-search").addEventListener("click", closeSearch);
+
         $("#search-backdrop").addEventListener("click", closeSearch);
 
-        document.addEventListener("keydown", function (e) {
-          if (e.key !== "Escape") return;
+        /* =========================================================
+       Escape
+    ========================================================= */
 
-          if (!dlg.hidden) closeLines();
-          else if (!overlay.hidden) closeSearch();
+        document.addEventListener("keydown", function (e) {
+          if (e.key !== "Escape") {
+            return;
+          }
+
+          if (!dlg.hidden) {
+            closeLines();
+          } else if (!overlay.hidden) {
+            closeSearch();
+          }
         });
 
-        /* ---------- Init ---------- */
+        /* =========================================================
+       Init
+    ========================================================= */
+
         if (data.lines.length) {
           var start = 0;
+
+          /*
+           * Prefer loop line on initial load.
+           */
+
           for (var k = 0; k < data.lines.length; k++) {
             if (data.lines[k].shape === "loop") {
               start = k;
+
               break;
             }
           }
+
           setLine(start);
-        } else $("#line-name").textContent = "No lines available";
+        } else {
+          $("#line-name").textContent = "No lines available";
+        }
       })();
     </script>
   </body>
