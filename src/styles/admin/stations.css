@@ -33,6 +33,7 @@
   line-height: 1.5;
 }
 
+
 /* ========================================
    Station List
 ======================================== */
@@ -67,6 +68,7 @@
   white-space: nowrap;
 }
 
+
 /* ========================================
    Search / Action Toolbar
 ======================================== */
@@ -78,6 +80,7 @@
   gap: 24px;
   margin-bottom: 18px;
 }
+
 
 /* ========================================
    Search Form
@@ -91,6 +94,7 @@
   max-width: none;
   min-width: 0;
 }
+
 
 /* ========================================
    Station Form
@@ -107,6 +111,7 @@
   border: 1px solid var(--admin-border);
   border-radius: 14px;
 }
+
 
 /* ========================================
    Form Header
@@ -135,6 +140,7 @@
   font-weight: 600;
 }
 
+
 /* ========================================
    Japanese Name
 ======================================== */
@@ -142,6 +148,7 @@
 .admin-station-japanese-input {
   font-size: 14px;
 }
+
 
 /* ========================================
    Coordinate Group
@@ -153,6 +160,7 @@
   gap: 18px;
 }
 
+
 /* ========================================
    Station Description
 ======================================== */
@@ -161,6 +169,7 @@
   min-height: 160px !important;
   resize: vertical;
 }
+
 
 /* ========================================
    Facilities
@@ -200,6 +209,121 @@
   font-size: 13px;
   line-height: 1.5;
 }
+
+
+/* ========================================
+   Station Features
+   Facilities + Top Picks
+======================================== */
+
+.admin-station-features-grid {
+  display: grid;
+  grid-template-columns: 40% minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.admin-station-feature-panel {
+  min-width: 0;
+  height: fit-content;
+}
+
+.admin-station-feature-panel .admin-panel-body {
+  padding: 20px;
+}
+
+.admin-station-feature-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.admin-station-feature-header > div:first-child {
+  min-width: 0;
+}
+
+.admin-station-feature-header h3 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.admin-station-feature-header p {
+  margin: 4px 0 0;
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.admin-station-feature-header strong {
+  color: var(--admin-text);
+  font-weight: 600;
+}
+
+.admin-station-feature-header .admin-button,
+.admin-station-feature-header .common-button {
+  flex-shrink: 0;
+}
+
+
+/* ========================================
+   Compact Feature Tables
+======================================== */
+
+.admin-compact-table {
+  width: 100%;
+}
+
+.admin-compact-table th,
+.admin-compact-table td {
+  padding: 10px 12px;
+}
+
+.admin-compact-table th {
+  font-size: 12px;
+}
+
+.admin-compact-table td {
+  font-size: 13px;
+}
+
+.admin-compact-table th:last-child,
+.admin-compact-table td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.admin-compact-table .admin-line-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ========================================
+   Compact Feature Empty State
+======================================== */
+
+.admin-feature-empty {
+  padding: 18px 12px;
+  color: var(--admin-muted);
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-feature-message {
+  margin: 10px 0 0;
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 
 /* ========================================
    Facility Checkbox Grid
@@ -249,6 +373,7 @@
   font-size: 13px;
   line-height: 1.4;
 }
+
 
 /* ========================================
    Add Facility Modal
@@ -332,6 +457,7 @@
   border-color: var(--admin-text);
 }
 
+
 /* ========================================
    Form Validation
 ======================================== */
@@ -354,6 +480,7 @@
   border-color: var(--admin-danger);
   box-shadow: 0 0 0 3px var(--admin-danger-bg);
 }
+
 
 /* ========================================
    Empty State
@@ -382,18 +509,32 @@
   margin-top: 18px;
 }
 
+
 /* ========================================
    Responsive
 ======================================== */
 
 @media (max-width: 1000px) {
+
   .admin-search-form {
     width: auto;
     flex-basis: auto;
   }
+
 }
 
+
+@media (max-width: 900px) {
+
+  .admin-station-features-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
 @media (max-width: 760px) {
+
   .admin-list-toolbar {
     align-items: stretch;
     flex-direction: column;
@@ -454,4 +595,30 @@
     max-height: calc(100vh - 32px);
     padding: 18px;
   }
+
+  .admin-station-feature-panel .admin-panel-body {
+    padding: 16px;
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .admin-station-feature-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .admin-station-feature-header .admin-button,
+  .admin-station-feature-header .common-button {
+    width: auto;
+  }
+
+  .admin-compact-table th,
+  .admin-compact-table td {
+    padding: 9px 10px;
+  }
+
 }

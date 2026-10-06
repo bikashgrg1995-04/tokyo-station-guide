@@ -7,13 +7,11 @@ import "../../../../styles/admin/tables.css";
 import AdminNavigation from "../../../../common_components/AdminNavigation.astro";
 import Button from "../../../../common_components/Button.astro";
 import ConfirmDialog from "../../../../common_components/ConfirmDialog.astro";
+import StationTopPicks from "../../../../common_components/StationTopPicks.astro";
 
 import {
   getStationById,
   updateStation,
-  linesToJson,
-  jsonToLines,
-  validateLineList,
 } from "../../../../lib/db/stations";
 
 import {
@@ -21,6 +19,12 @@ import {
   getStationFacilities,
   getAvailableFacilitiesForStation,
 } from "../../../../lib/db/facilities";
+
+import {
+  getTopPicks,
+  getStationTopPicks,
+  getAvailableTopPicksForStation,
+} from "../../../../lib/db/top-picks";
 
 export const prerender = false;
 
@@ -41,10 +45,19 @@ if (!station) {
 
 let formError = "";
 let facilityError = "";
+let topPickError = "";
 
-let stationFacilities = await getStationFacilities(db, id);
+let stationFacilities =
+  await getStationFacilities(db, id);
+
 let availableFacilities =
   await getAvailableFacilitiesForStation(db, id);
+
+let stationTopPicks =
+  await getStationTopPicks(db, id);
+
+let availableTopPicks =
+  await getAvailableTopPicksForStation(db, id);
 
 let name = station.name;
 let nameJapanese = station.name_japanese ?? "";
@@ -63,8 +76,6 @@ let longitudeValue =
 let description = station.description ?? "";
 let about = station.about ?? "";
 
-let topPicksText = jsonToLines(station.top_picks);
-
 const errors = {
   name: "",
   nameJapanese: "",
@@ -73,7 +84,6 @@ const errors = {
   longitude: "",
   description: "",
   about: "",
-  topPicks: "",
 };
 
 /* ========================================
@@ -81,7 +91,8 @@ const errors = {
 ======================================== */
 
 if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
+  const formData =
+    await Astro.request.formData();
 
   const action = String(
     formData.get("action") ?? "",
@@ -122,10 +133,6 @@ if (Astro.request.method === "POST") {
       formData.get("about") ?? "",
     ).trim();
 
-    topPicksText = String(
-      formData.get("top_picks") ?? "",
-    );
-
     const latitude =
       latitudeValue === ""
         ? null
@@ -141,7 +148,8 @@ if (Astro.request.method === "POST") {
     ======================================== */
 
     if (!name) {
-      errors.name = "Station name is required.";
+      errors.name =
+        "Station name is required.";
     } else if (name.length > 150) {
       errors.name =
         "Station name must be 150 characters or less.";
@@ -153,9 +161,12 @@ if (Astro.request.method === "POST") {
     }
 
     if (!slug) {
-      errors.slug = "Slug is required.";
+      errors.slug =
+        "Slug is required.";
     } else if (
-      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
+        slug,
+      )
     ) {
       errors.slug =
         "Slug can only contain lowercase letters, numbers, and hyphens.";
@@ -172,7 +183,8 @@ if (Astro.request.method === "POST") {
         "Latitude must be a valid number.";
     } else if (
       latitude !== null &&
-      (latitude < -90 || latitude > 90)
+      (latitude < -90 ||
+        latitude > 90)
     ) {
       errors.latitude =
         "Latitude must be between -90 and 90.";
@@ -186,7 +198,8 @@ if (Astro.request.method === "POST") {
         "Longitude must be a valid number.";
     } else if (
       longitude !== null &&
-      (longitude < -180 || longitude > 180)
+      (longitude < -180 ||
+        longitude > 180)
     ) {
       errors.longitude =
         "Longitude must be between -180 and 180.";
@@ -202,11 +215,6 @@ if (Astro.request.method === "POST") {
         "About must be 1000 characters or less.";
     }
 
-    errors.topPicks = validateLineList(
-      topPicksText,
-      "Top picks",
-    );
-
     /* ========================================
        Facility IDs
     ======================================== */
@@ -218,35 +226,96 @@ if (Astro.request.method === "POST") {
           .map((value) => Number(value))
           .filter(
             (facilityId) =>
-              Number.isInteger(facilityId) &&
+              Number.isInteger(
+                facilityId,
+              ) &&
               facilityId > 0,
           ),
       ),
     ];
 
-    const allFacilities = await getFacilities(db);
+    const allFacilities =
+      await getFacilities(db);
 
-    const validFacilityIds = new Set(
-      allFacilities.map(
-        (facility) => facility.id,
-      ),
-    );
+    const validFacilityIds =
+      new Set(
+        allFacilities.map(
+          (facility) =>
+            facility.id,
+        ),
+      );
 
     const invalidFacilityIds =
       selectedFacilityIds.filter(
         (facilityId) =>
-          !validFacilityIds.has(facilityId),
+          !validFacilityIds.has(
+            facilityId,
+          ),
       );
 
-    if (invalidFacilityIds.length > 0) {
+    if (
+      invalidFacilityIds.length > 0
+    ) {
       facilityError =
         "One or more selected facilities are invalid.";
     }
 
+    /* ========================================
+       Top Pick IDs
+    ======================================== */
+
+    const selectedTopPickIds = [
+      ...new Set(
+        formData
+          .getAll("top_pick_ids")
+          .map((value) => Number(value))
+          .filter(
+            (topPickId) =>
+              Number.isInteger(
+                topPickId,
+              ) &&
+              topPickId > 0,
+          ),
+      ),
+    ];
+
+    const allTopPicks =
+      await getTopPicks(db);
+
+    const validTopPickIds =
+      new Set(
+        allTopPicks.map(
+          (topPick) =>
+            topPick.id,
+        ),
+      );
+
+    const invalidTopPickIds =
+      selectedTopPickIds.filter(
+        (topPickId) =>
+          !validTopPickIds.has(
+            topPickId,
+          ),
+      );
+
+    if (
+      invalidTopPickIds.length > 0
+    ) {
+      topPickError =
+        "One or more selected top picks are invalid.";
+    }
+
+    /* ========================================
+       Validation Result
+    ======================================== */
+
     const hasValidationErrors =
       Object.values(errors).some(
-        (message) => message.length > 0,
-      ) || facilityError.length > 0;
+        (message) =>
+          message.length > 0,
+      ) ||
+      facilityError.length > 0 ||
+      topPickError.length > 0;
 
     /* ========================================
        Save
@@ -254,20 +323,22 @@ if (Astro.request.method === "POST") {
 
     if (!hasValidationErrors) {
       try {
-        await updateStation(db, id, {
-          name,
-          nameJapanese:
-            nameJapanese || null,
-          slug,
-          latitude,
-          longitude,
-          description:
-            description || null,
-          about:
-            about || null,
-          topPicks:
-            linesToJson(topPicksText),
-        });
+        await updateStation(
+          db,
+          id,
+          {
+            name,
+            nameJapanese:
+              nameJapanese || null,
+            slug,
+            latitude,
+            longitude,
+            description:
+              description || null,
+            about:
+              about || null,
+          },
+        );
 
         /* ========================================
            Save Facilities
@@ -283,7 +354,9 @@ if (Astro.request.method === "POST") {
           .bind(id)
           .run();
 
-        if (selectedFacilityIds.length > 0) {
+        if (
+          selectedFacilityIds.length > 0
+        ) {
           const facilityStatements =
             selectedFacilityIds.map(
               (facilityId) =>
@@ -308,6 +381,54 @@ if (Astro.request.method === "POST") {
           );
         }
 
+        /* ========================================
+           Save Top Picks
+        ======================================== */
+
+        await db
+          .prepare(
+            `
+              DELETE FROM station_top_picks
+              WHERE station_id = ?
+            `,
+          )
+          .bind(id)
+          .run();
+
+        if (
+          selectedTopPickIds.length > 0
+        ) {
+          const topPickStatements =
+            selectedTopPickIds.map(
+              (
+                topPickId,
+                index,
+              ) =>
+                db
+                  .prepare(
+                    `
+                      INSERT INTO station_top_picks (
+                        station_id,
+                        top_pick_id,
+                        sort_order,
+                        walking_minutes
+                      )
+                      VALUES (?, ?, ?, ?)
+                    `,
+                  )
+                  .bind(
+                    id,
+                    topPickId,
+                    index + 1,
+                    null,
+                  ),
+            );
+
+          await db.batch(
+            topPickStatements,
+          );
+        }
+
         return Astro.redirect(
           "/admin/stations",
         );
@@ -319,18 +440,20 @@ if (Astro.request.method === "POST") {
       }
     }
 
-    /*
-     * Rebuild the server-side facility state
-     * when validation fails so the page remains
-     * consistent with the submitted values.
-     */
+    /* ========================================
+       Rebuild Facility State
+       when validation fails
+    ======================================== */
+
     stationFacilities =
       selectedFacilityIds
-        .map((facilityId) =>
-          allFacilities.find(
-            (facility) =>
-              facility.id === facilityId,
-          ),
+        .map(
+          (facilityId) =>
+            allFacilities.find(
+              (facility) =>
+                facility.id ===
+                facilityId,
+            ),
         )
         .filter(
           (
@@ -338,10 +461,12 @@ if (Astro.request.method === "POST") {
           ): facility is (typeof allFacilities)[number] =>
             Boolean(facility),
         )
-        .map((facility) => ({
-          ...facility,
-          note: null,
-        }));
+        .map(
+          (facility) => ({
+            ...facility,
+            note: null,
+          }),
+        );
 
     availableFacilities =
       allFacilities.filter(
@@ -350,19 +475,71 @@ if (Astro.request.method === "POST") {
             facility.id,
           ),
       );
+
+    /* ========================================
+       Rebuild Top Pick State
+       when validation fails
+    ======================================== */
+
+    stationTopPicks =
+      selectedTopPickIds
+        .map(
+          (
+            topPickId,
+            index,
+          ) => {
+            const topPick =
+              allTopPicks.find(
+                (item) =>
+                  item.id ===
+                  topPickId,
+              );
+
+            if (!topPick) {
+              return null;
+            }
+
+            return {
+              ...topPick,
+              sort_order:
+                index + 1,
+              walking_minutes:
+                null,
+            };
+          },
+        )
+        .filter(
+          (
+            topPick,
+          ): topPick is NonNullable<
+            typeof topPick
+          > =>
+            Boolean(topPick),
+        );
+
+    availableTopPicks =
+      allTopPicks.filter(
+        (topPick) =>
+          !selectedTopPickIds.includes(
+            topPick.id,
+          ),
+      );
   }
 }
 
-const admin = await Astro.session?.get<{
-  id: number;
-  email: string;
-  name: string;
-}>("admin");
+const admin =
+  await Astro.session?.get<{
+    id: number;
+    email: string;
+    name: string;
+  }>("admin");
 ---
 
 <!doctype html>
 <html lang="en">
+
   <head>
+
     <meta charset="UTF-8" />
 
     <meta
@@ -378,14 +555,18 @@ const admin = await Astro.session?.get<{
     <title>
       Edit {station.name} | Admin | Tokyo Station Guide
     </title>
+
   </head>
 
+
   <body>
+
     <div class="admin-shell">
 
       <AdminNavigation
         activePath="/admin/stations"
       />
+
 
       <main class="admin-main">
 
@@ -410,7 +591,9 @@ const admin = await Astro.session?.get<{
 
             <span>/</span>
 
-            <strong>Edit Station</strong>
+            <strong>
+              Edit Station
+            </strong>
 
           </div>
 
@@ -423,7 +606,9 @@ const admin = await Astro.session?.get<{
 
         <div class="admin-content">
 
-          <h2>Edit Station</h2>
+          <h2>
+            Edit Station
+          </h2>
 
           <p>
             Update the railway station information for the Tokyo
@@ -762,50 +947,6 @@ const admin = await Astro.session?.get<{
 
                     </div>
 
-
-                    <!-- Top Picks -->
-
-                    <div class="admin-form-group full-width">
-
-                      <label for="top_picks">
-                        Top Picks
-                      </label>
-
-                      <textarea
-                        id="top_picks"
-                        name="top_picks"
-                        rows="5"
-                        placeholder={
-                          "Imperial Palace\nRamen Street"
-                        }
-                        aria-invalid={
-                          errors.topPicks
-                            ? "true"
-                            : "false"
-                        }
-                        aria-describedby={
-                          errors.topPicks
-                            ? "top-picks-error"
-                            : undefined
-                        }>{topPicksText}</textarea>
-
-                      {
-                        errors.topPicks ? (
-                          <small
-                            id="top-picks-error"
-                            class="admin-form-error"
-                          >
-                            {errors.topPicks}
-                          </small>
-                        ) : (
-                          <small>
-                            One item per line.
-                          </small>
-                        )
-                      }
-
-                    </div>
-
                   </div>
 
                 </div>
@@ -816,54 +957,46 @@ const admin = await Astro.session?.get<{
 
 
             <!-- ======================================
-                 Facilities
+                 Facilities + Top Picks
             ======================================= -->
 
-            <section class="admin-panel">
+            <div class="admin-station-features-grid">
 
-              <div class="admin-panel-body">
+              <!-- ======================================
+                   Facilities
+              ======================================= -->
 
-                <div class="admin-station-form">
+              <section class="admin-panel admin-station-feature-panel">
 
-                  <div class="admin-station-form-header">
+                <div class="admin-panel-body">
 
-                    <div
-                      style="
-                        display:flex;
-                        justify-content:space-between;
-                        align-items:center;
-                        gap:16px;
-                      "
-                    >
+                  <div class="admin-station-feature-header">
 
-                      <div>
+                    <div>
 
-                        <h3>
-                          Facilities
-                        </h3>
+                      <h3>
+                        Facilities
+                      </h3>
 
-                        <p>
-                          Manage the facilities available at
-                          <strong>{station.name}</strong>.
-                          Changes are applied when you click
-                          <strong>Save Changes</strong>.
-                        </p>
-
-                      </div>
-
-                      {
-                        availableFacilities.length > 0 && (
-                          <Button
-                            type="button"
-                            variant="primary"
-                            id="open-add-facility-button"
-                          >
-                            + Add Facility
-                          </Button>
-                        )
-                      }
+                      <p>
+                        Facilities available at
+                        <strong>{station.name}</strong>.
+                      </p>
 
                     </div>
+
+
+                    {
+                      availableFacilities.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="primary"
+                          id="open-add-facility-button"
+                        >
+                          + Add
+                        </Button>
+                      )
+                    }
 
                   </div>
 
@@ -902,7 +1035,7 @@ const admin = await Astro.session?.get<{
                   <div class="admin-table-wrapper">
 
                     <table
-                      class="admin-table"
+                      class="admin-table admin-compact-table"
                       id="station-facilities-table"
                     >
 
@@ -912,10 +1045,6 @@ const admin = await Astro.session?.get<{
 
                           <th>
                             Facility
-                          </th>
-
-                          <th>
-                            Slug
                           </th>
 
                           <th>
@@ -950,13 +1079,6 @@ const admin = await Astro.session?.get<{
 
                                   </td>
 
-                                  <td>
-
-                                    <span class="admin-line-slug">
-                                      {facility.slug}
-                                    </span>
-
-                                  </td>
 
                                   <td>
 
@@ -988,23 +1110,10 @@ const admin = await Astro.session?.get<{
 
                             <tr id="station-facilities-empty-row">
 
-                              <td colspan="3">
+                              <td colspan="2">
 
-                                <div class="admin-empty">
-
-                                  <div class="admin-empty-icon">
-                                    ◦
-                                  </div>
-
-                                  <h3>
-                                    No Facilities Assigned
-                                  </h3>
-
-                                  <p>
-                                    There are currently no facilities
-                                    assigned to this station.
-                                  </p>
-
+                                <div class="admin-feature-empty">
+                                  No facilities assigned.
                                 </div>
 
                               </td>
@@ -1025,21 +1134,36 @@ const admin = await Astro.session?.get<{
 
                   <p
                     id="all-facilities-message"
-                    style="
-                      margin-top:12px;
-                      opacity:0.7;
-                    "
+                    class="admin-feature-message"
                     hidden
                   >
-                    All available facilities are already assigned
-                    to this station.
+                    All available facilities are already assigned.
                   </p>
 
                 </div>
 
-              </div>
+              </section>
 
-            </section>
+
+              <!-- ======================================
+                   Top Picks
+              ======================================= -->
+
+              <section class="admin-panel admin-station-feature-panel">
+
+                <div class="admin-panel-body">
+
+                  <StationTopPicks
+                    stationName={station.name}
+                    assignedTopPicks={stationTopPicks}
+                    availableTopPicks={availableTopPicks}
+                  />
+
+                </div>
+
+              </section>
+
+            </div>
 
 
             <!-- ======================================
@@ -1361,20 +1485,9 @@ const admin = await Astro.session?.get<{
 
             facilityBody.innerHTML = `
               <tr id="station-facilities-empty-row">
-                <td colspan="3">
-                  <div class="admin-empty">
-                    <div class="admin-empty-icon">
-                      ◦
-                    </div>
-
-                    <h3>
-                      No Facilities Assigned
-                    </h3>
-
-                    <p>
-                      There are currently no facilities
-                      assigned to this station.
-                    </p>
+                <td colspan="2">
+                  <div class="admin-feature-empty">
+                    No facilities assigned.
                   </div>
                 </td>
               </tr>
@@ -1387,6 +1500,7 @@ const admin = await Astro.session?.get<{
           emptyRow?.remove();
 
         }
+
       }
 
 
@@ -1409,7 +1523,9 @@ const admin = await Astro.session?.get<{
         }
 
         const visibleOptions =
-          Array.from(facilityOptions).filter(
+          Array.from(
+            facilityOptions,
+          ).filter(
             (option) =>
               option instanceof HTMLElement &&
               option.style.display !== "none",
@@ -1417,6 +1533,7 @@ const admin = await Astro.session?.get<{
 
         allFacilitiesMessage.hidden =
           visibleOptions.length > 0;
+
       }
 
 
@@ -1436,15 +1553,18 @@ const admin = await Astro.session?.get<{
             return;
           }
 
-          const facilityId = Number(
-            row.dataset.facilityId,
-          );
+          const facilityId =
+            Number(
+              row.dataset.facilityId,
+            );
 
           if (
             Number.isInteger(facilityId) &&
             facilityId > 0
           ) {
-            selectedIds.add(facilityId);
+            selectedIds.add(
+              facilityId,
+            );
           }
 
         });
@@ -1459,12 +1579,15 @@ const admin = await Astro.session?.get<{
               return;
             }
 
-            const facilityId = Number(
-              checkbox.dataset.facilityId,
-            );
+            const facilityId =
+              Number(
+                checkbox.dataset.facilityId,
+              );
 
             const selected =
-              selectedIds.has(facilityId);
+              selectedIds.has(
+                facilityId,
+              );
 
             checkbox.checked = false;
             checkbox.disabled = selected;
@@ -1487,6 +1610,7 @@ const admin = await Astro.session?.get<{
         );
 
         updateAllFacilitiesMessage();
+
       }
 
 
@@ -1513,7 +1637,9 @@ const admin = await Astro.session?.get<{
 
 
         const row =
-          document.createElement("tr");
+          document.createElement(
+            "tr",
+          );
 
         row.setAttribute(
           "data-facility-row",
@@ -1534,12 +1660,6 @@ const admin = await Astro.session?.get<{
           </td>
 
           <td>
-            <span class="admin-line-slug">
-              ${facilitySlug}
-            </span>
-          </td>
-
-          <td>
             <div class="admin-table-actions">
               <button
                 type="button"
@@ -1554,22 +1674,29 @@ const admin = await Astro.session?.get<{
         `;
 
 
-        facilityBody.appendChild(row);
+        facilityBody.appendChild(
+          row,
+        );
 
 
         const input =
-          document.createElement("input");
+          document.createElement(
+            "input",
+          );
 
         input.type = "hidden";
         input.name = "facility_ids";
-        input.value = String(facilityId);
+        input.value =
+          String(facilityId);
 
         input.setAttribute(
           "data-facility-input",
           String(facilityId),
         );
 
-        facilityInputs.appendChild(input);
+        facilityInputs.appendChild(
+          input,
+        );
 
 
         updateFacilityEmptyState();
@@ -1615,7 +1742,8 @@ const admin = await Astro.session?.get<{
 
         syncFacilityOptions();
 
-        addFacilityModal.hidden = false;
+        addFacilityModal.hidden =
+          false;
 
         addFacilityModal.setAttribute(
           "aria-hidden",
@@ -1649,7 +1777,8 @@ const admin = await Astro.session?.get<{
 
         updateSelectedFacilityCount();
 
-        addFacilityModal.hidden = true;
+        addFacilityModal.hidden =
+          true;
 
         addFacilityModal.setAttribute(
           "aria-hidden",
@@ -1770,9 +1899,10 @@ const admin = await Astro.session?.get<{
               }
 
 
-              const facilityId = Number(
-                checkbox.dataset.facilityId,
-              );
+              const facilityId =
+                Number(
+                  checkbox.dataset.facilityId,
+                );
 
               const facilityName =
                 checkbox.dataset.facilityName ??
@@ -1784,7 +1914,9 @@ const admin = await Astro.session?.get<{
 
 
               if (
-                !Number.isInteger(facilityId) ||
+                !Number.isInteger(
+                  facilityId,
+                ) ||
                 facilityId <= 0
               ) {
                 return;
@@ -1862,15 +1994,18 @@ const admin = await Astro.session?.get<{
             }
 
 
-            const facilityId = Number(
-              removeButton.getAttribute(
-                "data-remove-facility",
-              ),
-            );
+            const facilityId =
+              Number(
+                removeButton.getAttribute(
+                  "data-remove-facility",
+                ),
+              );
 
 
             if (
-              !Number.isInteger(facilityId) ||
+              !Number.isInteger(
+                facilityId,
+              ) ||
               facilityId <= 0
             ) {
               return;
@@ -1893,7 +2028,8 @@ const admin = await Astro.session?.get<{
                 "dialog:open",
                 {
                   detail: {
-                    name: facilityName,
+                    name:
+                      facilityName,
                   },
                 },
               ),
@@ -1997,4 +2133,5 @@ const admin = await Astro.session?.get<{
     </script>
 
   </body>
+
 </html>
