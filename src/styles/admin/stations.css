@@ -163,6 +163,176 @@
 }
 
 /* ========================================
+   Facilities
+======================================== */
+
+.admin-station-facilities {
+  width: 100%;
+  max-width: 900px;
+  margin-top: 24px;
+}
+
+.admin-station-facilities-card {
+  padding: 24px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+}
+
+.admin-station-facilities-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.admin-station-facilities-header h2,
+.admin-station-facilities-header h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.admin-station-facilities-header p {
+  margin: 6px 0 0;
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ========================================
+   Facility Checkbox Grid
+======================================== */
+
+.admin-facility-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.admin-facility-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 14px;
+  color: var(--admin-text);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.admin-facility-checkbox-item:hover {
+  border-color: var(--admin-text);
+}
+
+.admin-facility-checkbox-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--admin-text);
+  cursor: pointer;
+}
+
+.admin-facility-checkbox-item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* ========================================
+   Add Facility Modal
+======================================== */
+
+.admin-line-station-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.admin-line-station-modal[hidden] {
+  display: none;
+}
+
+.admin-line-station-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.admin-line-station-modal-dialog {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 620px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 24px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.admin-line-station-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.admin-line-station-modal-header h2 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+.admin-line-station-modal-header p {
+  margin: 6px 0 0;
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-line-station-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  padding: 0;
+  color: var(--admin-muted);
+  background: transparent;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-line-station-modal-close:hover {
+  color: var(--admin-text);
+  border-color: var(--admin-text);
+}
+
+/* ========================================
    Form Validation
 ======================================== */
 
@@ -260,5 +430,28 @@
 
   .admin-station-description {
     min-height: 140px !important;
+  }
+
+  .admin-station-facilities-card {
+    padding: 18px;
+  }
+
+  .admin-station-facilities-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-facility-checkbox-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-line-station-modal {
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  .admin-line-station-modal-dialog {
+    max-height: calc(100vh - 32px);
+    padding: 18px;
   }
 }

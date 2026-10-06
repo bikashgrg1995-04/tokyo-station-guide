@@ -1,5 +1,5 @@
 -- Featured ("Popular Station Hubs") seed data.
--- Run AFTER db/seed.sql.
+-- Run AFTER db/seed.sql (needs stations to exist).
 --
 -- ASSUMED table shape (check with: PRAGMA table_info(featured_stations);):
 --   featured_stations(station_id, image_url, description, sort_order)

@@ -19,9 +19,22 @@ export interface Station {
   longitude: number | null;
   description: string | null;
   about: string | null;
+
+  /*
+   * Compatibility fields.
+   *
+   * The actual data is stored relationally in:
+   * - station_facilities -> facilities
+   * - station_top_picks -> top_picks
+   * - line_stations -> lines -> operators
+   *
+   * They are returned as JSON strings because the
+   * existing public UI expects this format.
+   */
   facilities: string | null;
   top_picks: string | null;
   connections: string | null;
+
   created_at: string;
   updated_at: string;
   lines: StationLine[];
@@ -58,7 +71,6 @@ export interface StationAdminListItem {
 
 /*
  * Used by the admin edit page.
- * facilities / top_picks / connections are JSON strings.
  */
 export interface StationEditItem extends StationAdminListItem {
   about: string | null;
@@ -77,7 +89,6 @@ export interface CreateStationInput {
   about?: string | null;
   facilities?: string | null;
   topPicks?: string | null;
-  connections?: string | null;
 }
 
 export interface UpdateStationInput {
@@ -90,7 +101,6 @@ export interface UpdateStationInput {
   about?: string | null;
   facilities?: string | null;
   topPicks?: string | null;
-  connections?: string | null;
 }
 
 export interface PaginatedStations {
@@ -103,14 +113,6 @@ export interface PaginatedStations {
 
 /* ========================================
    Station Detail Field Helpers
-
-   facilities and top_picks:
-     textarea, one item per line
-     <-> JSON array of strings
-
-   connections:
-     textarea, one per line: "Name | #color"
-     <-> JSON array of { name, color? }
 ======================================== */
 
 export function splitLines(text: string): string[] {
@@ -145,7 +147,9 @@ export function linesToJson(text: string): string | null {
   return items.length ? JSON.stringify(items) : null;
 }
 
-export function jsonToLines(json: string | null | undefined): string {
+export function jsonToLines(
+  json: string | null | undefined,
+): string {
   if (!json) {
     return "";
   }
@@ -159,67 +163,269 @@ export function jsonToLines(json: string | null | undefined): string {
   }
 }
 
-export function connectionsToJson(text: string): {
-  json: string | null;
-  error: string;
-} {
-  const items: { name: string; color?: string }[] = [];
+/* ========================================
+   Internal Relation Helpers
+======================================== */
 
-  for (const line of splitLines(text)) {
-    const [rawName, rawColor] = line.split("|").map((part) => part.trim());
+/*
+ * Convert station_facilities relational data into the
+ * JSON string expected by the existing UI.
+ *
+ * Example:
+ * [
+ *   "Ticket Office",
+ *   "Coin Lockers",
+ *   "Wi-Fi"
+ * ]
+ */
+async function getStationFacilitiesJson(
+  db: D1Database,
+  stationId: number,
+): Promise<string | null> {
+  const result = await db
+    .prepare(
+      `
+        SELECT
+          f.name
+        FROM station_facilities sf
+        INNER JOIN facilities f
+          ON f.id = sf.facility_id
+        WHERE sf.station_id = ?
+        ORDER BY
+          f.sort_order ASC,
+          f.name ASC
+      `,
+    )
+    .bind(stationId)
+    .all<{ name: string }>();
 
-    if (!rawName) {
-      return { json: null, error: "Each connection needs a name." };
-    }
-
-    if (rawName.length > 80) {
-      return {
-        json: null,
-        error: "Connection names must be 80 characters or less.",
-      };
-    }
-
-    if (rawColor && !/^#[0-9a-fA-F]{3,8}$/.test(rawColor)) {
-      return {
-        json: null,
-        error: `Invalid color "${rawColor}". Use a hex color like #f15a22.`,
-      };
-    }
-
-    items.push(rawColor ? { name: rawName, color: rawColor } : { name: rawName });
+  if (!result.results.length) {
+    return null;
   }
 
-  if (items.length > 20) {
-    return { json: null, error: "Connections can have at most 20 items." };
-  }
-
-  return {
-    json: items.length ? JSON.stringify(items) : null,
-    error: "",
-  };
+  return JSON.stringify(
+    result.results.map((item) => item.name),
+  );
 }
 
-export function jsonToConnections(json: string | null | undefined): string {
+/*
+ * Convert station_top_picks relational data into the
+ * JSON string expected by the existing UI.
+ */
+async function getStationTopPicksJson(
+  db: D1Database,
+  stationId: number,
+): Promise<string | null> {
+  const result = await db
+    .prepare(
+      `
+        SELECT
+          tp.name,
+          stp.sort_order
+        FROM station_top_picks stp
+        INNER JOIN top_picks tp
+          ON tp.id = stp.top_pick_id
+        WHERE stp.station_id = ?
+        ORDER BY
+          stp.sort_order ASC
+      `,
+    )
+    .bind(stationId)
+    .all<{
+      name: string;
+      sort_order: number;
+    }>();
+
+  if (!result.results.length) {
+    return null;
+  }
+
+  return JSON.stringify(
+    result.results.map((item) => item.name),
+  );
+}
+
+/*
+ * Convert line_stations relational data into the
+ * JSON string expected by the existing UI.
+ *
+ * Connections are automatically derived from:
+ *
+ * station
+ *   -> line_stations
+ *      -> lines
+ *         -> operators
+ *
+ * This means the station does not store manual
+ * connection data.
+ */
+async function getStationConnectionsJson(
+  db: D1Database,
+  stationId: number,
+): Promise<string | null> {
+  const result = await db
+    .prepare(
+      `
+        SELECT
+          json_group_array(
+            json_object(
+              'name', connection.name,
+              'code', connection.code,
+              'color', connection.color,
+              'type', connection.line_type,
+              'operator', connection.operator_name
+            )
+          ) AS connections
+        FROM (
+          SELECT
+            l.name,
+            l.code,
+            l.color,
+            l.line_type,
+            o.name AS operator_name
+          FROM line_stations ls
+          INNER JOIN lines l
+            ON l.id = ls.line_id
+          LEFT JOIN operators o
+            ON o.id = l.operator_id
+          WHERE ls.station_id = ?
+          ORDER BY
+            ls.station_order ASC,
+            l.name ASC
+        ) connection
+      `,
+    )
+    .bind(stationId)
+    .first<{ connections: string | null }>();
+
+  if (!result?.connections || result.connections === "[]") {
+    return null;
+  }
+
+  return result.connections;
+}
+
+/*
+ * Parse a JSON array of strings safely.
+ */
+function parseStringListJson(
+  json: string | null | undefined,
+): string[] {
   if (!json) {
-    return "";
+    return [];
   }
 
   try {
     const parsed = JSON.parse(json);
 
     if (!Array.isArray(parsed)) {
-      return "";
+      return [];
     }
 
     return parsed
-      .map((item: { name?: string; color?: string }) =>
-        item.color ? `${item.name} | ${item.color}` : String(item.name ?? ""),
-      )
-      .filter(Boolean)
-      .join("\n");
+      .map((item) => String(item).trim())
+      .filter(Boolean);
   } catch {
-    return "";
+    return [];
   }
+}
+
+/*
+ * Resolve facility names entered by the admin to actual
+ * facility IDs.
+ *
+ * We support both:
+ * - facility name
+ * - facility slug
+ */
+async function resolveFacilityIds(
+  db: D1Database,
+  json: string | null | undefined,
+): Promise<number[]> {
+  const names = parseStringListJson(json);
+
+  if (!names.length) {
+    return [];
+  }
+
+  const ids: number[] = [];
+
+  for (const name of names) {
+    const result = await db
+      .prepare(
+        `
+          SELECT id
+          FROM facilities
+          WHERE
+            LOWER(name) = LOWER(?)
+            OR LOWER(slug) = LOWER(?)
+          LIMIT 1
+        `,
+      )
+      .bind(name, name)
+      .first<{ id: number }>();
+
+    if (!result) {
+      throw new Error(
+        `Facility "${name}" does not exist.`,
+      );
+    }
+
+    if (!ids.includes(result.id)) {
+      ids.push(result.id);
+    }
+  }
+
+  return ids;
+}
+
+/*
+ * Resolve top-pick names entered by the admin to actual
+ * top_picks IDs.
+ *
+ * We support both:
+ * - top pick name
+ * - top pick slug
+ */
+async function resolveTopPickIds(
+  db: D1Database,
+  json: string | null | undefined,
+): Promise<number[]> {
+  const names = parseStringListJson(json);
+
+  if (!names.length) {
+    return [];
+  }
+
+  const ids: number[] = [];
+
+  for (const name of names) {
+    const result = await db
+      .prepare(
+        `
+          SELECT id
+          FROM top_picks
+          WHERE
+            LOWER(name) = LOWER(?)
+            OR LOWER(slug) = LOWER(?)
+          LIMIT 1
+        `,
+      )
+      .bind(name, name)
+      .first<{ id: number }>();
+
+    if (!result) {
+      throw new Error(
+        `Top pick "${name}" does not exist.`,
+      );
+    }
+
+    if (!ids.includes(result.id)) {
+      ids.push(result.id);
+    }
+  }
+
+  return ids;
 }
 
 /* ========================================
@@ -242,9 +448,6 @@ export async function getStationBySlug(
           longitude,
           description,
           about,
-          facilities,
-          top_picks,
-          connections,
           created_at,
           updated_at
         FROM stations
@@ -253,7 +456,12 @@ export async function getStationBySlug(
       `,
     )
     .bind(slug)
-    .first<Omit<Station, "lines">>();
+    .first<
+      Omit<
+        Station,
+        "lines" | "facilities" | "top_picks" | "connections"
+      >
+    >();
 
   if (!station) {
     return null;
@@ -280,8 +488,26 @@ export async function getStationBySlug(
     .bind(station.id)
     .all<StationLine>();
 
+  const facilities = await getStationFacilitiesJson(
+    db,
+    station.id,
+  );
+
+  const topPicks = await getStationTopPicksJson(
+    db,
+    station.id,
+  );
+
+  const connections = await getStationConnectionsJson(
+    db,
+    station.id,
+  );
+
   return {
     ...station,
+    facilities,
+    top_picks: topPicks,
+    connections,
     lines: lines.results,
   };
 }
@@ -417,9 +643,15 @@ export async function getAdminStationsPaginated(
     search?: string;
   } = {},
 ): Promise<PaginatedStations> {
-  const perPage = Math.max(1, options.perPage ?? 10);
+  const perPage = Math.max(
+    1,
+    options.perPage ?? 10,
+  );
 
-  const requestedPage = Math.max(1, options.page ?? 1);
+  const requestedPage = Math.max(
+    1,
+    options.page ?? 1,
+  );
 
   const search = options.search?.trim() ?? "";
 
@@ -438,10 +670,18 @@ export async function getAdminStationsPaginated(
           OR description LIKE ?
       `,
     )
-    .bind(search, searchValue, searchValue, searchValue, searchValue)
+    .bind(
+      search,
+      searchValue,
+      searchValue,
+      searchValue,
+      searchValue,
+    )
     .first<{ total: number }>();
 
-  const totalItems = Number(countResult?.total ?? 0);
+  const totalItems = Number(
+    countResult?.total ?? 0,
+  );
 
   const totalPages = Math.max(
     1,
@@ -507,7 +747,7 @@ export async function getStationById(
   db: D1Database,
   id: number,
 ): Promise<StationEditItem | null> {
-  const result = await db
+  const station = await db
     .prepare(
       `
         SELECT
@@ -519,9 +759,6 @@ export async function getStationById(
           longitude,
           description,
           about,
-          facilities,
-          top_picks,
-          connections,
           created_at,
           updated_at
         FROM stations
@@ -530,9 +767,37 @@ export async function getStationById(
       `,
     )
     .bind(id)
-    .first<StationEditItem>();
+    .first<
+      StationAdminListItem & {
+        about: string | null;
+      }
+    >();
 
-  return result ?? null;
+  if (!station) {
+    return null;
+  }
+
+  const facilities = await getStationFacilitiesJson(
+    db,
+    station.id,
+  );
+
+  const topPicks = await getStationTopPicksJson(
+    db,
+    station.id,
+  );
+
+  const connections = await getStationConnectionsJson(
+    db,
+    station.id,
+  );
+
+  return {
+    ...station,
+    facilities,
+    top_picks: topPicks,
+    connections,
+  };
 }
 
 /* ========================================
@@ -543,6 +808,21 @@ export async function createStation(
   db: D1Database,
   input: CreateStationInput,
 ): Promise<number> {
+  /*
+   * Validate/resolve relations before creating the station.
+   * This prevents creating a station with invalid
+   * facility/top-pick references.
+   */
+  const facilityIds = await resolveFacilityIds(
+    db,
+    input.facilities,
+  );
+
+  const topPickIds = await resolveTopPickIds(
+    db,
+    input.topPicks,
+  );
+
   const result = await db
     .prepare(
       `
@@ -553,12 +833,9 @@ export async function createStation(
           latitude,
           longitude,
           description,
-          about,
-          facilities,
-          top_picks,
-          connections
+          about
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
     )
     .bind(
@@ -569,13 +846,59 @@ export async function createStation(
       input.longitude ?? null,
       input.description?.trim() || null,
       input.about?.trim() || null,
-      input.facilities || null,
-      input.topPicks || null,
-      input.connections || null,
     )
     .run();
 
-  return result.meta.last_row_id;
+  const stationId = Number(
+    result.meta.last_row_id,
+  );
+
+  const statements: D1PreparedStatement[] = [];
+
+  facilityIds.forEach((facilityId) => {
+    statements.push(
+      db
+        .prepare(
+          `
+            INSERT INTO station_facilities (
+              station_id,
+              facility_id,
+              note
+            )
+            VALUES (?, ?, NULL)
+          `,
+        )
+        .bind(stationId, facilityId),
+    );
+  });
+
+  topPickIds.forEach((topPickId, index) => {
+    statements.push(
+      db
+        .prepare(
+          `
+            INSERT INTO station_top_picks (
+              station_id,
+              top_pick_id,
+              sort_order,
+              walking_minutes
+            )
+            VALUES (?, ?, ?, NULL)
+          `,
+        )
+        .bind(
+          stationId,
+          topPickId,
+          index + 1,
+        ),
+    );
+  });
+
+  if (statements.length) {
+    await db.batch(statements);
+  }
+
+  return stationId;
 }
 
 /* ========================================
@@ -587,6 +910,20 @@ export async function updateStation(
   id: number,
   input: UpdateStationInput,
 ): Promise<void> {
+  /*
+   * Resolve relations first so invalid names do not
+   * partially modify the station.
+   */
+  const facilityIds = await resolveFacilityIds(
+    db,
+    input.facilities,
+  );
+
+  const topPickIds = await resolveTopPickIds(
+    db,
+    input.topPicks,
+  );
+
   await db
     .prepare(
       `
@@ -599,9 +936,6 @@ export async function updateStation(
           longitude = ?,
           description = ?,
           about = ?,
-          facilities = ?,
-          top_picks = ?,
-          connections = ?,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `,
@@ -614,12 +948,72 @@ export async function updateStation(
       input.longitude ?? null,
       input.description?.trim() || null,
       input.about?.trim() || null,
-      input.facilities || null,
-      input.topPicks || null,
-      input.connections || null,
       id,
     )
     .run();
+
+  const statements: D1PreparedStatement[] = [
+    db
+      .prepare(
+        `
+          DELETE FROM station_facilities
+          WHERE station_id = ?
+        `,
+      )
+      .bind(id),
+
+    db
+      .prepare(
+        `
+          DELETE FROM station_top_picks
+          WHERE station_id = ?
+        `,
+      )
+      .bind(id),
+  ];
+
+  facilityIds.forEach((facilityId) => {
+    statements.push(
+      db
+        .prepare(
+          `
+            INSERT INTO station_facilities (
+              station_id,
+              facility_id,
+              note
+            )
+            VALUES (?, ?, NULL)
+          `,
+        )
+        .bind(id, facilityId),
+    );
+  });
+
+  topPickIds.forEach((topPickId, index) => {
+    statements.push(
+      db
+        .prepare(
+          `
+            INSERT INTO station_top_picks (
+              station_id,
+              top_pick_id,
+              sort_order,
+              walking_minutes
+            )
+            VALUES (?, ?, ?, NULL)
+          `,
+        )
+        .bind(
+          id,
+          topPickId,
+          index + 1,
+        ),
+    );
+  });
+
+  if (statements.length) {
+    await db.batch(statements);
+  }
 }
 
 /* ========================================
@@ -630,13 +1024,41 @@ export async function deleteStation(
   db: D1Database,
   id: number,
 ): Promise<void> {
-  await db
-    .prepare(
-      `
-        DELETE FROM stations
-        WHERE id = ?
-      `,
-    )
-    .bind(id)
-    .run();
+  await db.batch([
+    db
+      .prepare(
+        `
+          DELETE FROM station_facilities
+          WHERE station_id = ?
+        `,
+      )
+      .bind(id),
+
+    db
+      .prepare(
+        `
+          DELETE FROM station_top_picks
+          WHERE station_id = ?
+        `,
+      )
+      .bind(id),
+
+    db
+      .prepare(
+        `
+          DELETE FROM line_stations
+          WHERE station_id = ?
+        `,
+      )
+      .bind(id),
+
+    db
+      .prepare(
+        `
+          DELETE FROM stations
+          WHERE id = ?
+        `,
+      )
+      .bind(id),
+  ]);
 }

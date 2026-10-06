@@ -1,4 +1,4 @@
-/* ========================================
+ /* ========================================
    Transit Map Database Helpers
 ======================================== */
 
@@ -30,8 +30,10 @@ export interface TransitMapStation {
   /*
    * Station detail popup fields.
    *
-   * facilities / top_picks / connections are JSON strings
-   * stored in D1. The popup parses them in the browser.
+   * These are generated from the normalized
+   * relational tables and returned as JSON strings
+   * so the existing frontend popup can consume them
+   * without changes.
    */
   about: string | null;
   facilities: string | null;
@@ -90,8 +92,14 @@ export async function getTransitMapData(
      LEFT JOIN is intentional.
 
      This keeps stations that currently
-     don't belong to any line, just like
-     the old getStations() query did.
+     don't belong to any line.
+
+     Station detail data is generated from
+     normalized relational tables:
+
+       station_facilities -> facilities
+       station_top_picks  -> top_picks
+       line_stations      -> lines -> operators
   ====================================== */
 
   const stationResult = await db
@@ -105,14 +113,88 @@ export async function getTransitMapData(
           s.name_japanese AS station_name_japanese,
           s.slug AS station_slug,
           s.about AS station_about,
-          s.facilities AS station_facilities,
-          s.top_picks AS station_top_picks,
-          s.connections AS station_connections,
+
+          /* ==================================
+             Facilities
+          ================================== */
+
+          (
+            SELECT
+              json_group_array(facility.name)
+            FROM (
+              SELECT
+                f.name
+              FROM station_facilities sf
+              INNER JOIN facilities f
+                ON f.id = sf.facility_id
+              WHERE sf.station_id = s.id
+              ORDER BY
+                f.sort_order ASC,
+                f.name ASC
+            ) facility
+          ) AS station_facilities,
+
+          /* ==================================
+             Top Picks
+          ================================== */
+
+          (
+            SELECT
+              json_group_array(top_pick.name)
+            FROM (
+              SELECT
+                tp.name
+              FROM station_top_picks stp
+              INNER JOIN top_picks tp
+                ON tp.id = stp.top_pick_id
+              WHERE stp.station_id = s.id
+              ORDER BY
+                stp.sort_order ASC
+            ) top_pick
+          ) AS station_top_picks,
+
+          /* ==================================
+             Connections
+          ================================== */
+
+          (
+            SELECT
+              json_group_array(
+                json_object(
+                  'name', connection.name,
+                  'code', connection.code,
+                  'color', connection.color,
+                  'type', connection.line_type,
+                  'operator', connection.operator_name
+                )
+              )
+            FROM (
+              SELECT
+                l.name,
+                l.code,
+                l.color,
+                l.line_type,
+                o.name AS operator_name
+              FROM line_stations connection_ls
+              INNER JOIN lines l
+                ON l.id = connection_ls.line_id
+              LEFT JOIN operators o
+                ON o.id = l.operator_id
+              WHERE connection_ls.station_id = s.id
+              ORDER BY
+                connection_ls.station_order ASC,
+                l.name ASC
+            ) connection
+          ) AS station_connections,
+
           ls.station_order,
           ls.station_code
+
         FROM stations s
+
         LEFT JOIN line_stations ls
           ON ls.station_id = s.id
+
         ORDER BY
           s.name ASC,
           ls.station_order ASC

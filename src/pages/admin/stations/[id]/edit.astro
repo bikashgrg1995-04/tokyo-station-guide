@@ -2,6 +2,7 @@
 import "../../../../styles/admin/shared.css";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/stations.css";
+import "../../../../styles/admin/tables.css";
 
 import AdminNavigation from "../../../../common_components/AdminNavigation.astro";
 import Button from "../../../../common_components/Button.astro";
@@ -12,10 +13,14 @@ import {
   updateStation,
   linesToJson,
   jsonToLines,
-  connectionsToJson,
-  jsonToConnections,
   validateLineList,
 } from "../../../../lib/db/stations";
+
+import {
+  getFacilities,
+  getStationFacilities,
+  getAvailableFacilitiesForStation,
+} from "../../../../lib/db/facilities";
 
 export const prerender = false;
 
@@ -35,18 +40,30 @@ if (!station) {
 }
 
 let formError = "";
+let facilityError = "";
+
+let stationFacilities = await getStationFacilities(db, id);
+let availableFacilities =
+  await getAvailableFacilitiesForStation(db, id);
 
 let name = station.name;
 let nameJapanese = station.name_japanese ?? "";
 let slug = station.slug;
-let latitudeValue = station.latitude !== null ? String(station.latitude) : "";
+
+let latitudeValue =
+  station.latitude !== null
+    ? String(station.latitude)
+    : "";
+
 let longitudeValue =
-  station.longitude !== null ? String(station.longitude) : "";
+  station.longitude !== null
+    ? String(station.longitude)
+    : "";
+
 let description = station.description ?? "";
 let about = station.about ?? "";
-let facilitiesText = jsonToLines(station.facilities);
+
 let topPicksText = jsonToLines(station.top_picks);
-let connectionsText = jsonToConnections(station.connections);
 
 const errors = {
   name: "",
@@ -56,113 +73,283 @@ const errors = {
   longitude: "",
   description: "",
   about: "",
-  facilities: "",
   topPicks: "",
-  connections: "",
 };
+
+/* ========================================
+   POST Actions
+======================================== */
 
 if (Astro.request.method === "POST") {
   const formData = await Astro.request.formData();
 
-  name = String(formData.get("name") ?? "").trim();
-
-  nameJapanese = String(formData.get("name_japanese") ?? "").trim();
-
-  slug = String(formData.get("slug") ?? "")
-    .trim()
-    .toLowerCase();
-
-  latitudeValue = String(formData.get("latitude") ?? "").trim();
-
-  longitudeValue = String(formData.get("longitude") ?? "").trim();
-
-  description = String(formData.get("description") ?? "").trim();
-
-  about = String(formData.get("about") ?? "").trim();
-
-  facilitiesText = String(formData.get("facilities") ?? "");
-
-  topPicksText = String(formData.get("top_picks") ?? "");
-
-  connectionsText = String(formData.get("connections") ?? "");
-
-  const latitude = latitudeValue === "" ? null : Number(latitudeValue);
-
-  const longitude = longitudeValue === "" ? null : Number(longitudeValue);
-
-  if (!name) {
-    errors.name = "Station name is required.";
-  } else if (name.length > 150) {
-    errors.name = "Station name must be 150 characters or less.";
-  }
-
-  if (nameJapanese.length > 150) {
-    errors.nameJapanese = "Japanese name must be 150 characters or less.";
-  }
-
-  if (!slug) {
-    errors.slug = "Slug is required.";
-  } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-    errors.slug =
-      "Slug can only contain lowercase letters, numbers, and hyphens.";
-  } else if (slug.length > 150) {
-    errors.slug = "Slug must be 150 characters or less.";
-  }
-
-  if (latitude !== null && !Number.isFinite(latitude)) {
-    errors.latitude = "Latitude must be a valid number.";
-  } else if (latitude !== null && (latitude < -90 || latitude > 90)) {
-    errors.latitude = "Latitude must be between -90 and 90.";
-  }
-
-  if (longitude !== null && !Number.isFinite(longitude)) {
-    errors.longitude = "Longitude must be a valid number.";
-  } else if (longitude !== null && (longitude < -180 || longitude > 180)) {
-    errors.longitude = "Longitude must be between -180 and 180.";
-  }
-
-  if (description.length > 1000) {
-    errors.description = "Description must be 1000 characters or less.";
-  }
-
-  if (about.length > 1000) {
-    errors.about = "About must be 1000 characters or less.";
-  }
-
-  errors.facilities = validateLineList(facilitiesText, "Facilities");
-
-  errors.topPicks = validateLineList(topPicksText, "Top picks");
-
-  const connectionsResult = connectionsToJson(connectionsText);
-
-  errors.connections = connectionsResult.error;
-
-  const hasValidationErrors = Object.values(errors).some(
-    (message) => message.length > 0,
+  const action = String(
+    formData.get("action") ?? "",
   );
 
-  if (!hasValidationErrors) {
-    try {
-      await updateStation(db, id, {
-        name,
-        nameJapanese: nameJapanese || null,
-        slug,
-        latitude,
-        longitude,
-        description: description || null,
-        about: about || null,
-        facilities: linesToJson(facilitiesText),
-        topPicks: linesToJson(topPicksText),
-        connections: connectionsResult.json,
-      });
+  /* ========================================
+     Update Station
+  ======================================== */
 
-      return Astro.redirect("/admin/stations");
-    } catch (err) {
-      console.error(err);
+  if (action === "update") {
+    name = String(
+      formData.get("name") ?? "",
+    ).trim();
 
-      formError =
-        "Unable to update station. The name or slug may already exist.";
+    nameJapanese = String(
+      formData.get("name_japanese") ?? "",
+    ).trim();
+
+    slug = String(
+      formData.get("slug") ?? "",
+    )
+      .trim()
+      .toLowerCase();
+
+    latitudeValue = String(
+      formData.get("latitude") ?? "",
+    ).trim();
+
+    longitudeValue = String(
+      formData.get("longitude") ?? "",
+    ).trim();
+
+    description = String(
+      formData.get("description") ?? "",
+    ).trim();
+
+    about = String(
+      formData.get("about") ?? "",
+    ).trim();
+
+    topPicksText = String(
+      formData.get("top_picks") ?? "",
+    );
+
+    const latitude =
+      latitudeValue === ""
+        ? null
+        : Number(latitudeValue);
+
+    const longitude =
+      longitudeValue === ""
+        ? null
+        : Number(longitudeValue);
+
+    /* ========================================
+       Station Validation
+    ======================================== */
+
+    if (!name) {
+      errors.name = "Station name is required.";
+    } else if (name.length > 150) {
+      errors.name =
+        "Station name must be 150 characters or less.";
     }
+
+    if (nameJapanese.length > 150) {
+      errors.nameJapanese =
+        "Japanese name must be 150 characters or less.";
+    }
+
+    if (!slug) {
+      errors.slug = "Slug is required.";
+    } else if (
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+    ) {
+      errors.slug =
+        "Slug can only contain lowercase letters, numbers, and hyphens.";
+    } else if (slug.length > 150) {
+      errors.slug =
+        "Slug must be 150 characters or less.";
+    }
+
+    if (
+      latitude !== null &&
+      !Number.isFinite(latitude)
+    ) {
+      errors.latitude =
+        "Latitude must be a valid number.";
+    } else if (
+      latitude !== null &&
+      (latitude < -90 || latitude > 90)
+    ) {
+      errors.latitude =
+        "Latitude must be between -90 and 90.";
+    }
+
+    if (
+      longitude !== null &&
+      !Number.isFinite(longitude)
+    ) {
+      errors.longitude =
+        "Longitude must be a valid number.";
+    } else if (
+      longitude !== null &&
+      (longitude < -180 || longitude > 180)
+    ) {
+      errors.longitude =
+        "Longitude must be between -180 and 180.";
+    }
+
+    if (description.length > 1000) {
+      errors.description =
+        "Description must be 1000 characters or less.";
+    }
+
+    if (about.length > 1000) {
+      errors.about =
+        "About must be 1000 characters or less.";
+    }
+
+    errors.topPicks = validateLineList(
+      topPicksText,
+      "Top picks",
+    );
+
+    /* ========================================
+       Facility IDs
+    ======================================== */
+
+    const selectedFacilityIds = [
+      ...new Set(
+        formData
+          .getAll("facility_ids")
+          .map((value) => Number(value))
+          .filter(
+            (facilityId) =>
+              Number.isInteger(facilityId) &&
+              facilityId > 0,
+          ),
+      ),
+    ];
+
+    const allFacilities = await getFacilities(db);
+
+    const validFacilityIds = new Set(
+      allFacilities.map(
+        (facility) => facility.id,
+      ),
+    );
+
+    const invalidFacilityIds =
+      selectedFacilityIds.filter(
+        (facilityId) =>
+          !validFacilityIds.has(facilityId),
+      );
+
+    if (invalidFacilityIds.length > 0) {
+      facilityError =
+        "One or more selected facilities are invalid.";
+    }
+
+    const hasValidationErrors =
+      Object.values(errors).some(
+        (message) => message.length > 0,
+      ) || facilityError.length > 0;
+
+    /* ========================================
+       Save
+    ======================================== */
+
+    if (!hasValidationErrors) {
+      try {
+        await updateStation(db, id, {
+          name,
+          nameJapanese:
+            nameJapanese || null,
+          slug,
+          latitude,
+          longitude,
+          description:
+            description || null,
+          about:
+            about || null,
+          topPicks:
+            linesToJson(topPicksText),
+        });
+
+        /* ========================================
+           Save Facilities
+        ======================================== */
+
+        await db
+          .prepare(
+            `
+              DELETE FROM station_facilities
+              WHERE station_id = ?
+            `,
+          )
+          .bind(id)
+          .run();
+
+        if (selectedFacilityIds.length > 0) {
+          const facilityStatements =
+            selectedFacilityIds.map(
+              (facilityId) =>
+                db
+                  .prepare(
+                    `
+                      INSERT INTO station_facilities (
+                        station_id,
+                        facility_id
+                      )
+                      VALUES (?, ?)
+                    `,
+                  )
+                  .bind(
+                    id,
+                    facilityId,
+                  ),
+            );
+
+          await db.batch(
+            facilityStatements,
+          );
+        }
+
+        return Astro.redirect(
+          "/admin/stations",
+        );
+      } catch (err) {
+        console.error(err);
+
+        formError =
+          "Unable to update station. The name or slug may already exist.";
+      }
+    }
+
+    /*
+     * Rebuild the server-side facility state
+     * when validation fails so the page remains
+     * consistent with the submitted values.
+     */
+    stationFacilities =
+      selectedFacilityIds
+        .map((facilityId) =>
+          allFacilities.find(
+            (facility) =>
+              facility.id === facilityId,
+          ),
+        )
+        .filter(
+          (
+            facility,
+          ): facility is (typeof allFacilities)[number] =>
+            Boolean(facility),
+        )
+        .map((facility) => ({
+          ...facility,
+          note: null,
+        }));
+
+    availableFacilities =
+      allFacilities.filter(
+        (facility) =>
+          !selectedFacilityIds.includes(
+            facility.id,
+          ),
+      );
   }
 }
 
@@ -178,9 +365,15 @@ const admin = await Astro.session?.get<{
   <head>
     <meta charset="UTF-8" />
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
 
-    <meta name="robots" content="noindex, nofollow" />
+    <meta
+      name="robots"
+      content="noindex, nofollow"
+    />
 
     <title>
       Edit {station.name} | Admin | Tokyo Station Guide
@@ -189,50 +382,114 @@ const admin = await Astro.session?.get<{
 
   <body>
     <div class="admin-shell">
-      <AdminNavigation activePath="/admin/stations" />
+
+      <AdminNavigation
+        activePath="/admin/stations"
+      />
 
       <main class="admin-main">
-        <header class="admin-topbar">
-          <div class="admin-breadcrumb">
-            <Button href="/admin/stations" variant="secondary"> ← </Button>
 
-            <a href="/admin/stations"> Stations </a>
+        <!-- ========================================
+             Topbar
+        ========================================= -->
+
+        <header class="admin-topbar">
+
+          <div class="admin-breadcrumb">
+
+            <Button
+              href="/admin/stations"
+              variant="secondary"
+            >
+              ←
+            </Button>
+
+            <a href="/admin/stations">
+              Stations
+            </a>
 
             <span>/</span>
 
             <strong>Edit Station</strong>
+
           </div>
+
         </header>
 
+
+        <!-- ========================================
+             Content
+        ========================================= -->
+
         <div class="admin-content">
+
           <h2>Edit Station</h2>
 
           <p>
-            Update the railway station information for the Tokyo Station Guide.
+            Update the railway station information for the Tokyo
+            Station Guide.
           </p>
 
-          <section class="admin-panel">
-            <div class="admin-panel-body">
-              <div class="admin-station-form">
-                <div class="admin-station-form-header">
-                  <h3>Station Details</h3>
 
-                  <p>
-                    Update the information for
-                    <strong>{station.name}</strong>.
-                  </p>
-                </div>
+          <!-- ======================================
+               Main Edit Form
+          ======================================= -->
 
-                {
-                  formError && (
-                    <div class="admin-alert admin-alert-error">{formError}</div>
-                  )
-                }
+          <form
+            method="POST"
+            class="admin-form"
+            id="edit-station-form"
+          >
 
-                <form method="POST" class="admin-form" id="edit-station-form">
+            <input
+              type="hidden"
+              name="action"
+              value="update"
+            />
+
+
+            <!-- ======================================
+                 Station Details
+            ======================================= -->
+
+            <section class="admin-panel">
+
+              <div class="admin-panel-body">
+
+                <div class="admin-station-form">
+
+                  <div class="admin-station-form-header">
+
+                    <h3>
+                      Station Details
+                    </h3>
+
+                    <p>
+                      Update the information for
+                      <strong>{station.name}</strong>.
+                    </p>
+
+                  </div>
+
+
+                  {
+                    formError && (
+                      <div class="admin-alert admin-alert-error">
+                        {formError}
+                      </div>
+                    )
+                  }
+
+
                   <div class="admin-form-grid">
+
+                    <!-- Station Name -->
+
                     <div class="admin-form-group">
-                      <label for="name"> Station Name </label>
+
+                      <label for="name">
+                        Station Name
+                      </label>
 
                       <input
                         id="name"
@@ -240,23 +497,39 @@ const admin = await Astro.session?.get<{
                         type="text"
                         required
                         value={name}
-                        aria-invalid={errors.name ? "true" : "false"}
-                        aria-describedby={errors.name
-                          ? "name-error"
-                          : undefined}
+                        aria-invalid={
+                          errors.name
+                            ? "true"
+                            : "false"
+                        }
+                        aria-describedby={
+                          errors.name
+                            ? "name-error"
+                            : undefined
+                        }
                       />
 
                       {
                         errors.name && (
-                          <small id="name-error" class="admin-form-error">
+                          <small
+                            id="name-error"
+                            class="admin-form-error"
+                          >
                             {errors.name}
                           </small>
                         )
                       }
+
                     </div>
 
+
+                    <!-- Japanese Name -->
+
                     <div class="admin-form-group">
-                      <label for="name_japanese"> Japanese Name </label>
+
+                      <label for="name_japanese">
+                        Japanese Name
+                      </label>
 
                       <input
                         id="name_japanese"
@@ -264,10 +537,16 @@ const admin = await Astro.session?.get<{
                         type="text"
                         class="admin-station-japanese-input"
                         value={nameJapanese}
-                        aria-invalid={errors.nameJapanese ? "true" : "false"}
-                        aria-describedby={errors.nameJapanese
-                          ? "name-japanese-error"
-                          : undefined}
+                        aria-invalid={
+                          errors.nameJapanese
+                            ? "true"
+                            : "false"
+                        }
+                        aria-describedby={
+                          errors.nameJapanese
+                            ? "name-japanese-error"
+                            : undefined
+                        }
                       />
 
                       {
@@ -280,10 +559,17 @@ const admin = await Astro.session?.get<{
                           </small>
                         )
                       }
+
                     </div>
 
+
+                    <!-- Slug -->
+
                     <div class="admin-form-group full-width">
-                      <label for="slug"> Slug </label>
+
+                      <label for="slug">
+                        Slug
+                      </label>
 
                       <input
                         id="slug"
@@ -291,27 +577,44 @@ const admin = await Astro.session?.get<{
                         type="text"
                         required
                         value={slug}
-                        aria-invalid={errors.slug ? "true" : "false"}
-                        aria-describedby={errors.slug
-                          ? "slug-error"
-                          : "slug-help"}
+                        aria-invalid={
+                          errors.slug
+                            ? "true"
+                            : "false"
+                        }
+                        aria-describedby={
+                          errors.slug
+                            ? "slug-error"
+                            : "slug-help"
+                        }
                       />
 
                       {
                         errors.slug ? (
-                          <small id="slug-error" class="admin-form-error">
+                          <small
+                            id="slug-error"
+                            class="admin-form-error"
+                          >
                             {errors.slug}
                           </small>
                         ) : (
                           <small id="slug-help">
-                            Use lowercase letters, numbers and hyphens.
+                            Use lowercase letters, numbers and
+                            hyphens.
                           </small>
                         )
                       }
+
                     </div>
 
+
+                    <!-- Latitude -->
+
                     <div class="admin-form-group">
-                      <label for="latitude"> Latitude </label>
+
+                      <label for="latitude">
+                        Latitude
+                      </label>
 
                       <input
                         id="latitude"
@@ -319,7 +622,11 @@ const admin = await Astro.session?.get<{
                         type="number"
                         step="any"
                         value={latitudeValue}
-                        aria-invalid={errors.latitude ? "true" : "false"}
+                        aria-invalid={
+                          errors.latitude
+                            ? "true"
+                            : "false"
+                        }
                         aria-describedby="latitude-help"
                       />
 
@@ -334,10 +641,17 @@ const admin = await Astro.session?.get<{
                           </small>
                         )
                       }
+
                     </div>
 
+
+                    <!-- Longitude -->
+
                     <div class="admin-form-group">
-                      <label for="longitude"> Longitude </label>
+
+                      <label for="longitude">
+                        Longitude
+                      </label>
 
                       <input
                         id="longitude"
@@ -345,7 +659,11 @@ const admin = await Astro.session?.get<{
                         type="number"
                         step="any"
                         value={longitudeValue}
-                        aria-invalid={errors.longitude ? "true" : "false"}
+                        aria-invalid={
+                          errors.longitude
+                            ? "true"
+                            : "false"
+                        }
                         aria-describedby="longitude-help"
                       />
 
@@ -360,21 +678,33 @@ const admin = await Astro.session?.get<{
                           </small>
                         )
                       }
+
                     </div>
 
+
+                    <!-- Description -->
+
                     <div class="admin-form-group full-width">
-                      <label for="description"> Description </label>
+
+                      <label for="description">
+                        Description
+                      </label>
 
                       <textarea
                         id="description"
                         name="description"
                         rows="5"
                         class="admin-station-description"
-                        aria-invalid={errors.description ? "true" : "false"}
-                        aria-describedby={errors.description
-                          ? "description-error"
-                          : undefined}>{description}</textarea
-                      >
+                        aria-invalid={
+                          errors.description
+                            ? "true"
+                            : "false"
+                        }
+                        aria-describedby={
+                          errors.description
+                            ? "description-error"
+                            : undefined
+                        }>{description}</textarea>
 
                       {
                         errors.description && (
@@ -386,10 +716,17 @@ const admin = await Astro.session?.get<{
                           </small>
                         )
                       }
+
                     </div>
 
+
+                    <!-- About -->
+
                     <div class="admin-form-group full-width">
-                      <label for="about"> About (station popup) </label>
+
+                      <label for="about">
+                        About (station popup)
+                      </label>
 
                       <textarea
                         id="about"
@@ -397,162 +734,1267 @@ const admin = await Astro.session?.get<{
                         rows="4"
                         class="admin-station-description"
                         placeholder="Short text shown in the About section of the station popup..."
-                        aria-invalid={errors.about ? "true" : "false"}
-                        aria-describedby={errors.about
-                          ? "about-error"
-                          : undefined}>{about}</textarea
-                      >
+                        aria-invalid={
+                          errors.about
+                            ? "true"
+                            : "false"
+                        }
+                        aria-describedby={
+                          errors.about
+                            ? "about-error"
+                            : undefined
+                        }>{about}</textarea>
 
                       {
                         errors.about ? (
-                          <small id="about-error" class="admin-form-error">
+                          <small
+                            id="about-error"
+                            class="admin-form-error"
+                          >
                             {errors.about}
                           </small>
                         ) : (
-                          <small>Optional. Up to 1000 characters.</small>
-                        )
-                      }
-                    </div>
-
-                    <div class="admin-form-group">
-                      <label for="facilities"> Facilities </label>
-
-                      <textarea
-                        id="facilities"
-                        name="facilities"
-                        rows="5"
-                        placeholder={"Coin Lockers\nTicket Office\nWi-Fi"}
-                        aria-invalid={errors.facilities ? "true" : "false"}
-                        aria-describedby={errors.facilities
-                          ? "facilities-error"
-                          : undefined}>{facilitiesText}</textarea
-                      >
-
-                      {
-                        errors.facilities ? (
-                          <small
-                            id="facilities-error"
-                            class="admin-form-error"
-                          >
-                            {errors.facilities}
+                          <small>
+                            Optional. Up to 1000 characters.
                           </small>
-                        ) : (
-                          <small>One item per line.</small>
                         )
                       }
+
                     </div>
 
-                    <div class="admin-form-group">
-                      <label for="top_picks"> Top Picks </label>
+
+                    <!-- Top Picks -->
+
+                    <div class="admin-form-group full-width">
+
+                      <label for="top_picks">
+                        Top Picks
+                      </label>
 
                       <textarea
                         id="top_picks"
                         name="top_picks"
                         rows="5"
-                        placeholder={"Imperial Palace\nRamen Street"}
-                        aria-invalid={errors.topPicks ? "true" : "false"}
-                        aria-describedby={errors.topPicks
-                          ? "top-picks-error"
-                          : undefined}>{topPicksText}</textarea
-                      >
+                        placeholder={
+                          "Imperial Palace\nRamen Street"
+                        }
+                        aria-invalid={
+                          errors.topPicks
+                            ? "true"
+                            : "false"
+                        }
+                        aria-describedby={
+                          errors.topPicks
+                            ? "top-picks-error"
+                            : undefined
+                        }>{topPicksText}</textarea>
 
                       {
                         errors.topPicks ? (
-                          <small id="top-picks-error" class="admin-form-error">
+                          <small
+                            id="top-picks-error"
+                            class="admin-form-error"
+                          >
                             {errors.topPicks}
                           </small>
                         ) : (
-                          <small>One item per line.</small>
+                          <small>
+                            One item per line.
+                          </small>
                         )
                       }
+
                     </div>
 
-                    <div class="admin-form-group full-width">
-                      <label for="connections"> Connections </label>
+                  </div>
 
-                      <textarea
-                        id="connections"
-                        name="connections"
-                        rows="6"
-                        placeholder={"Chuo Line | #f15a22\nNarita Express (N'EX)"}
-                        aria-invalid={errors.connections ? "true" : "false"}
-                        aria-describedby={errors.connections
-                          ? "connections-error"
-                          : "connections-help"}>{connectionsText}</textarea
-                      >
+                </div>
+
+              </div>
+
+            </section>
+
+
+            <!-- ======================================
+                 Facilities
+            ======================================= -->
+
+            <section class="admin-panel">
+
+              <div class="admin-panel-body">
+
+                <div class="admin-station-form">
+
+                  <div class="admin-station-form-header">
+
+                    <div
+                      style="
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        gap:16px;
+                      "
+                    >
+
+                      <div>
+
+                        <h3>
+                          Facilities
+                        </h3>
+
+                        <p>
+                          Manage the facilities available at
+                          <strong>{station.name}</strong>.
+                          Changes are applied when you click
+                          <strong>Save Changes</strong>.
+                        </p>
+
+                      </div>
 
                       {
-                        errors.connections ? (
-                          <small
-                            id="connections-error"
-                            class="admin-form-error"
+                        availableFacilities.length > 0 && (
+                          <Button
+                            type="button"
+                            variant="primary"
+                            id="open-add-facility-button"
                           >
-                            {errors.connections}
-                          </small>
-                        ) : (
-                          <small id="connections-help">
-                            One per line: Name | #color (color is optional).
-                            Leave empty to show other lines from the database.
-                          </small>
+                            + Add Facility
+                          </Button>
                         )
                       }
+
                     </div>
+
                   </div>
 
-                  <div class="admin-form-actions">
-                    <Button href="/admin/stations" variant="secondary">
-                      Cancel
-                    </Button>
 
-                    <Button type="submit" variant="primary">
-                      Save Changes
-                    </Button>
+                  {
+                    facilityError && (
+                      <div class="admin-alert admin-alert-error">
+                        {facilityError}
+                      </div>
+                    )
+                  }
+
+
+                  <!-- Temporary Facility Inputs -->
+
+                  <div id="station-facility-inputs">
+
+                    {
+                      stationFacilities.map(
+                        (facility) => (
+                          <input
+                            type="hidden"
+                            name="facility_ids"
+                            value={facility.id}
+                            data-facility-input={facility.id}
+                          />
+                        ),
+                      )
+                    }
+
                   </div>
-                </form>
+
+
+                  <!-- Facility Table -->
+
+                  <div class="admin-table-wrapper">
+
+                    <table
+                      class="admin-table"
+                      id="station-facilities-table"
+                    >
+
+                      <thead>
+
+                        <tr>
+
+                          <th>
+                            Facility
+                          </th>
+
+                          <th>
+                            Slug
+                          </th>
+
+                          <th>
+                            Actions
+                          </th>
+
+                        </tr>
+
+                      </thead>
+
+
+                      <tbody id="station-facilities-body">
+
+                        {
+                          stationFacilities.length > 0 ? (
+
+                            stationFacilities.map(
+                              (facility) => (
+
+                                <tr
+                                  data-facility-row
+                                  data-facility-id={
+                                    facility.id
+                                  }
+                                >
+
+                                  <td>
+
+                                    <div class="admin-line-name">
+                                      {facility.name}
+                                    </div>
+
+                                  </td>
+
+                                  <td>
+
+                                    <span class="admin-line-slug">
+                                      {facility.slug}
+                                    </span>
+
+                                  </td>
+
+                                  <td>
+
+                                    <div class="admin-table-actions">
+
+                                      <button
+                                        type="button"
+                                        class="admin-table-action admin-table-action-delete"
+                                        data-remove-facility={
+                                          facility.id
+                                        }
+                                        data-facility-name={
+                                          facility.name
+                                        }
+                                      >
+                                        Remove
+                                      </button>
+
+                                    </div>
+
+                                  </td>
+
+                                </tr>
+
+                              ),
+                            )
+
+                          ) : (
+
+                            <tr id="station-facilities-empty-row">
+
+                              <td colspan="3">
+
+                                <div class="admin-empty">
+
+                                  <div class="admin-empty-icon">
+                                    ◦
+                                  </div>
+
+                                  <h3>
+                                    No Facilities Assigned
+                                  </h3>
+
+                                  <p>
+                                    There are currently no facilities
+                                    assigned to this station.
+                                  </p>
+
+                                </div>
+
+                              </td>
+
+                            </tr>
+
+                          )
+                        }
+
+                      </tbody>
+
+                    </table>
+
+                  </div>
+
+
+                  <!-- All Facilities Assigned -->
+
+                  <p
+                    id="all-facilities-message"
+                    style="
+                      margin-top:12px;
+                      opacity:0.7;
+                    "
+                    hidden
+                  >
+                    All available facilities are already assigned
+                    to this station.
+                  </p>
+
+                </div>
+
               </div>
+
+            </section>
+
+
+            <!-- ======================================
+                 Form Actions
+            ======================================= -->
+
+            <div class="admin-form-actions">
+
+              <Button
+                href="/admin/stations"
+                variant="secondary"
+              >
+                Cancel
+              </Button>
+
+              <Button
+                type="submit"
+                variant="primary"
+                id="save-station-button"
+              >
+                Save Changes
+              </Button>
+
             </div>
-          </section>
+
+          </form>
+
         </div>
+
       </main>
+
     </div>
-  </body>
-</html>
 
-<ConfirmDialog
-  id="edit-station-confirm-dialog"
-  title="Save Changes"
-  description="Are you sure you want to save these station changes?"
-  confirmText="Save Changes"
-  cancelText="Cancel"
-  variant="primary"
-/>
 
-<script>
-  const editStationForm = document.getElementById("edit-station-form");
+    <!-- ========================================
+         Add Facilities Modal
+    ========================================= -->
 
-  const editStationDialog = document.getElementById(
-    "edit-station-confirm-dialog",
-  );
+    <div
+      id="add-facility-modal"
+      class="admin-line-station-modal"
+      hidden
+      aria-hidden="true"
+    >
 
-  if (
-    editStationForm instanceof HTMLFormElement &&
-    editStationDialog instanceof HTMLDivElement
-  ) {
-    let confirmed = false;
+      <div
+        class="admin-line-station-modal-backdrop"
+        data-close-add-facility-modal
+      ></div>
 
-    editStationForm.addEventListener("submit", (event) => {
-      if (confirmed) {
-        return;
+
+      <div
+        class="admin-line-station-modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-facility-modal-title"
+        aria-describedby="add-facility-modal-description"
+      >
+
+        <div class="admin-line-station-modal-header">
+
+          <div>
+
+            <h2 id="add-facility-modal-title">
+              Add Facilities
+            </h2>
+
+            <p id="add-facility-modal-description">
+              Select one or more facilities to add to
+              {station.name}.
+            </p>
+
+          </div>
+
+
+          <button
+            type="button"
+            class="admin-line-station-modal-close"
+            id="close-add-facility-modal"
+            aria-label="Close add facilities dialog"
+          >
+            ×
+          </button>
+
+        </div>
+
+
+        {
+          availableFacilities.length > 0 ? (
+
+            <div
+              class="admin-form"
+              id="add-facilities-form"
+            >
+
+              <div class="admin-facility-checkbox-grid">
+
+                {
+                  availableFacilities.map(
+                    (facility) => (
+
+                      <label
+                        class="admin-facility-checkbox-item"
+                        data-facility-option
+                        data-facility-option-id={
+                          facility.id
+                        }
+                      >
+
+                        <input
+                          type="checkbox"
+                          value={facility.id}
+                          class="add-facility-checkbox"
+                          data-facility-id={
+                            facility.id
+                          }
+                          data-facility-name={
+                            facility.name
+                          }
+                          data-facility-slug={
+                            facility.slug
+                          }
+                        />
+
+                        <span>
+                          {facility.name}
+                        </span>
+
+                      </label>
+
+                    ),
+                  )
+                }
+
+              </div>
+
+
+              <p
+                id="selected-facility-count"
+                style="
+                  margin-top:14px;
+                  opacity:0.7;
+                "
+              >
+                0 facilities selected
+              </p>
+
+
+              <div class="admin-form-actions">
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  id="cancel-add-facilities"
+                >
+                  Cancel
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="primary"
+                  id="add-selected-facilities"
+                  disabled
+                >
+                  Add Selected
+                </Button>
+
+              </div>
+
+            </div>
+
+          ) : (
+
+            <div class="admin-empty">
+
+              <h3>
+                No Facilities Available
+              </h3>
+
+              <p>
+                All facilities from the master list are already
+                assigned to this station.
+              </p>
+
+            </div>
+
+          )
+        }
+
+      </div>
+
+    </div>
+
+
+    <!-- ========================================
+         Remove Facility Confirmation
+    ========================================= -->
+
+    <ConfirmDialog
+      id="remove-facility-confirm-dialog"
+      title="Remove Facility"
+      description="Are you sure you want to remove this facility from the station?"
+      confirmText="Remove"
+      cancelText="Cancel"
+      variant="danger"
+    />
+
+
+    <!-- ========================================
+         Save Station Confirmation
+    ========================================= -->
+
+    <ConfirmDialog
+      id="edit-station-confirm-dialog"
+      title="Save Changes"
+      description="Are you sure you want to save these station changes?"
+      confirmText="Save Changes"
+      cancelText="Cancel"
+      variant="primary"
+    />
+
+
+    <script>
+
+      /* ========================================
+         Add Facilities Modal
+      ======================================== */
+
+      const addFacilityModal =
+        document.getElementById(
+          "add-facility-modal",
+        );
+
+      const openAddFacilityButtons =
+        document.querySelectorAll(
+          "#open-add-facility-button, #open-add-facility-button-empty",
+        );
+
+      const closeAddFacilityButton =
+        document.getElementById(
+          "close-add-facility-modal",
+        );
+
+      const cancelAddFacilitiesButton =
+        document.getElementById(
+          "cancel-add-facilities",
+        );
+
+      const closeAddFacilityBackdrop =
+        document.querySelector(
+          "[data-close-add-facility-modal]",
+        );
+
+      const facilityCheckboxes =
+        document.querySelectorAll(
+          ".add-facility-checkbox",
+        );
+
+      const selectedFacilityCount =
+        document.getElementById(
+          "selected-facility-count",
+        );
+
+      const addSelectedFacilitiesButton =
+        document.getElementById(
+          "add-selected-facilities",
+        );
+
+      const facilityBody =
+        document.getElementById(
+          "station-facilities-body",
+        );
+
+      const facilityInputs =
+        document.getElementById(
+          "station-facility-inputs",
+        );
+
+      const allFacilitiesMessage =
+        document.getElementById(
+          "all-facilities-message",
+        );
+
+
+      /* ========================================
+         Facility Helpers
+      ======================================== */
+
+      function facilityAlreadySelected(
+        facilityId: number,
+      ): boolean {
+        return !!document.querySelector(
+          `[data-facility-row][data-facility-id="${facilityId}"]`,
+        );
       }
 
-      event.preventDefault();
 
-      editStationDialog.dispatchEvent(new CustomEvent("dialog:open"));
-    });
+      function updateFacilityEmptyState(): void {
 
-    editStationDialog.addEventListener("confirm", () => {
-      confirmed = true;
-      editStationForm.submit();
-    });
-  }
-</script>
+        if (
+          !(facilityBody instanceof HTMLElement)
+        ) {
+          return;
+        }
+
+        const rows =
+          facilityBody.querySelectorAll(
+            "[data-facility-row]",
+          );
+
+        const emptyRow =
+          document.getElementById(
+            "station-facilities-empty-row",
+          );
+
+        if (rows.length === 0) {
+
+          if (!emptyRow) {
+
+            facilityBody.innerHTML = `
+              <tr id="station-facilities-empty-row">
+                <td colspan="3">
+                  <div class="admin-empty">
+                    <div class="admin-empty-icon">
+                      ◦
+                    </div>
+
+                    <h3>
+                      No Facilities Assigned
+                    </h3>
+
+                    <p>
+                      There are currently no facilities
+                      assigned to this station.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            `;
+
+          }
+
+        } else {
+
+          emptyRow?.remove();
+
+        }
+      }
+
+
+      function updateAllFacilitiesMessage(): void {
+
+        if (
+          !(allFacilitiesMessage instanceof HTMLElement)
+        ) {
+          return;
+        }
+
+        const facilityOptions =
+          document.querySelectorAll(
+            "[data-facility-option]",
+          );
+
+        if (facilityOptions.length === 0) {
+          allFacilitiesMessage.hidden = true;
+          return;
+        }
+
+        const visibleOptions =
+          Array.from(facilityOptions).filter(
+            (option) =>
+              option instanceof HTMLElement &&
+              option.style.display !== "none",
+          );
+
+        allFacilitiesMessage.hidden =
+          visibleOptions.length > 0;
+      }
+
+
+      function syncFacilityOptions(): void {
+
+        const rows =
+          document.querySelectorAll(
+            "[data-facility-row]",
+          );
+
+        const selectedIds =
+          new Set<number>();
+
+        rows.forEach((row) => {
+
+          if (!(row instanceof HTMLElement)) {
+            return;
+          }
+
+          const facilityId = Number(
+            row.dataset.facilityId,
+          );
+
+          if (
+            Number.isInteger(facilityId) &&
+            facilityId > 0
+          ) {
+            selectedIds.add(facilityId);
+          }
+
+        });
+
+
+        facilityCheckboxes.forEach(
+          (checkbox) => {
+
+            if (
+              !(checkbox instanceof HTMLInputElement)
+            ) {
+              return;
+            }
+
+            const facilityId = Number(
+              checkbox.dataset.facilityId,
+            );
+
+            const selected =
+              selectedIds.has(facilityId);
+
+            checkbox.checked = false;
+            checkbox.disabled = selected;
+
+            const option =
+              checkbox.closest(
+                "[data-facility-option]",
+              );
+
+            if (
+              option instanceof HTMLElement
+            ) {
+              option.style.display =
+                selected
+                  ? "none"
+                  : "";
+            }
+
+          },
+        );
+
+        updateAllFacilitiesMessage();
+      }
+
+
+      function addFacilityToTable(
+        facilityId: number,
+        facilityName: string,
+        facilitySlug: string,
+      ): void {
+
+        if (
+          !(facilityBody instanceof HTMLElement) ||
+          !(facilityInputs instanceof HTMLElement)
+        ) {
+          return;
+        }
+
+        if (
+          facilityAlreadySelected(
+            facilityId,
+          )
+        ) {
+          return;
+        }
+
+
+        const row =
+          document.createElement("tr");
+
+        row.setAttribute(
+          "data-facility-row",
+          "",
+        );
+
+        row.setAttribute(
+          "data-facility-id",
+          String(facilityId),
+        );
+
+
+        row.innerHTML = `
+          <td>
+            <div class="admin-line-name">
+              ${facilityName}
+            </div>
+          </td>
+
+          <td>
+            <span class="admin-line-slug">
+              ${facilitySlug}
+            </span>
+          </td>
+
+          <td>
+            <div class="admin-table-actions">
+              <button
+                type="button"
+                class="admin-table-action admin-table-action-delete"
+                data-remove-facility="${facilityId}"
+                data-facility-name="${facilityName}"
+              >
+                Remove
+              </button>
+            </div>
+          </td>
+        `;
+
+
+        facilityBody.appendChild(row);
+
+
+        const input =
+          document.createElement("input");
+
+        input.type = "hidden";
+        input.name = "facility_ids";
+        input.value = String(facilityId);
+
+        input.setAttribute(
+          "data-facility-input",
+          String(facilityId),
+        );
+
+        facilityInputs.appendChild(input);
+
+
+        updateFacilityEmptyState();
+        syncFacilityOptions();
+
+      }
+
+
+      function removeFacilityFromTable(
+        facilityId: number,
+      ): void {
+
+        const row =
+          document.querySelector(
+            `[data-facility-row][data-facility-id="${facilityId}"]`,
+          );
+
+        const input =
+          document.querySelector(
+            `[data-facility-input="${facilityId}"]`,
+          );
+
+        row?.remove();
+        input?.remove();
+
+        updateFacilityEmptyState();
+        syncFacilityOptions();
+
+      }
+
+
+      /* ========================================
+         Modal
+      ======================================== */
+
+      function openAddFacilityModal(): void {
+
+        if (
+          !(addFacilityModal instanceof HTMLDivElement)
+        ) {
+          return;
+        }
+
+        syncFacilityOptions();
+
+        addFacilityModal.hidden = false;
+
+        addFacilityModal.setAttribute(
+          "aria-hidden",
+          "false",
+        );
+
+        updateSelectedFacilityCount();
+
+      }
+
+
+      function closeAddFacilityModal(): void {
+
+        if (
+          !(addFacilityModal instanceof HTMLDivElement)
+        ) {
+          return;
+        }
+
+        facilityCheckboxes.forEach(
+          (checkbox) => {
+
+            if (
+              checkbox instanceof HTMLInputElement
+            ) {
+              checkbox.checked = false;
+            }
+
+          },
+        );
+
+        updateSelectedFacilityCount();
+
+        addFacilityModal.hidden = true;
+
+        addFacilityModal.setAttribute(
+          "aria-hidden",
+          "true",
+        );
+
+      }
+
+
+      function updateSelectedFacilityCount(): void {
+
+        if (
+          !(selectedFacilityCount instanceof HTMLElement)
+        ) {
+          return;
+        }
+
+        const selectedCount =
+          document.querySelectorAll(
+            ".add-facility-checkbox:checked",
+          ).length;
+
+
+        selectedFacilityCount.textContent =
+          `${selectedCount} ${
+            selectedCount === 1
+              ? "facility"
+              : "facilities"
+          } selected`;
+
+
+        if (
+          addSelectedFacilitiesButton instanceof
+          HTMLButtonElement
+        ) {
+          addSelectedFacilitiesButton.disabled =
+            selectedCount === 0;
+        }
+
+      }
+
+
+      openAddFacilityButtons.forEach(
+        (button) => {
+
+          button.addEventListener(
+            "click",
+            openAddFacilityModal,
+          );
+
+        },
+      );
+
+
+      facilityCheckboxes.forEach(
+        (checkbox) => {
+
+          checkbox.addEventListener(
+            "change",
+            updateSelectedFacilityCount,
+          );
+
+        },
+      );
+
+
+      closeAddFacilityButton?.addEventListener(
+        "click",
+        closeAddFacilityModal,
+      );
+
+
+      cancelAddFacilitiesButton?.addEventListener(
+        "click",
+        closeAddFacilityModal,
+      );
+
+
+      closeAddFacilityBackdrop?.addEventListener(
+        "click",
+        closeAddFacilityModal,
+      );
+
+
+      /* ========================================
+         Add Selected
+      ======================================== */
+
+      addSelectedFacilitiesButton?.addEventListener(
+        "click",
+        () => {
+
+          const selectedCheckboxes =
+            Array.from(
+              facilityCheckboxes,
+            ).filter(
+              (checkbox) =>
+                checkbox instanceof HTMLInputElement &&
+                checkbox.checked,
+            );
+
+
+          if (
+            selectedCheckboxes.length === 0
+          ) {
+            updateSelectedFacilityCount();
+            return;
+          }
+
+
+          selectedCheckboxes.forEach(
+            (checkbox) => {
+
+              if (
+                !(checkbox instanceof HTMLInputElement)
+              ) {
+                return;
+              }
+
+
+              const facilityId = Number(
+                checkbox.dataset.facilityId,
+              );
+
+              const facilityName =
+                checkbox.dataset.facilityName ??
+                "";
+
+              const facilitySlug =
+                checkbox.dataset.facilitySlug ??
+                "";
+
+
+              if (
+                !Number.isInteger(facilityId) ||
+                facilityId <= 0
+              ) {
+                return;
+              }
+
+
+              addFacilityToTable(
+                facilityId,
+                facilityName,
+                facilitySlug,
+              );
+
+            },
+          );
+
+
+          /*
+           * IMPORTANT:
+           * No POST request here.
+           * No page refresh here.
+           * Database is NOT changed here.
+           *
+           * Only the table + hidden inputs
+           * are updated.
+           */
+
+          closeAddFacilityModal();
+
+        },
+      );
+
+
+      /* ========================================
+         Remove Facility
+      ======================================== */
+
+      const removeFacilityDialog =
+        document.getElementById(
+          "remove-facility-confirm-dialog",
+        );
+
+
+      if (
+        removeFacilityDialog instanceof HTMLDivElement
+      ) {
+
+        let pendingFacilityId:
+          number | null = null;
+
+
+        facilityBody?.addEventListener(
+          "click",
+          (event) => {
+
+            const target =
+              event.target;
+
+            if (
+              !(target instanceof HTMLElement)
+            ) {
+              return;
+            }
+
+
+            const removeButton =
+              target.closest(
+                "[data-remove-facility]",
+              );
+
+
+            if (
+              !(removeButton instanceof HTMLElement)
+            ) {
+              return;
+            }
+
+
+            const facilityId = Number(
+              removeButton.getAttribute(
+                "data-remove-facility",
+              ),
+            );
+
+
+            if (
+              !Number.isInteger(facilityId) ||
+              facilityId <= 0
+            ) {
+              return;
+            }
+
+
+            pendingFacilityId =
+              facilityId;
+
+
+            const facilityName =
+              removeButton.getAttribute(
+                "data-facility-name",
+              ) ??
+              "this facility";
+
+
+            removeFacilityDialog.dispatchEvent(
+              new CustomEvent(
+                "dialog:open",
+                {
+                  detail: {
+                    name: facilityName,
+                  },
+                },
+              ),
+            );
+
+          },
+        );
+
+
+        removeFacilityDialog.addEventListener(
+          "confirm",
+          () => {
+
+            if (
+              pendingFacilityId === null
+            ) {
+              return;
+            }
+
+
+            removeFacilityFromTable(
+              pendingFacilityId,
+            );
+
+            pendingFacilityId = null;
+
+          },
+        );
+
+      }
+
+
+      /* ========================================
+         Save Station Confirmation
+      ======================================== */
+
+      const editStationForm =
+        document.getElementById(
+          "edit-station-form",
+        );
+
+
+      const editStationDialog =
+        document.getElementById(
+          "edit-station-confirm-dialog",
+        );
+
+
+      if (
+        editStationForm instanceof HTMLFormElement &&
+        editStationDialog instanceof HTMLDivElement
+      ) {
+
+        let confirmed = false;
+
+
+        editStationForm.addEventListener(
+          "submit",
+          (event) => {
+
+            if (confirmed) {
+              return;
+            }
+
+
+            event.preventDefault();
+
+
+            editStationDialog.dispatchEvent(
+              new CustomEvent(
+                "dialog:open",
+              ),
+            );
+
+          },
+        );
+
+
+        editStationDialog.addEventListener(
+          "confirm",
+          () => {
+
+            confirmed = true;
+
+            editStationForm.submit();
+
+          },
+        );
+
+      }
+
+
+      /* ========================================
+         Initial State
+      ======================================== */
+
+      updateFacilityEmptyState();
+      syncFacilityOptions();
+      updateSelectedFacilityCount();
+
+    </script>
+
+  </body>
+</html>
