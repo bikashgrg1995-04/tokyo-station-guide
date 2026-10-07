@@ -1,9 +1,11 @@
 ---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { SITE_NAME } from "../../../config/site";
 import "../../../styles/admin/shared.css";
 import "../../../styles/admin/auth.css";
 import "../../../styles/admin/forms.css";
 import { verifyPassword } from "../../../lib/auth/password";
-import Button from "../../../common_components/Button.astro";
+import Button from "../../../components/Button.astro";
 
 export const prerender = false;
 
@@ -71,17 +73,7 @@ if (Astro.request.method === "POST") {
 }
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="robots" content="noindex, nofollow" />
-
-    <title>{title} | Tokyo Station Guide</title>
-  </head>
-
-  <body>
+<BaseLayout title={`${title} | ${SITE_NAME}`} robots="noindex, nofollow">
     <main class="admin-login-page">
       <section class="admin-login-card">
         <div class="admin-login-logo">T</div>
@@ -128,5 +120,5 @@ if (Astro.request.method === "POST") {
         <a href="/" class="admin-login-back"> ← Back to website </a>
       </section>
     </main>
-  </body>
-</html>
+  
+</BaseLayout>

@@ -1,13 +1,12 @@
 ---
-import "../../../../styles/admin/shared.css";
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/stations.css";
 import "../../../../styles/admin/tables.css";
 
-import AdminNavigation from "../../../../common_components/AdminNavigation.astro";
-import Button from "../../../../common_components/Button.astro";
-import ConfirmDialog from "../../../../common_components/ConfirmDialog.astro";
-import StationTopPicks from "../../../../common_components/StationTopPicks.astro";
+import Button from "../../../../components/Button.astro";
+import ConfirmDialog from "../../../../components/ConfirmDialog.astro";
+import StationTopPicks from "../../../../components/StationTopPicks.astro";
 
 import {
   getStationById,
@@ -535,40 +534,7 @@ const admin =
   }>("admin");
 ---
 
-<!doctype html>
-<html lang="en">
-
-  <head>
-
-    <meta charset="UTF-8" />
-
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
-
-    <meta
-      name="robots"
-      content="noindex, nofollow"
-    />
-
-    <title>
-      Edit {station.name} | Admin | Tokyo Station Guide
-    </title>
-
-  </head>
-
-
-  <body>
-
-    <div class="admin-shell">
-
-      <AdminNavigation
-        activePath="/admin/stations"
-      />
-
-
-      <main class="admin-main">
+<AdminLayout title={`Edit ${station.name}`} activePath="/admin/stations">
 
         <!-- ========================================
              Topbar
@@ -1193,11 +1159,7 @@ const admin =
 
         </div>
 
-      </main>
-
-    </div>
-
-
+  <Fragment slot="after">
     <!-- ========================================
          Add Facilities Modal
     ========================================= -->
@@ -2132,6 +2094,6 @@ const admin =
 
     </script>
 
-  </body>
-
-</html>
+  
+  </Fragment>
+</AdminLayout>

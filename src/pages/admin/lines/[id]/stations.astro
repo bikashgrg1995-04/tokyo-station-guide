@@ -1,13 +1,12 @@
 ---
-import "../../../../styles/admin/shared.css";
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/lines.css";
 import "../../../../styles/admin/tables.css";
 
-import AdminNavigation from "../../../../common_components/AdminNavigation.astro";
-import Button from "../../../../common_components/Button.astro";
-import SearchInput from "../../../../common_components/SearchInput.astro";
-import ConfirmDialog from "../../../../common_components/ConfirmDialog.astro";
+import Button from "../../../../components/Button.astro";
+import SearchInput from "../../../../components/SearchInput.astro";
+import ConfirmDialog from "../../../../components/ConfirmDialog.astro";
 
 import { getLineById } from "../../../../lib/db/lines";
 
@@ -207,43 +206,7 @@ const admin = await Astro.session?.get<{
 }>("admin");
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
-
-    <meta
-      name="robots"
-      content="noindex, nofollow"
-    />
-
-    <title>
-      {line.name} Stations | Admin | Tokyo Station Guide
-    </title>
-  </head>
-
-  <body>
-    <div class="admin-shell">
-
-      <!-- ========================================
-           Sidebar
-      ========================================= -->
-
-      <AdminNavigation
-        activePath="/admin/lines"
-      />
-
-
-      <!-- ========================================
-           Main
-      ========================================= -->
-
-      <main class="admin-main">
+<AdminLayout title={`${line.name} Stations`} activePath="/admin/lines">
 
         <!-- ======================================
              Topbar
@@ -626,11 +589,7 @@ const admin = await Astro.session?.get<{
 
         </div>
 
-      </main>
-
-    </div>
-
-
+  <Fragment slot="after">
     <!-- ========================================
          Add Station Modal
     ========================================= -->
@@ -1389,6 +1348,6 @@ const admin = await Astro.session?.get<{
       );
     </script>
 
-  </body>
-</html>
-
+  
+  </Fragment>
+</AdminLayout>

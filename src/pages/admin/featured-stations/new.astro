@@ -1,10 +1,9 @@
 ---
-import "../../../styles/admin/shared.css";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/admin/forms.css";
 import "../../../styles/admin/stations.css";
 
-import AdminNavigation from "../../../common_components/AdminNavigation.astro";
-import Button from "../../../common_components/Button.astro";
+import Button from "../../../components/Button.astro";
 
 import { getStations } from "../../../lib/db/stations";
 import { createFeaturedStation } from "../../../lib/db/featured-stations";
@@ -168,34 +167,7 @@ const admin = await Astro.session?.get<{
 }>("admin");
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
-
-    <meta
-      name="robots"
-      content="noindex, nofollow"
-    />
-
-    <title>
-      Add Featured Station | Admin | Tokyo Station Guide
-    </title>
-  </head>
-
-  <body>
-    <div class="admin-shell">
-
-      <AdminNavigation
-        activePath="/admin/featured-stations"
-      />
-
-      <main class="admin-main">
+<AdminLayout title="Add Featured Station" activePath="/admin/featured-stations">
 
         <header class="admin-topbar">
 
@@ -541,9 +513,4 @@ const admin = await Astro.session?.get<{
           </section>
 
         </div>
-
-      </main>
-
-    </div>
-  </body>
-</html>
+</AdminLayout>

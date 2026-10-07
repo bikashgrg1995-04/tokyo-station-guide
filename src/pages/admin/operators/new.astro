@@ -1,10 +1,9 @@
 ---
-import "../../../styles/admin/shared.css";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/admin/forms.css";
 import "../../../styles/admin/operators.css";
 
-import AdminNavigation from "../../../common_components/AdminNavigation.astro";
-import Button from "../../../common_components/Button.astro";
+import Button from "../../../components/Button.astro";
 
 import { createOperator } from "../../../lib/db/operators";
 
@@ -152,24 +151,7 @@ if (Astro.request.method === "POST") {
 }
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <meta name="robots" content="noindex, nofollow" />
-
-    <title>Add Operator | Admin | Tokyo Station Guide</title>
-  </head>
-
-  <body>
-    <div class="admin-shell">
-      <!-- Admin Navigation -->
-      <AdminNavigation activePath="/admin/operators" />
-
-      <main class="admin-main">
+<AdminLayout title="Add Operator" activePath="/admin/operators">
         <!-- Topbar -->
         <header class="admin-topbar">
           <div class="admin-breadcrumb">
@@ -337,7 +319,4 @@ if (Astro.request.method === "POST") {
             </div>
           </section>
         </div>
-      </main>
-    </div>
-  </body>
-</html>
+</AdminLayout>

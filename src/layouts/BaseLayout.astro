@@ -1,0 +1,34 @@
+---
+export interface Props {
+  title: string;
+  description?: string;
+  robots?: string;
+  viewport?: string;
+  favicon?: string;
+}
+
+const {
+  title,
+  description,
+  robots = "index, follow",
+  viewport = "width=device-width, initial-scale=1.0",
+  favicon = "/favicon.svg",
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content={viewport} />
+    {description && <meta name="description" content={description} />}
+    <meta name="robots" content={robots} />
+    <link rel="icon" href={favicon} />
+    <title>{title}</title>
+    <slot name="head" />
+  </head>
+
+  <body>
+    <slot />
+  </body>
+</html>

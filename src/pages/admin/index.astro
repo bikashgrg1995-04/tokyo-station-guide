@@ -1,13 +1,12 @@
 ---
-import "../../styles/admin/shared.css";
+import AdminLayout from "../../layouts/AdminLayout.astro";
 import "../../styles/admin/dashboard.css";
 
-import AdminNavigation from "../../common_components/AdminNavigation.astro";
-import Button from "../../common_components/Button.astro";
+import Button from "../../components/Button.astro";
 
 export const prerender = false;
 
-const title = "Admin Dashboard";
+const title = "Dashboard";
 
 const { env } = await import("cloudflare:workers");
 
@@ -36,25 +35,7 @@ const lineStationCount = await db
   .first<{ count: number }>();
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <meta name="robots" content="noindex, nofollow" />
-
-    <title>{title} | Tokyo Station Guide</title>
-  </head>
-
-  <body>
-    <div class="admin-shell">
-      <!-- Sidebar -->
-      <AdminNavigation activePath="/admin" />
-
-      <!-- Main -->
-      <main class="admin-main">
+<AdminLayout title={title} activePath="/admin">
         <!-- Topbar -->
         <header class="admin-topbar">
           <div class="admin-user">
@@ -196,7 +177,4 @@ const lineStationCount = await db
             </div>
           </section>
         </div>
-      </main>
-    </div>
-  </body>
-</html>
+</AdminLayout>

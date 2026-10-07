@@ -1,11 +1,10 @@
 ---
-import "../../../../styles/admin/shared.css";
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/lines.css";
 
-import AdminNavigation from "../../../../common_components/AdminNavigation.astro";
-import Button from "../../../../common_components/Button.astro";
-import ConfirmDialog from "../../../../common_components/ConfirmDialog.astro";
+import Button from "../../../../components/Button.astro";
+import ConfirmDialog from "../../../../components/ConfirmDialog.astro";
 
 import {
   getLineById,
@@ -262,34 +261,7 @@ if (line && Astro.request.method === "POST") {
 }
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
-
-    <meta
-      name="robots"
-      content="noindex, nofollow"
-    />
-
-    <title>
-      Edit Line | Admin | Tokyo Station Guide
-    </title>
-  </head>
-
-  <body>
-    <div class="admin-shell">
-
-      <AdminNavigation
-        activePath="/admin/lines"
-      />
-
-      <main class="admin-main">
+<AdminLayout title="Edit Line" activePath="/admin/lines">
 
         <!-- Topbar -->
         <header class="admin-topbar">
@@ -786,11 +758,7 @@ if (line && Astro.request.method === "POST") {
 
         </div>
 
-      </main>
-
-    </div>
-
-
+  <Fragment slot="after">
     {
       line && (
         <ConfirmDialog
@@ -874,5 +842,6 @@ if (line && Astro.request.method === "POST") {
       }
     </script>
 
-  </body>
-</html>
+  
+  </Fragment>
+</AdminLayout>

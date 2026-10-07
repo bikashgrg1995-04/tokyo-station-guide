@@ -1,11 +1,10 @@
 ---
-import "../../../styles/admin/shared.css";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/admin/tables.css";
 import "../../../styles/admin/stations.css";
 
-import AdminNavigation from "../../../common_components/AdminNavigation.astro";
-import Button from "../../../common_components/Button.astro";
-import ConfirmDialog from "../../../common_components/ConfirmDialog.astro";
+import Button from "../../../components/Button.astro";
+import ConfirmDialog from "../../../components/ConfirmDialog.astro";
 
 import { getFeaturedStations } from "../../../lib/db/featured-stations";
 
@@ -35,36 +34,7 @@ const admin = await Astro.session?.get<{
 }>("admin");
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
-
-    <meta
-      name="robots"
-      content="noindex, nofollow"
-    />
-
-    <title>
-      Featured Stations | Admin | Tokyo Station Guide
-    </title>
-  </head>
-
-  <body>
-    <div class="admin-shell">
-
-      <!-- Admin Navigation -->
-      <AdminNavigation
-        activePath="/admin/featured-stations"
-      />
-
-      <!-- Main -->
-      <main class="admin-main">
+<AdminLayout title="Featured Stations" activePath="/admin/featured-stations">
 
         <div class="admin-content">
 
@@ -271,10 +241,7 @@ const admin = await Astro.session?.get<{
 
         </div>
 
-      </main>
-
-    </div>
-
+  <Fragment slot="after">
     <!-- Delete Confirmation Dialog -->
     <ConfirmDialog
       id="delete-featured-station-dialog"
@@ -408,5 +375,6 @@ const admin = await Astro.session?.get<{
       initializeDeleteButtons();
     </script>
 
-  </body>
-</html>
+  
+  </Fragment>
+</AdminLayout>

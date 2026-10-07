@@ -1,11 +1,10 @@
 ---
-import "../../../../styles/admin/shared.css";
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/stations.css";
 
-import AdminNavigation from "../../../../common_components/AdminNavigation.astro";
-import Button from "../../../../common_components/Button.astro";
-import ConfirmDialog from "../../../../common_components/ConfirmDialog.astro";
+import Button from "../../../../components/Button.astro";
+import ConfirmDialog from "../../../../components/ConfirmDialog.astro";
 
 import { getStations } from "../../../../lib/db/stations";
 import {
@@ -50,76 +49,46 @@ const errors = {
 if (Astro.request.method === "POST") {
   const formData = await Astro.request.formData();
 
-  stationIdValue = String(
-    formData.get("station_id") ?? "",
-  ).trim();
+  stationIdValue = String(formData.get("station_id") ?? "").trim();
 
-  imageUrl = String(
-    formData.get("image_url") ?? "",
-  ).trim();
+  imageUrl = String(formData.get("image_url") ?? "").trim();
 
-  description = String(
-    formData.get("description") ?? "",
-  ).trim();
+  description = String(formData.get("description") ?? "").trim();
 
-  sortOrderValue = String(
-    formData.get("sort_order") ?? "0",
-  ).trim();
+  sortOrderValue = String(formData.get("sort_order") ?? "0").trim();
 
   isActive = formData.get("is_active") === "on";
 
-  const stationId =
-    stationIdValue === ""
-      ? null
-      : Number(stationIdValue);
+  const stationId = stationIdValue === "" ? null : Number(stationIdValue);
 
-  const sortOrder =
-    sortOrderValue === ""
-      ? null
-      : Number(sortOrderValue);
+  const sortOrder = sortOrderValue === "" ? null : Number(sortOrderValue);
 
-  if (
-    stationId === null ||
-    !Number.isInteger(stationId) ||
-    stationId <= 0
-  ) {
+  if (stationId === null || !Number.isInteger(stationId) || stationId <= 0) {
     errors.stationId = "Please select a station.";
   }
 
   if (!imageUrl) {
     errors.imageUrl = "Image URL is required.";
   } else if (imageUrl.length > 2000) {
-    errors.imageUrl =
-      "Image URL must be 2000 characters or less.";
+    errors.imageUrl = "Image URL must be 2000 characters or less.";
   } else {
     try {
       const parsedUrl = new URL(imageUrl);
 
-      if (
-        parsedUrl.protocol !== "http:" &&
-        parsedUrl.protocol !== "https:"
-      ) {
-        errors.imageUrl =
-          "Image URL must use http or https.";
+      if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+        errors.imageUrl = "Image URL must use http or https.";
       }
     } catch {
-      errors.imageUrl =
-        "Please enter a valid image URL.";
+      errors.imageUrl = "Please enter a valid image URL.";
     }
   }
 
   if (description.length > 200) {
-    errors.description =
-      "Description must be 200 characters or less.";
+    errors.description = "Description must be 200 characters or less.";
   }
 
-  if (
-    sortOrder === null ||
-    !Number.isInteger(sortOrder) ||
-    sortOrder < 0
-  ) {
-    errors.sortOrder =
-      "Sort order must be a non-negative number.";
+  if (sortOrder === null || !Number.isInteger(sortOrder) || sortOrder < 0) {
+    errors.sortOrder = "Sort order must be a non-negative number.";
   }
 
   const hasValidationErrors = Object.values(errors).some(
@@ -153,342 +122,243 @@ const admin = await Astro.session?.get<{
 }>("admin");
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<AdminLayout
+  title={`Edit ${featuredStation.station_name}`}
+  activePath="/admin/featured-stations"
+>
+  <header class="admin-topbar">
+    <div class="admin-breadcrumb">
+      <Button href="/admin/featured-stations" variant="secondary"> ← </Button>
 
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+      <a href="/admin/featured-stations"> Featured Stations </a>
 
-    <meta
-      name="robots"
-      content="noindex, nofollow"
-    />
+      <span>/</span>
 
-    <title>
-      Edit {featuredStation.station_name}
-      | Admin | Tokyo Station Guide
-    </title>
-  </head>
+      <strong>Edit Featured Station</strong>
+    </div>
+  </header>
 
-  <body>
-    <div class="admin-shell">
-      <AdminNavigation
-        activePath="/admin/featured-stations"
-      />
+  <div class="admin-content">
+    <h2>Edit Featured Station</h2>
 
-      <main class="admin-main">
-        <header class="admin-topbar">
-          <div class="admin-breadcrumb">
-            <Button
-              href="/admin/featured-stations"
-              variant="secondary"
-            >
-              ←
-            </Button>
+    <p>Update how this station appears in the Popular Station Hubs section.</p>
 
-            <a href="/admin/featured-stations">
-              Featured Stations
-            </a>
+    <section class="admin-panel">
+      <div class="admin-panel-body">
+        <div class="admin-station-form">
+          <div class="admin-station-form-header">
+            <h3>Featured Station Details</h3>
 
-            <span>/</span>
-
-            <strong>Edit Featured Station</strong>
+            <p>
+              Update the featured information for
+              <strong>{featuredStation.station_name}</strong>.
+            </p>
           </div>
-        </header>
 
-        <div class="admin-content">
-          <h2>Edit Featured Station</h2>
+          {
+            formError && (
+              <div class="admin-alert admin-alert-error">{formError}</div>
+            )
+          }
 
-          <p>
-            Update how this station appears in the
-            Popular Station Hubs section.
-          </p>
+          <form
+            method="POST"
+            class="admin-form"
+            id="edit-featured-station-form"
+          >
+            <div class="admin-form-grid">
+              <div class="admin-form-group full-width">
+                <label for="station_id"> Station </label>
 
-          <section class="admin-panel">
-            <div class="admin-panel-body">
-              <div class="admin-station-form">
-                <div class="admin-station-form-header">
-                  <h3>Featured Station Details</h3>
-
-                  <p>
-                    Update the featured information for
-                    <strong>{featuredStation.station_name}</strong>.
-                  </p>
-                </div>
+                <select
+                  id="station_id"
+                  name="station_id"
+                  required
+                  aria-invalid={errors.stationId ? "true" : "false"}
+                  aria-describedby={errors.stationId
+                    ? "station-id-error"
+                    : undefined}
+                >
+                  {
+                    stations.map((station) => (
+                      <option
+                        value={station.id}
+                        selected={stationIdValue === String(station.id)}
+                      >
+                        {station.name}
+                        {station.name_japanese
+                          ? ` ${station.name_japanese}`
+                          : ""}
+                      </option>
+                    ))
+                  }
+                </select>
 
                 {
-                  formError && (
-                    <div class="admin-alert admin-alert-error">
-                      {formError}
-                    </div>
+                  errors.stationId && (
+                    <small id="station-id-error" class="admin-form-error">
+                      {errors.stationId}
+                    </small>
                   )
                 }
+              </div>
 
-                <form
-                  method="POST"
-                  class="admin-form"
-                  id="edit-featured-station-form"
+              <div class="admin-form-group full-width">
+                <label for="image_url"> Image URL </label>
+
+                <input
+                  id="image_url"
+                  name="image_url"
+                  type="url"
+                  required
+                  placeholder="https://example.com/shibuya.jpg"
+                  value={imageUrl}
+                  aria-invalid={errors.imageUrl ? "true" : "false"}
+                  aria-describedby={errors.imageUrl
+                    ? "image-url-error"
+                    : "image-url-help"}
+                />
+
+                {
+                  errors.imageUrl ? (
+                    <small id="image-url-error" class="admin-form-error">
+                      {errors.imageUrl}
+                    </small>
+                  ) : (
+                    <small id="image-url-help">
+                      Use a publicly accessible image URL.
+                    </small>
+                  )
+                }
+              </div>
+
+              <div class="admin-form-group full-width">
+                <label for="description"> Featured Description </label>
+
+                <textarea
+                  id="description"
+                  name="description"
+                  rows="4"
+                  placeholder="e.g. Scramble Crossing"
+                  aria-invalid={errors.description ? "true" : "false"}
+                  aria-describedby={errors.description
+                    ? "description-error"
+                    : "description-help"}>{description}</textarea
                 >
-                  <div class="admin-form-grid">
-                    <div class="admin-form-group full-width">
-                      <label for="station_id">
-                        Station
-                      </label>
 
-                      <select
-                        id="station_id"
-                        name="station_id"
-                        required
-                        aria-invalid={
-                          errors.stationId
-                            ? "true"
-                            : "false"
-                        }
-                        aria-describedby={
-                          errors.stationId
-                            ? "station-id-error"
-                            : undefined
-                        }
-                      >
-                        {
-                          stations.map((station) => (
-                            <option
-                              value={station.id}
-                              selected={
-                                stationIdValue ===
-                                String(station.id)
-                              }
-                            >
-                              {station.name}
-                              {
-                                station.name_japanese
-                                  ? ` ${station.name_japanese}`
-                                  : ""
-                              }
-                            </option>
-                          ))
-                        }
-                      </select>
+                {
+                  errors.description ? (
+                    <small id="description-error" class="admin-form-error">
+                      {errors.description}
+                    </small>
+                  ) : (
+                    <small id="description-help">
+                      Short text shown below the station name.
+                    </small>
+                  )
+                }
+              </div>
 
-                      {
-                        errors.stationId && (
-                          <small
-                            id="station-id-error"
-                            class="admin-form-error"
-                          >
-                            {errors.stationId}
-                          </small>
-                        )
-                      }
-                    </div>
+              <div class="admin-form-group">
+                <label for="sort_order"> Sort Order </label>
 
-                    <div class="admin-form-group full-width">
-                      <label for="image_url">
-                        Image URL
-                      </label>
+                <input
+                  id="sort_order"
+                  name="sort_order"
+                  type="number"
+                  min="0"
+                  step="1"
+                  required
+                  value={sortOrderValue}
+                  aria-invalid={errors.sortOrder ? "true" : "false"}
+                  aria-describedby={errors.sortOrder
+                    ? "sort-order-error"
+                    : "sort-order-help"}
+                />
 
-                      <input
-                        id="image_url"
-                        name="image_url"
-                        type="url"
-                        required
-                        placeholder="https://example.com/shibuya.jpg"
-                        value={imageUrl}
-                        aria-invalid={
-                          errors.imageUrl
-                            ? "true"
-                            : "false"
-                        }
-                        aria-describedby={
-                          errors.imageUrl
-                            ? "image-url-error"
-                            : "image-url-help"
-                        }
-                      />
+                {
+                  errors.sortOrder ? (
+                    <small id="sort-order-error" class="admin-form-error">
+                      {errors.sortOrder}
+                    </small>
+                  ) : (
+                    <small id="sort-order-help">
+                      Lower numbers appear first.
+                    </small>
+                  )
+                }
+              </div>
 
-                      {
-                        errors.imageUrl ? (
-                          <small
-                            id="image-url-error"
-                            class="admin-form-error"
-                          >
-                            {errors.imageUrl}
-                          </small>
-                        ) : (
-                          <small id="image-url-help">
-                            Use a publicly accessible image URL.
-                          </small>
-                        )
-                      }
-                    </div>
+              <div class="admin-form-group">
+                <label>Status</label>
 
-                    <div class="admin-form-group full-width">
-                      <label for="description">
-                        Featured Description
-                      </label>
+                <label class="admin-form-checkbox">
+                  <input type="checkbox" name="is_active" checked={isActive} />
 
-                      <textarea
-                        id="description"
-                        name="description"
-                        rows="4"
-                        placeholder="e.g. Scramble Crossing"
-                        aria-invalid={
-                          errors.description
-                            ? "true"
-                            : "false"
-                        }
-                        aria-describedby={
-                          errors.description
-                            ? "description-error"
-                            : "description-help"
-                        }
-                      >{description}</textarea>
+                  <span>Active</span>
+                </label>
 
-                      {
-                        errors.description ? (
-                          <small
-                            id="description-error"
-                            class="admin-form-error"
-                          >
-                            {errors.description}
-                          </small>
-                        ) : (
-                          <small id="description-help">
-                            Short text shown below the station name.
-                          </small>
-                        )
-                      }
-                    </div>
-
-                    <div class="admin-form-group">
-                      <label for="sort_order">
-                        Sort Order
-                      </label>
-
-                      <input
-                        id="sort_order"
-                        name="sort_order"
-                        type="number"
-                        min="0"
-                        step="1"
-                        required
-                        value={sortOrderValue}
-                        aria-invalid={
-                          errors.sortOrder
-                            ? "true"
-                            : "false"
-                        }
-                        aria-describedby={
-                          errors.sortOrder
-                            ? "sort-order-error"
-                            : "sort-order-help"
-                        }
-                      />
-
-                      {
-                        errors.sortOrder ? (
-                          <small
-                            id="sort-order-error"
-                            class="admin-form-error"
-                          >
-                            {errors.sortOrder}
-                          </small>
-                        ) : (
-                          <small id="sort-order-help">
-                            Lower numbers appear first.
-                          </small>
-                        )
-                      }
-                    </div>
-
-                    <div class="admin-form-group">
-                      <label>Status</label>
-
-                      <label class="admin-form-checkbox">
-                        <input
-                          type="checkbox"
-                          name="is_active"
-                          checked={isActive}
-                        />
-
-                        <span>Active</span>
-                      </label>
-
-                      <small>
-                        Inactive stations are hidden from
-                        Popular Station Hubs.
-                      </small>
-                    </div>
-                  </div>
-
-                  <div class="admin-form-actions">
-                    <Button
-                      href="/admin/featured-stations"
-                      variant="secondary"
-                    >
-                      Cancel
-                    </Button>
-
-                    <Button
-                      type="submit"
-                      variant="primary"
-                    >
-                      Save Changes
-                    </Button>
-                  </div>
-                </form>
+                <small>
+                  Inactive stations are hidden from Popular Station Hubs.
+                </small>
               </div>
             </div>
-          </section>
+
+            <div class="admin-form-actions">
+              <Button href="/admin/featured-stations" variant="secondary">
+                Cancel
+              </Button>
+
+              <Button type="submit" variant="primary"> Save Changes </Button>
+            </div>
+          </form>
         </div>
-      </main>
-    </div>
-  </body>
-</html>
+      </div>
+    </section>
+  </div>
+  
+  <Fragment slot="after">
+    <ConfirmDialog
+      id="edit-featured-station-confirm-dialog"
+      title="Save Changes"
+      description="Are you sure you want to save these featured station changes?"
+      confirmText="Save Changes"
+      cancelText="Cancel"
+      variant="primary"
+    />
 
-<ConfirmDialog
-  id="edit-featured-station-confirm-dialog"
-  title="Save Changes"
-  description="Are you sure you want to save these featured station changes?"
-  confirmText="Save Changes"
-  cancelText="Cancel"
-  variant="primary"
-/>
-
-<script>
-  const editFeaturedStationForm = document.getElementById(
-    "edit-featured-station-form",
-  );
-
-  const editFeaturedStationDialog = document.getElementById(
-    "edit-featured-station-confirm-dialog",
-  );
-
-  if (
-    editFeaturedStationForm instanceof HTMLFormElement &&
-    editFeaturedStationDialog instanceof HTMLDivElement
-  ) {
-    let confirmed = false;
-
-    editFeaturedStationForm.addEventListener("submit", (event) => {
-      if (confirmed) {
-        return;
-      }
-
-      event.preventDefault();
-
-      editFeaturedStationDialog.dispatchEvent(
-        new CustomEvent("dialog:open"),
+    <script>
+      const editFeaturedStationForm = document.getElementById(
+        "edit-featured-station-form",
       );
-    });
 
-    editFeaturedStationDialog.addEventListener("confirm", () => {
-      confirmed = true;
-      editFeaturedStationForm.submit();
-    });
-  }
-</script>
+      const editFeaturedStationDialog = document.getElementById(
+        "edit-featured-station-confirm-dialog",
+      );
+
+      if (
+        editFeaturedStationForm instanceof HTMLFormElement &&
+        editFeaturedStationDialog instanceof HTMLDivElement
+      ) {
+        let confirmed = false;
+
+        editFeaturedStationForm.addEventListener("submit", (event) => {
+          if (confirmed) {
+            return;
+          }
+
+          event.preventDefault();
+
+          editFeaturedStationDialog.dispatchEvent(
+            new CustomEvent("dialog:open"),
+          );
+        });
+
+        editFeaturedStationDialog.addEventListener("confirm", () => {
+          confirmed = true;
+          editFeaturedStationForm.submit();
+        });
+      }
+    </script>
+  </Fragment>
+</AdminLayout>
