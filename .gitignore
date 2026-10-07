@@ -21,7 +21,7 @@ pnpm-debug.log*
 
 # Cloudflare local development
 .wrangler/
-seed/admin.local.sql
+db/seed/*.local.sql
 
 # macOS-specific files
 .DS_Store

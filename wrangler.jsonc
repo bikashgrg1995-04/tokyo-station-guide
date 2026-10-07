@@ -8,7 +8,7 @@
       "binding": "DB",
       "database_name": "tokyo-station-guide-db",
       "database_id": "44f63cf1-def1-43ec-89c7-b54b19bca867",
-      "migrations_dir": "migrations"
+      "migrations_dir": "db/migrations"
     }
   ]
 }
