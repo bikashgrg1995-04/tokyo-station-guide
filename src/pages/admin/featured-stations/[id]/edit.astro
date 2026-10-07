@@ -328,37 +328,7 @@ const admin = await Astro.session?.get<{
     />
 
     <script>
-      const editFeaturedStationForm = document.getElementById(
-        "edit-featured-station-form",
-      );
-
-      const editFeaturedStationDialog = document.getElementById(
-        "edit-featured-station-confirm-dialog",
-      );
-
-      if (
-        editFeaturedStationForm instanceof HTMLFormElement &&
-        editFeaturedStationDialog instanceof HTMLDivElement
-      ) {
-        let confirmed = false;
-
-        editFeaturedStationForm.addEventListener("submit", (event) => {
-          if (confirmed) {
-            return;
-          }
-
-          event.preventDefault();
-
-          editFeaturedStationDialog.dispatchEvent(
-            new CustomEvent("dialog:open"),
-          );
-        });
-
-        editFeaturedStationDialog.addEventListener("confirm", () => {
-          confirmed = true;
-          editFeaturedStationForm.submit();
-        });
-      }
+      import "../../../../scripts/admin/featured-stations-edit.ts";
     </script>
   </Fragment>
 </AdminLayout>
