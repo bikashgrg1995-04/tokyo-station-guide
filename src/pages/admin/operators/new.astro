@@ -5,150 +5,26 @@ import "../../../styles/admin/operators.css";
 
 import Button from "../../../components/Button.astro";
 
-import { createOperator } from "../../../lib/db/operators";
+import { handleOperatorCreate } from "../../../lib/services/operators";
 
 export const prerender = false;
 
 const { env } = await import("cloudflare:workers");
 
-const db = env.DB;
+const form = await handleOperatorCreate(Astro.request, env.DB);
 
-let formError = "";
+if (form.redirectTo) {
+  return Astro.redirect(form.redirectTo);
+}
 
-let name = "";
-let slug = "";
-let description = "";
-let websiteUrl = "";
-
-const errors = {
-  name: "",
-  slug: "",
-  description: "",
-  websiteUrl: "",
-};
+const { name, slug, description, websiteUrl } = form.values;
+const { errors, formError } = form;
 
 const admin = await Astro.session?.get<{
   id: number;
   email: string;
   name: string;
 }>("admin");
-
-/* ========================================
-   Form Submission
-======================================== */
-
-if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
-
-  name = String(formData.get("name") ?? "").trim();
-
-  slug = String(formData.get("slug") ?? "").trim();
-
-  description = String(formData.get("description") ?? "").trim();
-
-  websiteUrl = String(formData.get("website_url") ?? "").trim();
-
-  /* ========================================
-     Name Validation
-  ======================================== */
-
-  if (!name) {
-    errors.name = "Name is required.";
-  } else if (name.length > 150) {
-    errors.name = "Name must be 150 characters or less.";
-  }
-
-  /* ========================================
-     Slug Validation
-  ======================================== */
-
-  if (!slug) {
-    errors.slug = "Slug is required.";
-  } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-    errors.slug =
-      "Slug can only contain lowercase letters, numbers, and hyphens.";
-  } else if (slug.length > 150) {
-    errors.slug = "Slug must be 150 characters or less.";
-  }
-
-  /* ========================================
-     Description Validation
-  ======================================== */
-
-  if (description.length > 1000) {
-    errors.description = "Description must be 1000 characters or less.";
-  }
-
-  /* ========================================
-     Website Validation
-  ======================================== */
-
-  if (websiteUrl) {
-    try {
-      const url = new URL(websiteUrl);
-
-      if (!["http:", "https:"].includes(url.protocol)) {
-        errors.websiteUrl = "Website URL must start with http:// or https://.";
-      }
-    } catch {
-      errors.websiteUrl = "Please enter a valid website URL.";
-    }
-  }
-
-  /* ========================================
-     Create Operator
-  ======================================== */
-
-  const hasValidationErrors = Object.values(errors).some(
-    (message) => message.length > 0,
-  );
-
-  if (!hasValidationErrors) {
-    try {
-      await createOperator(db, {
-        name,
-        slug,
-        description: description || null,
-        websiteUrl: websiteUrl || null,
-      });
-
-      return Astro.redirect("/admin/operators");
-    } catch (err) {
-      console.error(err);
-
-      const message = err instanceof Error ? err.message.toLowerCase() : "";
-
-      /* ========================================
-         Duplicate Name
-      ======================================== */
-
-      if (
-        message.includes("unique constraint failed") &&
-        message.includes("operators.name")
-      ) {
-        errors.name = "An operator with this name already exists.";
-      }
-
-      /* ========================================
-         Duplicate Slug
-      ======================================== */
-      else if (
-        message.includes("unique constraint failed") &&
-        message.includes("operators.slug")
-      ) {
-        errors.slug = "An operator with this slug already exists.";
-      }
-
-      /* ========================================
-         Unexpected Database Error
-      ======================================== */
-      else {
-        formError =
-          "Unable to create operator because of an unexpected database error.";
-      }
-    }
-  }
-}
 ---
 
 <AdminLayout title="Add Operator" activePath="/admin/operators">
