@@ -36,32 +36,7 @@ const lineStationCount = await db
 ---
 
 <AdminLayout title={title} activePath="/admin">
-        <!-- Topbar -->
-        <header class="admin-topbar">
-          <div class="admin-user">
-            <div class="admin-avatar">
-              {
-                admin?.name
-                  ? admin.name
-                      .split(" ")
-                      .map((part) => part.charAt(0))
-                      .join("")
-                      .slice(0, 2)
-                      .toUpperCase()
-                  : "AD"
-              }
-            </div>
-
-            <div class="admin-user-info">
-              <strong>
-                {admin?.name ?? "Administrator"}
-              </strong>
-
-              <span> Tokyo Station Guide </span>
-            </div>
-          </div>
-        </header>
-
+      
         <!-- Content -->
         <div class="admin-content">
           <!-- Page Header -->
@@ -72,9 +47,6 @@ const lineStationCount = await db
               <p>Manage stations, railway lines and operators.</p>
             </div>
 
-            <Button href="/admin/stations/new" variant="primary">
-              + Add Station
-            </Button>
           </div>
 
           <!-- Stats -->
