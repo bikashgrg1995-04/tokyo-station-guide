@@ -1,5 +1,6 @@
 import {
   createLine,
+  deleteLine,
   getLinesPaginated,
   updateLine,
   type Line,
@@ -252,6 +253,37 @@ export async function handleLineUpdate(
       });
     },
   );
+}
+
+/* ========================================
+   Delete
+======================================== */
+
+/** Deletes a line (and its station links) on POST. Returns the URL to redirect to. */
+export async function handleLineDelete(
+  request: Request,
+  db: D1Database,
+  rawId: string | undefined,
+): Promise<string> {
+  const id = Number(rawId);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return LIST_PATH;
+  }
+
+  if (request.method !== "POST") {
+    return LIST_PATH;
+  }
+
+  try {
+    await deleteLine(db, id);
+
+    return LIST_PATH;
+  } catch (err) {
+    console.error("Failed to delete line:", err);
+
+    return `${LIST_PATH}?error=delete`;
+  }
 }
 
 /* ========================================
