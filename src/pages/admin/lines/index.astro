@@ -8,67 +8,21 @@ import SearchInput from "../../../components/SearchInput.astro";
 import ConfirmDialog from "../../../components/ConfirmDialog.astro";
 import Pagination from "../../../components/Pagination.astro";
 
-import { getLinesPaginated } from "../../../lib/db/lines";
+import { loadLineList } from "../../../lib/services/lines";
 
 export const prerender = false;
 
 const { env } = await import("cloudflare:workers");
 
-const db = env.DB;
-
-/* ========================================
-   Query Parameters
-======================================== */
-
-const searchParam =
-  Astro.url.searchParams.get("search")?.trim() ?? "";
-
-const pageParam =
-  Astro.url.searchParams.get("page");
-
-const parsedPage = Number(pageParam);
-
-const currentPage =
-  Number.isInteger(parsedPage) && parsedPage > 0
-    ? parsedPage
-    : 1;
-
-/* ========================================
-   Pagination
-======================================== */
-
-const perPage = 10;
-
 const {
-  items: lines,
+  lines,
   totalItems,
   currentPage: safeCurrentPage,
   totalPages,
-} = await getLinesPaginated(db, {
-  page: currentPage,
   perPage,
-  search: searchParam,
-});
-
-/* ========================================
-   Pagination URL
-======================================== */
-
-const paginationUrl = new URL(
-  "/admin/lines",
-  Astro.url,
-);
-
-if (searchParam) {
-  paginationUrl.searchParams.set(
-    "search",
-    searchParam,
-  );
-}
-
-/* ========================================
-   Admin
-======================================== */
+  searchParam,
+  paginationUrl,
+} = await loadLineList(env.DB, Astro.url);
 
 const admin = await Astro.session?.get<{
   id: number;

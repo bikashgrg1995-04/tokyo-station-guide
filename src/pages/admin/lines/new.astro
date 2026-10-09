@@ -5,8 +5,8 @@ import "../../../styles/admin/lines.css";
 
 import Button from "../../../components/Button.astro";
 
-import { createLine } from "../../../lib/db/lines";
 import { getOperators } from "../../../lib/db/operators";
+import { handleLineCreate } from "../../../lib/services/lines";
 
 export const prerender = false;
 
@@ -14,222 +14,16 @@ const { env } = await import("cloudflare:workers");
 
 const db = env.DB;
 
-let formError = "";
-
-let operatorId = "";
-let name = "";
-let slug = "";
-let code = "";
-let color = "";
-let description = "";
-
-const errors = {
-  operatorId: "",
-  name: "",
-  slug: "",
-  code: "",
-  color: "",
-  description: "",
-};
-
 const operators = await getOperators(db);
 
-/* ========================================
-   Form Submission
-======================================== */
+const form = await handleLineCreate(Astro.request, db, operators);
 
-if (Astro.request.method === "POST") {
-  const formData =
-    await Astro.request.formData();
-
-  operatorId =
-    String(formData.get("operator_id") ?? "").trim();
-
-  name =
-    String(formData.get("name") ?? "").trim();
-
-  slug =
-    String(formData.get("slug") ?? "").trim();
-
-  code =
-    String(formData.get("code") ?? "").trim();
-
-  color =
-    String(formData.get("color") ?? "").trim();
-
-  description =
-    String(formData.get("description") ?? "").trim();
-
-
-  /* ========================================
-     Operator Validation
-  ======================================== */
-
-  const parsedOperatorId =
-    Number(operatorId);
-
-  if (!operatorId) {
-    errors.operatorId =
-      "Operator is required.";
-  } else if (
-    !Number.isInteger(parsedOperatorId) ||
-    parsedOperatorId <= 0
-  ) {
-    errors.operatorId =
-      "Please select a valid operator.";
-  } else if (
-    !operators.some(
-      (operator) =>
-        operator.id === parsedOperatorId,
-    )
-  ) {
-    errors.operatorId =
-      "Selected operator does not exist.";
-  }
-
-
-  /* ========================================
-     Name Validation
-  ======================================== */
-
-  if (!name) {
-    errors.name =
-      "Name is required.";
-  } else if (name.length > 150) {
-    errors.name =
-      "Name must be 150 characters or less.";
-  }
-
-
-  /* ========================================
-     Slug Validation
-  ======================================== */
-
-  if (!slug) {
-    errors.slug =
-      "Slug is required.";
-  } else if (
-    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
-  ) {
-    errors.slug =
-      "Slug can only contain lowercase letters, numbers, and hyphens.";
-  } else if (slug.length > 150) {
-    errors.slug =
-      "Slug must be 150 characters or less.";
-  }
-
-
-  /* ========================================
-     Code Validation
-  ======================================== */
-
-  if (code.length > 50) {
-    errors.code =
-      "Code must be 50 characters or less.";
-  }
-
-
-  /* ========================================
-     Color Validation
-  ======================================== */
-
-  if (color) {
-    if (!/^#[0-9a-fA-F]{6}$/.test(color)) {
-      errors.color =
-        "Color must be a valid hex color, such as #00A650.";
-    }
-  }
-
-
-  /* ========================================
-     Description Validation
-  ======================================== */
-
-  if (description.length > 1000) {
-    errors.description =
-      "Description must be 1000 characters or less.";
-  }
-
-
-  /* ========================================
-     Create Line
-  ======================================== */
-
-  const hasValidationErrors =
-    Object.values(errors).some(
-      (message) =>
-        message.length > 0,
-    );
-
-  if (!hasValidationErrors) {
-    try {
-      await createLine(db, {
-        operatorId: parsedOperatorId,
-        name,
-        slug,
-        code: code || null,
-        description:
-          description || null,
-        color: color || null,
-      });
-
-      return Astro.redirect(
-        "/admin/lines",
-      );
-    } catch (err) {
-      console.error(err);
-
-      const message =
-        err instanceof Error
-          ? err.message.toLowerCase()
-          : "";
-
-
-      /* ========================================
-         Duplicate Slug
-      ======================================== */
-
-      if (
-        message.includes(
-          "unique constraint failed",
-        ) &&
-        message.includes(
-          "lines.slug",
-        )
-      ) {
-        errors.slug =
-          "A line with this slug already exists.";
-      }
-
-
-      /* ========================================
-         Duplicate Code
-      ======================================== */
-
-      else if (
-        message.includes(
-          "unique constraint failed",
-        ) &&
-        message.includes(
-          "lines.code",
-        )
-      ) {
-        errors.code =
-          "A line with this code already exists.";
-      }
-
-
-      /* ========================================
-         Unexpected Database Error
-      ======================================== */
-
-      else {
-        formError =
-          "Unable to create line because of an unexpected database error.";
-      }
-    }
-  }
+if (form.redirectTo) {
+  return Astro.redirect(form.redirectTo);
 }
+
+const { operatorId, name, slug, code, color, description } = form.values;
+const { errors, formError } = form;
 ---
 
 <AdminLayout title="Add Line" activePath="/admin/lines">

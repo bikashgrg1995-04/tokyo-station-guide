@@ -9,18 +9,15 @@ import SearchInput from "../../../../components/SearchInput.astro";
 import ConfirmDialog from "../../../../components/ConfirmDialog.astro";
 
 import { getLineById } from "../../../../lib/db/lines";
-
 import {
-  getStationsForLine,
-  getAvailableStationsForLine,
-  addStationToLine,
-  updateLineStation,
-  removeStationFromLine,
-} from "../../../../lib/db/line-stations";
+  handleLineStationsAction,
+  loadLineStations,
+} from "../../../../lib/services/lines";
 
 export const prerender = false;
 
 const { env } = await import("cloudflare:workers");
+
 const db = env.DB;
 
 const lineId = Number(Astro.params.id);
@@ -35,169 +32,21 @@ if (!line) {
   return Astro.redirect("/admin/lines");
 }
 
-let error = "";
+const searchParam = String(Astro.url.searchParams.get("search") ?? "").trim();
 
-const searchParam =
-  String(Astro.url.searchParams.get("search") ?? "").trim();
+const result = await handleLineStationsAction(Astro.request, db, lineId);
 
-/* ========================================
-   Form Submission
-======================================== */
-
-if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
-
-  const action = String(
-    formData.get("action") ?? "",
-  );
-
-  try {
-    /* ========================================
-       Add Station
-    ======================================== */
-
-    if (action === "add") {
-      const stationId = Number(
-        formData.get("station_id") ?? 0,
-      );
-
-      const stationOrder = Number(
-        formData.get("station_order") ?? 0,
-      );
-
-      const stationCode = String(
-        formData.get("station_code") ?? "",
-      ).trim();
-
-      if (
-        !Number.isInteger(stationId) ||
-        stationId <= 0
-      ) {
-        error = "Please select a station.";
-      } else if (
-        !Number.isInteger(stationOrder) ||
-        stationOrder <= 0
-      ) {
-        error =
-          "Station order must be a positive whole number.";
-      } else if (stationCode.length > 50) {
-        error =
-          "Station code must be 50 characters or less.";
-      } else {
-        await addStationToLine(
-          db,
-          lineId,
-          stationId,
-          stationOrder,
-          stationCode || null,
-        );
-
-        return Astro.redirect(
-          `/admin/lines/${lineId}/stations`,
-        );
-      }
-    }
-
-    /* ========================================
-       Update Station
-    ======================================== */
-
-    else if (action === "update") {
-      const id = Number(
-        formData.get("id") ?? 0,
-      );
-
-      const stationOrder = Number(
-        formData.get("station_order") ?? 0,
-      );
-
-      const stationCode = String(
-        formData.get("station_code") ?? "",
-      ).trim();
-
-      if (!Number.isInteger(id) || id <= 0) {
-        error = "Invalid line station.";
-      } else if (
-        !Number.isInteger(stationOrder) ||
-        stationOrder <= 0
-      ) {
-        error =
-          "Station order must be a positive whole number.";
-      } else if (stationCode.length > 50) {
-        error =
-          "Station code must be 50 characters or less.";
-      } else {
-        await updateLineStation(
-          db,
-          id,
-          stationOrder,
-          stationCode || null,
-        );
-
-        return Astro.redirect(
-          `/admin/lines/${lineId}/stations`,
-        );
-      }
-    }
-
-    /* ========================================
-       Remove Station
-    ======================================== */
-
-    else if (action === "remove") {
-      const id = Number(
-        formData.get("id") ?? 0,
-      );
-
-      if (!Number.isInteger(id) || id <= 0) {
-        error = "Invalid station.";
-      } else {
-        await removeStationFromLine(
-          db,
-          id,
-        );
-
-        return Astro.redirect(
-          `/admin/lines/${lineId}/stations`,
-        );
-      }
-    }
-  } catch (err) {
-    console.error(err);
-
-    const message =
-      err instanceof Error
-        ? err.message.toLowerCase()
-        : "";
-
-    if (
-      message.includes("unique") ||
-      message.includes("constraint")
-    ) {
-      error =
-        "Unable to update this line's stations. The station order may already be in use, or the station may already be connected to this line.";
-    } else {
-      error =
-        "Unable to update this line's stations because of an unexpected database error.";
-    }
-  }
+if (result.redirectTo) {
+  return Astro.redirect(result.redirectTo);
 }
 
-/* ========================================
-   Data
-======================================== */
+const { error } = result;
 
-const stations = await getStationsForLine(
+const { stations, availableStations } = await loadLineStations(
   db,
   lineId,
   searchParam,
 );
-
-const availableStations =
-  await getAvailableStationsForLine(
-    db,
-    lineId,
-  );
 
 const admin = await Astro.session?.get<{
   id: number;
