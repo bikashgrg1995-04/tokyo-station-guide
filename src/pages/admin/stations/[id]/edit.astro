@@ -9,6 +9,7 @@ import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
 import Button from "../../../../components/common/Button.astro";
 import ConfirmDialog from "../../../../components/common/ConfirmDialog.astro";
 import StationFormFields from "../../../../components/admin/StationFormFields.astro";
+import StationFacilitiesPanel from "../../../../components/admin/StationFacilitiesPanel.astro";
 import FacilityModal from "../../../../components/admin/FacilityModal.astro";
 import StationTopPicks from "../../../../components/admin/StationTopPicks.astro";
 
@@ -146,181 +147,14 @@ const facilityError = errors.facilities;
                    Facilities
               ======================================= -->
 
-              <section class="admin-panel admin-station-feature-panel">
-
-                <div class="admin-panel-body">
-
-                  <div class="admin-station-feature-header">
-
-                    <div>
-
-                      <h3>
-                        Facilities
-                      </h3>
-
-                      <p>
-                        Facilities available at
-                        <strong>{station.name}</strong>.
-                      </p>
-
-                    </div>
-
-
-                    {
-                      availableFacilities.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="primary"
-                          id="open-add-facility-button"
-                        >
-                          + Add
-                        </Button>
-                      )
-                    }
-
-                  </div>
-
-
-                  {
-                    facilityError && (
-                      <Alert>{facilityError}</Alert>
-                    )
-                  }
-
-
-                  <!-- Temporary Facility Inputs -->
-
-                  <div id="station-facility-inputs">
-
-                    {
-                      stationFacilities.map(
-                        (facility) => (
-                          <input
-                            type="hidden"
-                            name="facility_ids"
-                            value={facility.id}
-                            data-facility-input={facility.id}
-                          />
-                        ),
-                      )
-                    }
-
-                  </div>
-
-
-                  <!-- Facility Table -->
-
-                  <div class="admin-table-wrapper">
-
-                    <table
-                      class="admin-table admin-compact-table"
-                      id="station-facilities-table"
-                    >
-
-                      <thead>
-
-                        <tr>
-
-                          <th>
-                            Facility
-                          </th>
-
-                          <th>
-                            Actions
-                          </th>
-
-                        </tr>
-
-                      </thead>
-
-
-                      <tbody id="station-facilities-body">
-
-                        {
-                          stationFacilities.length > 0 ? (
-
-                            stationFacilities.map(
-                              (facility) => (
-
-                                <tr
-                                  data-facility-row
-                                  data-facility-id={
-                                    facility.id
-                                  }
-                                >
-
-                                  <td>
-
-                                    <div class="admin-line-name">
-                                      {facility.name}
-                                    </div>
-
-                                  </td>
-
-
-                                  <td>
-
-                                    <div class="admin-table-actions">
-
-                                      <button
-                                        type="button"
-                                        class="admin-table-action admin-table-action-delete"
-                                        data-remove-facility={
-                                          facility.id
-                                        }
-                                        data-facility-name={
-                                          facility.name
-                                        }
-                                      >
-                                        Remove
-                                      </button>
-
-                                    </div>
-
-                                  </td>
-
-                                </tr>
-
-                              ),
-                            )
-
-                          ) : (
-
-                            <tr id="station-facilities-empty-row">
-
-                              <td colspan="2">
-
-                                <div class="admin-feature-empty">
-                                  No facilities assigned.
-                                </div>
-
-                              </td>
-
-                            </tr>
-
-                          )
-                        }
-
-                      </tbody>
-
-                    </table>
-
-                  </div>
-
-
-                  <!-- All Facilities Assigned -->
-
-                  <p
-                    id="all-facilities-message"
-                    class="admin-feature-message"
-                    hidden
-                  >
-                    All available facilities are already assigned.
-                  </p>
-
-                </div>
-
-              </section>
+              <StationFacilitiesPanel
+                assigned={stationFacilities}
+                canAdd={availableFacilities.length > 0}
+                error={facilityError}
+                allAddedMessage="All available facilities are already assigned."
+              >
+                Facilities available at <strong>{station.name}</strong>.
+              </StationFacilitiesPanel>
 
 
               <!-- ======================================

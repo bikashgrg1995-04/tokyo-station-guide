@@ -10,17 +10,6 @@ import HomeData from "../components/website/HomeData.astro";
 import { getTransitMapData } from "../lib/db/transit-map.ts";
 import { getFeaturedStations } from "../lib/db/featured-stations";
 
-import "../styles/website/global.css";
-import "../styles/website/theme.css";
-import "../styles/website/base.css";
-import "../styles/website/header.css";
-import "../styles/website/transit.css";
-import "../styles/website/station-board.css";
-import "../styles/website/lines-dialog.css";
-import "../styles/website/search.css";
-import "../styles/website/station-sheet.css";
-import "../styles/website/responsive.css";
-
 export const prerender = false;
 
 const { env } = await import("cloudflare:workers");

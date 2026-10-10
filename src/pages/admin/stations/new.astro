@@ -9,6 +9,7 @@ import Breadcrumbs from "../../../components/common/Breadcrumbs.astro";
 import Button from "../../../components/common/Button.astro";
 import ConfirmDialog from "../../../components/common/ConfirmDialog.astro";
 import StationFormFields from "../../../components/admin/StationFormFields.astro";
+import StationFacilitiesPanel from "../../../components/admin/StationFacilitiesPanel.astro";
 import FacilityModal from "../../../components/admin/FacilityModal.astro";
 import StationTopPicks from "../../../components/admin/StationTopPicks.astro";
 
@@ -102,94 +103,13 @@ const error = form.formError;
                    Facilities
               ===================================== -->
 
-              <section
-                class="admin-panel admin-station-feature-panel"
+              <StationFacilitiesPanel
+                canAdd={facilities.length > 0}
+                error={errors.facilities}
+                allAddedMessage="All available facilities are already selected."
               >
-                <div class="admin-panel-body">
-                  <div
-                    class="admin-station-feature-header"
-                  >
-                    <div>
-                      <h3>
-                        Facilities
-                      </h3>
-
-                      <p>
-                        Select facilities available
-                        at this station.
-                      </p>
-                    </div>
-
-                    {
-                      facilities.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="primary"
-                          id="open-add-facility-button"
-                        >
-                          + Add
-                        </Button>
-                      )
-                    }
-                  </div>
-
-                  {
-                    errors.facilities && (
-                      <Alert>{errors.facilities}</Alert>
-                    )
-                  }
-
-                  <!-- Temporary Facility Inputs -->
-
-                  <div
-                    id="station-facility-inputs"
-                  ></div>
-
-                  <!-- Facility Table -->
-
-                  <div class="admin-table-wrapper">
-                    <table
-                      class="admin-table admin-compact-table"
-                      id="station-facilities-table"
-                    >
-                      <thead>
-                        <tr>
-                          <th>
-                            Facility
-                          </th>
-
-                          <th>
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-
-                      <tbody
-                        id="station-facilities-body"
-                      >
-                        <tr
-                          id="station-facilities-empty-row"
-                        >
-                          <td colspan="2">
-                            <div class="admin-feature-empty">
-                              No facilities assigned.
-                            </div>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <p
-                    id="all-facilities-message"
-                    class="admin-feature-message"
-                    hidden
-                  >
-                    All available facilities are
-                    already selected.
-                  </p>
-                </div>
-              </section>
+                Select facilities available at this station.
+              </StationFacilitiesPanel>
 
               <!-- ====================================
                    Top Picks
