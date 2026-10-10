@@ -6,22 +6,15 @@ import {
 } from "../db/featured-stations";
 import { hasErrors, readText } from "./common";
 
+import {
+  type FeaturedStationFormValues,
+  type FeaturedStationFormErrors,
+  emptyFeaturedStationErrors,
+  validateFeaturedStationForm,
+} from "../validators/featured-station";
+
 const LIST_PATH = "/admin/featured-stations";
 
-export interface FeaturedStationFormValues {
-  /** Selected station id, as typed in the form. */
-  stationId: string;
-  imageUrl: string;
-  description: string;
-  /** Sort order, as typed in the form. */
-  sortOrder: string;
-  isActive: boolean;
-}
-
-export type FeaturedStationFormErrors = Record<
-  "stationId" | "imageUrl" | "description" | "sortOrder",
-  string
->;
 
 export interface FeaturedStationFormResult {
   /** Set when the page should redirect (form saved). */
@@ -31,13 +24,6 @@ export interface FeaturedStationFormResult {
   formError: string;
 }
 
-/* ========================================
-   Form
-======================================== */
-
-function emptyErrors(): FeaturedStationFormErrors {
-  return { stationId: "", imageUrl: "", description: "", sortOrder: "" };
-}
 
 function readFeaturedStationForm(formData: FormData): FeaturedStationFormValues {
   return {
@@ -49,50 +35,6 @@ function readFeaturedStationForm(formData: FormData): FeaturedStationFormValues 
   };
 }
 
-export function validateFeaturedStationForm(
-  values: FeaturedStationFormValues,
-): FeaturedStationFormErrors {
-  const { stationId, imageUrl, description, sortOrder } = values;
-  const errors = emptyErrors();
-
-  const stationNumber = stationId === "" ? null : Number(stationId);
-
-  if (
-    stationNumber === null ||
-    !Number.isInteger(stationNumber) ||
-    stationNumber <= 0
-  ) {
-    errors.stationId = "Please select a station.";
-  }
-
-  if (!imageUrl) {
-    errors.imageUrl = "Image URL is required.";
-  } else if (imageUrl.length > 2000) {
-    errors.imageUrl = "Image URL must be 2000 characters or less.";
-  } else {
-    try {
-      const parsedUrl = new URL(imageUrl);
-
-      if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-        errors.imageUrl = "Image URL must use http or https.";
-      }
-    } catch {
-      errors.imageUrl = "Please enter a valid image URL.";
-    }
-  }
-
-  if (description.length > 200) {
-    errors.description = "Description must be 200 characters or less.";
-  }
-
-  const sortNumber = sortOrder === "" ? null : Number(sortOrder);
-
-  if (sortNumber === null || !Number.isInteger(sortNumber) || sortNumber < 0) {
-    errors.sortOrder = "Sort order must be a non-negative number.";
-  }
-
-  return errors;
-}
 
 async function submitFeaturedStationForm(
   request: Request,
@@ -146,7 +88,7 @@ export async function handleFeaturedStationCreate(
       sortOrder: "0",
       isActive: true,
     },
-    errors: emptyErrors(),
+    errors: emptyFeaturedStationErrors(),
     formError: "",
   };
 
@@ -175,7 +117,7 @@ export async function handleFeaturedStationUpdate(
       sortOrder: String(featuredStation.sort_order),
       isActive: featuredStation.is_active === 1,
     },
-    errors: emptyErrors(),
+    errors: emptyFeaturedStationErrors(),
     formError: "",
   };
 

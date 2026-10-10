@@ -145,7 +145,6 @@ export function initializeFacilityPicker(): void {
   function addFacilityToTable(
     facilityId: number,
     facilityName: string,
-    facilitySlug: string,
   ): void {
     if (
       !(facilityBody instanceof HTMLElement) ||
@@ -311,13 +310,12 @@ export function initializeFacilityPicker(): void {
 
       const facilityName = checkbox.dataset.facilityName ?? "";
 
-      const facilitySlug = checkbox.dataset.facilitySlug ?? "";
 
       if (!Number.isInteger(facilityId) || facilityId <= 0) {
         return;
       }
 
-      addFacilityToTable(facilityId, facilityName, facilitySlug);
+      addFacilityToTable(facilityId, facilityName);
     });
 
     /*

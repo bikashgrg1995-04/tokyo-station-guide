@@ -119,42 +119,6 @@ export interface PaginatedStations {
   perPage: number;
 }
 
-/* ========================================
-   Station Detail Field Helpers
-======================================== */
-
-function splitLines(text: string): string[] {
-  return text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-export function validateLineList(
-  text: string,
-  label: string,
-  maxItems = 20,
-  maxLength = 60,
-): string {
-  const items = splitLines(text);
-
-  if (items.length > maxItems) {
-    return `${label} can have at most ${maxItems} items.`;
-  }
-
-  if (items.some((item) => item.length > maxLength)) {
-    return `Each ${label.toLowerCase()} item must be ${maxLength} characters or less.`;
-  }
-
-  return "";
-}
-
-export function linesToJson(text: string): string | null {
-  const items = splitLines(text);
-
-  return items.length ? JSON.stringify(items) : null;
-}
-
 
 /* ========================================
    Internal Relation Helpers
