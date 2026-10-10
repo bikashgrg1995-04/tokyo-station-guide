@@ -250,111 +250,13 @@
 
 /* ========================================
    Table Toolbar
-======================================== */
-
-.admin-list-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
-}
-
-.admin-search-form {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-/* ========================================
+======================================== *//* ========================================
    Table Panel
-======================================== */
-
-.admin-table-panel-body {
-  padding: 0;
-}
-
-/* ========================================
+======================================== *//* ========================================
    Table Meta
-======================================== */
-
-.admin-table-meta {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  min-height: 48px;
-  padding: 0 22px;
-  color: var(--admin-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.admin-table-meta span {
-  white-space: nowrap;
-}
-
-/* ========================================
+======================================== *//* ========================================
    Table Footer
-======================================== */
-
-.admin-table-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 58px;
-  padding: 0 22px;
-  border-top: 1px solid var(--admin-border);
-  color: var(--admin-muted);
-  font-size: 12px;
-}
-
-.admin-table-pagination {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.admin-pagination-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: 1px solid var(--admin-border);
-  border-radius: 7px;
-  background: var(--admin-surface);
-  color: #667085;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-}
-
-.admin-pagination-button:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: var(--admin-text);
-}
-
-.admin-pagination-button.active {
-  border-color: var(--admin-primary);
-  background: var(--admin-primary);
-  color: #ffffff;
-}
-
-.admin-pagination-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-/* ========================================
+======================================== *//* ========================================
    Empty State
 ======================================== */
 
@@ -381,17 +283,7 @@
    Responsive
 ======================================== */
 
-@media (max-width: 760px) {
-  .admin-list-toolbar {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .admin-search-form {
-    width: 100%;
-  }
-
-  .admin-list-toolbar .admin-primary-button {
+@media (max-width: 760px) {.admin-list-toolbar .admin-primary-button {
     width: 100%;
   }
 
@@ -420,22 +312,10 @@
   .admin-table-actions {
     justify-content: flex-start;
     flex-wrap: nowrap;
-  }
+  }}
 
-  .admin-table-meta {
-    justify-content: flex-start;
-    min-height: 44px;
-    padding: 0 16px;
-  }
-
-  .admin-table-footer {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-    padding: 14px 16px;
-  }
-
-  .admin-table-pagination {
-    align-self: flex-end;
-  }
+/* Toolbar variant: action button pushed to the far right (line stations page). */
+.admin-list-toolbar--spread {
+  justify-content: space-between;
+  gap: 16px;
 }

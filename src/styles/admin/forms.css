@@ -129,19 +129,7 @@
 .admin-form-group.has-error textarea,
 .admin-form-group.has-error select {
   border-color: var(--admin-danger-hover);
-}
-
-.admin-form-error {
-  display: block;
-
-  margin-top: 6px;
-
-  color: var(--admin-danger-hover);
-
-  font-size: 11px;
-}
-
-/* ========================================
+}/* ========================================
    Checkbox
 ======================================== */
 

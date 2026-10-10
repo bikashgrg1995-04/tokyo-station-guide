@@ -7,7 +7,7 @@ export interface Props {
 
 const { transitData, searchable, featuredStations } = Astro.props;
 
-/** JSON for a <script> tag: "<" is escaped so data can never contain "</script>". */
+/** JSON for an inline script block: "<" is escaped so the data can never close the block early. */
 const toJson = (value: unknown) =>
   JSON.stringify(value).replace(/</g, "\\u003c");
 ---
