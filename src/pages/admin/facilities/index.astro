@@ -1,0 +1,217 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import "../../../styles/admin/tables.css";
+import "../../../styles/admin/operators.css";
+
+import EmptyState from "../../../components/common/EmptyState.astro";
+import Button from "../../../components/common/Button.astro";
+import SearchInput from "../../../components/common/SearchInput.astro";
+import ConfirmDialog from "../../../components/common/ConfirmDialog.astro";
+import Pagination from "../../../components/common/Pagination.astro";
+
+import { loadFacilityList } from "../../../lib/services/facilities";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+const {
+  facilities,
+  totalItems,
+  currentPage: safeCurrentPage,
+  totalPages,
+  perPage,
+  searchParam,
+  paginationUrl,
+} = await loadFacilityList(env.DB, Astro.url);
+
+const deleteError = Astro.url.searchParams.get("error");
+---
+
+<AdminLayout title="Facilities" activePath="/admin/facilities">
+  <div class="admin-content">
+    <!-- Page Header -->
+    <div class="admin-page-header">
+      <div>
+        <h2>Facilities</h2>
+
+        <p>
+          Manage the facilities available across stations in the
+          Tokyo Station Guide. These facilities can be assigned to
+          stations and displayed with station information.
+        </p>
+      </div>
+    </div>
+
+    <!-- Delete Error -->
+    {
+      deleteError === "assigned" ? (
+        <div class="admin-form-error" role="alert">
+          This facility is assigned to one or more stations.
+          Remove its station assignments before deleting it.
+        </div>
+      ) : deleteError === "delete" ? (
+        <div class="admin-form-error" role="alert">
+          Unable to delete this facility. Please try again.
+        </div>
+      ) : null
+    }
+
+    <!-- Search / Action Bar -->
+    <div class="admin-list-toolbar">
+      <form
+        id="facility-search-form"
+        class="admin-search-form"
+        method="GET"
+        action="/admin/facilities"
+        role="search"
+      >
+        <SearchInput
+          id="facility-search"
+          name="search"
+          value={searchParam}
+          placeholder="Search facilities..."
+          ariaLabel="Search facilities"
+        />
+      </form>
+
+      <Button href="/admin/facilities/new" variant="primary">
+        + Add Facility
+      </Button>
+    </div>
+
+    <!-- Facilities Table -->
+    <section class="admin-panel">
+      <div
+        id="facilities-table-content"
+        class="admin-panel-body admin-table-panel-body"
+      >
+        <!-- Table Meta -->
+        <div class="admin-table-meta">
+          <span>{totalItems} • Total Facilities</span>
+        </div>
+
+        {
+          facilities.length > 0 ? (
+            <>
+              <!-- Table -->
+              <div class="admin-table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Facility</th>
+                      <th>Slug</th>
+                      <th>Icon</th>
+                      <th>Sort Order</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {facilities.map((facility) => (
+                      <tr>
+                        <td class="admin-table-id">
+                          {facility.id}
+                        </td>
+
+                        <td>
+                          <div class="admin-operator-name">
+                            {facility.name}
+                          </div>
+                        </td>
+
+                        <td class="admin-table-code">
+                          {facility.slug}
+                        </td>
+
+                        <td>
+                          {facility.icon ? (
+                            <span>{facility.icon}</span>
+                          ) : (
+                            <span class="admin-table-muted">—</span>
+                          )}
+                        </td>
+
+                        <td>{facility.sort_order}</td>
+
+                        <td>
+                          <div class="admin-table-actions">
+                            <a
+                              href={`/admin/facilities/${facility.id}/edit`}
+                              class="admin-table-action admin-table-action-edit"
+                            >
+                              Edit
+                            </a>
+
+                            <button
+                              type="button"
+                              class="admin-table-action admin-table-action-delete js-delete-facility"
+                              data-facility-id={facility.id}
+                              data-facility-name={facility.name}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Table Footer -->
+              <div class="admin-table-footer">
+                <span>
+                  {`Page ${safeCurrentPage} of ${totalPages}`}
+                </span>
+
+                <Pagination
+                  currentPage={safeCurrentPage}
+                  totalPages={totalPages}
+                  baseUrl={`${paginationUrl.pathname}${paginationUrl.search}`}
+                  totalItems={totalItems}
+                  perPage={perPage}
+                />
+              </div>
+            </>
+          ) : (
+            <EmptyState
+              icon="◉"
+              title={searchParam ? "No facilities found" : "No facilities yet"}
+              description={
+                searchParam
+                  ? "Try a different search term."
+                  : "Add your first station facility to get started."
+              }
+            />
+          )
+        }
+      </div>
+    </section>
+  </div>
+
+  <Fragment slot="after">
+    <!-- Delete Confirmation Dialog -->
+    <ConfirmDialog
+      id="delete-facility-dialog"
+      title="Delete Facility"
+      description="Are you sure you want to delete this facility?"
+      confirmText="Delete Facility"
+      cancelText="Cancel"
+      variant="danger"
+      warning="A facility assigned to a station cannot be deleted."
+    />
+
+    <!-- Delete Form -->
+    <form
+      method="POST"
+      id="delete-facility-form"
+      hidden
+    ></form>
+
+    <script>
+      import "../../../scripts/admin/facilities-list.ts";
+    </script>
+  </Fragment>
+</AdminLayout>

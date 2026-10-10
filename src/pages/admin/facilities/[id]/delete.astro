@@ -1,0 +1,11 @@
+---
+import { handleFacilityDelete } from "../../../../lib/services/facilities";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+return Astro.redirect(
+  await handleFacilityDelete(Astro.request, env.DB, Astro.params.id),
+);
+---

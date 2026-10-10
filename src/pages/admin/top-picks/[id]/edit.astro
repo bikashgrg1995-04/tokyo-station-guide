@@ -1,0 +1,349 @@
+
+---
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import "../../../../styles/admin/forms.css";
+import "../../../../styles/admin/operators.css";
+
+import EmptyState from "../../../../components/common/EmptyState.astro";
+import Alert from "../../../../components/common/Alert.astro";
+import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
+import Button from "../../../../components/common/Button.astro";
+import ConfirmDialog from "../../../../components/common/ConfirmDialog.astro";
+
+import { getTopPickById, TOP_PICK_CATEGORIES } from "../../../../lib/db/top-picks";
+import { handleTopPickUpdate } from "../../../../lib/services/top-picks";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+const db = env.DB;
+
+const id = Number(Astro.params.id);
+
+if (!Number.isInteger(id) || id <= 0) {
+  return Astro.redirect("/admin/top-picks");
+}
+
+const topPick = await getTopPickById(db, id);
+
+if (!topPick) {
+  Astro.response.status = 404;
+}
+
+const form = await handleTopPickUpdate(Astro.request, db, id, topPick);
+
+if (form.redirectTo) {
+  return Astro.redirect(form.redirectTo);
+}
+
+const {
+  name,
+  nameJapanese,
+  slug,
+  category,
+  description,
+  imageUrl,
+} = form.values;
+
+const { errors, formError } = form;
+
+const admin = await Astro.session?.get<{
+  id: number;
+  email: string;
+  name: string;
+}>("admin");
+---
+
+<AdminLayout title="Edit Top Pick" activePath="/admin/top-picks">
+  <!-- Topbar -->
+  <header class="admin-topbar">
+    <Breadcrumbs
+      backHref="/admin/top-picks"
+      parentLabel="Top Picks"
+      current="Edit Top Pick"
+    />
+
+    <div class="admin-user">
+      <div class="admin-avatar">
+        {
+          admin?.name
+            ? admin.name
+                .split(" ")
+                .map((part) => part.charAt(0))
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()
+            : "AD"
+        }
+      </div>
+
+      <div class="admin-user-info">
+        <strong>{admin?.name ?? "Administrator"}</strong>
+        <span>Tokyo Station Guide</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <div class="admin-content">
+    {
+      topPick ? (
+        <>
+          <!-- Page Header -->
+          <div class="admin-page-header">
+            <div>
+              <h2>Edit Top Pick</h2>
+
+              <p>
+                Update the featured place information used throughout
+                the Tokyo Station Guide.
+              </p>
+            </div>
+          </div>
+
+          <!-- Form Panel -->
+          <section class="admin-panel">
+            <div class="admin-panel-body">
+              <div class="admin-operator-form">
+                <!-- Form Header -->
+                <div class="admin-operator-form-header">
+                  <h2>Top Pick Details</h2>
+
+                  <p>Update the information for this featured place.</p>
+                </div>
+
+                <!-- General Error -->
+                {formError && <Alert>{formError}</Alert>}
+
+                <!-- Top Pick Form -->
+                <form
+                  method="POST"
+                  class="admin-form"
+                  id="edit-top-pick-form"
+                >
+                  <!-- Name -->
+                  <div class="admin-form-group">
+                    <label for="name">Name</label>
+
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      required
+                      maxlength="150"
+                      value={name}
+                      aria-invalid={errors.name ? "true" : "false"}
+                      aria-describedby={errors.name ? "name-error" : undefined}
+                    />
+
+                    {errors.name && (
+                      <small id="name-error" class="admin-form-error">
+                        {errors.name}
+                      </small>
+                    )}
+                  </div>
+
+                  <!-- Japanese Name -->
+                  <div class="admin-form-group">
+                    <label for="name_japanese">Japanese Name</label>
+
+                    <input
+                      id="name_japanese"
+                      name="name_japanese"
+                      type="text"
+                      maxlength="150"
+                      value={nameJapanese}
+                      placeholder="東京タワー"
+                      aria-invalid={errors.nameJapanese ? "true" : "false"}
+                      aria-describedby={
+                        errors.nameJapanese ? "name-japanese-error" : undefined
+                      }
+                    />
+
+                    {errors.nameJapanese && (
+                      <small id="name-japanese-error" class="admin-form-error">
+                        {errors.nameJapanese}
+                      </small>
+                    )}
+                  </div>
+
+                  <!-- Slug -->
+                  <div class="admin-form-group">
+                    <label for="slug">Slug</label>
+
+                    <input
+                      id="slug"
+                      name="slug"
+                      type="text"
+                      required
+                      maxlength="150"
+                      value={slug}
+                      aria-invalid={errors.slug ? "true" : "false"}
+                      aria-describedby={errors.slug ? "slug-error" : undefined}
+                    />
+
+                    {errors.slug ? (
+                      <small id="slug-error" class="admin-form-error">
+                        {errors.slug}
+                      </small>
+                    ) : (
+                      <small>
+                        Use lowercase letters, numbers and hyphens.
+                      </small>
+                    )}
+                  </div>
+
+                  <!-- Category -->
+                  <div class="admin-form-group">
+                    <label for="category">Category</label>
+
+                    <select
+                      id="category"
+                      name="category"
+                      required
+                      value={category}
+                      aria-invalid={errors.category ? "true" : "false"}
+                      aria-describedby={
+                        errors.category ? "category-error" : undefined
+                      }
+                    >
+                      {TOP_PICK_CATEGORIES.map((item) => (
+                        <option value={item} selected={category === item}>
+                          {item.charAt(0).toUpperCase() + item.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+
+                    {errors.category && (
+                      <small id="category-error" class="admin-form-error">
+                        {errors.category}
+                      </small>
+                    )}
+                  </div>
+
+                  <!-- Description -->
+                  <div class="admin-form-group">
+                    <label for="description">Description</label>
+
+                    <textarea
+                      id="description"
+                      name="description"
+                      rows="5"
+                      maxlength="2000"
+                      placeholder="A famous Tokyo landmark..."
+                      aria-invalid={errors.description ? "true" : "false"}
+                      aria-describedby={
+                        errors.description ? "description-error" : undefined
+                      }
+                    >{description}</textarea>
+
+                    {errors.description ? (
+                      <small id="description-error" class="admin-form-error">
+                        {errors.description}
+                      </small>
+                    ) : (
+                      <small>Optional. Maximum 2000 characters.</small>
+                    )}
+                  </div>
+
+                  <!-- Image URL -->
+                  <div class="admin-form-group">
+                    <label for="image_url">Image URL</label>
+
+                    <input
+                      id="image_url"
+                      name="image_url"
+                      type="url"
+                      maxlength="2048"
+                      value={imageUrl}
+                      placeholder="https://example.com/tokyo-tower.jpg"
+                      aria-invalid={errors.imageUrl ? "true" : "false"}
+                      aria-describedby={
+                        errors.imageUrl ? "image-url-error" : undefined
+                      }
+                    />
+
+                    {errors.imageUrl ? (
+                      <small id="image-url-error" class="admin-form-error">
+                        {errors.imageUrl}
+                      </small>
+                    ) : (
+                      <small>
+                        Optional. Provide an HTTP or HTTPS image URL.
+                      </small>
+                    )}
+                  </div>
+
+                  <!-- Actions -->
+                  <div class="admin-form-actions">
+                    <Button href="/admin/top-picks" variant="secondary">
+                      Cancel
+                    </Button>
+
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      id="save-top-pick-button"
+                    >
+                      Save Changes
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+          <!-- Not Found Header -->
+          <div class="admin-page-header">
+            <div>
+              <h2>Edit Top Pick</h2>
+              <p>The requested top pick could not be found.</p>
+            </div>
+
+            <Button href="/admin/top-picks" variant="secondary">
+              ← Back to Top Picks
+            </Button>
+          </div>
+
+          <!-- Not Found Panel -->
+          <section class="admin-panel">
+            <div class="admin-panel-body">
+              <EmptyState
+                icon="⚠"
+                title="Top Pick Not Found"
+                description="The requested top pick does not exist or may have been removed."
+              >
+                <div class="admin-form-actions admin-not-found-actions">
+                  <Button href="/admin/top-picks" variant="secondary">
+                    Back to Top Picks
+                  </Button>
+                </div>
+              </EmptyState>
+            </div>
+          </section>
+        </>
+      )
+    }
+  </div>
+
+  <Fragment slot="after">
+    {
+      topPick && (
+        <ConfirmDialog
+          id="save-top-pick-dialog"
+          title="Save Changes"
+          description="Are you sure you want to save these changes to this top pick?"
+          confirmText="Save Changes"
+          cancelText="Cancel"
+          variant="primary"
+        />
+      )
+    }
+
+    <script>
+      import "../../../../scripts/admin/top-picks-edit.ts";
+    </script>
+  </Fragment>
+</AdminLayout>

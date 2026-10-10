@@ -1,0 +1,187 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import "../../../styles/admin/forms.css";
+import "../../../styles/admin/operators.css";
+
+import Alert from "../../../components/common/Alert.astro";
+import Breadcrumbs from "../../../components/common/Breadcrumbs.astro";
+import Button from "../../../components/common/Button.astro";
+
+import { handleFacilityCreate } from "../../../lib/services/facilities";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+const form = await handleFacilityCreate(Astro.request, env.DB);
+
+if (form.redirectTo) {
+  return Astro.redirect(form.redirectTo);
+}
+
+const { name, slug, icon, sortOrder } = form.values;
+const { errors, formError } = form;
+---
+
+<AdminLayout title="Add Facility" activePath="/admin/facilities">
+  <!-- Topbar -->
+  <header class="admin-topbar">
+    <Breadcrumbs
+      backHref="/admin/facilities"
+      parentLabel="Facilities"
+      current="Add Facility"
+    />
+  </header>
+
+  <!-- Content -->
+  <div class="admin-content">
+    <!-- Page Header -->
+    <div class="admin-page-header">
+      <div>
+        <h2>Add Facility</h2>
+
+        <p>
+          Create a facility that can be assigned to stations throughout
+          the Tokyo Station Guide.
+        </p>
+      </div>
+    </div>
+
+    <!-- Form Panel -->
+    <section class="admin-panel">
+      <div class="admin-panel-body">
+        <div class="admin-operator-form">
+          <!-- Form Header -->
+          <div class="admin-operator-form-header">
+            <h2>Facility Details</h2>
+
+            <p>Enter the basic information for this station facility.</p>
+          </div>
+
+          <!-- General Error -->
+          {formError && <Alert>{formError}</Alert>}
+
+          <!-- Facility Form -->
+          <form method="POST" class="admin-form">
+            <!-- Name -->
+            <div class="admin-form-group">
+              <label for="name">Name</label>
+
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                maxlength="150"
+                value={name}
+                placeholder="Restroom"
+                aria-invalid={errors.name ? "true" : "false"}
+                aria-describedby={errors.name ? "name-error" : undefined}
+              />
+
+              {errors.name && (
+                <small id="name-error" class="admin-form-error">
+                  {errors.name}
+                </small>
+              )}
+            </div>
+
+            <!-- Slug -->
+            <div class="admin-form-group">
+              <label for="slug">Slug</label>
+
+              <input
+                id="slug"
+                name="slug"
+                type="text"
+                required
+                maxlength="150"
+                value={slug}
+                placeholder="restroom"
+                aria-invalid={errors.slug ? "true" : "false"}
+                aria-describedby={errors.slug ? "slug-error" : undefined}
+              />
+
+              {errors.slug ? (
+                <small id="slug-error" class="admin-form-error">
+                  {errors.slug}
+                </small>
+              ) : (
+                <small>
+                  Use lowercase letters, numbers and hyphens.
+                </small>
+              )}
+            </div>
+
+            <!-- Icon -->
+            <div class="admin-form-group">
+              <label for="icon">Icon</label>
+
+              <input
+                id="icon"
+                name="icon"
+                type="text"
+                maxlength="100"
+                value={icon}
+                placeholder="🚻"
+                aria-invalid={errors.icon ? "true" : "false"}
+                aria-describedby={errors.icon ? "icon-error" : undefined}
+              />
+
+              {errors.icon ? (
+                <small id="icon-error" class="admin-form-error">
+                  {errors.icon}
+                </small>
+              ) : (
+                <small>
+                  Optional. Enter an emoji or icon identifier used by the
+                  website.
+                </small>
+              )}
+            </div>
+
+            <!-- Sort Order -->
+            <div class="admin-form-group">
+              <label for="sort_order">Sort Order</label>
+
+              <input
+                id="sort_order"
+                name="sort_order"
+                type="number"
+                required
+                min="0"
+                step="1"
+                value={sortOrder}
+                aria-invalid={errors.sortOrder ? "true" : "false"}
+                aria-describedby={
+                  errors.sortOrder ? "sort-order-error" : undefined
+                }
+              />
+
+              {errors.sortOrder ? (
+                <small id="sort-order-error" class="admin-form-error">
+                  {errors.sortOrder}
+                </small>
+              ) : (
+                <small>
+                  Lower numbers appear first. Use 0 for the highest priority.
+                </small>
+              )}
+            </div>
+
+            <!-- Actions -->
+            <div class="admin-form-actions">
+              <Button href="/admin/facilities" variant="secondary">
+                Cancel
+              </Button>
+
+              <Button type="submit" variant="primary">
+                Create Facility
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </div>
+</AdminLayout>

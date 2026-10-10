@@ -12,7 +12,6 @@ const { env } = await import("cloudflare:workers");
 
 const db = env.DB;
 
-
 const operatorCount = await db
   .prepare("SELECT COUNT(*) AS count FROM operators")
   .first<{ count: number }>();
@@ -25,123 +24,166 @@ const stationCount = await db
   .prepare("SELECT COUNT(*) AS count FROM stations")
   .first<{ count: number }>();
 
+const facilityCount = await db
+  .prepare("SELECT COUNT(*) AS count FROM facilities")
+  .first<{ count: number }>();
+
+const topPickCount = await db
+  .prepare("SELECT COUNT(*) AS count FROM top_picks")
+  .first<{ count: number }>();
+
 const lineStationCount = await db
   .prepare("SELECT COUNT(*) AS count FROM line_stations")
   .first<{ count: number }>();
 ---
 
 <AdminLayout title={title} activePath="/admin">
-      
-        <!-- Content -->
-        <div class="admin-content">
-          <!-- Page Header -->
-          <div class="admin-page-header">
-            <div>
-              <h2>Dashboard</h2>
+  <!-- Content -->
+  <div class="admin-content">
+    <!-- Page Header -->
+    <div class="admin-page-header">
+      <div>
+        <h2>Dashboard</h2>
 
-              <p>Manage stations, railway lines and operators.</p>
-            </div>
+        <p>Manage stations, railway lines and operators.</p>
+      </div>
+    </div>
 
+    <!-- Stats -->
+    <section class="admin-stats">
+      <div class="admin-stat-card">
+        <span class="admin-stat-label"> Operators </span>
+
+        <strong class="admin-stat-value">
+          {operatorCount?.count ?? 0}
+        </strong>
+      </div>
+
+      <div class="admin-stat-card">
+        <span class="admin-stat-label"> Railway Lines </span>
+
+        <strong class="admin-stat-value">
+          {lineCount?.count ?? 0}
+        </strong>
+      </div>
+
+      <div class="admin-stat-card">
+        <span class="admin-stat-label"> Stations </span>
+
+        <strong class="admin-stat-value">
+          {stationCount?.count ?? 0}
+        </strong>
+      </div>
+
+      <div class="admin-stat-card">
+        <span class="admin-stat-label">Facilities</span>
+
+        <strong class="admin-stat-value">
+          {facilityCount?.count ?? 0}
+        </strong>
+      </div>
+
+      <div class="admin-stat-card">
+        <span class="admin-stat-label">Top Picks</span>
+
+        <strong class="admin-stat-value">
+          {topPickCount?.count ?? 0}
+        </strong>
+      </div>
+
+      <div class="admin-stat-card">
+        <span class="admin-stat-label"> Line Connections </span>
+
+        <strong class="admin-stat-value">
+          {lineStationCount?.count ?? 0}
+        </strong>
+      </div>
+    </section>
+
+    <!-- Dashboard Panels -->
+    <section class="admin-dashboard-grid">
+      <!-- Quick Actions -->
+      <div class="admin-panel">
+        <div class="admin-panel-header">
+          <div>
+            <h3>Quick Actions</h3>
+
+            <p>Manage your station guide content.</p>
           </div>
-
-          <!-- Stats -->
-          <section class="admin-stats">
-            <div class="admin-stat-card">
-              <span class="admin-stat-label"> Operators </span>
-
-              <strong class="admin-stat-value">
-                {operatorCount?.count ?? 0}
-              </strong>
-            </div>
-
-            <div class="admin-stat-card">
-              <span class="admin-stat-label"> Railway Lines </span>
-
-              <strong class="admin-stat-value">
-                {lineCount?.count ?? 0}
-              </strong>
-            </div>
-
-            <div class="admin-stat-card">
-              <span class="admin-stat-label"> Stations </span>
-
-              <strong class="admin-stat-value">
-                {stationCount?.count ?? 0}
-              </strong>
-            </div>
-
-            <div class="admin-stat-card">
-              <span class="admin-stat-label"> Line Connections </span>
-
-              <strong class="admin-stat-value">
-                {lineStationCount?.count ?? 0}
-              </strong>
-            </div>
-          </section>
-
-          <!-- Dashboard Panels -->
-          <section class="admin-dashboard-grid">
-            <!-- Quick Actions -->
-            <div class="admin-panel">
-              <div class="admin-panel-header">
-                <div>
-                  <h3>Quick Actions</h3>
-
-                  <p>Manage your station guide content.</p>
-                </div>
-              </div>
-
-              <div class="admin-panel-body">
-                <div class="admin-quick-actions">
-                  <Button href="/admin/stations/new" variant="primary">
-                    + Add Station
-                  </Button>
-
-                  <Button href="/admin/lines/new" variant="secondary">
-                    + Add Line
-                  </Button>
-
-                  <Button href="/admin/operators/new" variant="secondary">
-                    + Add Operator
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Content Management -->
-            <div class="admin-panel">
-              <div class="admin-panel-header">
-                <div>
-                  <h3>Content Management</h3>
-
-                  <p>Manage the core railway data.</p>
-                </div>
-              </div>
-
-              <div class="admin-panel-body">
-                <div class="admin-dashboard-links">
-                  <a href="/admin/stations">
-                    <strong> Stations </strong>
-
-                    <span>
-                      Manage station information, coordinates and descriptions.
-                    </span>
-                  </a>
-
-                  <a href="/admin/lines">
-                    <strong> Railway Lines </strong>
-
-                    <span> Manage railway lines and their station order. </span>
-                  </a>
-
-                  <a href="/admin/operators">
-                    <strong> Operators </strong>
-
-                    <span> Manage railway operators and websites. </span>
-                  </a>
-                </div>
-              </div>
-            </div>
-          </section>
         </div>
+
+        <div class="admin-panel-body">
+          <div class="admin-quick-actions">
+            <Button href="/admin/stations/new" variant="primary">
+              + Add Station
+            </Button>
+
+            <Button href="/admin/lines/new" variant="secondary">
+              + Add Line
+            </Button>
+
+            <Button href="/admin/operators/new" variant="secondary">
+              + Add Operator
+            </Button>
+
+            <Button href="/admin/facilities/new" variant="secondary">
+              + Add Facility
+            </Button>
+
+            <Button href="/admin/top-picks/new" variant="secondary">
+              + Add Top Pick
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Management -->
+      <div class="admin-panel">
+        <div class="admin-panel-header">
+          <div>
+            <h3>Content Management</h3>
+
+            <p>Manage the core railway data.</p>
+          </div>
+        </div>
+
+        <div class="admin-panel-body">
+          <div class="admin-dashboard-links">
+            <a href="/admin/stations">
+              <strong> Stations </strong>
+
+              <span>
+                Manage station information, coordinates and descriptions.
+              </span>
+            </a>
+
+            <a href="/admin/lines">
+              <strong> Railway Lines </strong>
+
+              <span> Manage railway lines and their station order. </span>
+            </a>
+
+            <a href="/admin/operators">
+              <strong> Operators </strong>
+
+              <span> Manage railway operators and websites. </span>
+            </a>
+            <a href="/admin/facilities">
+              <strong>Facilities</strong>
+
+              <span> Manage station facilities, icons and display order. </span>
+            </a>
+
+            <a href="/admin/top-picks">
+              <strong>Top Picks</strong>
+
+              <span
+                >Manage featured places, food, shopping and attractions.</span
+              >
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
 </AdminLayout>

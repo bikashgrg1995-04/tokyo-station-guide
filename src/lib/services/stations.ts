@@ -19,12 +19,7 @@ import {
   type StationTopPick,
   type TopPick,
 } from "../db/top-picks";
-import {
-  hasErrors,
-  paginationUrlFor,
-  readListQuery,
-  readText,
-} from "./common";
+import { hasErrors, paginationUrlFor, readListQuery, readText } from "./common";
 
 import {
   type StationFormValues,
@@ -36,7 +31,6 @@ import {
 
 const LIST_PATH = "/admin/stations";
 const PER_PAGE = 10;
-
 
 interface StationFormBase {
   /** Set when the page should redirect (form saved). */
@@ -57,7 +51,6 @@ export interface StationEditResult extends StationFormBase {
   stationTopPicks: StationTopPick[];
   availableTopPicks: TopPick[];
 }
-
 
 function readIds(formData: FormData, key: string): number[] {
   return [
@@ -87,7 +80,6 @@ function readStationForm(formData: FormData) {
     topPickIds: readIds(formData, "top_pick_ids"),
   };
 }
-
 
 /** Field errors + "selected facility / top pick does not exist" errors. */
 function validateStationSelections(
@@ -271,7 +263,12 @@ export async function handleStationUpdate(
   result.stationFacilities = facilityIds
     .map((facilityId) => allFacilities.find((item) => item.id === facilityId))
     .filter((item): item is Facility => Boolean(item))
-    .map((item) => ({ ...item, note: null }));
+    .map((item) => ({
+      ...item,
+      facility_count: null,
+      floor: null,
+      note: null,
+    }));
 
   result.availableFacilities = allFacilities.filter(
     (item) => !facilityIds.includes(item.id),

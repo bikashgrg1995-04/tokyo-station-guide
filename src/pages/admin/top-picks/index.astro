@@ -1,0 +1,234 @@
+
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import "../../../styles/admin/tables.css";
+import "../../../styles/admin/operators.css";
+
+import EmptyState from "../../../components/common/EmptyState.astro";
+import Button from "../../../components/common/Button.astro";
+import SearchInput from "../../../components/common/SearchInput.astro";
+import ConfirmDialog from "../../../components/common/ConfirmDialog.astro";
+import Pagination from "../../../components/common/Pagination.astro";
+
+import { loadTopPickList } from "../../../lib/services/top-picks";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+const {
+  topPicks,
+  totalItems,
+  currentPage: safeCurrentPage,
+  totalPages,
+  perPage,
+  searchParam,
+  paginationUrl,
+} = await loadTopPickList(env.DB, Astro.url);
+
+const deleteError = Astro.url.searchParams.get("error");
+---
+
+<AdminLayout title="Top Picks" activePath="/admin/top-picks">
+  <div class="admin-content">
+    <!-- Page Header -->
+    <div class="admin-page-header">
+      <div>
+        <h2>Top Picks</h2>
+
+        <p>
+          Manage popular places, landmarks, food spots, shopping areas,
+          museums, parks, and temples that can be featured on station pages.
+        </p>
+      </div>
+    </div>
+
+    <!-- Delete Error -->
+    {
+      deleteError === "assigned" ? (
+        <div class="admin-form-error" role="alert">
+          This top pick is assigned to one or more stations.
+          Remove its station assignments before deleting it.
+        </div>
+      ) : deleteError === "delete" ? (
+        <div class="admin-form-error" role="alert">
+          Unable to delete this top pick. Please try again.
+        </div>
+      ) : null
+    }
+
+    <!-- Search / Action Bar -->
+    <div class="admin-list-toolbar">
+      <form
+        id="top-pick-search-form"
+        class="admin-search-form"
+        method="GET"
+        action="/admin/top-picks"
+        role="search"
+      >
+        <SearchInput
+          id="top-pick-search"
+          name="search"
+          value={searchParam}
+          placeholder="Search top picks..."
+          ariaLabel="Search top picks"
+        />
+      </form>
+
+      <Button href="/admin/top-picks/new" variant="primary">
+        + Add Top Pick
+      </Button>
+    </div>
+
+    <!-- Top Picks Table -->
+    <section class="admin-panel">
+      <div
+        id="top-picks-table-content"
+        class="admin-panel-body admin-table-panel-body"
+      >
+        <!-- Table Meta -->
+        <div class="admin-table-meta">
+          <span>{totalItems} • Total Top Picks</span>
+        </div>
+
+        {
+          topPicks.length > 0 ? (
+            <>
+              <!-- Table -->
+              <div class="admin-table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Top Pick</th>
+                      <th>Japanese Name</th>
+                      <th>Slug</th>
+                      <th>Category</th>
+                      <th>Image</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {topPicks.map((topPick) => (
+                      <tr>
+                        <td class="admin-table-id">
+                          {topPick.id}
+                        </td>
+
+                        <td>
+                          <div class="admin-operator-name">
+                            {topPick.name}
+                          </div>
+                        </td>
+
+                        <td>
+                          {topPick.name_japanese ? (
+                            <span>{topPick.name_japanese}</span>
+                          ) : (
+                            <span class="admin-table-muted">—</span>
+                          )}
+                        </td>
+
+                        <td class="admin-table-code">
+                          {topPick.slug}
+                        </td>
+
+                        <td>
+                          {topPick.category}
+                        </td>
+
+                        <td>
+                          {topPick.image_url ? (
+                            <a
+                              href={topPick.image_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              View image
+                            </a>
+                          ) : (
+                            <span class="admin-table-muted">—</span>
+                          )}
+                        </td>
+
+                        <td>
+                          <div class="admin-table-actions">
+                            <a
+                              href={`/admin/top-picks/${topPick.id}/edit`}
+                              class="admin-table-action admin-table-action-edit"
+                            >
+                              Edit
+                            </a>
+
+                            <button
+                              type="button"
+                              class="admin-table-action admin-table-action-delete js-delete-top-pick"
+                              data-top-pick-id={topPick.id}
+                              data-top-pick-name={topPick.name}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Table Footer -->
+              <div class="admin-table-footer">
+                <span>
+                  {`Page ${safeCurrentPage} of ${totalPages}`}
+                </span>
+
+                <Pagination
+                  currentPage={safeCurrentPage}
+                  totalPages={totalPages}
+                  baseUrl={`${paginationUrl.pathname}${paginationUrl.search}`}
+                  totalItems={totalItems}
+                  perPage={perPage}
+                />
+              </div>
+            </>
+          ) : (
+            <EmptyState
+              icon="◉"
+              title={searchParam ? "No top picks found" : "No top picks yet"}
+              description={
+                searchParam
+                  ? "Try a different search term."
+                  : "Add your first top pick to get started."
+              }
+            />
+          )
+        }
+      </div>
+    </section>
+  </div>
+
+  <Fragment slot="after">
+    <!-- Delete Confirmation Dialog -->
+    <ConfirmDialog
+      id="delete-top-pick-dialog"
+      title="Delete Top Pick"
+      description="Are you sure you want to delete this top pick?"
+      confirmText="Delete Top Pick"
+      cancelText="Cancel"
+      variant="danger"
+      warning="A top pick assigned to a station cannot be deleted."
+    />
+
+    <!-- Delete Form -->
+    <form
+      method="POST"
+      id="delete-top-pick-form"
+      hidden
+    ></form>
+
+    <script>
+      import "../../../scripts/admin/top-picks-list.ts";
+    </script>
+  </Fragment>
+</AdminLayout>

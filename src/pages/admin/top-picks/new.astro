@@ -1,0 +1,242 @@
+
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import "../../../styles/admin/forms.css";
+import "../../../styles/admin/operators.css";
+
+import Alert from "../../../components/common/Alert.astro";
+import Breadcrumbs from "../../../components/common/Breadcrumbs.astro";
+import Button from "../../../components/common/Button.astro";
+
+import { handleTopPickCreate } from "../../../lib/services/top-picks";
+import { TOP_PICK_CATEGORIES } from "../../../lib/db/top-picks";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+const form = await handleTopPickCreate(Astro.request, env.DB);
+
+if (form.redirectTo) {
+  return Astro.redirect(form.redirectTo);
+}
+
+const {
+  name,
+  nameJapanese,
+  slug,
+  category,
+  description,
+  imageUrl,
+} = form.values;
+
+const { errors, formError } = form;
+---
+
+<AdminLayout title="Add Top Pick" activePath="/admin/top-picks">
+  <!-- Topbar -->
+  <header class="admin-topbar">
+    <Breadcrumbs
+      backHref="/admin/top-picks"
+      parentLabel="Top Picks"
+      current="Add Top Pick"
+    />
+  </header>
+
+  <!-- Content -->
+  <div class="admin-content">
+    <!-- Page Header -->
+    <div class="admin-page-header">
+      <div>
+        <h2>Add Top Pick</h2>
+
+        <p>
+          Create a popular place that can be featured on relevant
+          station pages throughout the Tokyo Station Guide.
+        </p>
+      </div>
+    </div>
+
+    <!-- Form Panel -->
+    <section class="admin-panel">
+      <div class="admin-panel-body">
+        <div class="admin-operator-form">
+          <!-- Form Header -->
+          <div class="admin-operator-form-header">
+            <h2>Top Pick Details</h2>
+
+            <p>Enter the information for this featured place.</p>
+          </div>
+
+          <!-- General Error -->
+          {formError && <Alert>{formError}</Alert>}
+
+          <!-- Top Pick Form -->
+          <form method="POST" class="admin-form">
+            <!-- Name -->
+            <div class="admin-form-group">
+              <label for="name">Name</label>
+
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                maxlength="150"
+                value={name}
+                placeholder="Tokyo Tower"
+                aria-invalid={errors.name ? "true" : "false"}
+                aria-describedby={errors.name ? "name-error" : undefined}
+              />
+
+              {errors.name && (
+                <small id="name-error" class="admin-form-error">
+                  {errors.name}
+                </small>
+              )}
+            </div>
+
+            <!-- Japanese Name -->
+            <div class="admin-form-group">
+              <label for="name_japanese">Japanese Name</label>
+
+              <input
+                id="name_japanese"
+                name="name_japanese"
+                type="text"
+                maxlength="150"
+                value={nameJapanese}
+                placeholder="東京タワー"
+                aria-invalid={errors.nameJapanese ? "true" : "false"}
+                aria-describedby={
+                  errors.nameJapanese ? "name-japanese-error" : undefined
+                }
+              />
+
+              {errors.nameJapanese && (
+                <small id="name-japanese-error" class="admin-form-error">
+                  {errors.nameJapanese}
+                </small>
+              )}
+            </div>
+
+            <!-- Slug -->
+            <div class="admin-form-group">
+              <label for="slug">Slug</label>
+
+              <input
+                id="slug"
+                name="slug"
+                type="text"
+                required
+                maxlength="150"
+                value={slug}
+                placeholder="tokyo-tower"
+                aria-invalid={errors.slug ? "true" : "false"}
+                aria-describedby={errors.slug ? "slug-error" : undefined}
+              />
+
+              {errors.slug ? (
+                <small id="slug-error" class="admin-form-error">
+                  {errors.slug}
+                </small>
+              ) : (
+                <small>
+                  Use lowercase letters, numbers and hyphens.
+                </small>
+              )}
+            </div>
+
+            <!-- Category -->
+            <div class="admin-form-group">
+              <label for="category">Category</label>
+
+              <select
+                id="category"
+                name="category"
+                required
+                value={category}
+                aria-invalid={errors.category ? "true" : "false"}
+                aria-describedby={errors.category ? "category-error" : undefined}
+              >
+                {TOP_PICK_CATEGORIES.map((item) => (
+                  <option value={item} selected={category === item}>
+                    {item.charAt(0).toUpperCase() + item.slice(1)}
+                  </option>
+                ))}
+              </select>
+
+              {errors.category && (
+                <small id="category-error" class="admin-form-error">
+                  {errors.category}
+                </small>
+              )}
+            </div>
+
+            <!-- Description -->
+            <div class="admin-form-group">
+              <label for="description">Description</label>
+
+              <textarea
+                id="description"
+                name="description"
+                rows="5"
+                maxlength="2000"
+                placeholder="A famous Tokyo landmark..."
+                aria-invalid={errors.description ? "true" : "false"}
+                aria-describedby={
+                  errors.description ? "description-error" : undefined
+                }
+              >{description}</textarea>
+
+              {errors.description ? (
+                <small id="description-error" class="admin-form-error">
+                  {errors.description}
+                </small>
+              ) : (
+                <small>Optional. Maximum 2000 characters.</small>
+              )}
+            </div>
+
+            <!-- Image URL -->
+            <div class="admin-form-group">
+              <label for="image_url">Image URL</label>
+
+              <input
+                id="image_url"
+                name="image_url"
+                type="url"
+                maxlength="2048"
+                value={imageUrl}
+                placeholder="https://example.com/tokyo-tower.jpg"
+                aria-invalid={errors.imageUrl ? "true" : "false"}
+                aria-describedby={errors.imageUrl ? "image-url-error" : undefined}
+              />
+
+              {errors.imageUrl ? (
+                <small id="image-url-error" class="admin-form-error">
+                  {errors.imageUrl}
+                </small>
+              ) : (
+                <small>
+                  Optional. Provide an HTTP or HTTPS image URL.
+                </small>
+              )}
+            </div>
+
+            <!-- Actions -->
+            <div class="admin-form-actions">
+              <Button href="/admin/top-picks" variant="secondary">
+                Cancel
+              </Button>
+
+              <Button type="submit" variant="primary">
+                Create Top Pick
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </div>
+</AdminLayout>

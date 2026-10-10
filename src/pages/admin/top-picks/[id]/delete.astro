@@ -1,0 +1,11 @@
+---
+import { handleTopPickDelete } from "../../../../lib/services/top-picks";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+return Astro.redirect(
+  await handleTopPickDelete(Astro.request, env.DB, Astro.params.id),
+);
+---
