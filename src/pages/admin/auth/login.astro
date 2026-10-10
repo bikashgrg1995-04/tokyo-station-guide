@@ -5,6 +5,12 @@ import "../../../styles/admin/shared.css";
 import "../../../styles/admin/auth.css";
 import "../../../styles/admin/forms.css";
 import { verifyPassword } from "../../../lib/auth/password";
+import {
+  clearFailedLogins,
+  clientIp,
+  isLoginBlocked,
+  recordFailedLogin,
+} from "../../../lib/auth/login-throttle";
 import Button from "../../../components/common/Button.astro";
 
 export const prerender = false;
@@ -28,8 +34,13 @@ if (Astro.request.method === "POST") {
     const { env } = await import("cloudflare:workers");
 
     const db = env.DB;
+    const ip = clientIp(Astro.request);
 
-    const admin = await db
+    const blocked = await isLoginBlocked(db, email, ip);
+
+    const admin = blocked
+      ? null
+      : await db
       .prepare(
         `
           SELECT
@@ -52,14 +63,20 @@ if (Astro.request.method === "POST") {
         is_active: number;
       }>();
 
-    if (!admin || admin.is_active !== 1) {
+    if (blocked) {
+      error = "Too many failed attempts. Try again in 15 minutes.";
+    } else if (!admin || admin.is_active !== 1) {
+      await recordFailedLogin(db, email, ip);
       error = "Invalid email or password.";
     } else {
       const passwordValid = await verifyPassword(password, admin.password_hash);
 
       if (!passwordValid) {
+        await recordFailedLogin(db, email, ip);
         error = "Invalid email or password.";
       } else {
+        await clearFailedLogins(db, email);
+
         Astro.session?.set("admin", {
           id: admin.id,
           email: admin.email,

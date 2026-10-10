@@ -6,20 +6,24 @@ export interface Props {
 }
 
 const { transitData, searchable, featuredStations } = Astro.props;
+
+/** JSON for a <script> tag: "<" is escaped so data can never contain "</script>". */
+const toJson = (value: unknown) =>
+  JSON.stringify(value).replace(/</g, "\\u003c");
 ---
 
 <script
   type="application/json"
   id="transit-data"
-  set:html={JSON.stringify(transitData)}
+  set:html={toJson(transitData)}
 />
 <script
   type="application/json"
   id="search-data"
-  set:html={JSON.stringify(searchable)}
+  set:html={toJson(searchable)}
 />
 <script
   type="application/json"
   id="featured-stations-data"
-  set:html={JSON.stringify(featuredStations)}
+  set:html={toJson(featuredStations)}
 />

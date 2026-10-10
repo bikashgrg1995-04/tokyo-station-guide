@@ -28,3 +28,9 @@ db/seed/*.local.sql
 
 # jetbrains setting folder
 .idea/
+
+# production dumps, backups and client-specific Cloudflare config (never commit)
+db/seed/production-*.sql
+db/seed/*.backup
+wrangler.client*.jsonc
+*.backup
