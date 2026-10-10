@@ -1,0 +1,25 @@
+---
+export interface Props {
+  transitData: unknown;
+  searchable: unknown;
+  featuredStations: unknown;
+}
+
+const { transitData, searchable, featuredStations } = Astro.props;
+---
+
+<script
+  type="application/json"
+  id="transit-data"
+  set:html={JSON.stringify(transitData)}
+/>
+<script
+  type="application/json"
+  id="search-data"
+  set:html={JSON.stringify(searchable)}
+/>
+<script
+  type="application/json"
+  id="featured-stations-data"
+  set:html={JSON.stringify(featuredStations)}
+/>

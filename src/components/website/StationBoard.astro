@@ -1,0 +1,43 @@
+<section class="board" aria-live="polite">
+  <div class="board-card">
+    <button
+      class="line-pill"
+      id="line-toggle"
+      aria-expanded="false"
+      aria-haspopup="dialog"
+      aria-controls="lines-dialog"
+    >
+      <i class="dot"></i>
+      <span id="line-name">Select line</span>
+      <svg viewBox="0 0 24 24"
+        ><path d="M7 9l-3 3 3 3M17 9l3 3-3 3M4 12h16"></path></svg
+      >
+    </button>
+
+    <div class="board-row">
+      <button class="side prev" id="prev-btn">
+        <span class="arrow">←</span>
+        <span class="badge" id="prev-num"></span>
+        <span class="side-text">
+          <b id="prev-jp"></b>
+          <small id="prev-en"></small>
+        </span>
+      </button>
+
+      <div class="current">
+        <span class="code" id="cur-code"></span>
+        <strong id="cur-jp">—</strong>
+        <span class="cur-en" id="cur-en"></span>
+      </div>
+
+      <button class="side next" id="next-btn">
+        <span class="side-text">
+          <b id="next-jp"></b>
+          <small id="next-en"></small>
+        </span>
+        <span class="badge" id="next-num"></span>
+        <span class="arrow">→</span>
+      </button>
+    </div>
+  </div>
+</section>

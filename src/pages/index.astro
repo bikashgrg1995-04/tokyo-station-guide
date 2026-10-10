@@ -1,5 +1,12 @@
 ---
 import WebsiteLayout from "../layouts/WebsiteLayout.astro";
+import Topbar from "../components/website/Topbar.astro";
+import TransitMap from "../components/website/TransitMap.astro";
+import StationBoard from "../components/website/StationBoard.astro";
+import LinesDialog from "../components/website/LinesDialog.astro";
+import StationSheet from "../components/website/StationSheet.astro";
+import SearchOverlay from "../components/website/SearchOverlay.astro";
+import HomeData from "../components/website/HomeData.astro";
 import { getTransitMapData } from "../lib/db/transit-map.ts";
 import { getFeaturedStations } from "../lib/db/featured-stations";
 
@@ -41,282 +48,19 @@ const transitData = {
   title={`${siteName} | Tokyo Railway & Station Guide`}
   description={description}
 >
-    <header class="topbar">
-      <a href="/" class="brand" aria-label={siteName}>
-        <span class="brand-jp">東<i></i>京</span>
-        <span class="brand-en">TOKYO</span>
-      </a>
-      <div class="top-actions">
-        <button class="round" id="open-search" aria-label="Search stations">
-          <svg viewBox="0 0 24 24"
-            ><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"
-            ></path></svg
-          >
-        </button>
-        <button class="round" id="theme-toggle" aria-label="Toggle theme">
-          <svg class="icon-sun" viewBox="0 0 24 24"
-            ><circle cx="12" cy="12" r="4"></circle><path
-              d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"
-            ></path></svg
-          >
-          <svg class="icon-moon" viewBox="0 0 24 24"
-            ><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a6.8 6.8 0 0 0 10.7 10.7z"
-            ></path></svg
-          >
-        </button>
-      </div>
-    </header>
+    <Topbar siteName={siteName} />
 
-    <main class="stage" id="stage">
-      <svg
-        id="map"
-        role="img"
-        aria-label="Railway line map"
-        preserveAspectRatio="xMidYMid meet"
-      >
-        <defs>
-          <pattern
-            id="grid"
-            width="40"
-            height="40"
-            patternUnits="userSpaceOnUse"
-          >
-            <path d="M40 0H0V40" class="grid-lo" transform="translate(1 1)"
-            ></path>
-            <path d="M40 0H0V40" class="grid-hi"></path>
-          </pattern>
-          <linearGradient id="car-grad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#c9d0d9"></stop>
-            <stop offset="0.16" stop-color="#f6f8fa"></stop>
-            <stop offset="0.5" stop-color="#ffffff"></stop>
-            <stop offset="0.84" stop-color="#f0f3f6"></stop>
-            <stop offset="1" stop-color="#c6cdd6"></stop>
-          </linearGradient>
-          <linearGradient id="ac-grad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#aeb6c1"></stop>
-            <stop offset="0.5" stop-color="#cfd5dd"></stop>
-            <stop offset="1" stop-color="#aab2bd"></stop>
-          </linearGradient>
-          <linearGradient id="glass-grad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#45596d"></stop>
-            <stop offset="1" stop-color="#1c2835"></stop>
-          </linearGradient>
-          <linearGradient id="beam-grad" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stop-color="#fff3c4" stop-opacity="0.75"></stop>
-            <stop offset="1" stop-color="#fff3c4" stop-opacity="0"></stop>
-          </linearGradient>
-          <radialGradient id="glow-grad">
-            <stop offset="0" stop-color="#f3ecb0" stop-opacity="0.7"></stop>
-            <stop offset="0.5" stop-color="#f3ecb0" stop-opacity="0.28"></stop>
-            <stop offset="1" stop-color="#fff0b0" stop-opacity="0"></stop>
-          </radialGradient>
-        </defs>
-        <rect x="-3000" y="-3000" width="7000" height="7000" fill="url(#grid)"
-        ></rect>
-        <g id="track"></g>
-        <g id="glow"></g>
-        <g id="labels"></g>
-        <g id="train"></g>
-      </svg>
+    <TransitMap />
 
-      <div class="rail-tools left">
-        <button class="tool" id="zoom-in" aria-label="Zoom in">+</button>
-        <button class="tool" id="zoom-out" aria-label="Zoom out">−</button>
-        <button class="tool" id="zoom-reset" aria-label="Reset view">
-          <svg viewBox="0 0 24 24"
-            ><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4.5h4.5"></path></svg
-          >
-        </button>
-      </div>
+    <StationBoard />
 
-      <div class="rail-tools right">
-        <a class="tool" id="info-link" href="#" aria-label="Open station page">
-          <svg viewBox="0 0 24 24"
-            ><circle cx="12" cy="12" r="9"></circle><path
-              d="M12 11v5.5M12 7.8v.1"></path></svg
-          >
-        </a>
-      </div>
-    </main>
+    <LinesDialog />
 
-    <section class="board" aria-live="polite">
-      <div class="board-card">
-        <button
-          class="line-pill"
-          id="line-toggle"
-          aria-expanded="false"
-          aria-haspopup="dialog"
-          aria-controls="lines-dialog"
-        >
-          <i class="dot"></i>
-          <span id="line-name">Select line</span>
-          <svg viewBox="0 0 24 24"
-            ><path d="M7 9l-3 3 3 3M17 9l3 3-3 3M4 12h16"></path></svg
-          >
-        </button>
+    <StationSheet />
 
-        <div class="board-row">
-          <button class="side prev" id="prev-btn">
-            <span class="arrow">←</span>
-            <span class="badge" id="prev-num"></span>
-            <span class="side-text">
-              <b id="prev-jp"></b>
-              <small id="prev-en"></small>
-            </span>
-          </button>
+    <SearchOverlay />
 
-          <div class="current">
-            <span class="code" id="cur-code"></span>
-            <strong id="cur-jp">—</strong>
-            <span class="cur-en" id="cur-en"></span>
-          </div>
-
-          <button class="side next" id="next-btn">
-            <span class="side-text">
-              <b id="next-jp"></b>
-              <small id="next-en"></small>
-            </span>
-            <span class="badge" id="next-num"></span>
-            <span class="arrow">→</span>
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <div
-      class="lines-dialog"
-      id="lines-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="lines-title"
-      hidden
-    >
-      <div class="lines-dialog-inner">
-        <button
-          class="round lines-back"
-          id="lines-back"
-          aria-label="Back to map"
-        >
-          <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></svg>
-        </button>
-        <h2 id="lines-title">Train Lines</h2>
-        <p class="lines-sub" id="lines-sub"></p>
-        <div id="lines-groups"></div>
-      </div>
-    </div>
-
-    <div class="station-sheet" id="station-sheet" hidden>
-      <div class="sheet-backdrop" id="sheet-backdrop"></div>
-
-      <div
-        class="sheet-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="sheet-en"
-      >
-        <span class="sheet-grip" aria-hidden="true"></span>
-
-        <header class="sheet-head">
-          <span class="sheet-badge">
-            <small id="sheet-prefix"></small>
-            <b id="sheet-num"></b>
-          </span>
-
-          <div class="sheet-title">
-            <strong id="sheet-jp"></strong>
-            <span id="sheet-en"></span>
-          </div>
-
-          <button
-            class="round"
-            id="sheet-close"
-            type="button"
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </header>
-
-        <div class="sheet-body" id="sheet-body"></div>
-
-        <div class="sheet-foot">
-          <a class="sheet-cta" id="sheet-full" href="#">Full station page →</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="search-overlay" id="search-overlay" hidden>
-      <div class="search-backdrop" id="search-backdrop"></div>
-
-      <div class="search-panel">
-        <div class="search-head">
-          <h2>Where are you going?</h2>
-
-          <button
-            class="round"
-            id="close-search"
-            aria-label="Close search"
-            type="button"
-          >
-            ×
-          </button>
-        </div>
-
-        <form id="search-form" autocomplete="off">
-          <input
-            type="search"
-            id="search-input"
-            placeholder="Search stations or codes"
-            aria-label="Search stations or codes"
-          />
-        </form>
-
-        <div id="search-home">
-          <section
-            class="search-section"
-            id="featured-section"
-            aria-labelledby="featured-title"
-          >
-            <div class="search-section-head">
-              <h3 id="featured-title">Popular Station Hubs</h3>
-            </div>
-
-            <div id="featured-stations" class="featured-stations"></div>
-          </section>
-
-          <section
-            class="search-section"
-            id="recent-section"
-            aria-labelledby="recent-title"
-            hidden
-          >
-            <div class="search-section-head">
-              <h3 id="recent-title">Recent</h3>
-            </div>
-
-            <div id="recent-stations" class="recent-stations"></div>
-          </section>
-        </div>
-
-        <div id="search-results" class="search-results"></div>
-      </div>
-    </div>
-
-    <script
-      type="application/json"
-      id="transit-data"
-      set:html={JSON.stringify(transitData)}
-    />
-    <script
-      type="application/json"
-      id="search-data"
-      set:html={JSON.stringify(searchable)}
-    />
-    <script
-      type="application/json"
-      id="featured-stations-data"
-      set:html={JSON.stringify(featuredStations)}
-    />
+    <HomeData transitData={transitData} searchable={searchable} featuredStations={featuredStations} />
 
     <script>
       import "../scripts/website/home.js";

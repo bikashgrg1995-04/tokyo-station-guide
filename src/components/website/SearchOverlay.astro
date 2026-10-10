@@ -1,0 +1,56 @@
+<div class="search-overlay" id="search-overlay" hidden>
+  <div class="search-backdrop" id="search-backdrop"></div>
+
+  <div class="search-panel">
+    <div class="search-head">
+      <h2>Where are you going?</h2>
+
+      <button
+        class="round"
+        id="close-search"
+        aria-label="Close search"
+        type="button"
+      >
+        ×
+      </button>
+    </div>
+
+    <form id="search-form" autocomplete="off">
+      <input
+        type="search"
+        id="search-input"
+        placeholder="Search stations or codes"
+        aria-label="Search stations or codes"
+      />
+    </form>
+
+    <div id="search-home">
+      <section
+        class="search-section"
+        id="featured-section"
+        aria-labelledby="featured-title"
+      >
+        <div class="search-section-head">
+          <h3 id="featured-title">Popular Station Hubs</h3>
+        </div>
+
+        <div id="featured-stations" class="featured-stations"></div>
+      </section>
+
+      <section
+        class="search-section"
+        id="recent-section"
+        aria-labelledby="recent-title"
+        hidden
+      >
+        <div class="search-section-head">
+          <h3 id="recent-title">Recent</h3>
+        </div>
+
+        <div id="recent-stations" class="recent-stations"></div>
+      </section>
+    </div>
+
+    <div id="search-results" class="search-results"></div>
+  </div>
+</div>

@@ -1,0 +1,71 @@
+<main class="stage" id="stage">
+  <svg
+    id="map"
+    role="img"
+    aria-label="Railway line map"
+    preserveAspectRatio="xMidYMid meet"
+  >
+    <defs>
+      <pattern
+        id="grid"
+        width="40"
+        height="40"
+        patternUnits="userSpaceOnUse"
+      >
+        <path d="M40 0H0V40" class="grid-lo" transform="translate(1 1)"
+        ></path>
+        <path d="M40 0H0V40" class="grid-hi"></path>
+      </pattern>
+      <linearGradient id="car-grad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#c9d0d9"></stop>
+        <stop offset="0.16" stop-color="#f6f8fa"></stop>
+        <stop offset="0.5" stop-color="#ffffff"></stop>
+        <stop offset="0.84" stop-color="#f0f3f6"></stop>
+        <stop offset="1" stop-color="#c6cdd6"></stop>
+      </linearGradient>
+      <linearGradient id="ac-grad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#aeb6c1"></stop>
+        <stop offset="0.5" stop-color="#cfd5dd"></stop>
+        <stop offset="1" stop-color="#aab2bd"></stop>
+      </linearGradient>
+      <linearGradient id="glass-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#45596d"></stop>
+        <stop offset="1" stop-color="#1c2835"></stop>
+      </linearGradient>
+      <linearGradient id="beam-grad" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="#fff3c4" stop-opacity="0.75"></stop>
+        <stop offset="1" stop-color="#fff3c4" stop-opacity="0"></stop>
+      </linearGradient>
+      <radialGradient id="glow-grad">
+        <stop offset="0" stop-color="#f3ecb0" stop-opacity="0.7"></stop>
+        <stop offset="0.5" stop-color="#f3ecb0" stop-opacity="0.28"></stop>
+        <stop offset="1" stop-color="#fff0b0" stop-opacity="0"></stop>
+      </radialGradient>
+    </defs>
+    <rect x="-3000" y="-3000" width="7000" height="7000" fill="url(#grid)"
+    ></rect>
+    <g id="track"></g>
+    <g id="glow"></g>
+    <g id="labels"></g>
+    <g id="train"></g>
+  </svg>
+
+  <div class="rail-tools left">
+    <button class="tool" id="zoom-in" aria-label="Zoom in">+</button>
+    <button class="tool" id="zoom-out" aria-label="Zoom out">−</button>
+    <button class="tool" id="zoom-reset" aria-label="Reset view">
+      <svg viewBox="0 0 24 24"
+        ><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4.5h4.5"></path></svg
+      >
+    </button>
+  </div>
+
+  <div class="rail-tools right">
+    <a class="tool" id="info-link" href="#" aria-label="Open station page">
+      <svg viewBox="0 0 24 24"
+        ><circle cx="12" cy="12" r="9"></circle><path
+          d="M12 11v5.5M12 7.8v.1"></path></svg
+      >
+    </a>
+  </div>
+</main>

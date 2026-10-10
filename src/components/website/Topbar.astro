@@ -1,0 +1,33 @@
+---
+export interface Props {
+  siteName: string;
+}
+
+const { siteName } = Astro.props;
+---
+
+<header class="topbar">
+  <a href="/" class="brand" aria-label={siteName}>
+    <span class="brand-jp">東<i></i>京</span>
+    <span class="brand-en">TOKYO</span>
+  </a>
+  <div class="top-actions">
+    <button class="round" id="open-search" aria-label="Search stations">
+      <svg viewBox="0 0 24 24"
+        ><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"
+        ></path></svg
+      >
+    </button>
+    <button class="round" id="theme-toggle" aria-label="Toggle theme">
+      <svg class="icon-sun" viewBox="0 0 24 24"
+        ><circle cx="12" cy="12" r="4"></circle><path
+          d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"
+        ></path></svg
+      >
+      <svg class="icon-moon" viewBox="0 0 24 24"
+        ><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a6.8 6.8 0 0 0 10.7 10.7z"
+        ></path></svg
+      >
+    </button>
+  </div>
+</header>
