@@ -4,323 +4,37 @@ import "../../../styles/admin/forms.css";
 import "../../../styles/admin/stations.css";
 import "../../../styles/admin/tables.css";
 
-import Button from "../../../components/Button.astro";
-import ConfirmDialog from "../../../components/ConfirmDialog.astro";
-import StationTopPicks from "../../../components/StationTopPicks.astro";
+import EmptyState from "../../../components/common/EmptyState.astro";
+import Alert from "../../../components/common/Alert.astro";
+import Breadcrumbs from "../../../components/common/Breadcrumbs.astro";
+import Button from "../../../components/common/Button.astro";
+import ConfirmDialog from "../../../components/common/ConfirmDialog.astro";
+import StationTopPicks from "../../../components/admin/StationTopPicks.astro";
 
-import {
-  createStation,
-  linesToJson,
-  validateLineList,
-} from "../../../lib/db/stations";
-
-import { getFacilities } from "../../../lib/db/facilities";
-import { getTopPicks } from "../../../lib/db/top-picks";
+import { handleStationCreate } from "../../../lib/services/stations";
 
 export const prerender = false;
 
 const { env } = await import("cloudflare:workers");
 
-const db = env.DB;
+const form = await handleStationCreate(Astro.request, env.DB);
 
-let error = "";
-
-let name = "";
-let nameJapanese = "";
-let slug = "";
-let latitudeValue = "";
-let longitudeValue = "";
-let description = "";
-let about = "";
-
-const errors = {
-  name: "",
-  nameJapanese: "",
-  slug: "",
-  latitude: "",
-  longitude: "",
-  description: "",
-  about: "",
-  facilities: "",
-  topPicks: "",
-};
-
-const facilities = await getFacilities(db);
-const topPicks = await getTopPicks(db);
-
-let selectedFacilityIds: number[] = [];
-let selectedTopPickIds: number[] = [];
-
-/* ========================================
-   POST
-======================================== */
-
-if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
-
-  name = String(formData.get("name") ?? "").trim();
-
-  nameJapanese = String(formData.get("name_japanese") ?? "").trim();
-
-  slug = String(formData.get("slug") ?? "")
-    .trim()
-    .toLowerCase();
-
-  latitudeValue = String(formData.get("latitude") ?? "").trim();
-
-  longitudeValue = String(formData.get("longitude") ?? "").trim();
-
-  description = String(formData.get("description") ?? "").trim();
-
-  about = String(formData.get("about") ?? "").trim();
-
-  /* ========================================
-     Selected Facilities
-  ======================================== */
-
-  selectedFacilityIds = [
-    ...new Set(
-      formData
-        .getAll("facility_ids")
-        .map((value) => Number(value))
-        .filter(
-          (value) =>
-            Number.isInteger(value) && value > 0,
-        ),
-    ),
-  ];
-
-  /* ========================================
-     Selected Top Picks
-  ======================================== */
-
-  selectedTopPickIds = [
-    ...new Set(
-      formData
-        .getAll("top_pick_ids")
-        .map((value) => Number(value))
-        .filter(
-          (value) =>
-            Number.isInteger(value) && value > 0,
-        ),
-    ),
-  ];
-
-  const latitude =
-    latitudeValue === ""
-      ? null
-      : Number(latitudeValue);
-
-  const longitude =
-    longitudeValue === ""
-      ? null
-      : Number(longitudeValue);
-
-  /* ========================================
-     Validation
-  ======================================== */
-
-  if (!name) {
-    errors.name = "Station name is required.";
-  } else if (name.length > 150) {
-    errors.name =
-      "Station name must be 150 characters or less.";
-  }
-
-  if (nameJapanese.length > 150) {
-    errors.nameJapanese =
-      "Japanese name must be 150 characters or less.";
-  }
-
-  if (!slug) {
-    errors.slug = "Station slug is required.";
-  } else if (slug.length > 150) {
-    errors.slug =
-      "Station slug must be 150 characters or less.";
-  } else if (
-    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
-  ) {
-    errors.slug =
-      "Use lowercase letters, numbers, and hyphens only.";
-  }
-
-  if (
-    latitude !== null &&
-    !Number.isFinite(latitude)
-  ) {
-    errors.latitude =
-      "Latitude must be a valid number.";
-  } else if (
-    latitude !== null &&
-    (latitude < -90 || latitude > 90)
-  ) {
-    errors.latitude =
-      "Latitude must be between -90 and 90.";
-  }
-
-  if (
-    longitude !== null &&
-    !Number.isFinite(longitude)
-  ) {
-    errors.longitude =
-      "Longitude must be a valid number.";
-  } else if (
-    longitude !== null &&
-    (longitude < -180 || longitude > 180)
-  ) {
-    errors.longitude =
-      "Longitude must be between -180 and 180.";
-  }
-
-  if (description.length > 1000) {
-    errors.description =
-      "Description must be 1000 characters or less.";
-  }
-
-  if (about.length > 1000) {
-    errors.about =
-      "About must be 1000 characters or less.";
-  }
-
-  /* ========================================
-     Validate Facility IDs
-  ======================================== */
-
-  const validFacilityIds = new Set(
-    facilities.map((facility) => facility.id),
-  );
-
-  if (
-    selectedFacilityIds.some(
-      (facilityId) =>
-        !validFacilityIds.has(facilityId),
-    )
-  ) {
-    errors.facilities =
-      "One or more selected facilities are invalid.";
-  }
-
-  /* ========================================
-     Validate Top Pick IDs
-  ======================================== */
-
-  const validTopPickIds = new Set(
-    topPicks.map((topPick) => topPick.id),
-  );
-
-  if (
-    selectedTopPickIds.some(
-      (topPickId) =>
-        !validTopPickIds.has(topPickId),
-    )
-  ) {
-    errors.topPicks =
-      "One or more selected top picks are invalid.";
-  }
-
-  const hasErrors = Object.values(errors).some(
-    (value) => value !== "",
-  );
-
-  /* ========================================
-     Create Station
-  ======================================== */
-
-  if (!hasErrors) {
-    try {
-      const station = await createStation(db, {
-        name,
-        nameJapanese:
-          nameJapanese || null,
-        slug,
-        latitude,
-        longitude,
-        description:
-          description || null,
-        about:
-          about || null,
-        topPicks: linesToJson(""),
-      });
-
-      /* ========================================
-         Save Facility Relations
-      ======================================== */
-
-      if (selectedFacilityIds.length > 0) {
-        const facilityStatements =
-          selectedFacilityIds.map((facilityId) =>
-            db
-              .prepare(
-                `
-                INSERT INTO station_facilities (
-                  station_id,
-                  facility_id
-                )
-                VALUES (?, ?)
-                `,
-              )
-              .bind(
-                station,
-                facilityId,
-              ),
-          );
-
-        await db.batch(
-          facilityStatements,
-        );
-      }
-
-      /* ========================================
-         Save Top Pick Relations
-      ======================================== */
-
-      if (selectedTopPickIds.length > 0) {
-        const topPickStatements =
-          selectedTopPickIds.map(
-            (topPickId, index) =>
-              db
-                .prepare(
-                  `
-                  INSERT INTO station_top_picks (
-                    station_id,
-                    top_pick_id,
-                    sort_order,
-                    walking_minutes
-                  )
-                  VALUES (?, ?, ?, ?)
-                  `,
-                )
-                .bind(
-                  station,
-                  topPickId,
-                  index + 1,
-                  null,
-                ),
-          );
-
-        await db.batch(
-          topPickStatements,
-        );
-      }
-
-      return Astro.redirect(
-        "/admin/stations",
-      );
-    } catch (err) {
-      console.error(err);
-
-      error =
-        "Unable to create station. The slug may already exist.";
-    }
-  }
+if (form.redirectTo) {
+  return Astro.redirect(form.redirectTo);
 }
 
-const admin =
-  await Astro.session?.get<{
-    id: number;
-    email: string;
-    name: string;
-  }>("admin");
+const {
+  name,
+  nameJapanese,
+  slug,
+  latitude: latitudeValue,
+  longitude: longitudeValue,
+  description,
+  about,
+} = form.values;
+const { errors, facilities, topPicks } = form;
+const error = form.formError;
+
 ---
 
 <AdminLayout title="Add Station" activePath="/admin/stations">
@@ -329,22 +43,7 @@ const admin =
         ========================================= -->
 
         <header class="admin-topbar">
-          <div class="admin-breadcrumb">
-            <Button
-              href="/admin/stations"
-              variant="secondary"
-            >
-              ←
-            </Button>
-
-            <a href="/admin/stations">
-              Stations
-            </a>
-
-            <span>/</span>
-
-            <strong>Add Station</strong>
-          </div>
+          <Breadcrumbs backHref="/admin/stations" parentLabel="Stations" current="Add Station" />
         </header>
 
         <!-- ========================================
@@ -390,9 +89,7 @@ const admin =
 
                   {
                     error && (
-                      <div class="admin-alert admin-alert-error">
-                        {error}
-                      </div>
+                      <Alert>{error}</Alert>
                     )
                   }
 
@@ -726,9 +423,7 @@ const admin =
 
                   {
                     errors.facilities && (
-                      <div class="admin-alert admin-alert-error">
-                        {errors.facilities}
-                      </div>
+                      <Alert>{errors.facilities}</Alert>
                     )
                   }
 
@@ -933,16 +628,10 @@ const admin =
               </div>
             </div>
           ) : (
-            <div class="admin-empty">
-              <h3>
-                No Facilities Available
-              </h3>
-
-              <p>
-                Add facilities to the master
-                facility list first.
-              </p>
-            </div>
+            <EmptyState
+              title="No Facilities Available"
+              description="Add facilities to the master facility list first."
+            />
           )
         }
       </div>

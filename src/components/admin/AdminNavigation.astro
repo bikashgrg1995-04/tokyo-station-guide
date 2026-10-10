@@ -1,6 +1,6 @@
 ---
-import "../styles/common/admin-navigation.css";
-import ConfirmDialog from "./ConfirmDialog.astro";
+import "../../styles/common/admin-navigation.css";
+import ConfirmDialog from "../common/ConfirmDialog.astro";
 
 export interface Props {
   activePath?: string;
@@ -141,5 +141,5 @@ const isActive = (path: string) => {
 />
 
 <script>
-  import "../scripts/components/admin-navigation.ts";
+  import "../../scripts/admin/shared/admin-navigation.ts";
 </script>

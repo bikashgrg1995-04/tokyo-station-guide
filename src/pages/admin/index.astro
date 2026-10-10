@@ -2,7 +2,7 @@
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import "../../styles/admin/dashboard.css";
 
-import Button from "../../components/Button.astro";
+import Button from "../../components/common/Button.astro";
 
 export const prerender = false;
 
@@ -12,11 +12,6 @@ const { env } = await import("cloudflare:workers");
 
 const db = env.DB;
 
-const admin = await Astro.session?.get<{
-  id: number;
-  email: string;
-  name: string;
-}>("admin");
 
 const operatorCount = await db
   .prepare("SELECT COUNT(*) AS count FROM operators")

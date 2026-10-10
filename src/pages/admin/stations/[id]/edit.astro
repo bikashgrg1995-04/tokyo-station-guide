@@ -4,26 +4,15 @@ import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/stations.css";
 import "../../../../styles/admin/tables.css";
 
-import Button from "../../../../components/Button.astro";
-import ConfirmDialog from "../../../../components/ConfirmDialog.astro";
-import StationTopPicks from "../../../../components/StationTopPicks.astro";
+import EmptyState from "../../../../components/common/EmptyState.astro";
+import Alert from "../../../../components/common/Alert.astro";
+import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
+import Button from "../../../../components/common/Button.astro";
+import ConfirmDialog from "../../../../components/common/ConfirmDialog.astro";
+import StationTopPicks from "../../../../components/admin/StationTopPicks.astro";
 
-import {
-  getStationById,
-  updateStation,
-} from "../../../../lib/db/stations";
-
-import {
-  getFacilities,
-  getStationFacilities,
-  getAvailableFacilitiesForStation,
-} from "../../../../lib/db/facilities";
-
-import {
-  getTopPicks,
-  getStationTopPicks,
-  getAvailableTopPicksForStation,
-} from "../../../../lib/db/top-picks";
+import { getStationById } from "../../../../lib/db/stations";
+import { handleStationUpdate } from "../../../../lib/services/stations";
 
 export const prerender = false;
 
@@ -42,496 +31,31 @@ if (!station) {
   return Astro.redirect("/admin/stations");
 }
 
-let formError = "";
-let facilityError = "";
-let topPickError = "";
+const form = await handleStationUpdate(Astro.request, db, id, station);
 
-let stationFacilities =
-  await getStationFacilities(db, id);
-
-let availableFacilities =
-  await getAvailableFacilitiesForStation(db, id);
-
-let stationTopPicks =
-  await getStationTopPicks(db, id);
-
-let availableTopPicks =
-  await getAvailableTopPicksForStation(db, id);
-
-let name = station.name;
-let nameJapanese = station.name_japanese ?? "";
-let slug = station.slug;
-
-let latitudeValue =
-  station.latitude !== null
-    ? String(station.latitude)
-    : "";
-
-let longitudeValue =
-  station.longitude !== null
-    ? String(station.longitude)
-    : "";
-
-let description = station.description ?? "";
-let about = station.about ?? "";
-
-const errors = {
-  name: "",
-  nameJapanese: "",
-  slug: "",
-  latitude: "",
-  longitude: "",
-  description: "",
-  about: "",
-};
-
-/* ========================================
-   POST Actions
-======================================== */
-
-if (Astro.request.method === "POST") {
-  const formData =
-    await Astro.request.formData();
-
-  const action = String(
-    formData.get("action") ?? "",
-  );
-
-  /* ========================================
-     Update Station
-  ======================================== */
-
-  if (action === "update") {
-    name = String(
-      formData.get("name") ?? "",
-    ).trim();
-
-    nameJapanese = String(
-      formData.get("name_japanese") ?? "",
-    ).trim();
-
-    slug = String(
-      formData.get("slug") ?? "",
-    )
-      .trim()
-      .toLowerCase();
-
-    latitudeValue = String(
-      formData.get("latitude") ?? "",
-    ).trim();
-
-    longitudeValue = String(
-      formData.get("longitude") ?? "",
-    ).trim();
-
-    description = String(
-      formData.get("description") ?? "",
-    ).trim();
-
-    about = String(
-      formData.get("about") ?? "",
-    ).trim();
-
-    const latitude =
-      latitudeValue === ""
-        ? null
-        : Number(latitudeValue);
-
-    const longitude =
-      longitudeValue === ""
-        ? null
-        : Number(longitudeValue);
-
-    /* ========================================
-       Station Validation
-    ======================================== */
-
-    if (!name) {
-      errors.name =
-        "Station name is required.";
-    } else if (name.length > 150) {
-      errors.name =
-        "Station name must be 150 characters or less.";
-    }
-
-    if (nameJapanese.length > 150) {
-      errors.nameJapanese =
-        "Japanese name must be 150 characters or less.";
-    }
-
-    if (!slug) {
-      errors.slug =
-        "Slug is required.";
-    } else if (
-      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
-        slug,
-      )
-    ) {
-      errors.slug =
-        "Slug can only contain lowercase letters, numbers, and hyphens.";
-    } else if (slug.length > 150) {
-      errors.slug =
-        "Slug must be 150 characters or less.";
-    }
-
-    if (
-      latitude !== null &&
-      !Number.isFinite(latitude)
-    ) {
-      errors.latitude =
-        "Latitude must be a valid number.";
-    } else if (
-      latitude !== null &&
-      (latitude < -90 ||
-        latitude > 90)
-    ) {
-      errors.latitude =
-        "Latitude must be between -90 and 90.";
-    }
-
-    if (
-      longitude !== null &&
-      !Number.isFinite(longitude)
-    ) {
-      errors.longitude =
-        "Longitude must be a valid number.";
-    } else if (
-      longitude !== null &&
-      (longitude < -180 ||
-        longitude > 180)
-    ) {
-      errors.longitude =
-        "Longitude must be between -180 and 180.";
-    }
-
-    if (description.length > 1000) {
-      errors.description =
-        "Description must be 1000 characters or less.";
-    }
-
-    if (about.length > 1000) {
-      errors.about =
-        "About must be 1000 characters or less.";
-    }
-
-    /* ========================================
-       Facility IDs
-    ======================================== */
-
-    const selectedFacilityIds = [
-      ...new Set(
-        formData
-          .getAll("facility_ids")
-          .map((value) => Number(value))
-          .filter(
-            (facilityId) =>
-              Number.isInteger(
-                facilityId,
-              ) &&
-              facilityId > 0,
-          ),
-      ),
-    ];
-
-    const allFacilities =
-      await getFacilities(db);
-
-    const validFacilityIds =
-      new Set(
-        allFacilities.map(
-          (facility) =>
-            facility.id,
-        ),
-      );
-
-    const invalidFacilityIds =
-      selectedFacilityIds.filter(
-        (facilityId) =>
-          !validFacilityIds.has(
-            facilityId,
-          ),
-      );
-
-    if (
-      invalidFacilityIds.length > 0
-    ) {
-      facilityError =
-        "One or more selected facilities are invalid.";
-    }
-
-    /* ========================================
-       Top Pick IDs
-    ======================================== */
-
-    const selectedTopPickIds = [
-      ...new Set(
-        formData
-          .getAll("top_pick_ids")
-          .map((value) => Number(value))
-          .filter(
-            (topPickId) =>
-              Number.isInteger(
-                topPickId,
-              ) &&
-              topPickId > 0,
-          ),
-      ),
-    ];
-
-    const allTopPicks =
-      await getTopPicks(db);
-
-    const validTopPickIds =
-      new Set(
-        allTopPicks.map(
-          (topPick) =>
-            topPick.id,
-        ),
-      );
-
-    const invalidTopPickIds =
-      selectedTopPickIds.filter(
-        (topPickId) =>
-          !validTopPickIds.has(
-            topPickId,
-          ),
-      );
-
-    if (
-      invalidTopPickIds.length > 0
-    ) {
-      topPickError =
-        "One or more selected top picks are invalid.";
-    }
-
-    /* ========================================
-       Validation Result
-    ======================================== */
-
-    const hasValidationErrors =
-      Object.values(errors).some(
-        (message) =>
-          message.length > 0,
-      ) ||
-      facilityError.length > 0 ||
-      topPickError.length > 0;
-
-    /* ========================================
-       Save
-    ======================================== */
-
-    if (!hasValidationErrors) {
-      try {
-        await updateStation(
-          db,
-          id,
-          {
-            name,
-            nameJapanese:
-              nameJapanese || null,
-            slug,
-            latitude,
-            longitude,
-            description:
-              description || null,
-            about:
-              about || null,
-          },
-        );
-
-        /* ========================================
-           Save Facilities
-        ======================================== */
-
-        await db
-          .prepare(
-            `
-              DELETE FROM station_facilities
-              WHERE station_id = ?
-            `,
-          )
-          .bind(id)
-          .run();
-
-        if (
-          selectedFacilityIds.length > 0
-        ) {
-          const facilityStatements =
-            selectedFacilityIds.map(
-              (facilityId) =>
-                db
-                  .prepare(
-                    `
-                      INSERT INTO station_facilities (
-                        station_id,
-                        facility_id
-                      )
-                      VALUES (?, ?)
-                    `,
-                  )
-                  .bind(
-                    id,
-                    facilityId,
-                  ),
-            );
-
-          await db.batch(
-            facilityStatements,
-          );
-        }
-
-        /* ========================================
-           Save Top Picks
-        ======================================== */
-
-        await db
-          .prepare(
-            `
-              DELETE FROM station_top_picks
-              WHERE station_id = ?
-            `,
-          )
-          .bind(id)
-          .run();
-
-        if (
-          selectedTopPickIds.length > 0
-        ) {
-          const topPickStatements =
-            selectedTopPickIds.map(
-              (
-                topPickId,
-                index,
-              ) =>
-                db
-                  .prepare(
-                    `
-                      INSERT INTO station_top_picks (
-                        station_id,
-                        top_pick_id,
-                        sort_order,
-                        walking_minutes
-                      )
-                      VALUES (?, ?, ?, ?)
-                    `,
-                  )
-                  .bind(
-                    id,
-                    topPickId,
-                    index + 1,
-                    null,
-                  ),
-            );
-
-          await db.batch(
-            topPickStatements,
-          );
-        }
-
-        return Astro.redirect(
-          "/admin/stations",
-        );
-      } catch (err) {
-        console.error(err);
-
-        formError =
-          "Unable to update station. The name or slug may already exist.";
-      }
-    }
-
-    /* ========================================
-       Rebuild Facility State
-       when validation fails
-    ======================================== */
-
-    stationFacilities =
-      selectedFacilityIds
-        .map(
-          (facilityId) =>
-            allFacilities.find(
-              (facility) =>
-                facility.id ===
-                facilityId,
-            ),
-        )
-        .filter(
-          (
-            facility,
-          ): facility is (typeof allFacilities)[number] =>
-            Boolean(facility),
-        )
-        .map(
-          (facility) => ({
-            ...facility,
-            note: null,
-          }),
-        );
-
-    availableFacilities =
-      allFacilities.filter(
-        (facility) =>
-          !selectedFacilityIds.includes(
-            facility.id,
-          ),
-      );
-
-    /* ========================================
-       Rebuild Top Pick State
-       when validation fails
-    ======================================== */
-
-    stationTopPicks =
-      selectedTopPickIds
-        .map(
-          (
-            topPickId,
-            index,
-          ) => {
-            const topPick =
-              allTopPicks.find(
-                (item) =>
-                  item.id ===
-                  topPickId,
-              );
-
-            if (!topPick) {
-              return null;
-            }
-
-            return {
-              ...topPick,
-              sort_order:
-                index + 1,
-              walking_minutes:
-                null,
-            };
-          },
-        )
-        .filter(
-          (
-            topPick,
-          ): topPick is NonNullable<
-            typeof topPick
-          > =>
-            Boolean(topPick),
-        );
-
-    availableTopPicks =
-      allTopPicks.filter(
-        (topPick) =>
-          !selectedTopPickIds.includes(
-            topPick.id,
-          ),
-      );
-  }
+if (form.redirectTo) {
+  return Astro.redirect(form.redirectTo);
 }
 
-const admin =
-  await Astro.session?.get<{
-    id: number;
-    email: string;
-    name: string;
-  }>("admin");
+const {
+  name,
+  nameJapanese,
+  slug,
+  latitude: latitudeValue,
+  longitude: longitudeValue,
+  description,
+  about,
+} = form.values;
+const {
+  errors,
+  formError,
+  stationFacilities,
+  availableFacilities,
+  stationTopPicks,
+  availableTopPicks,
+} = form;
+const facilityError = errors.facilities;
+
 ---
 
 <AdminLayout title={`Edit ${station.name}`} activePath="/admin/stations">
@@ -542,26 +66,7 @@ const admin =
 
         <header class="admin-topbar">
 
-          <div class="admin-breadcrumb">
-
-            <Button
-              href="/admin/stations"
-              variant="secondary"
-            >
-              ←
-            </Button>
-
-            <a href="/admin/stations">
-              Stations
-            </a>
-
-            <span>/</span>
-
-            <strong>
-              Edit Station
-            </strong>
-
-          </div>
+          <Breadcrumbs backHref="/admin/stations" parentLabel="Stations" current="Edit Station" />
 
         </header>
 
@@ -625,9 +130,7 @@ const admin =
 
                   {
                     formError && (
-                      <div class="admin-alert admin-alert-error">
-                        {formError}
-                      </div>
+                      <Alert>{formError}</Alert>
                     )
                   }
 
@@ -969,9 +472,7 @@ const admin =
 
                   {
                     facilityError && (
-                      <div class="admin-alert admin-alert-error">
-                        {facilityError}
-                      </div>
+                      <Alert>{facilityError}</Alert>
                     )
                   }
 
@@ -1299,18 +800,10 @@ const admin =
 
           ) : (
 
-            <div class="admin-empty">
-
-              <h3>
-                No Facilities Available
-              </h3>
-
-              <p>
-                All facilities from the master list are already
-                assigned to this station.
-              </p>
-
-            </div>
+            <EmptyState
+              title="No Facilities Available"
+              description="All facilities from the master list are already assigned to this station."
+            />
 
           )
         }

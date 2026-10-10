@@ -3,14 +3,14 @@ import AdminLayout from "../../../../layouts/AdminLayout.astro";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/stations.css";
 
-import Button from "../../../../components/Button.astro";
-import ConfirmDialog from "../../../../components/ConfirmDialog.astro";
+import Alert from "../../../../components/common/Alert.astro";
+import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
+import Button from "../../../../components/common/Button.astro";
+import ConfirmDialog from "../../../../components/common/ConfirmDialog.astro";
 
 import { getStations } from "../../../../lib/db/stations";
-import {
-  getFeaturedStationById,
-  updateFeaturedStation,
-} from "../../../../lib/db/featured-stations";
+import { getFeaturedStationById } from "../../../../lib/db/featured-stations";
+import { handleFeaturedStationUpdate } from "../../../../lib/services/featured-stations";
 
 export const prerender = false;
 
@@ -29,97 +29,28 @@ if (!featuredStation) {
   return Astro.redirect("/admin/featured-stations");
 }
 
-const stations = await getStations(db);
+const form = await handleFeaturedStationUpdate(
+  Astro.request,
+  db,
+  id,
+  featuredStation,
+);
 
-let formError = "";
-
-let stationIdValue = String(featuredStation.station_id);
-let imageUrl = featuredStation.image_url;
-let description = featuredStation.description;
-let sortOrderValue = String(featuredStation.sort_order);
-let isActive = featuredStation.is_active === 1;
-
-const errors = {
-  stationId: "",
-  imageUrl: "",
-  description: "",
-  sortOrder: "",
-};
-
-if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
-
-  stationIdValue = String(formData.get("station_id") ?? "").trim();
-
-  imageUrl = String(formData.get("image_url") ?? "").trim();
-
-  description = String(formData.get("description") ?? "").trim();
-
-  sortOrderValue = String(formData.get("sort_order") ?? "0").trim();
-
-  isActive = formData.get("is_active") === "on";
-
-  const stationId = stationIdValue === "" ? null : Number(stationIdValue);
-
-  const sortOrder = sortOrderValue === "" ? null : Number(sortOrderValue);
-
-  if (stationId === null || !Number.isInteger(stationId) || stationId <= 0) {
-    errors.stationId = "Please select a station.";
-  }
-
-  if (!imageUrl) {
-    errors.imageUrl = "Image URL is required.";
-  } else if (imageUrl.length > 2000) {
-    errors.imageUrl = "Image URL must be 2000 characters or less.";
-  } else {
-    try {
-      const parsedUrl = new URL(imageUrl);
-
-      if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-        errors.imageUrl = "Image URL must use http or https.";
-      }
-    } catch {
-      errors.imageUrl = "Please enter a valid image URL.";
-    }
-  }
-
-  if (description.length > 200) {
-    errors.description = "Description must be 200 characters or less.";
-  }
-
-  if (sortOrder === null || !Number.isInteger(sortOrder) || sortOrder < 0) {
-    errors.sortOrder = "Sort order must be a non-negative number.";
-  }
-
-  const hasValidationErrors = Object.values(errors).some(
-    (message) => message.length > 0,
-  );
-
-  if (!hasValidationErrors) {
-    try {
-      await updateFeaturedStation(db, id, {
-        stationId: stationId as number,
-        imageUrl,
-        description,
-        sortOrder: sortOrder as number,
-        isActive,
-      });
-
-      return Astro.redirect("/admin/featured-stations");
-    } catch (err) {
-      console.error(err);
-
-      formError =
-        "Unable to update featured station. The station may already be featured.";
-    }
-  }
+if (form.redirectTo) {
+  return Astro.redirect(form.redirectTo);
 }
 
-const admin = await Astro.session?.get<{
-  id: number;
-  email: string;
-  name: string;
-}>("admin");
+const stations = await getStations(db);
+
+const {
+  stationId: stationIdValue,
+  imageUrl,
+  description,
+  sortOrder: sortOrderValue,
+  isActive,
+} = form.values;
+const { errors, formError } = form;
+
 ---
 
 <AdminLayout
@@ -127,15 +58,7 @@ const admin = await Astro.session?.get<{
   activePath="/admin/featured-stations"
 >
   <header class="admin-topbar">
-    <div class="admin-breadcrumb">
-      <Button href="/admin/featured-stations" variant="secondary"> ← </Button>
-
-      <a href="/admin/featured-stations"> Featured Stations </a>
-
-      <span>/</span>
-
-      <strong>Edit Featured Station</strong>
-    </div>
+    <Breadcrumbs backHref="/admin/featured-stations" parentLabel="Featured Stations" current="Edit Featured Station" />
   </header>
 
   <div class="admin-content">
@@ -157,7 +80,7 @@ const admin = await Astro.session?.get<{
 
           {
             formError && (
-              <div class="admin-alert admin-alert-error">{formError}</div>
+              <Alert>{formError}</Alert>
             )
           }
 

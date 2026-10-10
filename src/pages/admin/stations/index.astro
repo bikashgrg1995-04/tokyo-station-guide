@@ -3,78 +3,27 @@ import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/admin/tables.css";
 import "../../../styles/admin/stations.css";
 
-import Button from "../../../components/Button.astro";
-import SearchInput from "../../../components/SearchInput.astro";
-import ConfirmDialog from "../../../components/ConfirmDialog.astro";
-import Pagination from "../../../components/Pagination.astro";
+import EmptyState from "../../../components/common/EmptyState.astro";
+import Button from "../../../components/common/Button.astro";
+import SearchInput from "../../../components/common/SearchInput.astro";
+import ConfirmDialog from "../../../components/common/ConfirmDialog.astro";
+import Pagination from "../../../components/common/Pagination.astro";
 
-import { getAdminStationsPaginated } from "../../../lib/db/stations";
-
+import { loadStationList } from "../../../lib/services/stations";
 export const prerender = false;
 
 const { env } = await import("cloudflare:workers");
 
-const db = env.DB;
-
-/* ========================================
-   Query Parameters
-======================================== */
-
-const searchParam =
-  Astro.url.searchParams.get("search")?.trim() ?? "";
-
-const pageParam =
-  Astro.url.searchParams.get("page");
-
-const parsedPage = Number(pageParam);
-
-const currentPage =
-  Number.isInteger(parsedPage) && parsedPage > 0
-    ? parsedPage
-    : 1;
-
-/* ========================================
-   Pagination
-======================================== */
-
-const perPage = 10;
-
 const {
-  items: stations,
+  stations,
   totalItems,
   currentPage: safeCurrentPage,
   totalPages,
-} = await getAdminStationsPaginated(db, {
-  page: currentPage,
   perPage,
-  search: searchParam,
-});
+  searchParam,
+  paginationUrl,
+} = await loadStationList(env.DB, Astro.url);
 
-/* ========================================
-   Pagination URL
-======================================== */
-
-const paginationUrl = new URL(
-  "/admin/stations",
-  Astro.url,
-);
-
-if (searchParam) {
-  paginationUrl.searchParams.set(
-    "search",
-    searchParam,
-  );
-}
-
-/* ========================================
-   Admin
-======================================== */
-
-const admin = await Astro.session?.get<{
-  id: number;
-  email: string;
-  name: string;
-}>("admin");
 ---
 
 <AdminLayout title="Stations" activePath="/admin/stations">
@@ -265,28 +214,15 @@ const admin = await Astro.session?.get<{
 
                   </>
                 ) : (
-                  <div class="admin-empty">
-
-                    <div class="admin-empty-icon">
-                      ◎
-                    </div>
-
-                    <h3>
-                      {
-                        searchParam
+                  <EmptyState
+                    icon="◎"
+                    title={searchParam
                           ? "No stations found"
-                          : "No stations yet"
-                      }
-                    </h3>
-
-                    <p>
-                      {
-                        searchParam
+                          : "No stations yet"}
+                    description={searchParam
                           ? "Try a different search term."
-                          : "Add your first railway station to get started."
-                      }
-                    </p>
-
+                          : "Add your first railway station to get started."}
+                  >
                     {
                       searchParam && (
                         <div class="admin-empty-action">
@@ -302,8 +238,7 @@ const admin = await Astro.session?.get<{
                         </div>
                       )
                     }
-
-                  </div>
+                  </EmptyState>
                 )
               }
 

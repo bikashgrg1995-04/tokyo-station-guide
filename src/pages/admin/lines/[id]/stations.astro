@@ -4,9 +4,12 @@ import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/lines.css";
 import "../../../../styles/admin/tables.css";
 
-import Button from "../../../../components/Button.astro";
-import SearchInput from "../../../../components/SearchInput.astro";
-import ConfirmDialog from "../../../../components/ConfirmDialog.astro";
+import EmptyState from "../../../../components/common/EmptyState.astro";
+import Alert from "../../../../components/common/Alert.astro";
+import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
+import Button from "../../../../components/common/Button.astro";
+import SearchInput from "../../../../components/common/SearchInput.astro";
+import ConfirmDialog from "../../../../components/common/ConfirmDialog.astro";
 
 import { getLineById } from "../../../../lib/db/lines";
 import {
@@ -48,11 +51,6 @@ const { stations, availableStations } = await loadLineStations(
   searchParam,
 );
 
-const admin = await Astro.session?.get<{
-  id: number;
-  email: string;
-  name: string;
-}>("admin");
 ---
 
 <AdminLayout title={`${line.name} Stations`} activePath="/admin/lines">
@@ -63,27 +61,7 @@ const admin = await Astro.session?.get<{
 
         <header class="admin-topbar">
 
-          <div class="admin-breadcrumb">
-
-            <Button
-              href="/admin/lines"
-              variant="secondary"
-              ariaLabel="Back to lines"
-            >
-              ←
-            </Button>
-
-            <a href="/admin/lines">
-              Lines
-            </a>
-
-            <span>/</span>
-
-            <strong>
-              {line.name}
-            </strong>
-
-          </div>
+          <Breadcrumbs backHref="/admin/lines" parentLabel="Lines" current={line.name} backLabel="Back to lines" />
 
         </header>
 
@@ -126,9 +104,7 @@ const admin = await Astro.session?.get<{
 
             {
               error && (
-                <div class="admin-alert admin-alert-error">
-                  {error}
-                </div>
+                <Alert>{error}</Alert>
               )
             }
 
@@ -385,28 +361,15 @@ const admin = await Astro.session?.get<{
 
                       </div>
                     ) : (
-                      <div class="admin-empty">
-
-                        <div class="admin-empty-icon">
-                          ◎
-                        </div>
-
-                        <h3>
-                          {
-                            searchParam
+                      <EmptyState
+                        icon="◎"
+                        title={searchParam
                               ? "No Matching Stations"
-                              : "No Stations on This Line"
-                          }
-                        </h3>
-
-                        <p>
-                          {
-                            searchParam
+                              : "No Stations on This Line"}
+                        description={searchParam
                               ? "Try another station name, Japanese name, slug, or station code."
-                              : "There are currently no stations connected to this railway line."
-                          }
-                        </p>
-
+                              : "There are currently no stations connected to this railway line."}
+                      >
                         {
                           !searchParam &&
                           availableStations.length > 0 && (
@@ -423,8 +386,7 @@ const admin = await Astro.session?.get<{
                             </div>
                           )
                         }
-
-                      </div>
+                      </EmptyState>
                     )
                   }
 
@@ -617,22 +579,11 @@ const admin = await Astro.session?.get<{
 
             </form>
           ) : (
-            <div class="admin-empty">
-
-              <div class="admin-empty-icon">
-                ◎
-              </div>
-
-              <h3>
-                No Available Stations
-              </h3>
-
-              <p>
-                All existing stations are already
-                connected to this line, or no
-                stations have been created yet.
-              </p>
-
+            <EmptyState
+              icon="◎"
+              title="No Available Stations"
+              description="All existing stations are already connected to this line, or no stations have been created yet."
+            >
               <div class="admin-not-found-actions">
 
                 <Button
@@ -643,8 +594,7 @@ const admin = await Astro.session?.get<{
                 </Button>
 
               </div>
-
-            </div>
+            </EmptyState>
           )
         }
 

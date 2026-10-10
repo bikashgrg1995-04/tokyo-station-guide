@@ -1,26 +1,11 @@
 ---
-import { deleteStation } from "../../../../lib/db/stations";
+import { handleStationDelete } from "../../../../lib/services/stations";
 
 export const prerender = false;
 
 const { env } = await import("cloudflare:workers");
-const db = env.DB;
 
-const id = Number(Astro.params.id);
-
-if (!Number.isInteger(id) || id <= 0) {
-  return Astro.redirect("/admin/stations");
-}
-
-if (Astro.request.method !== "POST") {
-  return Astro.redirect("/admin/stations");
-}
-
-try {
-  await deleteStation(db, id);
-} catch (error) {
-  console.error("Failed to delete station:", error);
-}
-
-return Astro.redirect("/admin/stations");
+return Astro.redirect(
+  await handleStationDelete(Astro.request, env.DB, Astro.params.id),
+);
 ---

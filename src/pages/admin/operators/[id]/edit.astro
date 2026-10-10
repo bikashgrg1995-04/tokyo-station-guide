@@ -3,8 +3,11 @@ import AdminLayout from "../../../../layouts/AdminLayout.astro";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/operators.css";
 
-import Button from "../../../../components/Button.astro";
-import ConfirmDialog from "../../../../components/ConfirmDialog.astro";
+import EmptyState from "../../../../components/common/EmptyState.astro";
+import Alert from "../../../../components/common/Alert.astro";
+import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
+import Button from "../../../../components/common/Button.astro";
+import ConfirmDialog from "../../../../components/common/ConfirmDialog.astro";
 
 import { getOperatorById } from "../../../../lib/db/operators";
 import { handleOperatorUpdate } from "../../../../lib/services/operators";
@@ -48,21 +51,7 @@ const admin = await Astro.session?.get<{
         <!-- Topbar -->
         <header class="admin-topbar">
 
-          <div class="admin-breadcrumb">
-          
- <Button href="/admin/operators" variant="secondary">
-              ← 
-            </Button>
-            <a href="/admin/operators">
-              Operators
-            </a>
-
-            <span>/</span>
-
-            <strong>
-              Edit Operator
-            </strong>
-          </div>
+          <Breadcrumbs backHref="/admin/operators" parentLabel="Operators" current="Edit Operator" />
 
           <div class="admin-user">
 
@@ -149,9 +138,7 @@ const admin = await Astro.session?.get<{
                       <!-- General Error -->
                       {
                         formError && (
-                          <div class="admin-alert admin-alert-error">
-                            {formError}
-                          </div>
+                          <Alert>{formError}</Alert>
                         )
                       }
 
@@ -387,21 +374,11 @@ const admin = await Astro.session?.get<{
 
                   <div class="admin-panel-body">
 
-                    <div class="admin-empty">
-
-                      <div class="admin-empty-icon">
-                        ⚠
-                      </div>
-
-                      <h3>
-                        Operator Not Found
-                      </h3>
-
-                      <p>
-                        The requested operator does not
-                        exist or may have been removed.
-                      </p>
-
+                    <EmptyState
+                      icon="⚠"
+                      title="Operator Not Found"
+                      description="The requested operator does not exist or may have been removed."
+                    >
                       <div class="admin-form-actions admin-not-found-actions">
 
                         <Button
@@ -412,8 +389,7 @@ const admin = await Astro.session?.get<{
                         </Button>
 
                       </div>
-
-                    </div>
+                    </EmptyState>
 
                   </div>
 

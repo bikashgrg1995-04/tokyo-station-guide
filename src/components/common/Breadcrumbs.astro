@@ -1,0 +1,28 @@
+---
+import Button from "./Button.astro";
+
+export interface Props {
+  /** Where the "←" button and the parent link go. */
+  backHref: string;
+  /** Label of the parent link, e.g. "Operators". */
+  parentLabel: string;
+  /** Current page label, e.g. "Add Operator". */
+  current: string;
+  /** Optional aria-label for the "←" button. */
+  backLabel?: string;
+}
+
+const { backHref, parentLabel, current, backLabel } = Astro.props as Props;
+---
+
+<div class="admin-breadcrumb">
+  <Button href={backHref} variant="secondary" ariaLabel={backLabel}>
+    ←
+  </Button>
+
+  <a href={backHref}>{parentLabel}</a>
+
+  <span>/</span>
+
+  <strong>{current}</strong>
+</div>

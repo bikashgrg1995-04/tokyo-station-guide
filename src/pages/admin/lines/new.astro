@@ -3,7 +3,8 @@ import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/admin/forms.css";
 import "../../../styles/admin/lines.css";
 
-import Button from "../../../components/Button.astro";
+import Breadcrumbs from "../../../components/common/Breadcrumbs.astro";
+import Button from "../../../components/common/Button.astro";
 
 import { getOperators } from "../../../lib/db/operators";
 import { handleLineCreate } from "../../../lib/services/lines";
@@ -32,26 +33,7 @@ const { errors, formError } = form;
 
         <header class="admin-topbar">
 
-          <div class="admin-breadcrumb">
-
-            <Button
-              href="/admin/lines"
-              variant="secondary"
-            >
-              ←
-            </Button>
-
-            <a href="/admin/lines">
-              Lines
-            </a>
-
-            <span> / </span>
-
-            <strong>
-              Add Line
-            </strong>
-
-          </div>
+          <Breadcrumbs backHref="/admin/lines" parentLabel="Lines" current="Add Line" />
 
         </header>
 

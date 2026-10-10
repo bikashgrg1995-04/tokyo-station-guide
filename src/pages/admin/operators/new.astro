@@ -3,7 +3,9 @@ import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/admin/forms.css";
 import "../../../styles/admin/operators.css";
 
-import Button from "../../../components/Button.astro";
+import Alert from "../../../components/common/Alert.astro";
+import Breadcrumbs from "../../../components/common/Breadcrumbs.astro";
+import Button from "../../../components/common/Button.astro";
 
 import { handleOperatorCreate } from "../../../lib/services/operators";
 
@@ -20,26 +22,12 @@ if (form.redirectTo) {
 const { name, slug, description, websiteUrl } = form.values;
 const { errors, formError } = form;
 
-const admin = await Astro.session?.get<{
-  id: number;
-  email: string;
-  name: string;
-}>("admin");
 ---
 
 <AdminLayout title="Add Operator" activePath="/admin/operators">
         <!-- Topbar -->
         <header class="admin-topbar">
-          <div class="admin-breadcrumb">
-            <Button href="/admin/operators" variant="secondary">
-              ← 
-            </Button>
-            <a href="/admin/operators"> Operators </a>
-
-            <span> / </span>
-
-            <strong> Add Operator </strong>
-          </div>
+          <Breadcrumbs backHref="/admin/operators" parentLabel="Operators" current="Add Operator" />
         </header>
 
         <!-- Content -->
@@ -70,7 +58,7 @@ const admin = await Astro.session?.get<{
                 <!-- General Error -->
                 {
                   formError && (
-                    <div class="admin-alert admin-alert-error">{formError}</div>
+                    <Alert>{formError}</Alert>
                   )
                 }
 

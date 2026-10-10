@@ -618,3 +618,4 @@ INSERT OR IGNORE INTO station_top_picks (station_id, top_pick_id, sort_order)
 SELECT s.id, t.id, m.ord FROM m
 JOIN stations s ON s.slug = m.station
 JOIN top_picks t ON t.slug = m.pick;
+

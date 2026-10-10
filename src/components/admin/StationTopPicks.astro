@@ -1,6 +1,6 @@
 ---
-import Button from "./Button.astro";
-import ConfirmDialog from "./ConfirmDialog.astro";
+import Button from "../common/Button.astro";
+import ConfirmDialog from "../common/ConfirmDialog.astro";
 
 interface TopPick {
   id: number;
@@ -467,5 +467,5 @@ const {
 
 
 <script>
-  import "../scripts/components/station-top-picks.ts";
+  import "../../scripts/admin/shared/station-top-picks.ts";
 </script>

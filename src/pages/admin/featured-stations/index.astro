@@ -3,8 +3,9 @@ import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/admin/tables.css";
 import "../../../styles/admin/stations.css";
 
-import Button from "../../../components/Button.astro";
-import ConfirmDialog from "../../../components/ConfirmDialog.astro";
+import EmptyState from "../../../components/common/EmptyState.astro";
+import Button from "../../../components/common/Button.astro";
+import ConfirmDialog from "../../../components/common/ConfirmDialog.astro";
 
 import { getFeaturedStations } from "../../../lib/db/featured-stations";
 
@@ -27,11 +28,6 @@ const featuredStations = await getFeaturedStations(
    Admin
 ======================================== */
 
-const admin = await Astro.session?.get<{
-  id: number;
-  email: string;
-  name: string;
-}>("admin");
 ---
 
 <AdminLayout title="Featured Stations" activePath="/admin/featured-stations">
@@ -204,21 +200,11 @@ const admin = await Astro.session?.get<{
 
                   </div>
                 ) : (
-                  <div class="admin-empty">
-
-                    <div class="admin-empty-icon">
-                      ◎
-                    </div>
-
-                    <h3>
-                      No featured stations yet
-                    </h3>
-
-                    <p>
-                      Add your first featured station
-                      to populate Popular Station Hubs.
-                    </p>
-
+                  <EmptyState
+                    icon="◎"
+                    title="No featured stations yet"
+                    description="Add your first featured station to populate Popular Station Hubs."
+                  >
                     <div class="admin-empty-action">
 
                       <Button
@@ -230,8 +216,7 @@ const admin = await Astro.session?.get<{
                       </Button>
 
                     </div>
-
-                  </div>
+                  </EmptyState>
                 )
               }
 

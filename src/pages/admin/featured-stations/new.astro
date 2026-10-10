@@ -3,10 +3,11 @@ import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/admin/forms.css";
 import "../../../styles/admin/stations.css";
 
-import Button from "../../../components/Button.astro";
+import Alert from "../../../components/common/Alert.astro";
+import Button from "../../../components/common/Button.astro";
 
 import { getStations } from "../../../lib/db/stations";
-import { createFeaturedStation } from "../../../lib/db/featured-stations";
+import { handleFeaturedStationCreate } from "../../../lib/services/featured-stations";
 
 export const prerender = false;
 
@@ -14,157 +15,24 @@ const { env } = await import("cloudflare:workers");
 
 const db = env.DB;
 
-/* ========================================
-   Form State
-======================================== */
+const form = await handleFeaturedStationCreate(Astro.request, db);
 
-let error = "";
-
-let stationIdValue = "";
-let imageUrl = "";
-let description = "";
-let sortOrderValue = "0";
-let isActive = true;
-
-const errors = {
-  stationId: "",
-  imageUrl: "",
-  description: "",
-  sortOrder: "",
-};
-
-/* ========================================
-   Existing Stations
-======================================== */
+if (form.redirectTo) {
+  return Astro.redirect(form.redirectTo);
+}
 
 const stations = await getStations(db);
 
-/* ========================================
-   Form Submission
-======================================== */
+const {
+  stationId: stationIdValue,
+  imageUrl,
+  description,
+  sortOrder: sortOrderValue,
+  isActive,
+} = form.values;
+const { errors } = form;
+const error = form.formError;
 
-if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
-
-  stationIdValue = String(
-    formData.get("station_id") ?? "",
-  ).trim();
-
-  imageUrl = String(
-    formData.get("image_url") ?? "",
-  ).trim();
-
-  description = String(
-    formData.get("description") ?? "",
-  ).trim();
-
-  sortOrderValue = String(
-    formData.get("sort_order") ?? "0",
-  ).trim();
-
-  isActive =
-    formData.get("is_active") === "on";
-
-  const stationId =
-    stationIdValue === ""
-      ? null
-      : Number(stationIdValue);
-
-  const sortOrder =
-    sortOrderValue === ""
-      ? null
-      : Number(sortOrderValue);
-
-  /* ========================================
-     Validation
-  ======================================== */
-
-  if (
-    stationId === null ||
-    !Number.isInteger(stationId) ||
-    stationId <= 0
-  ) {
-    errors.stationId =
-      "Please select a station.";
-  }
-
-  if (!imageUrl) {
-    errors.imageUrl =
-      "Image URL is required.";
-  } else if (imageUrl.length > 2000) {
-    errors.imageUrl =
-      "Image URL must be 2000 characters or less.";
-  } else {
-    try {
-      const parsedUrl = new URL(imageUrl);
-
-      if (
-        parsedUrl.protocol !== "http:" &&
-        parsedUrl.protocol !== "https:"
-      ) {
-        errors.imageUrl =
-          "Image URL must use http or https.";
-      }
-    } catch {
-      errors.imageUrl =
-        "Please enter a valid image URL.";
-    }
-  }
-
-  if (description.length > 200) {
-    errors.description =
-      "Description must be 200 characters or less.";
-  }
-
-  if (
-    sortOrder === null ||
-    !Number.isInteger(sortOrder) ||
-    sortOrder < 0
-  ) {
-    errors.sortOrder =
-      "Sort order must be a non-negative number.";
-  }
-
-  const hasErrors =
-    Object.values(errors).some(
-      (value) => value !== "",
-    );
-
-  /* ========================================
-     Create
-  ======================================== */
-
-  if (!hasErrors) {
-    try {
-      await createFeaturedStation(db, {
-        stationId: stationId as number,
-        imageUrl,
-        description,
-        sortOrder: sortOrder as number,
-        isActive,
-      });
-
-      return Astro.redirect(
-        "/admin/featured-stations",
-      );
-    } catch (err) {
-      console.error(err);
-
-      error =
-        "Unable to create featured station. The station may already be featured.";
-    }
-  }
-}
-
-/* ========================================
-   Admin
-======================================== */
-
-const admin = await Astro.session?.get<{
-  id: number;
-  email: string;
-  name: string;
-}>("admin");
 ---
 
 <AdminLayout title="Add Featured Station" activePath="/admin/featured-stations">
@@ -243,9 +111,7 @@ const admin = await Astro.session?.get<{
 
               {
                 error && (
-                  <div class="admin-alert admin-alert-error">
-                    {error}
-                  </div>
+                  <Alert>{error}</Alert>
                 )
               }
 

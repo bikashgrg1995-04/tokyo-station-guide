@@ -1,0 +1,25 @@
+---
+export interface Props {
+  icon?: string;
+  title: string;
+  description?: string;
+}
+
+const { icon, title, description } = Astro.props as Props;
+---
+
+<div class="admin-empty">
+  {
+    icon && (
+      <div class="admin-empty-icon" aria-hidden="true">
+        {icon}
+      </div>
+    )
+  }
+
+  <h3>{title}</h3>
+
+  {description && <p>{description}</p>}
+
+  <slot />
+</div>

@@ -3,10 +3,11 @@ import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/admin/tables.css";
 import "../../../styles/admin/lines.css";
 
-import Button from "../../../components/Button.astro";
-import SearchInput from "../../../components/SearchInput.astro";
-import ConfirmDialog from "../../../components/ConfirmDialog.astro";
-import Pagination from "../../../components/Pagination.astro";
+import EmptyState from "../../../components/common/EmptyState.astro";
+import Button from "../../../components/common/Button.astro";
+import SearchInput from "../../../components/common/SearchInput.astro";
+import ConfirmDialog from "../../../components/common/ConfirmDialog.astro";
+import Pagination from "../../../components/common/Pagination.astro";
 
 import { loadLineList } from "../../../lib/services/lines";
 
@@ -24,11 +25,6 @@ const {
   paginationUrl,
 } = await loadLineList(env.DB, Astro.url);
 
-const admin = await Astro.session?.get<{
-  id: number;
-  email: string;
-  name: string;
-}>("admin");
 ---
 
 <AdminLayout title="Lines" activePath="/admin/lines">
@@ -237,31 +233,15 @@ const admin = await Astro.session?.get<{
 
                   </>
                 ) : (
-                  <div class="admin-empty">
-
-                    <div
-                      class="admin-empty-icon"
-                      aria-hidden="true"
-                    >
-                      ↔
-                    </div>
-
-                    <h3>
-                      {
-                        searchParam
+                  <EmptyState
+                    icon="↔"
+                    title={searchParam
                           ? "No lines found"
-                          : "No lines yet"
-                      }
-                    </h3>
-
-                    <p>
-                      {
-                        searchParam
+                          : "No lines yet"}
+                    description={searchParam
                           ? "Try a different search term."
-                          : "Add your first railway line to get started."
-                      }
-                    </p>
-
+                          : "Add your first railway line to get started."}
+                  >
                     {
                       searchParam && (
                         <div class="admin-empty-action">
@@ -277,8 +257,7 @@ const admin = await Astro.session?.get<{
                         </div>
                       )
                     }
-
-                  </div>
+                  </EmptyState>
                 )
               }
 

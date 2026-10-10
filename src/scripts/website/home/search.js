@@ -7,15 +7,6 @@ import { renderRecentStations } from "./recent-stations.js";
 import { selectStationOnMap } from "./station-lookup.js";
 import { $, esc } from "./utils.js";
 
-/*
- * Kept for the station information button.
- *
- * Search items no longer use this.
- */
-function stationHref(slug) {
-  return "/stations/" + encodeURIComponent(slug);
-}
-
 function showSearchHome() {
   searchHome.hidden = false;
 

@@ -89,6 +89,10 @@ export interface CreateStationInput {
   about?: string | null;
   facilities?: string | null;
   topPicks?: string | null;
+  /** Facility ids to save (used instead of `facilities` when given). */
+  facilityIds?: number[];
+  /** Top pick ids to save, in order (used instead of `topPicks` when given). */
+  topPickIds?: number[];
 }
 
 export interface UpdateStationInput {
@@ -101,6 +105,10 @@ export interface UpdateStationInput {
   about?: string | null;
   facilities?: string | null;
   topPicks?: string | null;
+  /** Facility ids to save (used instead of `facilities` when given). */
+  facilityIds?: number[];
+  /** Top pick ids to save, in order (used instead of `topPicks` when given). */
+  topPickIds?: number[];
 }
 
 export interface PaginatedStations {
@@ -115,7 +123,7 @@ export interface PaginatedStations {
    Station Detail Field Helpers
 ======================================== */
 
-export function splitLines(text: string): string[] {
+function splitLines(text: string): string[] {
   return text
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -147,21 +155,6 @@ export function linesToJson(text: string): string | null {
   return items.length ? JSON.stringify(items) : null;
 }
 
-export function jsonToLines(
-  json: string | null | undefined,
-): string {
-  if (!json) {
-    return "";
-  }
-
-  try {
-    const parsed = JSON.parse(json);
-
-    return Array.isArray(parsed) ? parsed.join("\n") : "";
-  } catch {
-    return json;
-  }
-}
 
 /* ========================================
    Internal Relation Helpers
@@ -602,34 +595,6 @@ export async function searchStations(
   return result.results;
 }
 
-/* ========================================
-   Get Stations For Admin
-======================================== */
-
-export async function getAdminStations(
-  db: D1Database,
-): Promise<StationAdminListItem[]> {
-  const result = await db
-    .prepare(
-      `
-        SELECT
-          id,
-          name,
-          name_japanese,
-          slug,
-          latitude,
-          longitude,
-          description,
-          created_at,
-          updated_at
-        FROM stations
-        ORDER BY name ASC
-      `,
-    )
-    .all<StationAdminListItem>();
-
-  return result.results;
-}
 
 /* ========================================
    Get Stations For Admin - Paginated
@@ -813,15 +778,11 @@ export async function createStation(
    * This prevents creating a station with invalid
    * facility/top-pick references.
    */
-  const facilityIds = await resolveFacilityIds(
-    db,
-    input.facilities,
-  );
+  const facilityIds =
+    input.facilityIds ?? (await resolveFacilityIds(db, input.facilities));
 
-  const topPickIds = await resolveTopPickIds(
-    db,
-    input.topPicks,
-  );
+  const topPickIds =
+    input.topPickIds ?? (await resolveTopPickIds(db, input.topPicks));
 
   const result = await db
     .prepare(
@@ -914,15 +875,11 @@ export async function updateStation(
    * Resolve relations first so invalid names do not
    * partially modify the station.
    */
-  const facilityIds = await resolveFacilityIds(
-    db,
-    input.facilities,
-  );
+  const facilityIds =
+    input.facilityIds ?? (await resolveFacilityIds(db, input.facilities));
 
-  const topPickIds = await resolveTopPickIds(
-    db,
-    input.topPicks,
-  );
+  const topPickIds =
+    input.topPickIds ?? (await resolveTopPickIds(db, input.topPicks));
 
   await db
     .prepare(
