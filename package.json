@@ -1,5 +1,5 @@
 {
-  "name": "d-tokyo-station-guide",
+  "name": "tokyo-station-guide",
   "type": "module",
   "version": "0.0.1",
   "engines": {
@@ -9,7 +9,14 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "check": "astro check",
+    "types": "wrangler types",
+    "db:migrate:local": "wrangler d1 migrations apply tokyo-station-guide-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply tokyo-station-guide-db --remote",
+    "db:seed:local": "wrangler d1 execute tokyo-station-guide-db --local --file=db/seed/seed-core.sql && wrangler d1 execute tokyo-station-guide-db --local --file=db/seed/seed-details.sql && wrangler d1 execute tokyo-station-guide-db --local --file=db/seed/seed-featured.sql",
+    "db:reset:local": "wrangler d1 execute tokyo-station-guide-db --local --file=db/seed/reset.sql",
+    "admin:hash": "node scripts/create-admin-hash.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.3",

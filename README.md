@@ -1,43 +1,81 @@
-# Astro Starter Kit: Minimal
+# Tokyo Station Guide
+
+Interactive Tokyo train map with a station guide, plus an admin area to manage the data.
+
+- **Website** (`/`): loop-map home page, station board, station sheet, search.
+- **Admin** (`/admin`): operators, lines (and the stations on each line), stations (facilities, top picks), featured stations.
+
+## Stack
+
+Astro (server output) on Cloudflare Workers, D1 (SQLite) for data, a KV `SESSION` binding for admin sessions.
+
+## Commands
+
+| Command | What it does |
+| :-- | :-- |
+| `npm run dev` | Dev server at http://localhost:4321 |
+| `npm run build` | Production build into `dist/` |
+| `npm run preview` | Preview the build locally |
+| `npm run check` | Type-check (`astro check`), run it before every commit |
+| `npm run types` | Regenerate `worker-configuration.d.ts` from `wrangler.jsonc` |
+| `npm run db:migrate:local` / `db:migrate:remote` | Apply `db/migrations` to the local / production D1 |
+| `npm run db:seed:local` | Load the test data (`db/seed/seed-*.sql`) into the local D1 |
+| `npm run db:reset:local` | Delete all content rows from the local D1 (keeps tables and admin users) |
+| `npm run admin:hash -- "Password"` | Print a password hash for an admin user |
+
+## First-time setup
 
 ```sh
-npm create astro@latest -- --template minimal
+npm install
+npm run db:migrate:local
+npm run db:seed:local
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Create the first admin user:
 
-## 🚀 Project Structure
+1. `npm run admin:hash -- "YourPassword"` prints a hash.
+2. Copy `db/seed/admin.example.sql` to `db/seed/admin.local.sql` (git-ignored) and put your email and the hash in it.
+3. `npx wrangler d1 execute tokyo-station-guide-db --local --file=db/seed/admin.local.sql`
+   (use `--remote` for production).
 
-Inside of your Astro project, you'll see the following folders and files:
+Never commit real emails or password hashes.
+
+## Project structure
 
 ```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+src/
+  pages/            routes: markup only, no business logic
+    admin/          admin pages (operators, lines, stations, featured-stations, auth)
+  layouts/          BaseLayout, WebsiteLayout, AdminLayout
+  components/
+    common/         shared UI (Button, Alert, EmptyState, Breadcrumbs, ConfirmDialog, Pagination, SearchInput)
+    admin/          admin-only components (AdminNavigation, StationTopPicks)
+  lib/
+    db/             SQL only: one file (or folder) per table group
+    services/       what a page does: read the form, validate, save, redirect
+    validators/     pure validation functions
+    auth/           password hashing, session helpers
+  scripts/          browser code, imported by pages and components
+    admin/          admin pages (+ admin/shared)
+    website/        home page (+ website/home)
+    common/         used by both
+  styles/           admin/, website/, common/
+  config/           site constants
+db/
+  migrations/       schema (applied by wrangler)
+  seed/             test data, reset, admin template
+scripts/            command-line tools (not part of the app)
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Where does new code go?
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+- A page only holds markup and one call to a service. If a page needs a `try/catch` or an `if` about the form, it belongs in `lib/services`.
+- SQL lives in `lib/db`, and only there. Services call it, pages never do.
+- A form rule (length, format) goes in `lib/validators`.
+- Markup used on two or more pages becomes a component in `components/common`.
+- Browser JavaScript goes in `src/scripts/...` and is imported with a normal `<script>import "..."</script>`, never inline.
 
-Any static assets, like images, can be placed in the `public/` directory.
+## Notes
 
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+- `start-tunnel.bat` starts the dev server and a Cloudflare quick tunnel (needs `cloudflared`).
+- Images are in `public/images`.

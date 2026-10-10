@@ -1,6 +1,6 @@
 // List page: delete confirmation and auto search
 import { initializeDeleteConfirm } from "./shared/delete-confirm";
-import { initializeAutoSearch } from "../auto-search";
+import { initializeAutoSearch } from "../common/auto-search";
 
 const initializeDeleteButtons = initializeDeleteConfirm({
   dialogId: "delete-station-dialog",

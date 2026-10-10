@@ -1,6 +1,6 @@
 // Moved as-is from src/pages/admin/lines/[id]/stations.astro
 
-import { initializeAutoSearch } from "../auto-search";
+import { initializeAutoSearch } from "../common/auto-search";
 
 
 /* ========================================

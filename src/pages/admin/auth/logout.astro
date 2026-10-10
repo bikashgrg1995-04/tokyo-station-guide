@@ -2,7 +2,7 @@
 export const prerender = false;
 
 if (Astro.request.method === "POST") {
-  await Astro.session?.destroy();
+  Astro.session?.destroy();
 
   return Astro.redirect("/admin/auth/login");
 }
