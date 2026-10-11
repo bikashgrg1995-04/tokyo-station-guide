@@ -1,4 +1,5 @@
 ---
+import { env } from "cloudflare:workers";
 import WebsiteLayout from "../layouts/WebsiteLayout.astro";
 import Topbar from "../components/website/Topbar.astro";
 import TransitMap from "../components/website/TransitMap.astro";
@@ -12,7 +13,6 @@ import { getFeaturedStations } from "../lib/db/featured-stations";
 
 export const prerender = false;
 
-const { env } = await import("cloudflare:workers");
 const db = env.DB;
 
 const siteName = "Tokyo Station Guide";

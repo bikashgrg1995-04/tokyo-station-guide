@@ -1,182 +1,199 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import "../../styles/admin/dashboard.css";
-
-import Button from "../../components/common/Button.astro";
+import { getStationSuggestions } from "../../lib/db/station-suggestions";
 
 export const prerender = false;
 
 const title = "Dashboard";
 
 const { env } = await import("cloudflare:workers");
-
 const db = env.DB;
 
-const operatorCount = await db
-  .prepare("SELECT COUNT(*) AS count FROM operators")
-  .first<{ count: number }>();
+const [
+  operatorCount,
+  lineCount,
+  stationCount,
+  facilityCount,
+  topPickCount,
+  lineStationCount,
+  suggestions,
+  pendingCount,
+] = await Promise.all([
+  db
+    .prepare("SELECT COUNT(*) AS count FROM operators")
+    .first<{ count: number }>(),
+  db.prepare("SELECT COUNT(*) AS count FROM lines").first<{ count: number }>(),
+  db
+    .prepare("SELECT COUNT(*) AS count FROM stations")
+    .first<{ count: number }>(),
+  db
+    .prepare("SELECT COUNT(*) AS count FROM facilities")
+    .first<{ count: number }>(),
+  db
+    .prepare("SELECT COUNT(*) AS count FROM top_picks")
+    .first<{ count: number }>(),
+  db
+    .prepare("SELECT COUNT(*) AS count FROM line_stations")
+    .first<{ count: number }>(),
+  getStationSuggestions(db),
+  db
+    .prepare(
+      "SELECT COUNT(*) AS count FROM station_suggestions WHERE status = 'pending'",
+    )
+    .first<{ count: number }>(),
+]);
 
-const lineCount = await db
-  .prepare("SELECT COUNT(*) AS count FROM lines")
-  .first<{ count: number }>();
+const latestSuggestions = suggestions.slice(0, 8);
+const pendingSuggestions = pendingCount?.count ?? 0;
 
-const stationCount = await db
-  .prepare("SELECT COUNT(*) AS count FROM stations")
-  .first<{ count: number }>();
+function formatDate(value: string): string {
+  const date = new Date(value);
 
-const facilityCount = await db
-  .prepare("SELECT COUNT(*) AS count FROM facilities")
-  .first<{ count: number }>();
+  if (Number.isNaN(date.getTime())) return value;
 
-const topPickCount = await db
-  .prepare("SELECT COUNT(*) AS count FROM top_picks")
-  .first<{ count: number }>();
-
-const lineStationCount = await db
-  .prepare("SELECT COUNT(*) AS count FROM line_stations")
-  .first<{ count: number }>();
+  return date.toLocaleDateString("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 ---
 
 <AdminLayout title={title} activePath="/admin">
-  <!-- Content -->
   <div class="admin-content">
-    <!-- Page Header -->
     <div class="admin-page-header">
       <div>
         <h2>Dashboard</h2>
-
         <p>Manage stations, railway lines and operators.</p>
       </div>
     </div>
 
-    <!-- Stats -->
     <section class="admin-stats">
       <div class="admin-stat-card">
-        <span class="admin-stat-label"> Operators </span>
-
-        <strong class="admin-stat-value">
-          {operatorCount?.count ?? 0}
-        </strong>
+        <span class="admin-stat-label">Operators</span>
+        <strong class="admin-stat-value">{operatorCount?.count ?? 0}</strong>
       </div>
-
       <div class="admin-stat-card">
-        <span class="admin-stat-label"> Railway Lines </span>
-
-        <strong class="admin-stat-value">
-          {lineCount?.count ?? 0}
-        </strong>
+        <span class="admin-stat-label">Railway Lines</span>
+        <strong class="admin-stat-value">{lineCount?.count ?? 0}</strong>
       </div>
-
       <div class="admin-stat-card">
-        <span class="admin-stat-label"> Stations </span>
-
-        <strong class="admin-stat-value">
-          {stationCount?.count ?? 0}
-        </strong>
+        <span class="admin-stat-label">Stations</span>
+        <strong class="admin-stat-value">{stationCount?.count ?? 0}</strong>
       </div>
-
       <div class="admin-stat-card">
         <span class="admin-stat-label">Facilities</span>
-
-        <strong class="admin-stat-value">
-          {facilityCount?.count ?? 0}
-        </strong>
+        <strong class="admin-stat-value">{facilityCount?.count ?? 0}</strong>
       </div>
-
       <div class="admin-stat-card">
         <span class="admin-stat-label">Top Picks</span>
-
-        <strong class="admin-stat-value">
-          {topPickCount?.count ?? 0}
-        </strong>
+        <strong class="admin-stat-value">{topPickCount?.count ?? 0}</strong>
       </div>
-
       <div class="admin-stat-card">
-        <span class="admin-stat-label"> Line Connections </span>
-
-        <strong class="admin-stat-value">
-          {lineStationCount?.count ?? 0}
-        </strong>
+        <span class="admin-stat-label">Line Connections</span>
+        <strong class="admin-stat-value">{lineStationCount?.count ?? 0}</strong>
       </div>
     </section>
 
-    <!-- Dashboard Panels -->
     <section class="admin-dashboard-grid">
-      <!-- Quick Actions -->
       <div class="admin-panel">
         <div class="admin-panel-header">
           <div>
-            <h3>Quick Actions</h3>
-
-            <p>Manage your station guide content.</p>
+            <h3>Station Suggestions</h3>
+            <p>
+              {pendingSuggestions} pending review
+              {pendingSuggestions === 1 ? "" : "s"}
+            </p>
           </div>
         </div>
 
-        <div class="admin-panel-body">
-          <div class="admin-quick-actions">
-            <Button href="/admin/stations/new" variant="primary">
-              + Add Station
-            </Button>
-
-            <Button href="/admin/lines/new" variant="secondary">
-              + Add Line
-            </Button>
-
-            <Button href="/admin/operators/new" variant="secondary">
-              + Add Operator
-            </Button>
-
-            <Button href="/admin/facilities/new" variant="secondary">
-              + Add Facility
-            </Button>
-
-            <Button href="/admin/top-picks/new" variant="secondary">
-              + Add Top Pick
-            </Button>
-          </div>
-        </div>
+        {
+          latestSuggestions.length > 0 ? (
+            <div class="admin-suggestions-table-wrap">
+              <table class="admin-suggestions-table">
+                <thead>
+                  <tr>
+                    <th>Station</th>
+                    <th>Submitted</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {latestSuggestions.map((suggestion) => (
+                    <tr>
+                      <td>
+                        <span class="admin-suggestion-station">
+                          {suggestion.station_name}
+                        </span>
+                        <span class="admin-suggestion-meta">
+                          {suggestion.submitter_name || "Anonymous"}
+                        </span>
+                      </td>
+                      <td>{formatDate(suggestion.created_at)}</td>
+                      <td>
+                        <span
+                          class={`admin-suggestion-status is-${suggestion.status}`}
+                        >
+                          {suggestion.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="admin-suggestion-actions">
+                          <button
+                            type="button"
+                            class="suggestion-view-btn"
+                            data-suggestion-id={suggestion.id}
+                          >
+                            View
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div class="admin-empty">
+              <div class="admin-empty-icon">✓</div>
+              <h3>No suggestions yet</h3>
+              <p>Station suggestions from visitors will appear here.</p>
+            </div>
+          )
+        }
       </div>
 
-      <!-- Content Management -->
       <div class="admin-panel">
         <div class="admin-panel-header">
           <div>
             <h3>Content Management</h3>
-
             <p>Manage the core railway data.</p>
           </div>
         </div>
-
         <div class="admin-panel-body">
           <div class="admin-dashboard-links">
             <a href="/admin/stations">
-              <strong> Stations </strong>
-
-              <span>
-                Manage station information, coordinates and descriptions.
-              </span>
+              <strong>Stations</strong>
+              <span
+                >Manage station information, coordinates and descriptions.</span
+              >
             </a>
-
             <a href="/admin/lines">
-              <strong> Railway Lines </strong>
-
-              <span> Manage railway lines and their station order. </span>
+              <strong>Railway Lines</strong>
+              <span>Manage railway lines and their station order.</span>
             </a>
-
             <a href="/admin/operators">
-              <strong> Operators </strong>
-
-              <span> Manage railway operators and websites. </span>
+              <strong>Operators</strong>
+              <span>Manage railway operators and websites.</span>
             </a>
             <a href="/admin/facilities">
               <strong>Facilities</strong>
-
-              <span> Manage station facilities, icons and display order. </span>
+              <span>Manage station facilities, icons and display order.</span>
             </a>
-
             <a href="/admin/top-picks">
               <strong>Top Picks</strong>
-
               <span
                 >Manage featured places, food, shopping and attractions.</span
               >
@@ -186,4 +203,800 @@ const lineStationCount = await db
       </div>
     </section>
   </div>
+
+  <dialog id="suggestion-modal" class="suggestion-modal">
+    <div class="suggestion-modal-header">
+      <div>
+        <p class="suggestion-eyebrow">STATION SUGGESTION REVIEW</p>
+        <h2 id="suggestion-modal-title">Review suggestion</h2>
+        <p id="suggestion-modal-subtitle" class="suggestion-subtitle"></p>
+      </div>
+      <button
+        type="button"
+        id="suggestion-close"
+        class="suggestion-close"
+        aria-label="Close dialog"
+      >
+        &times;
+      </button>
+    </div>
+
+    <div id="suggestion-modal-body" class="suggestion-modal-body">
+      <p>Loading suggestion...</p>
+    </div>
+
+    <p id="suggestion-feedback" class="suggestion-feedback" role="status"></p>
+
+    <div class="suggestion-modal-footer">
+      <button
+        type="button"
+        id="suggestion-delete"
+        class="suggestion-btn suggestion-btn-danger"
+      >
+        Delete
+      </button>
+      <div class="suggestion-review-actions">
+        <button
+          type="button"
+          id="suggestion-decline"
+          class="suggestion-btn suggestion-btn-secondary"
+        >
+          Decline
+        </button>
+        <button
+          type="button"
+          id="suggestion-accept"
+          class="suggestion-btn suggestion-btn-primary"
+        >
+          Accept changes
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <style>
+    .suggestion-view-btn {
+      border: 0;
+      background: none;
+      color: var(--admin-primary, #2563eb);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 6px 8px;
+    }
+
+    .suggestion-modal {
+      width: min(900px, calc(100vw - 32px));
+      max-width: 900px;
+      max-height: 88vh;
+      padding: 0;
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 14px;
+      color: var(--admin-text, #111827);
+      background: var(--admin-surface, #fff);
+      box-shadow: 0 24px 80px rgb(0 0 0 / 20%);
+    }
+
+    .suggestion-modal::backdrop {
+      background: rgb(15 23 42 / 58%);
+      backdrop-filter: blur(2px);
+    }
+
+    .suggestion-modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 22px 24px;
+      border-bottom: 1px solid var(--admin-border, #e5e7eb);
+    }
+
+    .suggestion-eyebrow {
+      margin: 0 0 6px;
+      color: var(--admin-muted, #6b7280);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+    }
+
+    .suggestion-modal-header h2 {
+      margin: 0;
+      font-size: 21px;
+    }
+
+    .suggestion-subtitle {
+      margin: 6px 0 0;
+      color: var(--admin-muted, #6b7280);
+      font-size: 13px;
+    }
+
+    .suggestion-close {
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .suggestion-modal-body {
+      padding: 22px 24px;
+      overflow: auto;
+    }
+
+    .suggestion-compare {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .suggestion-changes-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 4px 0 12px;
+    }
+
+    .suggestion-changes-heading h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .suggestion-changes-heading p {
+      margin: 5px 0 0;
+      color: var(--admin-muted, #6b7280);
+      font-size: 12px;
+    }
+
+    .suggestion-compare {
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .suggestion-compare thead th {
+      font-size: 12px;
+      color: var(--admin-muted, #6b7280);
+    }
+
+    .suggestion-compare tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .suggestion-new-value {
+      color: var(--admin-text, #111827);
+      font-weight: 500;
+    }
+
+    .suggestion-raw-tag {
+      display: inline-block;
+      margin-top: 5px;
+      padding: 3px 6px;
+      border-radius: 5px;
+      background: var(--admin-table-header, #f3f4f6);
+      color: var(--admin-muted, #6b7280);
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .suggestion-no-changes {
+      padding: 30px 20px;
+      border: 1px dashed var(--admin-border, #d1d5db);
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .suggestion-no-changes-icon {
+      display: inline-grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border-radius: 50%;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 18px;
+    }
+
+    .suggestion-no-changes h3 {
+      margin: 12px 0 5px;
+      font-size: 15px;
+    }
+
+    .suggestion-no-changes p {
+      margin: 0;
+      color: var(--admin-muted, #6b7280);
+      font-size: 13px;
+    }
+
+    .suggestion-compare th,
+    .suggestion-compare td {
+      padding: 12px;
+      border-bottom: 1px solid var(--admin-border, #e5e7eb);
+      text-align: left;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }
+
+    .suggestion-compare thead th {
+      background: var(--admin-table-header, #f8fafc);
+      font-weight: 700;
+    }
+
+    .suggestion-compare th:first-child {
+      width: 25%;
+    }
+
+    .suggestion-field-name {
+      color: var(--admin-muted, #6b7280);
+      font-weight: 600;
+    }
+
+    .suggestion-new-value {
+      background: var(--admin-highlight, #eff6ff);
+    }
+
+    .suggestion-no-change {
+      color: var(--admin-muted, #6b7280);
+    }
+
+    .suggestion-details {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .suggestion-detail {
+      padding: 13px;
+      border: 1px solid var(--admin-border, #e5e7eb);
+      border-radius: 9px;
+      min-width: 0;
+    }
+
+    .suggestion-detail-label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--admin-muted, #6b7280);
+      font-size: 12px;
+    }
+
+    .suggestion-detail-value {
+      overflow-wrap: anywhere;
+      font-size: 13px;
+    }
+
+    .suggestion-feedback {
+      margin: 0;
+      padding: 0 24px;
+      font-size: 13px;
+    }
+
+    .suggestion-feedback:not(:empty) {
+      padding-top: 12px;
+    }
+
+    .suggestion-modal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 24px;
+      border-top: 1px solid var(--admin-border, #e5e7eb);
+    }
+
+    .suggestion-review-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .suggestion-btn {
+      padding: 10px 14px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .suggestion-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .suggestion-btn-primary {
+      color: white;
+      background: var(--admin-primary, #2563eb);
+    }
+
+    .suggestion-btn-secondary {
+      border-color: var(--admin-border, #d1d5db);
+      background: transparent;
+      color: inherit;
+    }
+
+    .suggestion-btn-danger {
+      border-color: #fecaca;
+      color: #b91c1c;
+      background: #fff;
+    }
+
+    .suggestion-review-note {
+      margin: 14px 0 0;
+      color: var(--admin-muted, #6b7280);
+      font-size: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .suggestion-modal-header,
+      .suggestion-modal-body {
+        padding: 16px;
+      }
+
+      .suggestion-modal-footer {
+        padding: 14px 16px;
+        align-items: stretch;
+        flex-direction: column-reverse;
+      }
+
+      .suggestion-review-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .suggestion-modal-footer > button {
+        width: 100%;
+      }
+
+      .suggestion-details {
+        grid-template-columns: 1fr;
+      }
+
+      .suggestion-compare {
+        min-width: 570px;
+      }
+
+      .suggestion-modal-body {
+        overflow-x: auto;
+      }
+    }
+  </style>
+
+  <script>
+    const modal =
+      document.querySelector<HTMLDialogElement>("#suggestion-modal");
+    const modalTitle = document.querySelector<HTMLElement>(
+      "#suggestion-modal-title",
+    );
+    const modalSubtitle = document.querySelector<HTMLElement>(
+      "#suggestion-modal-subtitle",
+    );
+    const modalBody = document.querySelector<HTMLElement>(
+      "#suggestion-modal-body",
+    );
+    const feedback = document.querySelector<HTMLElement>(
+      "#suggestion-feedback",
+    );
+
+    const closeButton =
+      document.querySelector<HTMLButtonElement>("#suggestion-close");
+    const acceptButton =
+      document.querySelector<HTMLButtonElement>("#suggestion-accept");
+    const declineButton = document.querySelector<HTMLButtonElement>(
+      "#suggestion-decline",
+    );
+    const deleteButton =
+      document.querySelector<HTMLButtonElement>("#suggestion-delete");
+
+    type SuggestionData = {
+      id: number;
+      station_id: number;
+      station_name: string;
+      station_slug: string;
+      suggested_name: string | null;
+      suggested_name_japanese: string | null;
+      suggested_description: string | null;
+      suggested_about: string | null;
+      suggested_latitude: number | null;
+      suggested_longitude: number | null;
+      suggested_lines: string | null;
+      suggested_platforms: string | null;
+      suggested_facilities: string | null;
+      suggested_top_picks: string | null;
+      reason: string | null;
+      submitter_name: string | null;
+      submitter_email: string | null;
+      status: string;
+      created_at: string;
+    };
+
+    type StationData = {
+      id: number;
+      name: string;
+      name_japanese: string | null;
+      slug: string;
+      latitude: number | null;
+      longitude: number | null;
+      description: string | null;
+      about: string | null;
+      updated_at: string;
+    };
+
+    type ApiResponse = {
+      ok: boolean;
+      message?: string;
+      suggestion?: SuggestionData;
+      station?: StationData;
+      status?: string;
+      updatedFields?: string[];
+    };
+
+    let activeId: number | null = null;
+    let activeSuggestion: SuggestionData | null = null;
+    let busy = false;
+
+    function escapeHtml(value: unknown): string {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function displayValue(value: unknown): string {
+      if (value === null || value === undefined || value === "") {
+        return "—";
+      }
+
+      return String(value);
+    }
+
+    function setBusy(value: boolean) {
+      busy = value;
+
+      for (const button of [acceptButton, declineButton, deleteButton]) {
+        if (button) button.disabled = value;
+      }
+    }
+
+    function renderComparison(
+      suggestion: SuggestionData,
+      station: StationData,
+    ) {
+      if (!modalBody) return;
+
+      const fields = [
+        {
+          label: "Station name",
+          current: station.name,
+          proposed: suggestion.suggested_name,
+        },
+        {
+          label: "Japanese name",
+          current: station.name_japanese,
+          proposed: suggestion.suggested_name_japanese,
+        },
+        {
+          label: "Description",
+          current: station.description,
+          proposed: suggestion.suggested_description,
+        },
+        {
+          label: "About",
+          current: station.about,
+          proposed: suggestion.suggested_about,
+        },
+        {
+          label: "Latitude",
+          current: station.latitude,
+          proposed: suggestion.suggested_latitude,
+        },
+        {
+          label: "Longitude",
+          current: station.longitude,
+          proposed: suggestion.suggested_longitude,
+        },
+        {
+          label: "Lines",
+          current: null,
+          proposed: suggestion.suggested_lines,
+          raw: true,
+        },
+        {
+          label: "Platforms",
+          current: null,
+          proposed: suggestion.suggested_platforms,
+          raw: true,
+        },
+        {
+          label: "Facilities",
+          current: null,
+          proposed: suggestion.suggested_facilities,
+          raw: true,
+        },
+        {
+          label: "Top picks",
+          current: null,
+          proposed: suggestion.suggested_top_picks,
+          raw: true,
+        },
+      ];
+
+      const hasProposedValue = (value: unknown) =>
+        value !== null &&
+        value !== undefined &&
+        !(typeof value === "string" && value.trim() === "");
+
+      const valuesMatch = (current: unknown, proposed: unknown) => {
+        if (typeof current === "string" && typeof proposed === "string") {
+          return current.trim() === proposed.trim();
+        }
+
+        return String(current ?? "") === String(proposed ?? "");
+      };
+
+      const changedFields = fields.filter((field) => {
+        if (!hasProposedValue(field.proposed)) return false;
+
+        // Raw relationship suggestions have no current value to compare.
+        if ("raw" in field && field.raw) return true;
+
+        return !valuesMatch(field.current, field.proposed);
+      });
+
+      modalBody.innerHTML = `
+    <div class="suggestion-details">
+      <div class="suggestion-detail">
+        <span class="suggestion-detail-label">Station</span>
+        <div class="suggestion-detail-value">
+          ${escapeHtml(station.name)}
+        </div>
+      </div>
+
+      <div class="suggestion-detail">
+        <span class="suggestion-detail-label">Submitted by</span>
+        <div class="suggestion-detail-value">
+          ${escapeHtml(suggestion.submitter_name || "Anonymous")}
+        </div>
+      </div>
+
+      <div class="suggestion-detail">
+        <span class="suggestion-detail-label">Email</span>
+        <div class="suggestion-detail-value">
+          ${escapeHtml(suggestion.submitter_email || "—")}
+        </div>
+      </div>
+
+      <div class="suggestion-detail">
+        <span class="suggestion-detail-label">Reason</span>
+        <div class="suggestion-detail-value">
+          ${escapeHtml(suggestion.reason || "No reason provided")}
+        </div>
+      </div>
+    </div>
+
+    ${
+      changedFields.length > 0
+        ? `
+          <div class="suggestion-changes-heading">
+            <div>
+              <h3>Proposed changes</h3>
+              <p>${changedFields.length} field${changedFields.length === 1 ? "" : "s"} to review</p>
+            </div>
+          </div>
+
+          <table class="suggestion-compare">
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>Current value</th>
+                <th>Proposed value</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${changedFields
+                .map(
+                  (field) => `
+                <tr>
+                  <td class="suggestion-field-name">
+                    ${escapeHtml(field.label)}
+                    ${
+                      "raw" in field && field.raw
+                        ? '<span class="suggestion-raw-tag">Raw suggestion</span>'
+                        : ""
+                    }
+                  </td>
+                  <td>
+                    ${escapeHtml(
+                      "raw" in field && field.raw
+                        ? "Not compared"
+                        : displayValue(field.current),
+                    )}
+                  </td>
+                  <td class="suggestion-new-value">
+                    ${escapeHtml(displayValue(field.proposed))}
+                  </td>
+                </tr>
+              `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+
+          <p class="suggestion-review-note">
+            Only fields with different proposed values are shown.
+            Raw relationship suggestions are for review and are not
+            applied by the current review API.
+          </p>
+        `
+        : `
+          <div class="suggestion-no-changes">
+            <span class="suggestion-no-changes-icon">✓</span>
+            <h3>No changes proposed</h3>
+            <p>There are no new or different field values to review.</p>
+          </div>
+        `
+    }
+  `;
+    }
+
+    async function openSuggestion(id: number) {
+      if (!modal || !modalBody || !modalTitle || !modalSubtitle || !feedback)
+        return;
+
+      activeId = id;
+      activeSuggestion = null;
+      feedback.textContent = "";
+      modalTitle.textContent = "Loading suggestion…";
+      modalSubtitle.textContent = "";
+      modalBody.innerHTML =
+        "<p>Loading current station and suggestion details…</p>";
+
+      if (!modal.open) modal.showModal();
+
+      try {
+        const response = await fetch(`/api/admin/station-suggestions/${id}`, {
+          headers: { Accept: "application/json" },
+          cache: "no-store",
+        });
+
+        const result = (await response.json()) as ApiResponse;
+
+        if (
+          !response.ok ||
+          !result.ok ||
+          !result.suggestion ||
+          !result.station
+        ) {
+          throw new Error(result.message || "Could not load this suggestion.");
+        }
+
+        activeSuggestion = result.suggestion;
+        modalTitle.textContent = result.station.name;
+        modalSubtitle.textContent = `Suggestion #${result.suggestion.id} · Status: ${result.suggestion.status}`;
+
+        renderComparison(result.suggestion, result.station);
+
+        const isPending = result.suggestion.status === "pending";
+
+        if (acceptButton) acceptButton.hidden = !isPending;
+        if (declineButton) declineButton.hidden = !isPending;
+        if (deleteButton) deleteButton.hidden = false;
+      } catch (error) {
+        modalBody.innerHTML = "";
+        const message =
+          error instanceof Error ? error.message : "Unexpected error.";
+        modalBody.textContent = message;
+      }
+    }
+
+    async function reviewSuggestion(action: "accept" | "reject") {
+      if (activeId === null || busy || !feedback) return;
+
+      const confirmation =
+        action === "accept"
+          ? "Accept this suggestion and apply its supported field changes?"
+          : "Decline this station suggestion?";
+
+      if (!window.confirm(confirmation)) return;
+
+      setBusy(true);
+      feedback.textContent =
+        action === "accept" ? "Applying suggestion…" : "Declining suggestion…";
+
+      try {
+        const response = await fetch(
+          `/api/admin/station-suggestions/${activeId}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({ action }),
+          },
+        );
+
+        const result = (await response.json()) as ApiResponse;
+
+        if (!response.ok || !result.ok) {
+          throw new Error(result.message || "The action failed.");
+        }
+
+        feedback.textContent = result.message || "Done.";
+        window.location.reload();
+      } catch (error) {
+        feedback.textContent =
+          error instanceof Error ? error.message : "Unexpected error.";
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function deleteSuggestion() {
+      if (activeId === null || busy || !feedback) return;
+
+      if (
+        !window.confirm(
+          "Permanently delete this suggestion? This cannot be undone.",
+        )
+      ) {
+        return;
+      }
+
+      setBusy(true);
+      feedback.textContent = "Deleting suggestion…";
+
+      try {
+        const response = await fetch(
+          `/api/admin/station-suggestions/${activeId}`,
+          {
+            method: "DELETE",
+            headers: { Accept: "application/json" },
+          },
+        );
+
+        const result = (await response.json()) as ApiResponse;
+
+        if (!response.ok || !result.ok) {
+          throw new Error(result.message || "Could not delete the suggestion.");
+        }
+
+        window.location.reload();
+      } catch (error) {
+        feedback.textContent =
+          error instanceof Error ? error.message : "Unexpected error.";
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    document
+      .querySelectorAll<HTMLButtonElement>("[data-suggestion-id]")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          const id = Number(button.dataset.suggestionId);
+          if (Number.isSafeInteger(id) && id > 0) {
+            void openSuggestion(id);
+          }
+        });
+      });
+
+    closeButton?.addEventListener("click", () => modal?.close());
+    acceptButton?.addEventListener(
+      "click",
+      () => void reviewSuggestion("accept"),
+    );
+    declineButton?.addEventListener(
+      "click",
+      () => void reviewSuggestion("reject"),
+    );
+    deleteButton?.addEventListener("click", () => void deleteSuggestion());
+
+    modal?.addEventListener("click", (event) => {
+      if (event.target === modal) modal.close();
+    });
+  </script>
 </AdminLayout>

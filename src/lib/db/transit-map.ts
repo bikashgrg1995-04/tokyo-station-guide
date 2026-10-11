@@ -21,6 +21,7 @@ export interface TransitMapLine {
 }
 
 export interface TransitMapStation {
+  id: number;
   name: string;
   jp: string | null;
   slug: string;
@@ -42,6 +43,7 @@ export interface TransitMapStation {
 }
 
 export interface TransitSearchStation {
+  id:number;
   name: string;
   jp: string | null;
   slug: string;
@@ -230,6 +232,7 @@ export async function getTransitMapData(
     }
 
     lineStations.push({
+      id: row.station_id,
       name: row.station_name,
       jp: row.station_name_japanese,
       slug: row.station_slug,
@@ -259,6 +262,7 @@ export async function getTransitMapData(
 
     if (!station) {
       station = {
+        id: row.station_id,
         name: row.station_name,
         jp: row.station_name_japanese,
         slug: row.station_slug,

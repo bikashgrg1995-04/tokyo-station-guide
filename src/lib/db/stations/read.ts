@@ -14,6 +14,7 @@ import {
   getStationFacilitiesJson,
   getStationTopPicksJson,
   getStationConnectionsJson,
+  getStationPlatformsJson,
 } from "./relations";
 
 /* ========================================
@@ -81,11 +82,14 @@ export async function getStationBySlug(
 
   const connections = await getStationConnectionsJson(db, station.id);
 
+  const platforms = await getStationPlatformsJson(db, station.id);
+
   return {
     ...station,
     facilities,
     top_picks: topPicks,
     connections,
+    platforms,
     lines: lines.results,
   };
 }
@@ -248,10 +252,13 @@ export async function getStationById(
 
   const connections = await getStationConnectionsJson(db, station.id);
 
+  const platforms = await getStationPlatformsJson(db, station.id);
+
   return {
     ...station,
     facilities,
     top_picks: topPicks,
     connections,
+    platforms,
   };
 }

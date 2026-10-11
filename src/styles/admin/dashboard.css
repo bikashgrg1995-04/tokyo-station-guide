@@ -1,50 +1,49 @@
- /* ========================================
-    Admin Dashboard
- ======================================== */
-
 
 /* ========================================
-   Page Header
+   Admin Dashboard
 ======================================== */
+
+/* Page Header */
 
 .admin-page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
 .admin-page-header h2 {
   margin: 0;
-  font-size: 28px;
+  font-size: 26px;
   letter-spacing: -0.7px;
 }
 
 .admin-page-header p {
-  margin: 7px 0 0;
+  margin: 6px 0 0;
   color: var(--admin-muted);
-  font-size: 14px;
+  font-size: 13px;
 }
 
-
-/* ========================================
-   Statistics
-======================================== */
+/* Compact Statistics */
 
 .admin-stats {
   display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-  gap: 18px;
-  margin-bottom: 28px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
 .admin-stat-card {
-  padding: 20px;
+  padding: 15px 17px;
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 14px;
+  border-radius: 12px;
+  transition: border-color 0.2s ease;
+}
+
+.admin-stat-card:hover {
+  border-color: #cbd5e1;
 }
 
 .admin-stat-label {
@@ -56,63 +55,60 @@
 
 .admin-stat-value {
   display: block;
-  margin-top: 7px;
+  margin-top: 9px;
   color: var(--admin-text);
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1;
-  letter-spacing: -1px;
+  letter-spacing: -0.8px;
+  font-weight: 700;
 }
 
-
-/* ========================================
-   Dashboard Grid
-======================================== */
+/* Dashboard Grid */
 
 .admin-dashboard-grid {
   display: grid;
-  grid-template-columns:
-    minmax(0, 1.5fr)
-    minmax(300px, 1fr);
-  gap: 20px;
+  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
+  align-items: start;
+  gap: 18px;
 }
 
-
-/* ========================================
-   Dashboard Panel
-======================================== */
+/* Dashboard Panels */
 
 .admin-panel {
+  min-width: 0;
   overflow: hidden;
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 14px;
+  border-radius: 12px;
 }
 
 .admin-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px;
+  gap: 12px;
+  padding: 16px 18px;
   border-bottom: 1px solid var(--admin-border);
 }
 
 .admin-panel-header h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .admin-panel-header p {
-  margin: 4px 0 0;
+  margin: 5px 0 0;
   color: var(--admin-muted);
   font-size: 12px;
+  line-height: 1.5;
 }
 
 .admin-panel-header a {
+  flex-shrink: 0;
   color: var(--admin-primary);
   text-decoration: none;
   font-size: 12px;
   font-weight: 600;
-  transition: color 0.2s ease;
 }
 
 .admin-panel-header a:hover {
@@ -120,58 +116,161 @@
 }
 
 .admin-panel-body {
-  padding: 20px;
+  padding: 16px 18px;
 }
 
+/* Suggestion Table */
 
-/* ========================================
-   Quick Actions
-======================================== */
-
-.admin-quick-actions {
-  display: grid;
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.admin-quick-actions .common-button {
+.admin-suggestions-table-wrap {
   width: 100%;
+  overflow-x: auto;
 }
 
+.admin-suggestions-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 12px;
+}
 
-/* ========================================
-   Dashboard Links
-======================================== */
+.admin-suggestions-table th {
+  padding: 11px 12px;
+  background: #f8fafc;
+  color: var(--admin-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+  white-space: nowrap;
+}
+
+.admin-suggestions-table td {
+  padding: 13px 12px;
+  border-top: 1px solid var(--admin-border);
+  color: var(--admin-text);
+  vertical-align: middle;
+}
+
+.admin-suggestions-table tbody tr:hover {
+  background: #fafbfc;
+}
+
+.admin-suggestion-station {
+  display: block;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.admin-suggestion-meta {
+  display: block;
+  margin-top: 4px;
+  color: var(--admin-muted);
+  font-size: 11px;
+}
+
+.admin-suggestion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-suggestion-actions a,
+.admin-suggestion-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 6px 9px;
+  border: 1px solid var(--admin-border);
+  border-radius: 7px;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-suggestion-actions a:hover,
+.admin-suggestion-actions button:hover {
+  background: #f8fafc;
+}
+
+.admin-suggestion-actions .is-accept {
+  color: #166534;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.admin-suggestion-actions .is-decline {
+  color: #b45309;
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.admin-suggestion-actions .is-delete {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+/* Status Badges */
+
+.admin-suggestion-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.admin-suggestion-status.is-pending {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.admin-suggestion-status.is-approved {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.admin-suggestion-status.is-rejected {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+/* Dashboard Links */
 
 .admin-dashboard-links {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .admin-dashboard-links a {
   display: block;
-  padding: 14px 15px;
+  padding: 12px 13px;
   border: 1px solid var(--admin-border);
-  border-radius: 10px;
+  border-radius: 9px;
   color: var(--admin-text);
   text-decoration: none;
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.15s ease;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .admin-dashboard-links a:hover {
   background: #f8fafc;
   border-color: #cbd5e1;
-  transform: translateY(-1px);
 }
 
 .admin-dashboard-links strong {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .admin-dashboard-links span {
@@ -182,42 +281,36 @@
   line-height: 1.5;
 }
 
-
-/* ========================================
-   Empty State
-======================================== */
+/* Empty State */
 
 .admin-empty {
-  padding: 35px 20px;
+  padding: 28px 18px;
   text-align: center;
   color: var(--admin-muted);
 }
 
 .admin-empty-icon {
-  margin-bottom: 10px;
-  font-size: 28px;
+  margin-bottom: 8px;
+  font-size: 25px;
 }
 
 .admin-empty h3 {
   margin: 0;
   color: var(--admin-text);
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .admin-empty p {
-  margin: 7px 0 0;
-  font-size: 13px;
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
-
-/* ========================================
-   Dashboard Responsive
-======================================== */
+/* Responsive */
 
 @media (max-width: 1100px) {
   .admin-stats {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .admin-dashboard-grid {
@@ -225,25 +318,44 @@
   }
 }
 
-
 @media (max-width: 760px) {
   .admin-page-header {
-    flex-direction: column;
+    margin-bottom: 16px;
   }
 
-  .admin-page-header .common-button {
-    width: 100%;
+  .admin-page-header h2 {
+    font-size: 23px;
   }
 
   .admin-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
   }
 
-  .admin-quick-actions {
-    grid-template-columns: 1fr;
+  .admin-stat-card {
+    padding: 13px;
+  }
+
+  .admin-stat-value {
+    font-size: 22px;
+  }
+
+  .admin-panel-header {
+    padding: 14px;
   }
 
   .admin-panel-body {
-    padding: 16px;
+    padding: 14px;
+  }
+
+  .admin-suggestions-table {
+    min-width: 620px;
+  }
+}
+
+@media (max-width: 380px) {
+  .admin-stats {
+    grid-template-columns: 1fr;
   }
 }

@@ -282,3 +282,343 @@ html[data-theme="dark"] .station-sheet {
     animation: none;
   }
 }
+
+
+/* =========================================
+   Suggest an Edit — compact, modern layout
+========================================= */
+
+.sheet-panel:has(#sheet-edit-form:not([hidden])) {
+  height: min(680px, calc(100dvh - 24px));
+  max-height: calc(100dvh - 24px);
+}
+
+.sheet-panel:has(#sheet-edit-form:not([hidden])) .sheet-body,
+.sheet-panel:has(#sheet-edit-form:not([hidden])) .sheet-foot {
+  display: none;
+}
+
+.sheet-edit-form {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sheet-border) transparent;
+  padding: 16px 18px 18px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sheet-edit-form[hidden] {
+  display: none;
+}
+
+.sheet-edit-head {
+  margin-bottom: 16px;
+}
+
+.sheet-edit-head h3 {
+  margin: 0 0 5px;
+  font-size: 18px;
+  line-height: 1.3;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+}
+
+.sheet-edit-head p {
+  margin: 0;
+  max-width: 42ch;
+  color: var(--sheet-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+#station-suggestion-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+#station-suggestion-form .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+#station-suggestion-form .form-field:has(textarea),
+#station-suggestion-form .form-field:has(#suggestion-name),
+#station-suggestion-form .form-field:has(#suggestion-name-japanese),
+#station-suggestion-form .suggestion-message,
+#station-suggestion-form .suggestion-actions {
+  grid-column: 1 / -1;
+}
+
+#station-suggestion-form .form-field label {
+  color: var(--sheet-muted);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+#station-suggestion-form input,
+#station-suggestion-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--sheet-border);
+  border-radius: 10px;
+  outline: none;
+  background: var(--sheet-chip-bg);
+  color: var(--sheet-text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 10px 11px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+#station-suggestion-form input {
+  min-height: 39px;
+}
+
+#station-suggestion-form textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+#station-suggestion-form input:focus,
+#station-suggestion-form textarea:focus {
+  border-color: var(--line, #9caf2f);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--line, #9caf2f) 18%, transparent);
+}
+
+#station-suggestion-form input::placeholder,
+#station-suggestion-form textarea::placeholder {
+  color: var(--sheet-muted);
+  opacity: 0.75;
+}
+
+#station-suggestion-form .suggestion-message {
+  padding: 10px 12px;
+  border: 1px solid var(--sheet-border);
+  border-radius: 10px;
+  background: var(--sheet-chip-bg);
+  color: var(--sheet-text);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+#station-suggestion-form .suggestion-message[hidden] {
+  display: none;
+}
+
+#station-suggestion-form .suggestion-actions {
+  position: sticky;
+  bottom: -18px;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 4px -18px -18px;
+  padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--sheet-border);
+  background: var(--sheet-bg);
+}
+
+#station-suggestion-form .suggestion-actions button {
+  min-height: 39px;
+  padding: 9px 14px;
+  border: 1px solid var(--sheet-border);
+  border-radius: 10px;
+  background: var(--sheet-chip-bg);
+  color: var(--sheet-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    filter 0.15s ease;
+}
+
+#station-suggestion-form #sheet-submit-edit {
+  border-color: var(--line, #9caf2f);
+  background: var(--line, #9caf2f);
+  color: #fff;
+}
+
+#station-suggestion-form .suggestion-actions button:hover {
+  filter: brightness(1.05);
+}
+
+#station-suggestion-form .suggestion-actions button:active {
+  transform: scale(0.98);
+}
+
+#station-suggestion-form .suggestion-actions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@media (max-width: 600px) {
+  .sheet-panel:has(#sheet-edit-form:not([hidden])) {
+    height: min(86dvh, 760px);
+    max-height: 90dvh;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .sheet-panel:has(#sheet-edit-form:not([hidden])) .sheet-head {
+    flex: 0 0 auto;
+    padding-top: 18px;
+  }
+
+  .sheet-edit-form {
+    padding: 14px 14px 16px;
+  }
+
+  .sheet-edit-head {
+    margin-bottom: 13px;
+  }
+
+  .sheet-edit-head h3 {
+    font-size: 17px;
+  }
+
+  #station-suggestion-form {
+    gap: 10px;
+  }
+
+  #station-suggestion-form input {
+    min-height: 38px;
+  }
+
+  #station-suggestion-form .suggestion-actions {
+    bottom: -16px;
+    margin-right: -14px;
+    margin-left: -14px;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  #station-suggestion-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #station-suggestion-form .form-field {
+    grid-column: 1 / -1;
+  }
+
+  #station-suggestion-form .suggestion-actions button {
+    flex: 1;
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+}
+
+
+/* About section — match the Info popup width */
+#sheet-body,
+#sheet-body .sheet-section,
+#sheet-body .about-section {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+#sheet-body .sheet-section,
+#sheet-body .about-section {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+#sheet-body .sheet-section *,
+#sheet-body .about-section * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#sheet-body {
+  overflow-x: hidden;
+}
+
+
+/* About content — prevent text clipping */
+#sheet-body {
+  overflow-x: hidden;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+#sheet-body .sheet-section,
+#sheet-body .about-section {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+#sheet-body .sheet-section p,
+#sheet-body .about-section p {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  white-space: normal;
+  overflow: visible;
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+
+
+/* Fix Info popup About content width and clipping */
+
+/* Fix Info popup width and About text wrapping */
+#sheet-body.sheet-body {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#sheet-body .sheet-sec {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+}
+
+#sheet-body .sheet-sec h4 {
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+#sheet-body .sheet-sec p {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  overflow: visible;
+  line-height: 1.65;
+}

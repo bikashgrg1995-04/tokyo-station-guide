@@ -10,6 +10,13 @@ export interface StationLine {
   operator_name: string;
 }
 
+export interface StationPlatformItem {
+  number: string;
+  line: string | null;
+  lineCode: string | null;
+  notes: string | null;
+}
+
 export interface Station {
   id: number;
   name: string;
@@ -34,6 +41,7 @@ export interface Station {
   facilities: string | null;
   top_picks: string | null;
   connections: string | null;
+  platforms: string | null;
 
   is_verified: number;
   verified_at: string | null;
@@ -82,6 +90,7 @@ export interface StationEditItem extends StationAdminListItem {
   facilities: string | null;
   top_picks: string | null;
   connections: string | null;
+  platforms: string | null;
 }
 
 export interface CreateStationInput {
