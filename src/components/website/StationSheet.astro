@@ -1,3 +1,8 @@
+---
+import StationSheetIcons from "./StationSheetIcons.astro";
+---
+
+<StationSheetIcons />
 
 <div class="station-sheet" id="station-sheet" hidden>
   <div class="sheet-backdrop" id="sheet-backdrop"></div>
@@ -6,44 +11,86 @@
     class="sheet-panel"
     role="dialog"
     aria-modal="true"
-    aria-labelledby="sheet-en"
+    aria-labelledby="sheet-main"
   >
     <span class="sheet-grip" aria-hidden="true"></span>
 
     <header class="sheet-head">
-      <span class="sheet-badge">
-        <small id="sheet-prefix"></small>
-        <b id="sheet-num"></b>
-      </span>
+      <div class="sheet-head-top">
+        <div class="sheet-title">
+          <strong id="sheet-main"></strong>
+          <span id="sheet-sub"></span>
+        </div>
 
-      <div class="sheet-title">
-        <strong id="sheet-jp"></strong>
-        <span id="sheet-en"></span>
+        <div class="sheet-lang" role="group" aria-label="Station name language">
+          <button type="button" data-lang="en" aria-pressed="true">EN</button>
+          <button type="button" data-lang="jp" aria-pressed="false">日本語</button>
+        </div>
+
+        <button
+          class="round"
+          id="sheet-close"
+          type="button"
+          aria-label="Close"
+        >
+          ×
+        </button>
       </div>
 
-      <button
-        class="round"
-        id="sheet-close"
-        type="button"
-        aria-label="Close"
-      >
-        ×
-      </button>
+      <div class="sheet-lines" id="sheet-lines"></div>
+
+      <p class="sheet-desc" id="sheet-desc" hidden></p>
+
+      <div class="sheet-meta">
+        <span class="sheet-verified" id="sheet-verified"></span>
+        <button
+          class="sheet-btn"
+          id="sheet-suggest-edit"
+          type="button"
+          aria-expanded="false"
+          aria-controls="sheet-edit-form"
+        >
+          Suggest an Edit
+        </button>
+      </div>
+
+      <div class="sheet-tabs" role="tablist" aria-label="Station details">
+        <button
+          type="button"
+          role="tab"
+          id="sheet-tab-facilities"
+          data-tab="facilities"
+          aria-selected="true"
+          aria-controls="sheet-body"
+        >
+          At the station
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="sheet-tab-platforms"
+          data-tab="platforms"
+          aria-selected="false"
+          aria-controls="sheet-body"
+        >
+          Platforms
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="sheet-tab-picks"
+          data-tab="picks"
+          aria-selected="false"
+          aria-controls="sheet-body"
+        >
+          Top picks
+        </button>
+      </div>
     </header>
 
-    <div class="sheet-body" id="sheet-body"></div>
+    <div class="sheet-body" id="sheet-body" role="tabpanel"></div>
 
-    <div class="sheet-foot">
-      <button
-        class="sheet-cta"
-        id="sheet-suggest-edit"
-        type="button"
-        aria-expanded="false"
-        aria-controls="sheet-edit-form"
-      >
-        Suggest an Edit →
-      </button>
-    </div>
+    <p class="sheet-foot-note" id="sheet-note" hidden></p>
 
     <section
       class="sheet-edit-form"

@@ -1,4 +1,5 @@
 ---
+import { iconUrl, isUploadedIcon } from "../../../lib/storage/facility-icons";
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/admin/tables.css";
 import "../../../styles/admin/operators.css";
@@ -126,7 +127,16 @@ const deleteError = Astro.url.searchParams.get("error");
                         </td>
 
                         <td>
-                          {facility.icon ? (
+                          {isUploadedIcon(facility.icon) ? (
+                            <img
+                              class="admin-icon-thumb"
+                              src={iconUrl(facility.icon)}
+                              alt=""
+                              width="28"
+                              height="28"
+                              loading="lazy"
+                            />
+                          ) : facility.icon ? (
                             <span>{facility.icon}</span>
                           ) : (
                             <span class="admin-table-muted">—</span>

@@ -7,7 +7,7 @@ export interface FacilityFormValues {
 }
 
 export type FacilityFormErrors = Record<
-  keyof FacilityFormValues,
+  keyof FacilityFormValues | "iconFile",
   string
 >;
 
@@ -16,6 +16,7 @@ export function emptyFacilityErrors(): FacilityFormErrors {
     name: "",
     slug: "",
     icon: "",
+    iconFile: "",
     sortOrder: "",
   };
 }
@@ -43,6 +44,8 @@ export function validateFacilityForm(
 
   if (icon.length > 100) {
     errors.icon = "Icon must be 100 characters or less.";
+  } else if (icon.startsWith("facility-icons/")) {
+    errors.icon = "That value is reserved for uploaded icon files.";
   }
 
   if (sortOrder.trim() === "") {

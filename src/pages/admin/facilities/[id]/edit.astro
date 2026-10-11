@@ -1,4 +1,5 @@
 ---
+import { iconBucket } from "../../../../lib/storage/facility-icons";
 import AdminLayout from "../../../../layouts/AdminLayout.astro";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/operators.css";
@@ -7,6 +8,7 @@ import EmptyState from "../../../../components/common/EmptyState.astro";
 import Alert from "../../../../components/common/Alert.astro";
 import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
 import Button from "../../../../components/common/Button.astro";
+import FacilityIconField from "../../../../components/admin/FacilityIconField.astro";
 import ConfirmDialog from "../../../../components/common/ConfirmDialog.astro";
 
 import { getFacilityById } from "../../../../lib/db/facilities";
@@ -29,7 +31,13 @@ if (!facility) {
   Astro.response.status = 404;
 }
 
-const form = await handleFacilityUpdate(Astro.request, db, id, facility);
+const form = await handleFacilityUpdate(
+  Astro.request,
+  db,
+  id,
+  facility,
+  iconBucket(env),
+);
 
 if (form.redirectTo) {
   return Astro.redirect(form.redirectTo);
@@ -109,6 +117,7 @@ const admin = await Astro.session?.get<{
                 <!-- Facility Form -->
                 <form
                   method="POST"
+                  enctype="multipart/form-data"
                   class="admin-form"
                   id="edit-facility-form"
                 >
@@ -161,31 +170,12 @@ const admin = await Astro.session?.get<{
                   </div>
 
                   <!-- Icon -->
-                  <div class="admin-form-group">
-                    <label for="icon">Icon</label>
-
-                    <input
-                      id="icon"
-                      name="icon"
-                      type="text"
-                      maxlength="100"
-                      value={icon}
-                      placeholder="🚻"
-                      aria-invalid={errors.icon ? "true" : "false"}
-                      aria-describedby={errors.icon ? "icon-error" : undefined}
-                    />
-
-                    {errors.icon ? (
-                      <small id="icon-error" class="admin-form-error">
-                        {errors.icon}
-                      </small>
-                    ) : (
-                      <small>
-                        Optional. Enter an emoji or icon identifier used by
-                        the website.
-                      </small>
-                    )}
-                  </div>
+                  <FacilityIconField
+                    value={icon}
+                    saved={facility?.icon}
+                    textError={errors.icon}
+                    fileError={errors.iconFile}
+                  />
 
                   <!-- Sort Order -->
                   <div class="admin-form-group">

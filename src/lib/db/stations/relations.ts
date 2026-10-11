@@ -38,9 +38,36 @@ export async function getStationFacilitiesJson(
     return null;
   }
 
-  return JSON.stringify(
-    result.results.map((item) => item.name),
-  );
+  return JSON.stringify(result.results.map((item) => item.name));
+}
+
+export async function getStationFacilityDetailsJson(
+  db: D1Database,
+  stationId: number,
+): Promise<string | null> {
+  const result = await db
+    .prepare(
+      `
+        SELECT
+          f.name,
+          f.icon
+        FROM station_facilities sf
+        INNER JOIN facilities f
+          ON f.id = sf.facility_id
+        WHERE sf.station_id = ?
+        ORDER BY
+          f.sort_order ASC,
+          f.name ASC
+      `,
+    )
+    .bind(stationId)
+    .all<{ name: string; icon: string | null }>();
+
+  if (!result.results.length) {
+    return null;
+  }
+
+  return JSON.stringify(result.results);
 }
 
 /*
@@ -75,9 +102,7 @@ export async function getStationTopPicksJson(
     return null;
   }
 
-  return JSON.stringify(
-    result.results.map((item) => item.name),
-  );
+  return JSON.stringify(result.results.map((item) => item.name));
 }
 
 /*
@@ -143,9 +168,7 @@ export async function getStationConnectionsJson(
 /*
  * Parse a JSON array of strings safely.
  */
-export function parseStringListJson(
-  json: string | null | undefined,
-): string[] {
+export function parseStringListJson(json: string | null | undefined): string[] {
   if (!json) {
     return [];
   }
@@ -157,9 +180,7 @@ export function parseStringListJson(
       return [];
     }
 
-    return parsed
-      .map((item) => String(item).trim())
-      .filter(Boolean);
+    return parsed.map((item) => String(item).trim()).filter(Boolean);
   } catch {
     return [];
   }
@@ -201,9 +222,7 @@ export async function resolveFacilityIds(
       .first<{ id: number }>();
 
     if (!result) {
-      throw new Error(
-        `Facility "${name}" does not exist.`,
-      );
+      throw new Error(`Facility "${name}" does not exist.`);
     }
 
     if (!ids.includes(result.id)) {
@@ -250,9 +269,7 @@ export async function resolveTopPickIds(
       .first<{ id: number }>();
 
     if (!result) {
-      throw new Error(
-        `Top pick "${name}" does not exist.`,
-      );
+      throw new Error(`Top pick "${name}" does not exist.`);
     }
 
     if (!ids.includes(result.id)) {

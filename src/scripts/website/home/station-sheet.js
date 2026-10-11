@@ -5,7 +5,7 @@ import { data, searchable } from "./data.js";
 import { sheet } from "./dom.js";
 import { state } from "./state.js";
 import { findLinesForStation } from "./station-lookup.js";
-import { $, esc, num, toList } from "./utils.js";
+import { $, esc } from "./utils.js";
 
 /*
  * Read a field from the line's station object first,
@@ -32,9 +32,14 @@ function stationField(stn, names) {
   return null;
 }
 
-function stationConnections(stn) {
-  var raw = stationField(stn, ["connections"]);
+/*
+ * The sheet shows one station at a time. `view` holds what the
+ * header toggle and the tabs currently show.
+ */
+var view = { stn: null, tab: "facilities", lang: "en", sel: -1 };
 
+/* A JSON string (or array) from the page data, as an array. */
+function parseList(raw) {
   if (typeof raw === "string") {
     try {
       raw = JSON.parse(raw);
@@ -43,57 +48,451 @@ function stationConnections(stn) {
     }
   }
 
-  var out = [];
+  return Array.isArray(raw)
+    ? raw.filter(function (i) {
+        return i && typeof i === "object";
+      })
+    : [];
+}
 
-  if (Array.isArray(raw)) {
-    raw.forEach(function (i) {
-      if (typeof i === "string") {
-        out.push({ name: i });
-      } else if (i && i.name) {
-        out.push({ name: i.name, color: i.color });
-      }
+/* Every line that stops at this station, for the badge row. */
+function stationLines(stn) {
+  var out = parseList(stationField(stn, ["connections"]))
+    .filter(function (c) {
+      return c.name;
+    })
+    .map(function (c) {
+      return { name: c.name, code: c.code, color: c.color };
     });
-  }
 
   if (out.length) {
     return out;
   }
 
-  /*
-   * Fallback: other lines that stop at this station.
-   */
   findLinesForStation(stn.slug).forEach(function (m) {
-    if (m.lineIndex !== state.lineIdx) {
-      out.push({
-        name: m.lineName,
-        color: data.lines[m.lineIndex].color,
-      });
-    }
+    var line = data.lines[m.lineIndex];
+
+    out.push({
+      name: m.lineName,
+      code: line.code,
+      color: line.color,
+    });
   });
 
   return out;
 }
 
-function sheetSection(title, inner) {
+/* ---------- Facility icons (sprite lives in StationSheetIcons.astro) ---------- */
+
+var ICON_KEYS = {};
+
+[
+  "lockers", "storage", "tickets", "railpass", "touristinfo", "accessible",
+  "atm", "exchange", "conveni", "taxi", "bus", "shinkansen", "police",
+  "lost", "aid", "prayer", "rentcar", "gate", "wifi", "lift", "toilet",
+  "baby", "dept", "pin",
+].forEach(function (k) {
+  ICON_KEYS[k] = true;
+});
+
+/* First match wins. Tested against the facility's icon, slug and name. */
+var ICON_RULES = [
+  [/locker/, "lockers"],
+  [/luggage|baggage|storage|parcel/, "storage"],
+  [/rail.?pass|travel.?service/, "railpass"],
+  [/ticket/, "tickets"],
+  [/tourist|travel.?info|information/, "touristinfo"],
+  [/wheelchair|accessible/, "accessible"],
+  [/atm|bank/, "atm"],
+  [/exchange|currency/, "exchange"],
+  [/department|shopping/, "dept"],
+  [/conveni|store|shop/, "conveni"],
+  [/taxi/, "taxi"],
+  [/bus/, "bus"],
+  [/shinkansen|bullet/, "shinkansen"],
+  [/police|koban/, "police"],
+  [/lost/, "lost"],
+  [/first.?aid|medical/, "aid"],
+  [/nursing|baby/, "baby"],
+  [/prayer/, "prayer"],
+  [/rent.?a?.?car/, "rentcar"],
+  [/gate/, "gate"],
+  [/wi.?fi|wifi/, "wifi"],
+  [/elevator|lift/, "lift"],
+  [/toilet|restroom|washroom/, "toilet"],
+];
+
+function iconKey(f) {
+  var icon = String(f.icon || "").trim().toLowerCase();
+
+  if (ICON_KEYS[icon]) {
+    return icon;
+  }
+
+  var hay = [icon, f.slug, f.name].join(" ").toLowerCase();
+
+  for (var i = 0; i < ICON_RULES.length; i++) {
+    if (ICON_RULES[i][0].test(hay)) {
+      return ICON_RULES[i][1];
+    }
+  }
+
+  return "pin";
+}
+
+function isDark() {
+  var t = document.documentElement.dataset.theme;
+
   return (
-    '<section class="sheet-sec"><h4>' +
-    esc(title) +
-    "</h4>" +
-    inner +
-    "</section>"
+    t === "dark" ||
+    (t !== "light" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches)
   );
 }
 
-function sheetChips(items) {
+/*
+ * The admin "icon" field may hold an emoji. An emoji is drawn on a
+ * plain tile; everything else uses the sprite.
+ */
+function facilityIcon(f) {
+  var icon = String(f.icon || "").trim();
+
+  /* An icon file uploaded in the admin (stored in R2). */
+  if (icon.indexOf("facility-icons/") === 0) {
+    return (
+      '<img class="ic ic-img" alt="" loading="lazy" src="/media/' +
+      esc(icon) +
+      '">'
+    );
+  }
+
+  if (icon && !ICON_KEYS[icon.toLowerCase()] && /[^\x00-\x7f]/.test(icon)) {
+    return '<span class="ic ic-emoji">' + esc(icon) + "</span>";
+  }
+
   return (
-    '<div class="sheet-chips">' +
+    '<svg class="ic" aria-hidden="true"><use href="#' +
+    (isDark() ? "iosd-" : "ios-") +
+    iconKey(f) +
+    '"/></svg>'
+  );
+}
+
+/* ---------- Small pieces ---------- */
+
+var SOURCES = {
+  n: ["not verified", "未確認"],
+  w: ["walked", "歩いて確認"],
+  s: ["JR sign", "JR案内表示"],
+  o: ["seen on site", "現地で確認"],
+};
+
+function isJp() {
+  return view.lang === "jp";
+}
+
+function sourceTag(v) {
+  if (!v) {
+    return "";
+  }
+
+  var label = SOURCES[v] ? SOURCES[v][isJp() ? 1 : 0] : String(v);
+
+  return '<span class="tag">' + esc(label) + "</span>";
+}
+
+/* Exit chips: [{ name, name_jp, color }] or plain strings. */
+function exitChips(list) {
+  return parseExits(list)
+    .map(function (e) {
+      return (
+        '<span class="ex"><i' +
+        (e.color ? ' style="background:' + esc(e.color) + '"' : "") +
+        "></i>" +
+        esc(isJp() && e.name_jp ? e.name_jp : e.name) +
+        "</span>"
+      );
+    })
+    .join("");
+}
+
+function parseExits(raw) {
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch (e) {
+      raw = null;
+    }
+  }
+
+  return (Array.isArray(raw) ? raw : [])
+    .map(function (e) {
+      return typeof e === "string" ? { name: e } : e;
+    })
+    .filter(function (e) {
+      return e && e.name;
+    });
+}
+
+/* ---------- Tab contents ---------- */
+
+function facilitiesHtml(stn) {
+  var items = parseList(stationField(stn, ["facilities"]));
+
+  if (!items.length) {
+    return '<p class="sheet-empty">No facilities listed yet.</p>';
+  }
+
+  return (
+    '<div class="gwrap"><div class="gw"><div class="grid">' +
     items
-      .map(function (t) {
-        return "<span>" + esc(t) + "</span>";
+      .map(function (f, i) {
+        return (
+          '<button type="button" class="tile" data-n="' +
+          i +
+          '" aria-pressed="' +
+          (view.sel === i) +
+          '">' +
+          facilityIcon(f) +
+          "<b>" +
+          esc(f.name) +
+          "</b>" +
+          (f.floor ? '<span class="fl">' + esc(f.floor) + "</span>" : "") +
+          "</button>"
+        );
       })
       .join("") +
+    '</div></div><button type="button" class="more" id="sheet-more" aria-label="Scroll for more"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg></button></div>' +
+    '<div class="detail" id="sheet-detail">' +
+    facilityDetailHtml(items[view.sel]) +
     "</div>"
   );
+}
+
+function facilityDetailHtml(f) {
+  if (!f) {
+    return '<span class="hint">Tap an icon for detail.</span>';
+  }
+
+  var bits = [];
+
+  if (f.floor) {
+    bits.push("Floor " + esc(f.floor));
+  }
+
+  if (f.count != null && f.count !== "") {
+    bits.push(
+      esc(f.count) + (Number(f.count) === 1 ? " location" : " locations"),
+    );
+  }
+
+  var exits = exitChips(f.exits);
+
+  return (
+    (exits ? '<span class="near">Near</span>' + exits : "") +
+    "<div><b>" +
+    esc(f.name) +
+    "</b>" +
+    (bits.length ? " · " + bits.join(" · ") : "") +
+    "</div>" +
+    (f.note ? "<div>" + esc(f.note) + "</div>" : "") +
+    sourceTag(f.source)
+  );
+}
+
+function platformsHtml(stn) {
+  var items = parseList(stationField(stn, ["platforms"]));
+
+  if (!items.length) {
+    return '<p class="sheet-empty">No platform information yet.</p>';
+  }
+
+  return items
+    .map(function (p) {
+      var title = p.notes || p.line || "Platform " + p.number;
+      var sub = p.notes ? p.line : "";
+
+      return (
+        '<div class="row"><div class="l"><b>' +
+        esc(title) +
+        "</b>" +
+        (sub ? "<small>" + esc(sub) + "</small>" : "") +
+        '</div><span class="pf"' +
+        (p.color ? ' style="background:' + esc(p.color) + '"' : "") +
+        ">" +
+        esc(p.number) +
+        "</span></div>"
+      );
+    })
+    .join("");
+}
+
+function picksHtml(stn) {
+  var items = parseList(stationField(stn, ["top_picks", "topPicks"]));
+
+  if (!items.length) {
+    return '<p class="sheet-empty">No top picks yet.</p>';
+  }
+
+  return items
+    .map(function (t) {
+      var loc = String(t.location || "").toLowerCase();
+      var kind =
+        loc === "inside"
+          ? '<span class="io i">In station</span>'
+          : loc === "outside"
+            ? '<span class="io">Outside</span>'
+            : t.category
+              ? '<span class="io">' + esc(t.category) + "</span>"
+              : "";
+
+      var mins =
+        t.minutes != null && t.minutes !== ""
+          ? "<span>" + esc(t.minutes) + " min walk</span>"
+          : "";
+
+      var meta = exitChips(t.exits) + mins + sourceTag(t.source);
+
+      return (
+        '<div class="pk"><b>' +
+        esc(isJp() && t.name_jp ? t.name_jp : t.name) +
+        "</b> " +
+        kind +
+        (meta ? '<div class="m">' + meta + "</div>" : "") +
+        (t.description
+          ? '<div class="m"><span>' + esc(t.description) + "</span></div>"
+          : "") +
+        "</div>"
+      );
+    })
+    .join("");
+}
+
+function verifiedText(stn) {
+  var yes = Number(stationField(stn, ["is_verified"])) === 1;
+  var at = stationField(stn, ["verified_at"]);
+
+  if (!yes) {
+    return { ok: false, html: "Not yet verified" };
+  }
+
+  var when = "";
+
+  if (at) {
+    var iso = /[zZ]|[+-]\d\d:?\d\d$/.test(at) ? at : at.replace(" ", "T") + "Z";
+    var d = new Date(iso);
+
+    if (!isNaN(d.getTime())) {
+      when = d.toLocaleDateString(isJp() ? "ja-JP" : "en-GB", {
+        day: "numeric",
+        month: isJp() ? "long" : "short",
+        year: "numeric",
+      });
+    }
+  }
+
+  return {
+    ok: true,
+    html:
+      "<b>✓ " +
+      (isJp() ? "確認済み" : "Verified") +
+      "</b>" +
+      (when ? " " + esc(when) : ""),
+  };
+}
+
+function renderNames() {
+  var stn = view.stn;
+  var jp = stn.jp || stn.name;
+  var main = $("#sheet-main");
+  var sub = $("#sheet-sub");
+
+  if (isJp()) {
+    main.textContent = jp;
+    main.lang = "ja";
+    sub.textContent = stn.name;
+  } else {
+    main.textContent = stn.name;
+    main.lang = "en";
+    sub.textContent = stn.jp || "";
+  }
+
+  var v = verifiedText(stn);
+  var verified = $("#sheet-verified");
+
+  verified.innerHTML = v.html;
+  verified.classList.toggle("is-ok", v.ok);
+
+  document.querySelectorAll(".sheet-lang button").forEach(function (b) {
+    b.setAttribute("aria-pressed", String(b.dataset.lang === view.lang));
+  });
+}
+
+/* Fade + chevron on the facility grid, depending on scroll position. */
+function updateGridScroll() {
+  var w = document.querySelector("#sheet-body .gw");
+  var g = document.querySelector("#sheet-body .gwrap");
+
+  if (!w || !g) {
+    return;
+  }
+
+  g.classList.toggle("end", w.scrollTop + w.clientHeight >= w.scrollHeight - 4);
+  g.classList.toggle("sc", w.scrollTop > 8);
+}
+
+function renderTab() {
+  var stn = view.stn;
+  var body = $("#sheet-body");
+  var old = body.querySelector(".gw");
+  var keep = old ? old.scrollTop : 0;
+
+  /* Two rows or more: fixed height, grid scrolls. Fewer: fit the content. */
+  var many =
+    view.tab === "facilities" &&
+    parseList(stationField(stn, ["facilities"])).length > 8;
+
+  body.className =
+    "sheet-body" +
+    (view.tab === "facilities" ? " at" : "") +
+    (many ? " tall" : "");
+
+  body.innerHTML =
+    view.tab === "platforms"
+      ? platformsHtml(stn)
+      : view.tab === "picks"
+        ? picksHtml(stn)
+        : facilitiesHtml(stn);
+
+  var grid = body.querySelector(".gw");
+
+  if (grid) {
+    grid.scrollTop = keep;
+  } else {
+    body.scrollTop = 0;
+  }
+
+  updateGridScroll();
+
+  var note = $("#sheet-note");
+  var unverified = !verifiedText(stn).ok;
+
+  note.textContent = unverified
+    ? "Not yet verified. Details may be out of date."
+    : "";
+  note.hidden = !unverified;
+
+  document.querySelectorAll(".sheet-tabs button").forEach(function (b) {
+    b.setAttribute("aria-selected", String(b.dataset.tab === view.tab));
+  });
+}
+
+function selectFacility(button) {
+  var n = Number(button.dataset.n);
+
+  view.sel = view.sel === n ? -1 : n;
+  renderTab();
 }
 
 /*
@@ -139,62 +538,59 @@ function openSheet() {
     return;
   }
 
-  var m = String(stn.code || "").match(/^([A-Za-z]+)\s*-?\s*(\d+)\s*$/);
+  view.stn = stn;
+  view.sel = -1;
 
-  $("#sheet-prefix").textContent = m ? m[1].toUpperCase() : "";
-  $("#sheet-num").textContent = m ? m[2] : num(stn.code);
-  $("#sheet-jp").textContent = stn.jp || stn.name;
-  $("#sheet-en").textContent = stn.name;
+  renderNames();
 
-  var html = "";
+  /* Line badges */
+  $("#sheet-lines").innerHTML = stationLines(stn)
+    .map(function (l) {
+      var text = l.code || String(l.name || "").slice(0, 2).toUpperCase();
 
-  var about = stationField(stn, ["about", "description", "summary"]);
+      return (
+        '<span class="sheet-line" title="' +
+        esc(l.name) +
+        '"' +
+        (l.color ? ' style="--c:' + esc(l.color) + '"' : "") +
+        ">" +
+        esc(text) +
+        "</span>"
+      );
+    })
+    .join("");
 
-  if (about) {
-    html += sheetSection("About", "<p>" + esc(about) + "</p>");
-  }
+  /* Description */
+  var desc = stationField(stn, ["about", "description", "summary"]);
+  var descEl = $("#sheet-desc");
 
-  var facilities = toList(stationField(stn, ["facilities"]));
+  descEl.textContent = desc || "";
+  descEl.hidden = !desc;
 
-  if (facilities.length) {
-    html += sheetSection("Facilities", sheetChips(facilities));
-  }
+    /* First tab that has something to show */
+  var has = {
+    facilities: parseList(stationField(stn, ["facilities"])).length,
+    platforms: parseList(stationField(stn, ["platforms"])).length,
+    picks: parseList(stationField(stn, ["top_picks", "topPicks"])).length,
+  };
 
-  var picks = toList(
-    stationField(stn, ["top_picks", "topPicks", "highlights"]),
-  );
+  view.tab = has.facilities
+    ? "facilities"
+    : has.platforms
+      ? "platforms"
+      : has.picks
+        ? "picks"
+        : "facilities";
 
-  if (picks.length) {
-    html += sheetSection("Top Picks", sheetChips(picks));
-  }
-
-  var conns = stationConnections(stn);
-
-  if (conns.length) {
-    html += sheetSection(
-      "Connections",
-      '<ul class="sheet-conns">' +
-        conns
-          .map(function (c) {
-            return (
-              "<li><i" +
-              (c.color ? ' style="--c:' + esc(c.color) + '"' : "") +
-              "></i><b>" +
-              esc(c.name) +
-              "</b></li>"
-            );
-          })
-          .join("") +
-        "</ul>",
-    );
-  }
-
-  $("#sheet-body").innerHTML = html;
-  $("#sheet-body").scrollTop = 0;
+  renderTab();
 
   prepareSuggestionForm(stn);
 
   sheet.hidden = false;
+
+  /* The grid can only be measured once the sheet is on screen. */
+  updateGridScroll();
+
   $("#sheet-close").focus();
 }
 
@@ -210,6 +606,75 @@ export function initStationSheet() {
 
     e.preventDefault();
     openSheet();
+  });
+
+  document.querySelectorAll(".sheet-tabs button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (!view.stn) {
+        return;
+      }
+
+      view.tab = b.dataset.tab;
+      view.sel = -1;
+      renderTab();
+    });
+  });
+
+  document.querySelectorAll(".sheet-lang button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (!view.stn) {
+        return;
+      }
+
+      view.lang = b.dataset.lang;
+      renderNames();
+      renderTab();
+    });
+  });
+
+  $("#sheet-body").addEventListener("click", function (e) {
+    var target = e.target.closest ? e.target.closest("button") : null;
+
+    if (!target) {
+      return;
+    }
+
+    if (target.id === "sheet-more") {
+      var w = document.querySelector("#sheet-body .gw");
+
+      if (w) {
+        w.scrollBy({ top: w.clientHeight * 0.7, behavior: "smooth" });
+      }
+
+      return;
+    }
+
+    if (target.classList.contains("tile")) {
+      selectFacility(target);
+    }
+  });
+
+  /* scroll events do not bubble, so listen in the capture phase */
+  $("#sheet-body").addEventListener(
+    "scroll",
+    function (e) {
+      if (e.target.classList && e.target.classList.contains("gw")) {
+        updateGridScroll();
+      }
+    },
+    true,
+  );
+
+  window.addEventListener("resize", updateGridScroll);
+
+  /* Redraw icons when the site theme changes while the sheet is open. */
+  new MutationObserver(function () {
+    if (view.stn && !sheet.hidden) {
+      renderTab();
+    }
+  }).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
   });
 
   $("#sheet-suggest-edit").addEventListener("click", function () {

@@ -1,4 +1,4 @@
- /* ========================================
+/* ========================================
    Transit Map Database Helpers
 ======================================== */
 
@@ -36,10 +36,18 @@ export interface TransitMapStation {
    * so the existing frontend popup can consume them
    * without changes.
    */
+  description: string | null;
   about: string | null;
+  is_verified: number;
+  verified_at: string | null;
+  /** JSON: [{ name, slug, icon, floor, count, note }] */
   facilities: string | null;
+  /** JSON: [{ name, name_jp, category, description, minutes }] */
   top_picks: string | null;
+  /** JSON: [{ name, code, color, type, operator }] */
   connections: string | null;
+  /** JSON: [{ number, notes, line, lineCode, color }] */
+  platforms: string | null;
 }
 
 export interface TransitSearchStation {
@@ -63,10 +71,14 @@ export interface TransitMapData {
 
 interface TransitStationRow extends LineStationItem {
   line_id: number | null;
+  station_description: string | null;
   station_about: string | null;
+  station_is_verified: number;
+  station_verified_at: string | null;
   station_facilities: string | null;
   station_top_picks: string | null;
   station_connections: string | null;
+  station_platforms: string | null;
 }
 
 /* ========================================
@@ -114,7 +126,10 @@ export async function getTransitMapData(
           s.name AS station_name,
           s.name_japanese AS station_name_japanese,
           s.slug AS station_slug,
+          s.description AS station_description,
           s.about AS station_about,
+          s.is_verified AS station_is_verified,
+          s.verified_at AS station_verified_at,
 
           /* ==================================
              Facilities
@@ -122,10 +137,24 @@ export async function getTransitMapData(
 
           (
             SELECT
-              json_group_array(facility.name)
+              json_group_array(
+                json_object(
+                  'name', facility.name,
+                  'slug', facility.slug,
+                  'icon', facility.icon,
+                  'floor', facility.floor,
+                  'count', facility.facility_count,
+                  'note', facility.note
+                )
+              )
             FROM (
               SELECT
-                f.name
+                f.name,
+                f.slug,
+                f.icon,
+                sf.floor,
+                sf.facility_count,
+                sf.note
               FROM station_facilities sf
               INNER JOIN facilities f
                 ON f.id = sf.facility_id
@@ -142,10 +171,22 @@ export async function getTransitMapData(
 
           (
             SELECT
-              json_group_array(top_pick.name)
+              json_group_array(
+                json_object(
+                  'name', top_pick.name,
+                  'name_jp', top_pick.name_japanese,
+                  'category', top_pick.category,
+                  'description', top_pick.description,
+                  'minutes', top_pick.walking_minutes
+                )
+              )
             FROM (
               SELECT
-                tp.name
+                tp.name,
+                tp.name_japanese,
+                tp.category,
+                tp.description,
+                stp.walking_minutes
               FROM station_top_picks stp
               INNER JOIN top_picks tp
                 ON tp.id = stp.top_pick_id
@@ -188,6 +229,38 @@ export async function getTransitMapData(
                 l.name ASC
             ) connection
           ) AS station_connections,
+
+          /* ==================================
+             Platforms
+          ================================== */
+
+          (
+            SELECT
+              json_group_array(
+                json_object(
+                  'number', platform.platform_number,
+                  'notes', platform.notes,
+                  'line', platform.line_name,
+                  'lineCode', platform.line_code,
+                  'color', platform.line_color
+                )
+              )
+            FROM (
+              SELECT
+                sp.platform_number,
+                sp.notes,
+                pl.name AS line_name,
+                pl.code AS line_code,
+                pl.color AS line_color
+              FROM station_platforms sp
+              LEFT JOIN lines pl
+                ON pl.id = sp.line_id
+              WHERE sp.station_id = s.id
+              ORDER BY
+                sp.sort_order ASC,
+                sp.platform_number ASC
+            ) platform
+          ) AS station_platforms,
 
           ls.station_order,
           ls.station_code
@@ -238,10 +311,14 @@ export async function getTransitMapData(
       slug: row.station_slug,
       code: row.station_code,
       order: row.station_order,
+      description: row.station_description,
       about: row.station_about,
+      is_verified: row.station_is_verified,
+      verified_at: row.station_verified_at,
       facilities: row.station_facilities,
       top_picks: row.station_top_picks,
       connections: row.station_connections,
+      platforms: row.station_platforms,
     });
   }
 

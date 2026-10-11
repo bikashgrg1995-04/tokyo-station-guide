@@ -331,3 +331,31 @@
     width: 100%;
   }
 }
+
+/* Facility icon upload */
+.admin-icon-current {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.admin-icon-current img,
+.admin-icon-thumb {
+  border-radius: 10px;
+  object-fit: contain;
+  background: rgba(20, 30, 50, 0.06);
+}
+
+.admin-icon-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.admin-icon-remove input {
+  width: auto;
+}

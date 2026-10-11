@@ -12,6 +12,7 @@ import type {
 } from "./types";
 import {
   getStationFacilitiesJson,
+  getStationFacilityDetailsJson,
   getStationTopPicksJson,
   getStationConnectionsJson,
   getStationPlatformsJson,
@@ -78,6 +79,8 @@ export async function getStationBySlug(
 
   const facilities = await getStationFacilitiesJson(db, station.id);
 
+  const facilityDetails = await getStationFacilityDetailsJson(db, station.id);
+
   const topPicks = await getStationTopPicksJson(db, station.id);
 
   const connections = await getStationConnectionsJson(db, station.id);
@@ -87,6 +90,7 @@ export async function getStationBySlug(
   return {
     ...station,
     facilities,
+    facility_details: facilityDetails,
     top_picks: topPicks,
     connections,
     platforms,

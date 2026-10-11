@@ -1,0 +1,89 @@
+---
+import { iconUrl, isUploadedIcon } from "../../lib/storage/facility-icons";
+
+export interface Props {
+  /** Typed icon text (emoji or built-in name). */
+  value: string;
+  /** Icon currently saved for this facility, if any. */
+  saved?: string | null;
+  textError?: string;
+  fileError?: string;
+}
+
+const { value, saved = null, textError = "", fileError = "" } = Astro.props;
+
+const uploaded = isUploadedIcon(saved) ? saved : null;
+const text = isUploadedIcon(value) ? "" : value;
+---
+
+<div class="admin-form-group">
+  <label for="icon_file">Icon file</label>
+
+  {
+    uploaded && (
+      <div class="admin-icon-current">
+        <img
+          src={iconUrl(uploaded)}
+          alt="Current icon"
+          width="44"
+          height="44"
+        />
+
+        <label class="admin-icon-remove">
+          <input type="checkbox" name="remove_icon" />
+          Remove this icon
+        </label>
+      </div>
+    )
+  }
+
+  <input
+    id="icon_file"
+    name="icon_file"
+    type="file"
+    accept="image/png,image/webp,image/jpeg,image/svg+xml"
+    aria-invalid={fileError ? "true" : "false"}
+    aria-describedby={fileError ? "icon-file-error" : undefined}
+  />
+
+  {
+    fileError ? (
+      <small id="icon-file-error" class="admin-form-error">
+        {fileError}
+      </small>
+    ) : (
+      <small>
+        Optional. PNG, WebP, JPEG or SVG, up to 512 KB. Use a square image
+        (for example 128 × 128). It is stored in the site's R2 bucket.
+      </small>
+    )
+  }
+</div>
+
+<div class="admin-form-group">
+  <label for="icon">Icon text</label>
+
+  <input
+    id="icon"
+    name="icon"
+    type="text"
+    maxlength="100"
+    value={text}
+    placeholder="🚻"
+    aria-invalid={textError ? "true" : "false"}
+    aria-describedby={textError ? "icon-error" : undefined}
+  />
+
+  {
+    textError ? (
+      <small id="icon-error" class="admin-form-error">
+        {textError}
+      </small>
+    ) : (
+      <small>
+        Optional. An emoji or built-in icon name, used only when no icon file
+        is uploaded.
+      </small>
+    )
+  }
+</div>

@@ -39,6 +39,7 @@ export interface Station {
    * existing public UI expects this format.
    */
   facilities: string | null;
+  facility_details: string | null;
   top_picks: string | null;
   connections: string | null;
   platforms: string | null;

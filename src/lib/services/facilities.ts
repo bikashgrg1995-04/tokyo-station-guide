@@ -2,6 +2,7 @@ import {
   createFacility,
   deleteFacility,
   getFacilitiesPaginated,
+  getFacilityById,
   hasFacilityAssignments,
   updateFacility,
   type Facility,
@@ -15,6 +16,15 @@ import {
   readListQuery,
   readText,
 } from "./common";
+
+import {
+  checkIconFile,
+  deleteIcon,
+  isUploadedIcon,
+  readIconFile,
+  saveIcon,
+  type IconCheck,
+} from "../storage/facility-icons";
 
 import {
   type FacilityFormValues,
@@ -64,25 +74,86 @@ function describeSaveError(
   return `Unable to ${action} facility because of an unexpected database error.`;
 }
 
+/*
+ * Which value goes into facilities.icon:
+ * - a newly uploaded file wins;
+ * - typed text (or "remove") replaces the stored icon;
+ * - otherwise the stored upload is kept.
+ */
+function chooseIcon(
+  uploadedKey: string | null,
+  values: FacilityFormValues,
+  removeRequested: boolean,
+  currentIcon: string | null,
+): string | null {
+  if (uploadedKey) {
+    return uploadedKey;
+  }
+
+  if (removeRequested || values.icon) {
+    return values.icon || null;
+  }
+
+  return isUploadedIcon(currentIcon) ? currentIcon : null;
+}
+
 async function submitFacilityForm(
   request: Request,
   result: FacilityFormResult,
   action: "create" | "update",
-  save: (values: FacilityFormValues) => Promise<void>,
+  bucket: R2Bucket | undefined,
+  currentIcon: string | null,
+  save: (values: FacilityFormValues, icon: string | null) => Promise<void>,
 ): Promise<FacilityFormResult> {
-  const values = readFacilityForm(await request.formData());
+  const formData = await request.formData();
+  const values = readFacilityForm(formData);
 
   result.values = values;
   result.errors = validateFacilityForm(values);
+
+  const file = readIconFile(formData);
+  let check: IconCheck | null = null;
+
+  if (file) {
+    if (!bucket) {
+      result.errors.iconFile =
+        "Icon storage (R2) is not configured. Bind the ASSETS_BUCKET R2 bucket.";
+    } else {
+      check = await checkIconFile(file);
+
+      if (!check.ok) {
+        result.errors.iconFile = check.error;
+      }
+    }
+  }
 
   if (hasErrors(result.errors)) {
     return result;
   }
 
+  let uploadedKey: string | null = null;
+
   try {
-    await save(values);
+    if (bucket && check?.ok) {
+      uploadedKey = await saveIcon(bucket, values.slug, check);
+    }
+
+    const icon = chooseIcon(
+      uploadedKey,
+      values,
+      formData.get("remove_icon") === "on",
+      currentIcon,
+    );
+
+    await save(values, icon);
+
+    if (icon !== currentIcon) {
+      await deleteIcon(bucket, currentIcon);
+    }
+
     result.redirectTo = LIST_PATH;
   } catch (err) {
+    await deleteIcon(bucket, uploadedKey);
     result.formError = describeSaveError(err, action, result.errors);
   }
 
@@ -92,6 +163,7 @@ async function submitFacilityForm(
 export async function handleFacilityCreate(
   request: Request,
   db: D1Database,
+  bucket?: R2Bucket,
 ): Promise<FacilityFormResult> {
   const result: FacilityFormResult = {
     redirectTo: null,
@@ -113,11 +185,13 @@ export async function handleFacilityCreate(
     request,
     result,
     "create",
-    async (values) => {
+    bucket,
+    null,
+    async (values, icon) => {
       await createFacility(db, {
         name: values.name,
         slug: values.slug,
-        icon: values.icon || null,
+        icon,
         sortOrder: Number(values.sortOrder),
       });
     },
@@ -129,6 +203,7 @@ export async function handleFacilityUpdate(
   db: D1Database,
   id: number,
   facility: Facility | null,
+  bucket?: R2Bucket,
 ): Promise<FacilityFormResult> {
   const result: FacilityFormResult = {
     redirectTo: null,
@@ -150,11 +225,13 @@ export async function handleFacilityUpdate(
     request,
     result,
     "update",
-    async (values) => {
+    bucket,
+    facility.icon,
+    async (values, icon) => {
       await updateFacility(db, id, {
         name: values.name,
         slug: values.slug,
-        icon: values.icon || null,
+        icon,
         sortOrder: Number(values.sortOrder),
       });
     },
@@ -165,6 +242,7 @@ export async function handleFacilityDelete(
   request: Request,
   db: D1Database,
   rawId: string | undefined,
+  bucket?: R2Bucket,
 ): Promise<string> {
   const id = Number(rawId);
 
@@ -181,7 +259,11 @@ export async function handleFacilityDelete(
       return `${LIST_PATH}?error=assigned`;
     }
 
+    const facility = await getFacilityById(db, id);
+
     await deleteFacility(db, id);
+    await deleteIcon(bucket, facility?.icon);
+
     return LIST_PATH;
   } catch (err) {
     console.error("Failed to delete facility:", err);
