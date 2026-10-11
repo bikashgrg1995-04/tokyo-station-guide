@@ -6,14 +6,8 @@
     preserveAspectRatio="xMidYMid meet"
   >
     <defs>
-      <pattern
-        id="grid"
-        width="40"
-        height="40"
-        patternUnits="userSpaceOnUse"
-      >
-        <path d="M40 0H0V40" class="grid-lo" transform="translate(1 1)"
-        ></path>
+      <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+        <path d="M40 0H0V40" class="grid-lo" transform="translate(1 1)"></path>
         <path d="M40 0H0V40" class="grid-hi"></path>
       </pattern>
       <linearGradient id="car-grad" x1="0" y1="0" x2="1" y2="0">
@@ -45,8 +39,8 @@
     <rect x="-3000" y="-3000" width="7000" height="7000" fill="url(#grid)"
     ></rect>
     <g id="track"></g>
-    <g id="glow"></g>
     <g id="labels"></g>
+    <g id="glow"></g>
     <g id="train"></g>
   </svg>
 
@@ -63,8 +57,8 @@
   <div class="rail-tools right">
     <a class="tool" id="info-link" href="#" aria-label="Open station page">
       <svg viewBox="0 0 24 24"
-        ><circle cx="12" cy="12" r="9"></circle><path
-          d="M12 11v5.5M12 7.8v.1"></path></svg
+        ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5M12 7.8v.1"
+        ></path></svg
       >
     </a>
   </div>

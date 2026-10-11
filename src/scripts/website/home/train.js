@@ -7,7 +7,7 @@ import { setView } from "./view-controls.js";
 
 const LANE_OFFSET = 7.5;
 
-const LIGHT_REACH = 80;
+const LIGHT_REACH = 40;
 
 const reduceMotion =
   window.matchMedia &&
@@ -73,8 +73,7 @@ function buildCar(k, len) {
    * Roof air-conditioning panels.
    */
 
-  var spots =
-    k === 0 ? [0.27, 0.58] : k === 1 ? [0.14, 0.54] : [0.12, 0.46];
+  var spots = k === 0 ? [0.27, 0.58] : k === 1 ? [0.14, 0.54] : [0.12, 0.46];
 
   spots.forEach(function (f) {
     var y = -h + len * f;
@@ -362,9 +361,9 @@ export function initTrain() {
     "ellipse",
     {
       cx: 0,
-      cy: y0 - LIGHT_REACH * 0.78,
-      rx: 38,
-      ry: LIGHT_REACH * 0.85,
+      cy: y0 - LIGHT_REACH * 0.62,
+      rx: 13,
+      ry: LIGHT_REACH * 0.58,
       fill: "url(#glow-grad)",
     },
     state.glowEl,
@@ -441,9 +440,7 @@ export function moveTrain() {
 
   var dist = Math.abs(target - from);
 
-  var dur = reduceMotion
-    ? 0
-    : Math.min(1600, Math.max(500, dist * 1.8));
+  var dur = reduceMotion ? 0 : Math.min(1600, Math.max(500, dist * 1.8));
 
   /*
    * Reduced motion.
