@@ -36,6 +36,8 @@ export async function getStationBySlug(
           longitude,
           description,
           about,
+          is_verified,
+          verified_at,
           created_at,
           updated_at
         FROM stations
@@ -45,10 +47,7 @@ export async function getStationBySlug(
     )
     .bind(slug)
     .first<
-      Omit<
-        Station,
-        "lines" | "facilities" | "top_picks" | "connections"
-      >
+      Omit<Station, "lines" | "facilities" | "top_picks" | "connections">
     >();
 
   if (!station) {
@@ -76,20 +75,11 @@ export async function getStationBySlug(
     .bind(station.id)
     .all<StationLine>();
 
-  const facilities = await getStationFacilitiesJson(
-    db,
-    station.id,
-  );
+  const facilities = await getStationFacilitiesJson(db, station.id);
 
-  const topPicks = await getStationTopPicksJson(
-    db,
-    station.id,
-  );
+  const topPicks = await getStationTopPicksJson(db, station.id);
 
-  const connections = await getStationConnectionsJson(
-    db,
-    station.id,
-  );
+  const connections = await getStationConnectionsJson(db, station.id);
 
   return {
     ...station,
@@ -104,9 +94,7 @@ export async function getStationBySlug(
    Get Stations
 ======================================== */
 
-export async function getStations(
-  db: D1Database,
-): Promise<StationListItem[]> {
+export async function getStations(db: D1Database): Promise<StationListItem[]> {
   const result = await db
     .prepare(
       `
@@ -136,15 +124,9 @@ export async function getAdminStationsPaginated(
     search?: string;
   } = {},
 ): Promise<PaginatedStations> {
-  const perPage = Math.max(
-    1,
-    options.perPage ?? 10,
-  );
+  const perPage = Math.max(1, options.perPage ?? 10);
 
-  const requestedPage = Math.max(
-    1,
-    options.page ?? 1,
-  );
+  const requestedPage = Math.max(1, options.page ?? 1);
 
   const search = options.search?.trim() ?? "";
 
@@ -163,28 +145,14 @@ export async function getAdminStationsPaginated(
           OR description LIKE ?
       `,
     )
-    .bind(
-      search,
-      searchValue,
-      searchValue,
-      searchValue,
-      searchValue,
-    )
+    .bind(search, searchValue, searchValue, searchValue, searchValue)
     .first<{ total: number }>();
 
-  const totalItems = Number(
-    countResult?.total ?? 0,
-  );
+  const totalItems = Number(countResult?.total ?? 0);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(totalItems / perPage),
-  );
+  const totalPages = Math.max(1, Math.ceil(totalItems / perPage));
 
-  const currentPage = Math.min(
-    requestedPage,
-    totalPages,
-  );
+  const currentPage = Math.min(requestedPage, totalPages);
 
   const offset = (currentPage - 1) * perPage;
 
@@ -199,6 +167,8 @@ export async function getAdminStationsPaginated(
           latitude,
           longitude,
           description,
+          is_verified,
+          verified_at,
           created_at,
           updated_at
         FROM stations
@@ -252,6 +222,8 @@ export async function getStationById(
           longitude,
           description,
           about,
+          is_verified,
+          verified_at,
           created_at,
           updated_at
         FROM stations
@@ -270,20 +242,11 @@ export async function getStationById(
     return null;
   }
 
-  const facilities = await getStationFacilitiesJson(
-    db,
-    station.id,
-  );
+  const facilities = await getStationFacilitiesJson(db, station.id);
 
-  const topPicks = await getStationTopPicksJson(
-    db,
-    station.id,
-  );
+  const topPicks = await getStationTopPicksJson(db, station.id);
 
-  const connections = await getStationConnectionsJson(
-    db,
-    station.id,
-  );
+  const connections = await getStationConnectionsJson(db, station.id);
 
   return {
     ...station,

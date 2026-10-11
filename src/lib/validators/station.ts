@@ -8,6 +8,7 @@ export interface StationFormValues {
   longitude: string;
   description: string;
   about: string;
+  isVerified: boolean;
 }
 
 export type StationFormErrors = Record<
@@ -26,6 +27,7 @@ export function emptyStationErrors(): StationFormErrors {
     about: "",
     facilities: "",
     topPicks: "",
+    isVerified: "",
   };
 }
 

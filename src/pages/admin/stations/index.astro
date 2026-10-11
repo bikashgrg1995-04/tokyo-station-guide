@@ -103,6 +103,7 @@ const {
                             <th>ID</th>
                             <th>Station</th>
                             <th>Slug</th>
+                            <th>Verification</th>
                             <th>Coordinates</th>
                             <th>Actions</th>
                           </tr>
@@ -136,6 +137,36 @@ const {
                                     {station.slug}
                                   </span>
                                 </td>
+                                <td>
+                                  {
+                                    station.is_verified === 1 ? (
+                                      <div class="admin-station-verification">
+                                        <span
+                                          class="admin-station-verified-icon"
+                                          aria-label="Verified"
+                                          title="Verified"
+                                        >
+                                          ✓
+                                        </span>
+                                        <span class="admin-station-verified-label">
+                                          Verified
+                                        </span>
+                                        {
+                                          station.verified_at && (
+                                            <small class="admin-station-verified-date">
+                                              {station.verified_at}
+                                            </small>
+                                          )
+                                        }
+                                      </div>
+                                    ) : (
+                                      <span class="admin-table-muted">
+                                        Unverified
+                                      </span>
+                                    )
+                                  }
+                                </td>
+
 
                                 <td>
                                   {
@@ -271,6 +302,6 @@ const {
       import "../../../scripts/admin/stations-list.ts";
     </script>
 
-  
+
   </Fragment>
 </AdminLayout>

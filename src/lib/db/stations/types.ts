@@ -35,6 +35,9 @@ export interface Station {
   top_picks: string | null;
   connections: string | null;
 
+  is_verified: number;
+  verified_at: string | null;
+
   created_at: string;
   updated_at: string;
   lines: StationLine[];
@@ -65,6 +68,8 @@ export interface StationAdminListItem {
   latitude: number | null;
   longitude: number | null;
   description: string | null;
+  is_verified: number;
+  verified_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -93,6 +98,7 @@ export interface CreateStationInput {
   facilityIds?: number[];
   /** Top pick ids to save, in order (used instead of `topPicks` when given). */
   topPickIds?: number[];
+  isVerified?: boolean;
 }
 
 export interface UpdateStationInput {
@@ -109,6 +115,7 @@ export interface UpdateStationInput {
   facilityIds?: number[];
   /** Top pick ids to save, in order (used instead of `topPicks` when given). */
   topPickIds?: number[];
+  isVerified?: boolean;
 }
 
 export interface PaginatedStations {

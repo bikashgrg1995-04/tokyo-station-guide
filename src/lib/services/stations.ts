@@ -72,6 +72,7 @@ function readStationForm(formData: FormData) {
     longitude: readText(formData, "longitude"),
     description: readText(formData, "description"),
     about: readText(formData, "about"),
+    isVerified: formData.get("is_verified") === "on",
   };
 
   return {
@@ -120,6 +121,7 @@ function toStationInput(
     about: values.about || null,
     facilityIds,
     topPickIds,
+    isVerified: values.isVerified,
   };
 }
 
@@ -145,6 +147,7 @@ export async function handleStationCreate(
       longitude: "",
       description: "",
       about: "",
+      isVerified: false,
     },
     errors: emptyStationErrors(),
     formError: "",
@@ -207,6 +210,7 @@ export async function handleStationUpdate(
       longitude: station.longitude !== null ? String(station.longitude) : "",
       description: station.description ?? "",
       about: station.about ?? "",
+      isVerified: station.is_verified === 1,
     },
     errors: emptyStationErrors(),
     formError: "",

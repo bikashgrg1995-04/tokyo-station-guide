@@ -40,9 +40,14 @@ export async function createStation(
           latitude,
           longitude,
           description,
-          about
+          about,
+          is_verified,
+          verified_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CASE
+          WHEN ? = 1 THEN CURRENT_TIMESTAMP
+          ELSE NULL
+        END)
       `,
     )
     .bind(
@@ -53,8 +58,11 @@ export async function createStation(
       input.longitude ?? null,
       input.description?.trim() || null,
       input.about?.trim() || null,
+      input.isVerified ? 1 : 0,
+      input.isVerified ? 1 : 0,
     )
     .run();
+
 
   const stationId = Number(
     result.meta.last_row_id,
@@ -139,6 +147,12 @@ export async function updateStation(
           longitude = ?,
           description = ?,
           about = ?,
+          is_verified = COALESCE(?, is_verified),
+          verified_at = CASE
+            WHEN ? = 0 THEN NULL
+            WHEN ? = 1 AND is_verified = 0 THEN CURRENT_TIMESTAMP
+            ELSE verified_at
+          END,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `,
@@ -151,6 +165,21 @@ export async function updateStation(
       input.longitude ?? null,
       input.description?.trim() || null,
       input.about?.trim() || null,
+      input.isVerified === undefined
+        ? null
+        : input.isVerified
+          ? 1
+          : 0,
+      input.isVerified === undefined
+        ? null
+        : input.isVerified
+          ? 1
+          : 0,
+      input.isVerified === undefined
+        ? null
+        : input.isVerified
+          ? 1
+          : 0,
       id,
     )
     .run();
