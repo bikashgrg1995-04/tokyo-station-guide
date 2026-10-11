@@ -1,9 +1,9 @@
-
 export interface StationPlatform {
   id: number;
   station_id: number;
   line_id: number | null;
   platform_number: string;
+  destinations: string | null;
   notes: string | null;
   sort_order: number;
   line_name: string | null;
@@ -13,6 +13,7 @@ export interface StationPlatform {
 export interface StationPlatformInput {
   lineId: number | null;
   platformNumber: string;
+  destinations: string | null;
   notes: string | null;
   sortOrder: number;
 }
@@ -30,6 +31,7 @@ export async function getStationPlatforms(
         SELECT
           sp.id,
           sp.station_id,
+          sp.destinations,
           sp.line_id,
           sp.platform_number,
           sp.notes,
@@ -67,6 +69,7 @@ export async function getStationPlatformsJson(
   return JSON.stringify(
     platforms.map((platform) => ({
       number: platform.platform_number,
+      destinations: platform.destinations,
       line: platform.line_name,
       lineCode: platform.line_code,
       notes: platform.notes,
@@ -83,22 +86,25 @@ export async function createStationPlatform(
   input: StationPlatformInput,
 ): Promise<void> {
   await db
+
     .prepare(
       `
-        INSERT INTO station_platforms (
-          station_id,
-          line_id,
-          platform_number,
-          notes,
-          sort_order
-        )
-        VALUES (?, ?, ?, ?, ?)
-      `,
+    INSERT INTO station_platforms (
+      station_id,
+      line_id,
+      platform_number,
+      destinations,
+      notes,
+      sort_order
+    )
+    VALUES (?, ?, ?, ?, ?, ?)
+  `,
     )
     .bind(
       stationId,
       input.lineId,
       input.platformNumber.trim(),
+      input.destinations,
       input.notes,
       input.sortOrder,
     )
@@ -115,22 +121,25 @@ export async function updateStationPlatform(
   input: StationPlatformInput,
 ): Promise<void> {
   await db
+
     .prepare(
       `
-        UPDATE station_platforms
-        SET
-          line_id = ?,
-          platform_number = ?,
-          notes = ?,
-          sort_order = ?,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-          AND station_id = ?
-      `,
+    UPDATE station_platforms
+    SET
+      line_id = ?,
+      platform_number = ?,
+      destinations = ?,
+      notes = ?,
+      sort_order = ?,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+      AND station_id = ?
+  `,
     )
     .bind(
       input.lineId,
       input.platformNumber.trim(),
+      input.destinations,
       input.notes,
       input.sortOrder,
       platformId,

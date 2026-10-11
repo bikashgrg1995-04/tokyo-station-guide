@@ -36,7 +36,13 @@ function stationField(stn, names) {
  * The sheet shows one station at a time. `view` holds what the
  * header toggle and the tabs currently show.
  */
-var view = { stn: null, tab: "facilities", lang: "en", sel: -1 };
+var view = {
+  stn: null,
+  tab: "facilities",
+  lang: "en",
+  sel: -1,
+  platformSel: -1,
+};
 
 /* A JSON string (or array) from the page data, as an array. */
 function parseList(raw) {
@@ -87,10 +93,30 @@ function stationLines(stn) {
 var ICON_KEYS = {};
 
 [
-  "lockers", "storage", "tickets", "railpass", "touristinfo", "accessible",
-  "atm", "exchange", "conveni", "taxi", "bus", "shinkansen", "police",
-  "lost", "aid", "prayer", "rentcar", "gate", "wifi", "lift", "toilet",
-  "baby", "dept", "pin",
+  "lockers",
+  "storage",
+  "tickets",
+  "railpass",
+  "touristinfo",
+  "accessible",
+  "atm",
+  "exchange",
+  "conveni",
+  "taxi",
+  "bus",
+  "shinkansen",
+  "police",
+  "lost",
+  "aid",
+  "prayer",
+  "rentcar",
+  "gate",
+  "wifi",
+  "lift",
+  "toilet",
+  "baby",
+  "dept",
+  "pin",
 ].forEach(function (k) {
   ICON_KEYS[k] = true;
 });
@@ -123,7 +149,9 @@ var ICON_RULES = [
 ];
 
 function iconKey(f) {
-  var icon = String(f.icon || "").trim().toLowerCase();
+  var icon = String(f.icon || "")
+    .trim()
+    .toLowerCase();
 
   if (ICON_KEYS[icon]) {
     return icon;
@@ -308,24 +336,47 @@ function platformsHtml(stn) {
     return '<p class="sheet-empty">No platform information yet.</p>';
   }
 
-  return items
-    .map(function (p) {
-      var title = p.notes || p.line || "Platform " + p.number;
-      var sub = p.notes ? p.line : "";
+  var selected = view.platformSel;
+  var active = items[selected];
+
+  var rows = items
+    .map(function (p, i) {
+      var title = p.destinations || "Platform " + (p.number || "");
+      var sub = [p.line, p.location].filter(Boolean).join(" · ");
 
       return (
-        '<div class="row"><div class="l"><b>' +
+        '<button type="button" class="row platform-row" data-platform="' +
+        i +
+        '" aria-pressed="' +
+        (selected === i) +
+        '">' +
+        '<span class="l"><b>' +
         esc(title) +
         "</b>" +
         (sub ? "<small>" + esc(sub) + "</small>" : "") +
-        '</div><span class="pf"' +
+        "</span>" +
+        '<span class="pf"' +
         (p.color ? ' style="background:' + esc(p.color) + '"' : "") +
         ">" +
-        esc(p.number) +
-        "</span></div>"
+        esc(p.number || "") +
+        "</span>" +
+        "</button>"
       );
     })
     .join("");
+
+  var detail = active
+    ? '<div class="detail platform-detail" id="sheet-platform-detail">' +
+      "<b>" +
+      esc(active.destinations || active.line || "Platform information") +
+      "</b>" +
+      (active.notes
+        ? "<p>" + esc(active.notes) + "</p>"
+        : '<p class="hint">Walking guidance has not been added yet.</p>') +
+      "</div>"
+    : "";
+
+  return '<div class="platform-list">' + rows + "</div>" + detail;
 }
 
 function picksHtml(stn) {
@@ -495,6 +546,13 @@ function selectFacility(button) {
   renderTab();
 }
 
+function selectPlatform(button) {
+  var n = Number(button.dataset.platform);
+
+  view.platformSel = view.platformSel === n ? -1 : n;
+  renderTab();
+}
+
 /*
  * Reset the suggestion form and populate it with the
  * selected station's current information.
@@ -540,13 +598,18 @@ function openSheet() {
 
   view.stn = stn;
   view.sel = -1;
+  view.platformSel = -1;
 
   renderNames();
 
   /* Line badges */
   $("#sheet-lines").innerHTML = stationLines(stn)
     .map(function (l) {
-      var text = l.code || String(l.name || "").slice(0, 2).toUpperCase();
+      var text =
+        l.code ||
+        String(l.name || "")
+          .slice(0, 2)
+          .toUpperCase();
 
       return (
         '<span class="sheet-line" title="' +
@@ -567,7 +630,7 @@ function openSheet() {
   descEl.textContent = desc || "";
   descEl.hidden = !desc;
 
-    /* First tab that has something to show */
+  /* First tab that has something to show */
   var has = {
     facilities: parseList(stationField(stn, ["facilities"])).length,
     platforms: parseList(stationField(stn, ["platforms"])).length,
@@ -616,6 +679,7 @@ export function initStationSheet() {
 
       view.tab = b.dataset.tab;
       view.sel = -1;
+      view.platformSel = -1;
       renderTab();
     });
   });
@@ -651,6 +715,11 @@ export function initStationSheet() {
 
     if (target.classList.contains("tile")) {
       selectFacility(target);
+      return;
+    }
+
+    if (target.classList.contains("platform-row")) {
+      selectPlatform(target);
     }
   });
 

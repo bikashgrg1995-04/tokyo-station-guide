@@ -1,0 +1,190 @@
+---
+import Button from "../common/Button.astro";
+
+import type { StationPlatform } from "../../lib/db/station-platforms";
+import type { Line } from "../../lib/db/lines";
+import type {
+  StationPlatformFormErrors,
+  StationPlatformFormValues,
+} from "../../lib/validators/station-platform";
+
+interface Props {
+  stationName: string;
+  stationId: number;
+  platforms: StationPlatform[];
+  lines: Line[];
+  values: StationPlatformFormValues;
+  errors: StationPlatformFormErrors;
+  formError: string;
+  editingId: number | null;
+}
+
+const {
+  stationName,
+  stationId,
+  platforms,
+  lines,
+  values,
+  errors,
+  formError,
+  editingId,
+} = Astro.props;
+
+const editPlatform = platforms.find((platform) => platform.id === editingId);
+---
+
+<section class="admin-panel" id="station-platforms">
+  <div class="admin-panel-body">
+    <div class="admin-station-form">
+      <div class="admin-station-form-header">
+        <h3>Platforms</h3>
+        <p>
+          Manage platforms and passenger guidance for
+          <strong>{stationName}</strong>.
+        </p>
+      </div>
+
+      {formError && <p class="admin-form-error" role="alert">{formError}</p>}
+
+      {platforms.length > 0 ? (
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Platform</th>
+                <th>Destinations</th>
+                <th>Line</th>
+                <th>Sort</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {platforms.map((platform) => (
+                <tr>
+                  <td><strong>{platform.platform_number}</strong></td>
+                  <td>{platform.destinations || "—"}</td>
+                  <td>{platform.line_name || "—"}</td>
+                  <td>{platform.sort_order}</td>
+                  <td>
+                    <div class="admin-table-actions">
+                      <a
+                        class="admin-table-action"
+                        href={`?edit_platform=${platform.id}#station-platforms`}
+                      >
+                        Edit
+                      </a>
+                      <form method="POST">
+                        <input type="hidden" name="platform_action" value="delete" />
+                        <input type="hidden" name="platform_id" value={platform.id} />
+                        <button
+                          class="admin-table-action admin-table-action-delete"
+                          type="submit"
+                        >
+                          Delete
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p class="admin-empty">No platforms have been added to this station yet.</p>
+      )}
+
+      <hr />
+
+      <h4>{editingId ? "Edit Platform" : "Add Platform"}</h4>
+
+      <form method="POST" class="admin-form">
+        <input
+          type="hidden"
+          name="platform_action"
+          value={editingId ? "update" : "create"}
+        />
+        {editingId && <input type="hidden" name="platform_id" value={editingId} />}
+
+        <div class="admin-form-group">
+          <label for="platform_number">Platform Number</label>
+          <input
+            id="platform_number"
+            name="platform_number"
+            required
+            maxlength="50"
+            placeholder="e.g. 1–2 or U 3–4"
+            value={editingId ? editPlatform?.platform_number : values.platformNumber}
+          />
+          {errors.platformNumber && <small class="admin-field-error">{errors.platformNumber}</small>}
+        </div>
+
+        <div class="admin-form-group">
+          <label for="destinations">Destinations</label>
+          <input
+            id="destinations"
+            name="destinations"
+            required
+            maxlength="500"
+            placeholder="e.g. Shinjuku, Tachikawa"
+            value={editingId ? editPlatform?.destinations ?? "" : values.destinations}
+          />
+          {errors.destinations && <small class="admin-field-error">{errors.destinations}</small>}
+        </div>
+
+        <div class="admin-form-group">
+          <label for="line_id">Railway Line (optional)</label>
+          <select id="line_id" name="line_id">
+            <option value="">No line selected</option>
+            {lines.map((line) => (
+              <option
+                value={line.id}
+                selected={String(editingId ? editPlatform?.line_id ?? "" : values.lineId) === String(line.id)}
+              >
+                {line.name}{line.code ? ` (${line.code})` : ""}
+              </option>
+            ))}
+          </select>
+          {errors.lineId && <small class="admin-field-error">{errors.lineId}</small>}
+        </div>
+
+        <div class="admin-form-group">
+          <label for="notes">Walking Guidance</label>
+          <textarea
+            id="notes"
+            name="notes"
+            rows="4"
+            maxlength="2000"
+            placeholder="How passengers can reach this platform..."
+          >{editingId ? editPlatform?.notes ?? "" : values.notes}</textarea>
+          {errors.notes && <small class="admin-field-error">{errors.notes}</small>}
+        </div>
+
+        <div class="admin-form-group">
+          <label for="sort_order">Sort Order</label>
+          <input
+            id="sort_order"
+            name="sort_order"
+            type="number"
+            min="0"
+            step="1"
+            required
+            value={editingId ? editPlatform?.sort_order ?? 0 : values.sortOrder}
+          />
+          {errors.sortOrder && <small class="admin-field-error">{errors.sortOrder}</small>}
+        </div>
+
+        <div class="admin-form-actions">
+          {editingId && (
+            <Button href={`/admin/stations/${stationId}/edit#station-platforms`} variant="secondary">
+              Cancel Edit
+            </Button>
+          )}
+          <Button type="submit" variant="primary">
+            {editingId ? "Update Platform" : "Add Platform"}
+          </Button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>

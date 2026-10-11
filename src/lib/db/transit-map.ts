@@ -1,3 +1,4 @@
+
 /* ========================================
    Transit Map Database Helpers
 ======================================== */
@@ -30,28 +31,29 @@ export interface TransitMapStation {
 
   /*
    * Station detail popup fields.
-   *
-   * These are generated from the normalized
-   * relational tables and returned as JSON strings
-   * so the existing frontend popup can consume them
-   * without changes.
+   * Generated from normalized relational tables
+   * and returned as JSON strings for the frontend.
    */
   description: string | null;
   about: string | null;
   is_verified: number;
   verified_at: string | null;
+
   /** JSON: [{ name, slug, icon, floor, count, note }] */
   facilities: string | null;
+
   /** JSON: [{ name, name_jp, category, description, minutes }] */
   top_picks: string | null;
+
   /** JSON: [{ name, code, color, type, operator }] */
   connections: string | null;
-  /** JSON: [{ number, notes, line, lineCode, color }] */
+
+  /** JSON: [{ number, destinations, notes, line, lineCode, color }] */
   platforms: string | null;
 }
 
 export interface TransitSearchStation {
-  id:number;
+  id: number;
   name: string;
   jp: string | null;
   slug: string;
@@ -88,10 +90,6 @@ interface TransitStationRow extends LineStationItem {
 export async function getTransitMapData(
   db: D1Database,
 ): Promise<TransitMapData> {
-  /* ======================================
-     Get Lines
-  ====================================== */
-
   const lines = await getLines(db);
 
   const lineMap = new Map(
@@ -100,21 +98,10 @@ export async function getTransitMapData(
     }),
   );
 
-  /* ======================================
-     Get All Stations + Line Relations
-
-     LEFT JOIN is intentional.
-
-     This keeps stations that currently
-     don't belong to any line.
-
-     Station detail data is generated from
-     normalized relational tables:
-
-       station_facilities -> facilities
-       station_top_picks  -> top_picks
-       line_stations      -> lines -> operators
-  ====================================== */
+  /*
+   * Get all stations and their line relations.
+   * LEFT JOIN keeps stations without a line.
+   */
 
   const stationResult = await db
     .prepare(
@@ -131,9 +118,7 @@ export async function getTransitMapData(
           s.is_verified AS station_is_verified,
           s.verified_at AS station_verified_at,
 
-          /* ==================================
-             Facilities
-          ================================== */
+          /* Facilities */
 
           (
             SELECT
@@ -165,9 +150,7 @@ export async function getTransitMapData(
             ) facility
           ) AS station_facilities,
 
-          /* ==================================
-             Top Picks
-          ================================== */
+          /* Top Picks */
 
           (
             SELECT
@@ -191,14 +174,11 @@ export async function getTransitMapData(
               INNER JOIN top_picks tp
                 ON tp.id = stp.top_pick_id
               WHERE stp.station_id = s.id
-              ORDER BY
-                stp.sort_order ASC
+              ORDER BY stp.sort_order ASC
             ) top_pick
           ) AS station_top_picks,
 
-          /* ==================================
-             Connections
-          ================================== */
+          /* Connections */
 
           (
             SELECT
@@ -230,15 +210,14 @@ export async function getTransitMapData(
             ) connection
           ) AS station_connections,
 
-          /* ==================================
-             Platforms
-          ================================== */
+          /* Platforms */
 
           (
             SELECT
               json_group_array(
                 json_object(
                   'number', platform.platform_number,
+                  'destinations', platform.destinations,
                   'notes', platform.notes,
                   'line', platform.line_name,
                   'lineCode', platform.line_code,
@@ -248,6 +227,7 @@ export async function getTransitMapData(
             FROM (
               SELECT
                 sp.platform_number,
+                sp.destinations,
                 sp.notes,
                 pl.name AS line_name,
                 pl.code AS line_code,
@@ -266,7 +246,6 @@ export async function getTransitMapData(
           ls.station_code
 
         FROM stations s
-
         LEFT JOIN line_stations ls
           ON ls.station_id = s.id
 
@@ -324,9 +303,6 @@ export async function getTransitMapData(
 
   /* ======================================
      Build Searchable Stations
-
-     A station can belong to multiple lines,
-     so deduplicate by station id.
   ====================================== */
 
   const searchableMap = new Map<
@@ -350,42 +326,29 @@ export async function getTransitMapData(
       searchableMap.set(row.station_id, station);
     }
 
-    /* ====================================
-       Add Station Code
-    ==================================== */
-
     const code = row.station_code?.trim();
 
     if (code && !station.codes.includes(code)) {
       station.codes.push(code);
     }
 
-    /* ====================================
-       Add Line Name
-    ==================================== */
-
     if (row.line_id !== null) {
       const line = lineMap.get(row.line_id);
 
-      if (
-        line &&
-        !station.lines.includes(line.name)
-      ) {
+      if (line && !station.lines.includes(line.name)) {
         station.lines.push(line.name);
       }
     }
   }
 
-  const searchable = Array.from(
-    searchableMap.values(),
-  );
+  const searchable = Array.from(searchableMap.values());
 
   /* ======================================
      Build Transit Lines
   ====================================== */
 
-  const transitLines: TransitMapLine[] =
-    lines.map((line: Line) => ({
+  const transitLines: TransitMapLine[] = lines.map(
+    (line: Line) => ({
       id: line.id,
       name: line.name,
       code: line.code,
@@ -398,11 +361,8 @@ export async function getTransitMapData(
         /yamanote/i.test(line.name)
           ? "loop"
           : null,
-    }));
-
-  /* ======================================
-     Return Transit Map Data
-  ====================================== */
+    }),
+  );
 
   return {
     lines: transitLines,

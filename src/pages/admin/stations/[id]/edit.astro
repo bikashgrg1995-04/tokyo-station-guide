@@ -12,9 +12,11 @@ import StationFormFields from "../../../../components/admin/StationFormFields.as
 import StationFacilitiesPanel from "../../../../components/admin/StationFacilitiesPanel.astro";
 import FacilityModal from "../../../../components/admin/FacilityModal.astro";
 import StationTopPicks from "../../../../components/admin/StationTopPicks.astro";
+import StationPlatformsPanel from "../../../../components/admin/StationPlatformsPanel.astro";
 
 import { getStationById } from "../../../../lib/db/stations";
 import { handleStationUpdate } from "../../../../lib/services/stations";
+import { handleStationPlatforms } from "../../../../lib/services/station-platforms";
 
 export const prerender = false;
 
@@ -33,10 +35,48 @@ if (!station) {
   return Astro.redirect("/admin/stations");
 }
 
-const form = await handleStationUpdate(Astro.request, db, id, station);
+// Detect platform submissions without consuming the original request body.
+let isPlatformRequest = false;
+
+if (Astro.request.method === "POST") {
+  const submittedData = await Astro.request.clone().formData();
+  const platformAction = String(
+    submittedData.get("platform_action") ?? "",
+  );
+
+  isPlatformRequest = ["create", "update", "delete"].includes(
+    platformAction,
+  );
+}
+
+// Only the handler responsible for this submission receives the POST body.
+const stationRequest = isPlatformRequest
+  ? new Request(Astro.request.url)
+  : Astro.request;
+
+const platformsRequest = isPlatformRequest
+  ? Astro.request
+  : new Request(Astro.request.url);
+
+const form = await handleStationUpdate(
+  stationRequest,
+  db,
+  id,
+  station,
+);
+
+const platformForm = await handleStationPlatforms(
+  platformsRequest,
+  db,
+  id,
+);
 
 if (form.redirectTo) {
   return Astro.redirect(form.redirectTo);
+}
+
+if (platformForm.redirectTo) {
+  return Astro.redirect(platformForm.redirectTo);
 }
 
 const {
@@ -47,179 +87,110 @@ const {
   stationTopPicks,
   availableTopPicks,
 } = form;
-const facilityError = errors.facilities;
 
+const facilityError = errors.facilities;
 ---
 
 <AdminLayout title={`Edit ${station.name}`} activePath="/admin/stations">
+  <header class="admin-topbar">
+    <Breadcrumbs
+      backHref="/admin/stations"
+      parentLabel="Stations"
+      current="Edit Station"
+    />
+  </header>
 
-        <!-- ========================================
-             Topbar
-        ========================================= -->
+  <div class="admin-content">
+    <h2>Edit Station</h2>
 
-        <header class="admin-topbar">
+    <p>
+      Update the railway station information for the Tokyo Station Guide.
+    </p>
 
-          <Breadcrumbs backHref="/admin/stations" parentLabel="Stations" current="Edit Station" />
+    <!-- Main station form -->
+    <form
+      method="POST"
+      class="admin-form"
+      id="edit-station-form"
+    >
+      <input type="hidden" name="action" value="update" />
 
-        </header>
+      <section class="admin-panel">
+        <div class="admin-panel-body">
+          <div class="admin-station-form">
+            <div class="admin-station-form-header">
+              <h3>Station Details</h3>
 
-
-        <!-- ========================================
-             Content
-        ========================================= -->
-
-        <div class="admin-content">
-
-          <h2>
-            Edit Station
-          </h2>
-
-          <p>
-            Update the railway station information for the Tokyo
-            Station Guide.
-          </p>
-
-
-          <!-- ======================================
-               Main Edit Form
-          ======================================= -->
-
-          <form
-            method="POST"
-            class="admin-form"
-            id="edit-station-form"
-          >
-
-            <input
-              type="hidden"
-              name="action"
-              value="update"
-            />
-
-
-            <!-- ======================================
-                 Station Details
-            ======================================= -->
-
-            <section class="admin-panel">
-
-              <div class="admin-panel-body">
-
-                <div class="admin-station-form">
-
-                  <div class="admin-station-form-header">
-
-                    <h3>
-                      Station Details
-                    </h3>
-
-                    <p>
-                      Update the information for
-                      <strong>{station.name}</strong>.
-                    </p>
-
-                  </div>
-
-
-                  {
-                    formError && (
-                      <Alert>{formError}</Alert>
-                    )
-                  }
-
-
-                  <StationFormFields values={form.values} errors={errors} />
-
-                </div>
-
-              </div>
-
-            </section>
-
-
-            <!-- ======================================
-                 Facilities + Top Picks
-            ======================================= -->
-
-            <div class="admin-station-features-grid">
-
-              <!-- ======================================
-                   Facilities
-              ======================================= -->
-
-              <StationFacilitiesPanel
-                assigned={stationFacilities}
-                canAdd={availableFacilities.length > 0}
-                error={facilityError}
-                allAddedMessage="All available facilities are already assigned."
-              >
-                Facilities available at <strong>{station.name}</strong>.
-              </StationFacilitiesPanel>
-
-
-              <!-- ======================================
-                   Top Picks
-              ======================================= -->
-
-              <section class="admin-panel admin-station-feature-panel">
-
-                <div class="admin-panel-body">
-
-                  <StationTopPicks
-                    stationName={station.name}
-                    assignedTopPicks={stationTopPicks}
-                    availableTopPicks={availableTopPicks}
-                  />
-
-                </div>
-
-              </section>
-
+              <p>
+                Update the information for
+                <strong>{station.name}</strong>.
+              </p>
             </div>
 
+            {formError && <Alert>{formError}</Alert>}
 
-            <!-- ======================================
-                 Form Actions
-            ======================================= -->
-
-            <div class="admin-form-actions">
-
-              <Button
-                href="/admin/stations"
-                variant="secondary"
-              >
-                Cancel
-              </Button>
-
-              <Button
-                type="submit"
-                variant="primary"
-                id="save-station-button"
-              >
-                Save Changes
-              </Button>
-
-            </div>
-
-          </form>
-
+            <StationFormFields values={form.values} errors={errors} />
+          </div>
         </div>
+      </section>
+
+      <!-- Facilities and Top Picks -->
+      <div class="admin-station-features-grid">
+        <StationFacilitiesPanel
+          assigned={stationFacilities}
+          canAdd={availableFacilities.length > 0}
+          error={facilityError}
+          allAddedMessage="All available facilities are already assigned."
+        >
+          Facilities available at <strong>{station.name}</strong>.
+        </StationFacilitiesPanel>
+
+        <section class="admin-panel admin-station-feature-panel">
+          <div class="admin-panel-body">
+            <StationTopPicks
+              stationName={station.name}
+              assignedTopPicks={stationTopPicks}
+              availableTopPicks={availableTopPicks}
+            />
+          </div>
+        </section>
+      </div>
+
+      <!-- Main station form actions -->
+      <div class="admin-form-actions">
+        <Button href="/admin/stations" variant="secondary">
+          Cancel
+        </Button>
+
+        <Button
+          type="submit"
+          variant="primary"
+          id="save-station-button"
+        >
+          Save Changes
+        </Button>
+      </div>
+    </form>
+
+    <!-- Separate platform forms: must remain outside the station form -->
+    <StationPlatformsPanel
+      stationName={station.name}
+      stationId={id}
+      platforms={platformForm.platforms}
+      lines={platformForm.lines}
+      values={platformForm.values}
+      errors={platformForm.errors}
+      formError={platformForm.formError}
+      editingId={platformForm.editingId}
+    />
+  </div>
 
   <Fragment slot="after">
-    <!-- ========================================
-         Add Facilities Modal
-    ========================================= -->
-
     <FacilityModal
       facilities={availableFacilities}
       description={`Select one or more facilities to add to ${station.name}.`}
       emptyDescription="All facilities from the master list are already assigned to this station."
     />
-
-
-    <!-- ========================================
-         Remove Facility Confirmation
-    ========================================= -->
 
     <ConfirmDialog
       id="remove-facility-confirm-dialog"
@@ -230,11 +201,6 @@ const facilityError = errors.facilities;
       variant="danger"
     />
 
-
-    <!-- ========================================
-         Save Station Confirmation
-    ========================================= -->
-
     <ConfirmDialog
       id="edit-station-confirm-dialog"
       title="Save Changes"
@@ -244,11 +210,8 @@ const facilityError = errors.facilities;
       variant="primary"
     />
 
-
     <script>
       import "../../../../scripts/admin/stations-edit.ts";
     </script>
-
-  
   </Fragment>
 </AdminLayout>
