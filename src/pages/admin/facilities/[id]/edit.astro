@@ -173,8 +173,10 @@ const admin = await Astro.session?.get<{
                   <FacilityIconField
                     value={icon}
                     saved={facility?.icon}
+                    savedDark={facility?.icon_dark}
                     textError={errors.icon}
                     fileError={errors.iconFile}
+                    darkFileError={errors.iconDarkFile}
                   />
 
                   <!-- Sort Order -->

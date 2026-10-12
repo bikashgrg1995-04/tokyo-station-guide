@@ -7,7 +7,7 @@ export interface FacilityFormValues {
 }
 
 export type FacilityFormErrors = Record<
-  keyof FacilityFormValues | "iconFile",
+  keyof FacilityFormValues | "iconFile" | "iconDarkFile",
   string
 >;
 
@@ -17,6 +17,7 @@ export function emptyFacilityErrors(): FacilityFormErrors {
     slug: "",
     icon: "",
     iconFile: "",
+    iconDarkFile: "",
     sortOrder: "",
   };
 }

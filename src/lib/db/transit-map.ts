@@ -39,7 +39,7 @@ export interface TransitMapStation {
   is_verified: number;
   verified_at: string | null;
 
-  /** JSON: [{ name, slug, icon, floor, count, note }] */
+  /** JSON: [{ name, slug, icon, icon_dark, floor, count, note }] */
   facilities: string | null;
 
   /** JSON: [{ name, name_jp, category, description, minutes }] */
@@ -127,6 +127,7 @@ export async function getTransitMapData(
                   'name', facility.name,
                   'slug', facility.slug,
                   'icon', facility.icon,
+                  'icon_dark', facility.icon_dark,
                   'floor', facility.floor,
                   'count', facility.facility_count,
                   'note', facility.note
@@ -137,6 +138,7 @@ export async function getTransitMapData(
                 f.name,
                 f.slug,
                 f.icon,
+                f.icon_dark,
                 sf.floor,
                 sf.facility_count,
                 sf.note

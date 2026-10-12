@@ -6,18 +6,29 @@ export interface Props {
   value: string;
   /** Icon currently saved for this facility, if any. */
   saved?: string | null;
+  /** Dark-theme icon currently saved for this facility, if any. */
+  savedDark?: string | null;
   textError?: string;
   fileError?: string;
+  darkFileError?: string;
 }
 
-const { value, saved = null, textError = "", fileError = "" } = Astro.props;
+const {
+  value,
+  saved = null,
+  savedDark = null,
+  textError = "",
+  fileError = "",
+  darkFileError = "",
+} = Astro.props;
 
 const uploaded = isUploadedIcon(saved) ? saved : null;
+const uploadedDark = isUploadedIcon(savedDark) ? savedDark : null;
 const text = isUploadedIcon(value) ? "" : value;
 ---
 
 <div class="admin-form-group">
-  <label for="icon_file">Icon file</label>
+  <label for="icon_file">Icon file (light theme)</label>
 
   {
     uploaded && (
@@ -55,6 +66,50 @@ const text = isUploadedIcon(value) ? "" : value;
       <small>
         Optional. PNG, WebP, JPEG or SVG, up to 512 KB. Use a square image
         (for example 128 × 128). It is stored in the site's R2 bucket.
+      </small>
+    )
+  }
+</div>
+
+<div class="admin-form-group">
+  <label for="icon_dark_file">Icon file (dark theme)</label>
+
+  {
+    uploadedDark && (
+      <div class="admin-icon-current is-dark">
+        <img
+          src={iconUrl(uploadedDark)}
+          alt="Current dark icon"
+          width="44"
+          height="44"
+        />
+
+        <label class="admin-icon-remove">
+          <input type="checkbox" name="remove_icon_dark" />
+          Remove this dark icon
+        </label>
+      </div>
+    )
+  }
+
+  <input
+    id="icon_dark_file"
+    name="icon_dark_file"
+    type="file"
+    accept="image/png,image/webp,image/jpeg,image/svg+xml"
+    aria-invalid={darkFileError ? "true" : "false"}
+    aria-describedby={darkFileError ? "icon-dark-file-error" : undefined}
+  />
+
+  {
+    darkFileError ? (
+      <small id="icon-dark-file-error" class="admin-form-error">
+        {darkFileError}
+      </small>
+    ) : (
+      <small>
+        Optional. Shown instead of the icon above when the website is in dark
+        mode. Without it, the normal icon is used in both themes.
       </small>
     )
   }

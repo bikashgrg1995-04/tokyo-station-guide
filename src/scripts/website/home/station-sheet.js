@@ -183,16 +183,25 @@ function isDark() {
  * The admin "icon" field may hold an emoji. An emoji is drawn on a
  * plain tile; everything else uses the sprite.
  */
+function uploadedIconImg(key) {
+  return (
+    '<img class="ic ic-img" alt="" loading="lazy" src="/media/' +
+    esc(key) +
+    '">'
+  );
+}
+
 function facilityIcon(f) {
   var icon = String(f.icon || "").trim();
+  var darkIcon = String(f.icon_dark || "").trim();
 
-  /* An icon file uploaded in the admin (stored in R2). */
+  /* Icon files uploaded in the admin (stored in R2). The dark one wins in dark mode. */
+  if (isDark() && darkIcon.indexOf("facility-icons/") === 0) {
+    return uploadedIconImg(darkIcon);
+  }
+
   if (icon.indexOf("facility-icons/") === 0) {
-    return (
-      '<img class="ic ic-img" alt="" loading="lazy" src="/media/' +
-      esc(icon) +
-      '">'
-    );
+    return uploadedIconImg(icon);
   }
 
   if (icon && !ICON_KEYS[icon.toLowerCase()] && /[^\x00-\x7f]/.test(icon)) {

@@ -8,6 +8,7 @@ export interface Facility {
   name: string;
   slug: string;
   icon: string | null;
+  icon_dark: string | null;
   sort_order: number;
 }
 
@@ -16,6 +17,7 @@ export interface StationFacility {
   name: string;
   slug: string;
   icon: string | null;
+  icon_dark: string | null;
   sort_order: number;
   facility_count: number | null;
   floor: string | null;
@@ -26,6 +28,7 @@ export interface FacilityInput {
   name: string;
   slug: string;
   icon?: string | null;
+  iconDark?: string | null;
   sortOrder?: number;
 }
 
@@ -47,7 +50,7 @@ export async function getFacilities(
   const result = await db
     .prepare(
       `
-        SELECT id, name, slug, icon, sort_order
+        SELECT id, name, slug, icon, icon_dark, sort_order
         FROM facilities
         ORDER BY sort_order ASC, name ASC
       `,
@@ -97,7 +100,7 @@ export async function getFacilitiesPaginated(
   const result = await db
     .prepare(
       `
-        SELECT id, name, slug, icon, sort_order
+        SELECT id, name, slug, icon, icon_dark, sort_order
         FROM facilities
         WHERE
           ? = ''
@@ -138,7 +141,7 @@ export async function getFacilityById(
   const result = await db
     .prepare(
       `
-        SELECT id, name, slug, icon, sort_order
+        SELECT id, name, slug, icon, icon_dark, sort_order
         FROM facilities
         WHERE id = ?
         LIMIT 1
@@ -162,15 +165,16 @@ export async function createFacility(
     .prepare(
       `
         INSERT INTO facilities (
-          name, slug, icon, sort_order
+          name, slug, icon, icon_dark, sort_order
         )
-        VALUES (?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?)
       `,
     )
     .bind(
       input.name.trim(),
       input.slug.trim(),
       input.icon?.trim() || null,
+      input.iconDark?.trim() || null,
       input.sortOrder ?? 0,
     )
     .run();
@@ -195,6 +199,7 @@ export async function updateFacility(
           name = ?,
           slug = ?,
           icon = ?,
+          icon_dark = ?,
           sort_order = ?
         WHERE id = ?
       `,
@@ -203,6 +208,7 @@ export async function updateFacility(
       input.name.trim(),
       input.slug.trim(),
       input.icon?.trim() || null,
+      input.iconDark?.trim() || null,
       input.sortOrder ?? 0,
       id,
     )
@@ -275,6 +281,7 @@ export async function getStationFacilities(
           f.name,
           f.slug,
           f.icon,
+          f.icon_dark,
           f.sort_order,
           sf.facility_count,
           sf.floor,
@@ -308,6 +315,7 @@ export async function getAvailableFacilitiesForStation(
           f.name,
           f.slug,
           f.icon,
+          f.icon_dark,
           f.sort_order
         FROM facilities f
         WHERE NOT EXISTS (

@@ -359,3 +359,15 @@
 .admin-icon-remove input {
   width: auto;
 }
+
+/* Dark-theme icon previews sit on a dark swatch so a light glyph stays visible. */
+.admin-icon-current.is-dark img,
+.admin-icon-thumb.is-dark {
+  background: #1c1c1e;
+}
+
+.admin-icon-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

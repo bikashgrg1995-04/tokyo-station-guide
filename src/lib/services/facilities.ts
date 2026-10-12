@@ -97,13 +97,69 @@ function chooseIcon(
   return isUploadedIcon(currentIcon) ? currentIcon : null;
 }
 
+/* The dark icon is always a file: a new upload, the kept one, or none. */
+function chooseDarkIcon(
+  uploadedKey: string | null,
+  removeRequested: boolean,
+  currentIcon: string | null,
+): string | null {
+  if (uploadedKey) {
+    return uploadedKey;
+  }
+
+  if (removeRequested) {
+    return null;
+  }
+
+  return isUploadedIcon(currentIcon) ? currentIcon : null;
+}
+
+/* Read and check one icon file field. Sets the field's error when it is not usable. */
+async function checkIconField(
+  formData: FormData,
+  field: string,
+  errorKey: "iconFile" | "iconDarkFile",
+  bucket: R2Bucket | undefined,
+  errors: FacilityFormErrors,
+): Promise<IconCheck | null> {
+  const file = readIconFile(formData, field);
+
+  if (!file) {
+    return null;
+  }
+
+  if (!bucket) {
+    errors[errorKey] =
+      "Icon storage (R2) is not configured. Bind the ASSETS_BUCKET R2 bucket.";
+    return null;
+  }
+
+  const check = await checkIconFile(file);
+
+  if (!check.ok) {
+    errors[errorKey] = check.error;
+    return null;
+  }
+
+  return check;
+}
+
+interface CurrentIcons {
+  icon: string | null;
+  iconDark: string | null;
+}
+
 async function submitFacilityForm(
   request: Request,
   result: FacilityFormResult,
   action: "create" | "update",
   bucket: R2Bucket | undefined,
-  currentIcon: string | null,
-  save: (values: FacilityFormValues, icon: string | null) => Promise<void>,
+  current: CurrentIcons,
+  save: (
+    values: FacilityFormValues,
+    icon: string | null,
+    iconDark: string | null,
+  ) => Promise<void>,
 ): Promise<FacilityFormResult> {
   const formData = await request.formData();
   const values = readFacilityForm(formData);
@@ -111,49 +167,65 @@ async function submitFacilityForm(
   result.values = values;
   result.errors = validateFacilityForm(values);
 
-  const file = readIconFile(formData);
-  let check: IconCheck | null = null;
+  const light = await checkIconField(
+    formData,
+    "icon_file",
+    "iconFile",
+    bucket,
+    result.errors,
+  );
 
-  if (file) {
-    if (!bucket) {
-      result.errors.iconFile =
-        "Icon storage (R2) is not configured. Bind the ASSETS_BUCKET R2 bucket.";
-    } else {
-      check = await checkIconFile(file);
-
-      if (!check.ok) {
-        result.errors.iconFile = check.error;
-      }
-    }
-  }
+  const dark = await checkIconField(
+    formData,
+    "icon_dark_file",
+    "iconDarkFile",
+    bucket,
+    result.errors,
+  );
 
   if (hasErrors(result.errors)) {
     return result;
   }
 
-  let uploadedKey: string | null = null;
+  let lightKey: string | null = null;
+  let darkKey: string | null = null;
 
   try {
-    if (bucket && check?.ok) {
-      uploadedKey = await saveIcon(bucket, values.slug, check);
+    if (bucket && light?.ok) {
+      lightKey = await saveIcon(bucket, values.slug, light);
+    }
+
+    if (bucket && dark?.ok) {
+      darkKey = await saveIcon(bucket, `${values.slug}-dark`, dark);
     }
 
     const icon = chooseIcon(
-      uploadedKey,
+      lightKey,
       values,
       formData.get("remove_icon") === "on",
-      currentIcon,
+      current.icon,
     );
 
-    await save(values, icon);
+    const iconDark = chooseDarkIcon(
+      darkKey,
+      formData.get("remove_icon_dark") === "on",
+      current.iconDark,
+    );
 
-    if (icon !== currentIcon) {
-      await deleteIcon(bucket, currentIcon);
+    await save(values, icon, iconDark);
+
+    if (icon !== current.icon) {
+      await deleteIcon(bucket, current.icon);
+    }
+
+    if (iconDark !== current.iconDark) {
+      await deleteIcon(bucket, current.iconDark);
     }
 
     result.redirectTo = LIST_PATH;
   } catch (err) {
-    await deleteIcon(bucket, uploadedKey);
+    await deleteIcon(bucket, lightKey);
+    await deleteIcon(bucket, darkKey);
     result.formError = describeSaveError(err, action, result.errors);
   }
 
@@ -186,12 +258,13 @@ export async function handleFacilityCreate(
     result,
     "create",
     bucket,
-    null,
-    async (values, icon) => {
+    { icon: null, iconDark: null },
+    async (values, icon, iconDark) => {
       await createFacility(db, {
         name: values.name,
         slug: values.slug,
         icon,
+        iconDark,
         sortOrder: Number(values.sortOrder),
       });
     },
@@ -226,12 +299,13 @@ export async function handleFacilityUpdate(
     result,
     "update",
     bucket,
-    facility.icon,
-    async (values, icon) => {
+    { icon: facility.icon, iconDark: facility.icon_dark },
+    async (values, icon, iconDark) => {
       await updateFacility(db, id, {
         name: values.name,
         slug: values.slug,
         icon,
+        iconDark,
         sortOrder: Number(values.sortOrder),
       });
     },
@@ -263,6 +337,7 @@ export async function handleFacilityDelete(
 
     await deleteFacility(db, id);
     await deleteIcon(bucket, facility?.icon);
+    await deleteIcon(bucket, facility?.icon_dark);
 
     return LIST_PATH;
   } catch (err) {
