@@ -1,4 +1,5 @@
-// The station details sheet.
+
+ // The station details sheet.
 
 import { list } from "./current-line.js";
 import { data, searchable } from "./data.js";
@@ -33,8 +34,8 @@ function stationField(stn, names) {
 }
 
 /*
- * The sheet shows one station at a time. `view` holds what the
- * header toggle and the tabs currently show.
+ * The sheet shows one station at a time.
+ * sel stores the selected GROUP index, not the original row index.
  */
 var view = {
   stn: null,
@@ -88,7 +89,7 @@ function stationLines(stn) {
   return out;
 }
 
-/* ---------- Facility icons (sprite lives in StationSheetIcons.astro) ---------- */
+/* ---------- Facility icons ---------- */
 
 var ICON_KEYS = {};
 
@@ -121,7 +122,6 @@ var ICON_KEYS = {};
   ICON_KEYS[k] = true;
 });
 
-/* First match wins. Tested against the facility's icon, slug and name. */
 var ICON_RULES = [
   [/locker/, "lockers"],
   [/luggage|baggage|storage|parcel/, "storage"],
@@ -179,10 +179,6 @@ function isDark() {
   );
 }
 
-/*
- * The admin "icon" field may hold an emoji. An emoji is drawn on a
- * plain tile; everything else uses the sprite.
- */
 function uploadedIconImg(key) {
   return (
     '<img class="ic ic-img" alt="" loading="lazy" src="/media/' +
@@ -195,7 +191,6 @@ function facilityIcon(f) {
   var icon = String(f.icon || "").trim();
   var darkIcon = String(f.icon_dark || "").trim();
 
-  /* Icon files uploaded in the admin (stored in R2). The dark one wins in dark mode. */
   if (isDark() && darkIcon.indexOf("facility-icons/") === 0) {
     return uploadedIconImg(darkIcon);
   }
@@ -272,69 +267,176 @@ function parseExits(raw) {
     });
 }
 
+/* ---------- Facility grouping ---------- */
+
+/*
+ * Group records for display only.
+ *
+ * IMPORTANT:
+ * If records have a shared facility ID, use it as the grouping key.
+ * Otherwise, use a shared slug; finally, use the normalized name.
+ * Original floor-wise records are never modified.
+ */
+function groupedFacilities(items) {
+  var groups = [];
+  var byKey = Object.create(null);
+
+  items.forEach(function (f) {
+    var name = String(f.name || "").trim();
+
+    var id =
+      f.facility_id != null
+        ? f.facility_id
+        : f.facilityId != null
+          ? f.facilityId
+          : null;
+
+    var slug = String(f.slug || "")
+      .trim()
+      .toLowerCase();
+
+    var key =
+      id != null && id !== ""
+        ? "id:" + String(id)
+        : slug
+          ? "slug:" + slug
+          : "name:" + name.toLowerCase().replace(/\s+/g, " ");
+
+    if (!byKey[key]) {
+      byKey[key] = {
+        key: key,
+        name: name,
+        icon: f.icon,
+        icon_dark: f.icon_dark,
+        slug: f.slug,
+        floors: [],
+      };
+
+      groups.push(byKey[key]);
+    }
+
+    byKey[key].floors.push(f);
+  });
+
+  return groups;
+}
+
+/* Unique floor labels, preserving the order in the source data. */
+function facilityFloorLabel(group) {
+  var floors = [];
+
+  group.floors.forEach(function (f) {
+    var floor = String(f.floor || "").trim();
+
+    if (floor && floors.indexOf(floor) === -1) {
+      floors.push(floor);
+    }
+  });
+
+  return floors.join(" · ");
+}
+
+function facilityCountLabel(count) {
+  if (count == null || count === "") {
+    return "";
+  }
+
+  return (
+    esc(count) +
+    (Number(count) === 1 ? " unit" : " units")
+  );
+}
+
 /* ---------- Tab contents ---------- */
 
 function facilitiesHtml(stn) {
   var items = parseList(stationField(stn, ["facilities"]));
+  var groups = groupedFacilities(items);
 
-  if (!items.length) {
+  if (!groups.length) {
     return '<p class="sheet-empty">No facilities listed yet.</p>';
+  }
+
+  /*
+   * Avoid an invalid selected index when the list changes.
+   * Keep the selected facility group if it still exists.
+   */
+  if (view.sel >= groups.length) {
+    view.sel = -1;
   }
 
   return (
     '<div class="gwrap"><div class="gw"><div class="grid">' +
-    items
-      .map(function (f, i) {
+    groups
+      .map(function (group, i) {
+        var floors = facilityFloorLabel(group);
+
         return (
           '<button type="button" class="tile" data-n="' +
           i +
           '" aria-pressed="' +
           (view.sel === i) +
           '">' +
-          facilityIcon(f) +
+          facilityIcon(group.floors[0]) +
           "<b>" +
-          esc(f.name) +
+          esc(group.name) +
           "</b>" +
-          (f.floor ? '<span class="fl">' + esc(f.floor) + "</span>" : "") +
+          (floors ? '<span class="fl">' + esc(floors) + "</span>" : "") +
           "</button>"
         );
       })
       .join("") +
     '</div></div><button type="button" class="more" id="sheet-more" aria-label="Scroll for more"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg></button></div>' +
     '<div class="detail" id="sheet-detail">' +
-    facilityDetailHtml(items[view.sel]) +
+    facilityDetailHtml(groups[view.sel]) +
     "</div>"
   );
 }
 
-function facilityDetailHtml(f) {
-  if (!f) {
+/* One selected facility; show every floor record separately. */
+function facilityDetailHtml(group) {
+  if (!group) {
     return '<span class="hint">Tap an icon for detail.</span>';
   }
 
-  var bits = [];
+  var rows = group.floors
+    .map(function (f) {
+      var bits = [];
 
-  if (f.floor) {
-    bits.push("Floor " + esc(f.floor));
-  }
+      if (f.floor) {
+        bits.push("Floor " + esc(f.floor));
+      }
 
-  if (f.count != null && f.count !== "") {
-    bits.push(
-      esc(f.count) + (Number(f.count) === 1 ? " unit" : " units"),
-    );
-  }
+      var count = facilityCountLabel(f.count);
 
-  var exits = exitChips(f.exits);
+      if (count) {
+        bits.push(count);
+      }
+
+      var exits = exitChips(f.exits);
+
+      return (
+        '<div class="facility-floor-detail">' +
+        "<div><b>" +
+        (bits.length ? bits.join(" · ") : "Facility details") +
+        "</b></div>" +
+        (exits
+          ? '<div><span class="near">Near</span>' + exits + "</div>"
+          : "") +
+        (f.note ? "<div>" + esc(f.note) + "</div>" : "") +
+        sourceTag(f.source) +
+        "</div>"
+      );
+    })
+    .join("");
 
   return (
-    (exits ? '<span class="near">Near</span>' + exits : "") +
     "<div><b>" +
-    esc(f.name) +
-    "</b>" +
-    (bits.length ? " · " + bits.join(" · ") : "") +
-    "</div>" +
-    (f.note ? "<div>" + esc(f.note) + "</div>" : "") +
-    sourceTag(f.source)
+    esc(group.name) +
+    "</b></div>" +
+    '<div class="facility-floor-details">' +
+    rows +
+    "</div>"
   );
 }
 
@@ -440,7 +542,10 @@ function verifiedText(stn) {
   var when = "";
 
   if (at) {
-    var iso = /[zZ]|[+-]\d\d:?\d\d$/.test(at) ? at : at.replace(" ", "T") + "Z";
+    var iso = /[zZ]|[+-]\d\d:?\d\d$/.test(at)
+      ? at
+      : at.replace(" ", "T") + "Z";
+
     var d = new Date(iso);
 
     if (!isNaN(d.getTime())) {
@@ -508,10 +613,12 @@ function renderTab() {
   var old = body.querySelector(".gw");
   var keep = old ? old.scrollTop : 0;
 
-  /* Two rows or more: fixed height, grid scrolls. Fewer: fit the content. */
+  /* Use grouped count to determine the grid height. */
   var many =
     view.tab === "facilities" &&
-    parseList(stationField(stn, ["facilities"])).length > 8;
+    groupedFacilities(
+      parseList(stationField(stn, ["facilities"])),
+    ).length > 8;
 
   body.className =
     "sheet-body" +
@@ -562,10 +669,8 @@ function selectPlatform(button) {
   renderTab();
 }
 
-/*
- * Reset the suggestion form and populate it with the
- * selected station's current information.
- */
+/* ---------- Suggestion form ---------- */
+
 function prepareSuggestionForm(stn) {
   var form = $("#station-suggestion-form");
   var section = $("#sheet-edit-form");
@@ -588,7 +693,6 @@ function prepareSuggestionForm(stn) {
   var longitude = stationField(stn, ["longitude"]);
 
   $("#suggestion-latitude").value = latitude != null ? String(latitude) : "";
-
   $("#suggestion-longitude").value = longitude != null ? String(longitude) : "";
 
   section.hidden = true;
@@ -660,7 +764,6 @@ function openSheet() {
 
   sheet.hidden = false;
 
-  /* The grid can only be measured once the sheet is on screen. */
   updateGridScroll();
 
   $("#sheet-close").focus();
@@ -732,7 +835,7 @@ export function initStationSheet() {
     }
   });
 
-  /* scroll events do not bubble, so listen in the capture phase */
+  /* Scroll events do not bubble, so listen in the capture phase. */
   $("#sheet-body").addEventListener(
     "scroll",
     function (e) {
@@ -745,7 +848,7 @@ export function initStationSheet() {
 
   window.addEventListener("resize", updateGridScroll);
 
-  /* Redraw icons when the site theme changes while the sheet is open. */
+  /* Redraw icons when the theme changes while the sheet is open. */
   new MutationObserver(function () {
     if (view.stn && !sheet.hidden) {
       renderTab();
@@ -782,7 +885,6 @@ export function initStationSheet() {
     message.textContent = "";
   });
 
-  $;
   $("#station-suggestion-form").addEventListener(
     "submit",
     async function (event) {
@@ -820,30 +922,19 @@ export function initStationSheet() {
           );
         }
 
-        message.textContent =
+        var successMessage =
           result.message || "Your suggestion has been submitted for review.";
-        message.hidden = false;
-
-        form.reset();
 
         var stationId = $("#suggestion-station-id").value;
-
-        /*
-         * Re-populate the form with the selected station's
-         * current values after a successful submission.
-         */
         var stn = list()[state.idx];
 
         if (stn && String(stn.id) === stationId) {
           prepareSuggestionForm(stn);
+        } else {
+          form.reset();
         }
 
-        /*
-         * Show the success message after preparing the form,
-         * because preparation clears the message.
-         */
-        message.textContent =
-          result.message || "Your suggestion has been submitted for review.";
+        message.textContent = successMessage;
         message.hidden = false;
       } catch (error) {
         message.textContent =

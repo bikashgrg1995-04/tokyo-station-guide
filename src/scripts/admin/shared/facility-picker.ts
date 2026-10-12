@@ -1,8 +1,10 @@
+
 /**
  * Shared floor-wise facility picker for New Station and Edit Station.
  *
  * Supports:
  * - Adding the same facility on multiple floors.
+ * - Adding another floor directly from an existing facility row.
  * - Quantity and optional notes for each floor entry.
  * - Removing one floor entry at a time.
  * - Updating empty states and modal selection counters.
@@ -108,7 +110,7 @@ export function initializeFacilityPicker(): void {
 
     const options = document.querySelectorAll("[data-facility-option]");
 
-    // A facility may be selected repeatedly for different floors.
+    // Facilities may be assigned on multiple floors.
     allFacilitiesMessage.hidden = options.length > 0;
   }
 
@@ -155,16 +157,56 @@ export function initializeFacilityPicker(): void {
     return input;
   }
 
+  function createAddFloorButton(
+    facilityName: string,
+  ): HTMLButtonElement {
+    const button = document.createElement("button");
+
+    button.type = "button";
+    button.className = "admin-table-action";
+    button.setAttribute("data-add-facility-floor", "");
+    button.dataset.facilityName = facilityName;
+    button.textContent = "+ Add floor";
+    button.setAttribute(
+      "aria-label",
+      `Add another floor for ${facilityName}`,
+    );
+
+    return button;
+  }
+
+  function ensureAddFloorButtons(): void {
+    getFacilityRows().forEach((row) => {
+      const actions = row.querySelector(".admin-table-actions");
+
+      if (!(actions instanceof HTMLElement)) {
+        return;
+      }
+
+      if (actions.querySelector("[data-add-facility-floor]")) {
+        return;
+      }
+
+      const facilityName = row.dataset.facilityName ?? "this facility";
+
+      actions.insertBefore(
+        createAddFloorButton(facilityName),
+        actions.firstChild,
+      );
+    });
+  }
+
   function addFacilityToTable(
     facilityId: number,
     facilityName: string,
-  ): void {
+    afterRow?: HTMLTableRowElement,
+  ): HTMLTableRowElement | null {
     if (!(facilityBody instanceof HTMLTableSectionElement)) {
-      return;
+      return null;
     }
 
     if (!Number.isInteger(facilityId) || facilityId <= 0) {
-      return;
+      return null;
     }
 
     const row = document.createElement("tr");
@@ -228,12 +270,14 @@ export function initializeFacilityPicker(): void {
 
     noteCell.appendChild(noteInput);
 
-    /* Remove action */
+    /* Actions */
 
     const actionsCell = document.createElement("td");
 
     const actions = document.createElement("div");
     actions.className = "admin-table-actions";
+
+    actions.appendChild(createAddFloorButton(facilityName));
 
     const removeButton = document.createElement("button");
     removeButton.type = "button";
@@ -247,7 +291,6 @@ export function initializeFacilityPicker(): void {
     actions.appendChild(removeButton);
     actionsCell.appendChild(actions);
 
-    // Use appendChild for compatibility with older DOM typings.
     row.appendChild(nameCell);
     row.appendChild(floorCell);
     row.appendChild(countCell);
@@ -258,13 +301,18 @@ export function initializeFacilityPicker(): void {
       "station-facilities-empty-row",
     );
 
-    if (emptyRow?.parentElement === facilityBody) {
+    // Put a new floor directly below the row that requested it.
+    if (afterRow?.parentElement === facilityBody) {
+      facilityBody.insertBefore(row, afterRow.nextSibling);
+    } else if (emptyRow?.parentElement === facilityBody) {
       facilityBody.insertBefore(row, emptyRow);
     } else {
       facilityBody.appendChild(row);
     }
 
     updateFacilityEmptyState();
+
+    return row;
   }
 
   function removeFacilityRow(row: HTMLTableRowElement): void {
@@ -359,12 +407,62 @@ export function initializeFacilityPicker(): void {
         return;
       }
 
-      // Do not block facilities already assigned to another floor.
+      // Duplicate assignments are intentional: each row represents a floor.
       addFacilityToTable(facilityId, facilityName);
     });
 
     closeAddFacilityModal();
   });
+
+  /* ========================================
+     Add Another Floor
+  ======================================== */
+
+  if (facilityBody instanceof HTMLTableSectionElement) {
+    facilityBody.addEventListener("click", (event) => {
+      const target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const addFloorButton = target.closest("[data-add-facility-floor]");
+
+      if (!(addFloorButton instanceof HTMLElement)) {
+        return;
+      }
+
+      const row = addFloorButton.closest("[data-facility-row]");
+
+      if (!(row instanceof HTMLTableRowElement)) {
+        return;
+      }
+
+      const facilityId = Number(row.dataset.facilityId);
+      const facilityName = row.dataset.facilityName ?? "";
+
+      if (
+        !Number.isInteger(facilityId) ||
+        facilityId <= 0 ||
+        !facilityName
+      ) {
+        return;
+      }
+
+      const newRow = addFacilityToTable(
+        facilityId,
+        facilityName,
+        row,
+      );
+
+      // Focus the floor input so the next step is obvious.
+      newRow
+        ?.querySelector<HTMLInputElement>(
+          '[name="facility_entry_floor"]',
+        )
+        ?.focus();
+    });
+  }
 
   /* ========================================
      Remove Facility Entry
@@ -432,6 +530,7 @@ export function initializeFacilityPicker(): void {
      Initial State
   ======================================== */
 
+  ensureAddFloorButtons();
   updateFacilityEmptyState();
   updateAllFacilitiesMessage();
   updateSelectedFacilityCount();
