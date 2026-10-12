@@ -1,5 +1,4 @@
-
- // The station details sheet.
+// The station details sheet.
 
 import { list } from "./current-line.js";
 import { data, searchable } from "./data.js";
@@ -341,57 +340,61 @@ function facilityCountLabel(count) {
     return "";
   }
 
-  return (
-    esc(count) +
-    (Number(count) === 1 ? " unit" : " units")
-  );
+  return esc(count) + (Number(count) === 1 ? " unit" : " units");
 }
 
 /* ---------- Tab contents ---------- */
+
 
 function facilitiesHtml(stn) {
   var items = parseList(stationField(stn, ["facilities"]));
   var groups = groupedFacilities(items);
 
-  if (!groups.length) {
-    return '<p class="sheet-empty">No facilities listed yet.</p>';
-  }
-
-  /*
-   * Avoid an invalid selected index when the list changes.
-   * Keep the selected facility group if it still exists.
-   */
   if (view.sel >= groups.length) {
     view.sel = -1;
   }
 
-  return (
-    '<div class="gwrap"><div class="gw"><div class="grid">' +
-    groups
-      .map(function (group, i) {
-        var floors = facilityFloorLabel(group);
+  var gridContent = groups.length
+    ? '<div class="grid">' +
+      groups
+        .map(function (group, i) {
+          var floors = facilityFloorLabel(group);
 
-        return (
-          '<button type="button" class="tile" data-n="' +
-          i +
-          '" aria-pressed="' +
-          (view.sel === i) +
-          '">' +
-          facilityIcon(group.floors[0]) +
-          "<b>" +
-          esc(group.name) +
-          "</b>" +
-          (floors ? '<span class="fl">' + esc(floors) + "</span>" : "") +
-          "</button>"
-        );
-      })
-      .join("") +
-    '</div></div><button type="button" class="more" id="sheet-more" aria-label="Scroll for more"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg></button></div>' +
+          return (
+            '<button type="button" class="tile" data-n="' +
+            i +
+            '" aria-pressed="' +
+            (view.sel === i) +
+            '">' +
+            facilityIcon(group.floors[0]) +
+            "<b>" +
+            esc(group.name) +
+            "</b>" +
+            (floors ? '<span class="fl">' + esc(floors) + "</span>" : "") +
+            "</button>"
+          );
+        })
+        .join("") +
+      "</div>"
+    : '<p class="sheet-empty">No facilities listed yet.</p>';
+
+  return (
+    '<div class="gwrap">' +
+    '<div class="gw">' +
+    gridContent +
+    "</div>" +
+    '<button type="button" class="more" id="sheet-more" aria-label="Scroll for more">' +
+    '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M3.5 6l4.5 4.5L12.5 6"/>' +
+    "</svg>" +
+    "</button>" +
+    "</div>" +
     '<div class="detail" id="sheet-detail">' +
     facilityDetailHtml(groups[view.sel]) +
     "</div>"
   );
 }
+
 
 /* One selected facility; show every floor record separately. */
 function facilityDetailHtml(group) {
@@ -450,44 +453,31 @@ function platformsHtml(stn) {
   var selected = view.platformSel;
   var active = items[selected];
 
-  var rows = items
-    .map(function (p, i) {
-      var title = p.destinations || "Platform " + (p.number || "");
-      var sub = [p.line, p.location].filter(Boolean).join(" · ");
+  
+var rows = items
+  .map(function (p) {
+    var title = p.destinations || "Platform " + (p.number || "");
+    var sub = [p.line, p.location].filter(Boolean).join(" · ");
 
-      return (
-        '<button type="button" class="row platform-row" data-platform="' +
-        i +
-        '" aria-pressed="' +
-        (selected === i) +
-        '">' +
-        '<span class="l"><b>' +
-        esc(title) +
-        "</b>" +
-        (sub ? "<small>" + esc(sub) + "</small>" : "") +
-        "</span>" +
-        '<span class="pf"' +
-        (p.color ? ' style="background:' + esc(p.color) + '"' : "") +
-        ">" +
-        esc(p.number || "") +
-        "</span>" +
-        "</button>"
-      );
-    })
-    .join("");
-
-  var detail = active
-    ? '<div class="detail platform-detail" id="sheet-platform-detail">' +
-      "<b>" +
-      esc(active.destinations || active.line || "Platform information") +
+    return (
+      '<div class="row platform-row">' +
+      '<span class="l"><b>' +
+      esc(title) +
       "</b>" +
-      (active.notes
-        ? "<p>" + esc(active.notes) + "</p>"
-        : '<p class="hint">Walking guidance has not been added yet.</p>') +
+      (sub ? "<small>" + esc(sub) + "</small>" : "") +
+      "</span>" +
+      '<span class="pf"' +
+      (p.color ? ' style="background:' + esc(p.color) + '"' : "") +
+      ">" +
+      esc(p.number || "") +
+      "</span>" +
       "</div>"
-    : "";
+    );
+  })
+  .join("");
 
-  return '<div class="platform-list">' + rows + "</div>" + detail;
+return '<div class="platform-list">' + rows + "</div>";
+
 }
 
 function picksHtml(stn) {
@@ -542,9 +532,7 @@ function verifiedText(stn) {
   var when = "";
 
   if (at) {
-    var iso = /[zZ]|[+-]\d\d:?\d\d$/.test(at)
-      ? at
-      : at.replace(" ", "T") + "Z";
+    var iso = /[zZ]|[+-]\d\d:?\d\d$/.test(at) ? at : at.replace(" ", "T") + "Z";
 
     var d = new Date(iso);
 
@@ -616,9 +604,7 @@ function renderTab() {
   /* Use grouped count to determine the grid height. */
   var many =
     view.tab === "facilities" &&
-    groupedFacilities(
-      parseList(stationField(stn, ["facilities"])),
-    ).length > 8;
+    groupedFacilities(parseList(stationField(stn, ["facilities"]))).length > 8;
 
   body.className =
     "sheet-body" +
@@ -643,12 +629,12 @@ function renderTab() {
   updateGridScroll();
 
   var note = $("#sheet-note");
-  var unverified = !verifiedText(stn).ok;
+  var note = $("#sheet-note");
 
-  note.textContent = unverified
-    ? "Not yet verified. Details may be out of date."
-    : "";
-  note.hidden = !unverified;
+  note.textContent =
+    "Icons appear only when the floor is checked. Unverified facts stay hidden.";
+
+  note.hidden = false;
 
   document.querySelectorAll(".sheet-tabs button").forEach(function (b) {
     b.setAttribute("aria-selected", String(b.dataset.tab === view.tab));
