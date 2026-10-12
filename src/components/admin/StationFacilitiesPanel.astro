@@ -1,19 +1,28 @@
 ---
 import Alert from "../common/Alert.astro";
 import Button from "../common/Button.astro";
+import type { StationFacility } from "../../lib/db/facilities";
 
 export interface Props {
-  /** Facilities already assigned to the station (none on the Add page). */
-  assigned?: { id: number; name: string }[];
-  /** Show the "+ Add" button (there are facilities left to add). */
+  /** Existing floor-wise facility entries on the edit page. */
+  assigned?: StationFacility[];
+
+  /** Whether the Add button should be displayed. */
   canAdd: boolean;
-  /** Validation message for the facilities field. */
+
+  /** Validation error for facility entries. */
   error?: string;
-  /** Shown by the picker script when every facility has been added. */
+
+  /** Message displayed when no facilities are available. */
   allAddedMessage: string;
 }
 
-const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
+const {
+  assigned = [],
+  canAdd,
+  error,
+  allAddedMessage,
+} = Astro.props;
 ---
 
 <section class="admin-panel admin-station-feature-panel">
@@ -21,41 +30,31 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
     <div class="admin-station-feature-header">
       <div>
         <h3>Facilities</h3>
-
         <p><slot /></p>
       </div>
 
-      {
-        canAdd && (
-          <Button
-            type="button"
-            variant="primary"
-            id="open-add-facility-button"
-          >
-            + Add
-          </Button>
-        )
-      }
+      {canAdd && (
+        <Button
+          type="button"
+          variant="primary"
+          id="open-add-facility-button"
+        >
+          + Add
+        </Button>
+      )}
     </div>
 
     {error && <Alert>{error}</Alert>}
 
-    <!-- Temporary Facility Inputs -->
+    <!-- Identifies the new floor-wise form, including when all rows are removed. -->
+    <input
+      type="hidden"
+      name="station_facilities_enabled"
+      value="1"
+    />
 
-    <div id="station-facility-inputs">
-      {
-        assigned.map((facility) => (
-          <input
-            type="hidden"
-            name="facility_ids"
-            value={facility.id}
-            data-facility-input={facility.id}
-          />
-        ))
-      }
-    </div>
-
-    <!-- Facility Table -->
+    <!-- Facility rows contain their own submitted inputs. -->
+    <div id="station-facility-inputs" hidden></div>
 
     <div class="admin-table-wrapper">
       <table
@@ -65,46 +64,102 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
         <thead>
           <tr>
             <th>Facility</th>
+            <th>Floor</th>
+            <th>Quantity</th>
+            <th>Note (optional)</th>
             <th>Actions</th>
           </tr>
         </thead>
 
         <tbody id="station-facilities-body">
-          {
-            assigned.length > 0 ? (
-              assigned.map((facility) => (
-                <tr data-facility-row data-facility-id={facility.id}>
-                  <td>
-                    <div class="admin-line-name">{facility.name}</div>
-                  </td>
+          {assigned.map((facility, index) => (
+            <tr
+              data-facility-row
+              data-entry-id={`existing-${index}`}
+              data-facility-id={facility.facility_id}
+              data-facility-name={facility.name}
+            >
+              <td>
+                <div class="admin-line-name">
+                  {facility.name}
+                </div>
 
-                  <td>
-                    <div class="admin-table-actions">
-                      <button
-                        type="button"
-                        class="admin-table-action admin-table-action-delete"
-                        data-remove-facility={facility.id}
-                        data-facility-name={facility.name}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr id="station-facilities-empty-row">
-                <td colspan="2">
-                  <div class="admin-feature-empty">No facilities assigned.</div>
-                </td>
-              </tr>
-            )
-          }
+                <input
+                  type="hidden"
+                  name="facility_entry_facility_id"
+                  value={facility.facility_id}
+                />
+              </td>
+
+              <td>
+                <input
+                  type="text"
+                  name="facility_entry_floor"
+                  value={facility.floor ?? ""}
+                  placeholder="e.g. B1, 1F, 2F"
+                  maxlength="30"
+                  required
+                  aria-label={`Floor for ${facility.name}`}
+                />
+              </td>
+
+              <td>
+                <input
+                  type="number"
+                  name="facility_entry_count"
+                  value={facility.facility_count ?? 1}
+                  min="1"
+                  step="1"
+                  required
+                  aria-label={`Quantity of ${facility.name}`}
+                />
+              </td>
+
+              <td>
+                <input
+                  type="text"
+                  name="facility_entry_note"
+                  value={facility.note ?? ""}
+                  placeholder="Optional note"
+                  maxlength="500"
+                  aria-label={`Note for ${facility.name}`}
+                />
+              </td>
+
+              <td>
+                <div class="admin-table-actions">
+                  <button
+                    type="button"
+                    class="admin-table-action admin-table-action-delete"
+                    data-remove-facility
+                    data-facility-name={facility.name}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+
+          <tr
+            id="station-facilities-empty-row"
+            hidden={assigned.length > 0}
+          >
+            <td colspan="5">
+              <div class="admin-feature-empty">
+                No facilities assigned.
+              </div>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
 
-    <p id="all-facilities-message" class="admin-feature-message" hidden>
+    <p
+      id="all-facilities-message"
+      class="admin-feature-message"
+      hidden
+    >
       {allAddedMessage}
     </p>
   </div>

@@ -8,6 +8,7 @@ import Alert from "../../../components/common/Alert.astro";
 import Breadcrumbs from "../../../components/common/Breadcrumbs.astro";
 import Button from "../../../components/common/Button.astro";
 import ConfirmDialog from "../../../components/common/ConfirmDialog.astro";
+
 import StationFormFields from "../../../components/admin/StationFormFields.astro";
 import StationFacilitiesPanel from "../../../components/admin/StationFacilitiesPanel.astro";
 import FacilityModal from "../../../components/admin/FacilityModal.astro";
@@ -25,154 +26,136 @@ if (form.redirectTo) {
   return Astro.redirect(form.redirectTo);
 }
 
-const {
-  name,
-} = form.values;
+const { name } = form.values;
 const { errors, facilities, topPicks } = form;
 const error = form.formError;
-
 ---
 
 <AdminLayout title="Add Station" activePath="/admin/stations">
-        <!-- ========================================
-             Topbar
-        ========================================= -->
+  <header class="admin-topbar">
+    <Breadcrumbs
+      backHref="/admin/stations"
+      parentLabel="Stations"
+      current="Add Station"
+    />
+  </header>
 
-        <header class="admin-topbar">
-          <Breadcrumbs backHref="/admin/stations" parentLabel="Stations" current="Add Station" />
-        </header>
+  <div class="admin-content">
+    <h2>Add Station</h2>
 
-        <!-- ========================================
-             Content
-        ========================================= -->
+    <p>
+      Add a railway or subway station to the Tokyo Station Guide.
+    </p>
 
-        <div class="admin-content">
-          <h2>Add Station</h2>
-
-          <p>
-            Add a railway or subway station to the
-            Tokyo Station Guide.
-          </p>
-
-          <!-- ======================================
-               Main Add Form
-          ======================================= -->
-
-          <form
-            method="POST"
-            class="admin-form"
-            id="add-station-form"
-          >
-            <!-- ======================================
-                 Station Details
-            ======================================= -->
-
-            <section class="admin-panel">
-              <div class="admin-panel-body">
-                <div class="admin-station-form">
-                  <div
-                    class="admin-station-form-header"
-                  >
-                    <h3>
-                      Station Details
-                    </h3>
-
-                    <p>
-                      Enter the basic information
-                      for this station.
-                    </p>
-                  </div>
-
-                  {
-                    error && (
-                      <Alert>{error}</Alert>
-                    )
-                  }
-
-                  <StationFormFields values={form.values} errors={errors} />
-                </div>
-              </div>
-            </section>
-
-            <!-- ======================================
-                 Facilities + Top Picks
-            ======================================= -->
-
-            <div class="admin-station-features-grid">
-              <!-- ====================================
-                   Facilities
-              ===================================== -->
-
-              <StationFacilitiesPanel
-                canAdd={facilities.length > 0}
-                error={errors.facilities}
-                allAddedMessage="All available facilities are already selected."
-              >
-                Select facilities available at this station.
-              </StationFacilitiesPanel>
-
-              <!-- ====================================
-                   Top Picks
-              ===================================== -->
-
-              <StationTopPicks
-                stationName={name || "this station"}
-                assignedTopPicks={[]}
-                availableTopPicks={topPicks}
-              />
+    <form method="POST" class="admin-form" id="add-station-form">
+      <!-- Station Details -->
+      <section class="admin-panel">
+        <div class="admin-panel-body">
+          <div class="admin-station-form">
+            <div class="admin-station-form-header">
+              <h3>Station Details</h3>
+              <p>Enter the basic information for this station.</p>
             </div>
 
-            <!-- ======================================
-                 Form Actions
-            ======================================= -->
+            {error && <Alert>{error}</Alert>}
 
-            <div class="admin-form-actions">
-              <Button
-                href="/admin/stations"
-                variant="secondary"
-              >
-                Cancel
-              </Button>
-
-              <Button
-                type="submit"
-                variant="primary"
-                id="create-station-button"
-              >
-                Create Station
-              </Button>
-            </div>
-          </form>
+            <StationFormFields
+              values={form.values}
+              errors={errors}
+            />
+          </div>
         </div>
+      </section>
+
+      <!-- Station Verification + Facilities -->
+      <div class="admin-station-setup-grid">
+        <section class="admin-panel admin-station-verification-panel">
+          <div class="admin-panel-body">
+            <div class="admin-station-feature-header">
+              <div>
+                <h3>Station Verification</h3>
+                <p>Manage this station's verification status.</p>
+              </div>
+            </div>
+
+            <div class="admin-verification-toggle">
+              <div class="admin-verification-copy">
+                <span class="admin-verification-title">
+                  Verified station
+                </span>
+
+                <small>
+                  Mark this station as verified.
+                </small>
+              </div>
+
+              <label class="admin-switch" for="is_verified">
+                <input
+                  id="is_verified"
+                  name="is_verified"
+                  type="checkbox"
+                  checked={form.values.isVerified}
+                />
+                <span class="admin-switch-slider"></span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <StationFacilitiesPanel
+          canAdd={facilities.length > 0}
+          error={errors.facilities}
+          allAddedMessage="No facilities are available in the master list."
+        >
+          Add facilities and specify their floor, quantity, and optional note.
+        </StationFacilitiesPanel>
+      </div>
+
+      <!-- Top Picks -->
+      <section class="admin-station-top-picks-section">
+        <StationTopPicks
+          stationName={name || "this station"}
+          assignedTopPicks={[]}
+          availableTopPicks={topPicks}
+        />
+      </section>
+
+      <!-- Form Actions -->
+      <div class="admin-form-actions">
+        <Button href="/admin/stations" variant="secondary">
+          Cancel
+        </Button>
+
+        <Button
+          type="submit"
+          variant="primary"
+          id="create-station-button"
+        >
+          Create Station
+        </Button>
+      </div>
+    </form>
+  </div>
 
   <Fragment slot="after">
-    <!-- ========================================
-         Add Facilities Modal
-    ========================================= -->
-
+    <!-- Add Facilities Modal -->
     <FacilityModal
       facilities={facilities}
-      description="Select one or more facilities to add to this station."
+      description="Select facilities to add to this station. You can add the same facility on multiple floors."
       emptyDescription="Add facilities to the master facility list first."
     />
 
-    <!-- ========================================
-         Remove Facility Confirmation
-    ========================================= -->
-
+    <!-- Remove Facility Confirmation -->
     <ConfirmDialog
       id="remove-facility-confirm-dialog"
       title="Remove Facility"
-      description="Are you sure you want to remove this facility from the station?"
+      description="Are you sure you want to remove this facility entry from the station?"
       confirmText="Remove"
       cancelText="Cancel"
       variant="danger"
     />
 
-    <!-- ========================================
-         Create Station Confirmation
-    ========================================= -->
-
+    <!-- Create Station Confirmation -->
     <ConfirmDialog
       id="create-station-confirm-dialog"
       title="Create Station"
@@ -185,6 +168,5 @@ const error = form.formError;
     <script>
       import "../../../scripts/admin/stations-new.ts";
     </script>
-  
   </Fragment>
 </AdminLayout>

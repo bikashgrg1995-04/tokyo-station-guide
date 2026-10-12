@@ -12,8 +12,10 @@ export interface Facility {
   sort_order: number;
 }
 
+
 export interface StationFacility {
   id: number;
+  facility_id: number;
   name: string;
   slug: string;
   icon: string | null;
@@ -23,6 +25,7 @@ export interface StationFacility {
   floor: string | null;
   note: string | null;
 }
+
 
 export interface FacilityInput {
   name: string;
@@ -265,6 +268,7 @@ export async function deleteFacility(
     .run();
 }
 
+
 /* ========================================
    Get Facilities Assigned to Station
 ======================================== */
@@ -277,7 +281,8 @@ export async function getStationFacilities(
     .prepare(
       `
         SELECT
-          f.id,
+          sf.id,
+          f.id AS facility_id,
           f.name,
           f.slug,
           f.icon,
@@ -290,7 +295,10 @@ export async function getStationFacilities(
         INNER JOIN facilities f
           ON f.id = sf.facility_id
         WHERE sf.station_id = ?
-        ORDER BY f.sort_order ASC, f.name ASC
+        ORDER BY
+          f.sort_order ASC,
+          f.name ASC,
+          sf.floor ASC
       `,
     )
     .bind(stationId)

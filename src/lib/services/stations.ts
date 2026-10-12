@@ -1,3 +1,4 @@
+
 import {
   createStation,
   deleteStation,
@@ -5,6 +6,7 @@ import {
   updateStation,
   type StationEditItem,
 } from "../db/stations";
+
 import {
   getAvailableFacilitiesForStation,
   getFacilities,
@@ -12,6 +14,7 @@ import {
   type Facility,
   type StationFacility,
 } from "../db/facilities";
+
 import {
   getAvailableTopPicksForStation,
   getStationTopPicks,
@@ -19,7 +22,15 @@ import {
   type StationTopPick,
   type TopPick,
 } from "../db/top-picks";
-import { hasErrors, paginationUrlFor, readListQuery, readText } from "./common";
+
+import type { StationFacilityInput } from "./..//db/stations//types";
+
+import {
+  hasErrors,
+  paginationUrlFor,
+  readListQuery,
+  readText,
+} from "./common";
 
 import {
   type StationFormValues,
@@ -33,7 +44,6 @@ const LIST_PATH = "/admin/stations";
 const PER_PAGE = 10;
 
 interface StationFormBase {
-  /** Set when the page should redirect (form saved). */
   redirectTo: string | null;
   values: StationFormValues;
   errors: StationFormErrors;
@@ -52,6 +62,11 @@ export interface StationEditResult extends StationFormBase {
   availableTopPicks: TopPick[];
 }
 
+interface ParsedStationFacilities {
+  entries: StationFacilityInput[];
+  error: string | null;
+}
+
 function readIds(formData: FormData, key: string): number[] {
   return [
     ...new Set(
@@ -61,6 +76,96 @@ function readIds(formData: FormData, key: string): number[] {
         .filter((value) => Number.isInteger(value) && value > 0),
     ),
   ];
+}
+
+/**
+ * Reads repeated facility fields in matching order.
+ *
+ * Expected field names:
+ * facility_entry_facility_id
+ * facility_entry_floor
+ * facility_entry_count
+ * facility_entry_note
+ */
+function readStationFacilities(
+  formData: FormData,
+): ParsedStationFacilities {
+  const facilityIds = formData.getAll("facility_entry_facility_id");
+  const floors = formData.getAll("facility_entry_floor");
+  const counts = formData.getAll("facility_entry_count");
+  const notes = formData.getAll("facility_entry_note");
+
+  const entries: StationFacilityInput[] = [];
+  const errors: string[] = [];
+
+  const rowCount = Math.max(
+    facilityIds.length,
+    floors.length,
+    counts.length,
+    notes.length,
+  );
+
+  for (let index = 0; index < rowCount; index += 1) {
+    const rawFacilityId = String(facilityIds[index] ?? "").trim();
+    const floor = String(floors[index] ?? "").trim();
+    const rawCount = String(counts[index] ?? "").trim();
+    const note = String(notes[index] ?? "").trim();
+
+    // Ignore rows that are entirely empty.
+    if (!rawFacilityId && !floor && !rawCount && !note) {
+      continue;
+    }
+
+    const facilityId = Number(rawFacilityId);
+    const facilityCount = Number(rawCount);
+
+    if (!Number.isInteger(facilityId) || facilityId <= 0) {
+      errors.push(`Row ${index + 1}: select a valid facility.`);
+      continue;
+    }
+
+    if (!floor) {
+      errors.push(`Row ${index + 1}: enter a floor.`);
+      continue;
+    }
+
+    if (
+      !rawCount ||
+      !Number.isInteger(facilityCount) ||
+      facilityCount < 1
+    ) {
+      errors.push(`Row ${index + 1}: quantity must be a whole number of at least 1.`);
+      continue;
+    }
+
+    entries.push({
+      facilityId,
+      floor,
+      facilityCount,
+      note: note || null,
+    });
+  }
+
+  // The database unique index treats the same floor for the same
+  // facility as a duplicate assignment.
+  const seen = new Set<string>();
+
+  for (const entry of entries) {
+    const key = `${entry.facilityId}:${entry.floor.toLocaleLowerCase()}`;
+
+    if (seen.has(key)) {
+      errors.push(
+        `Facility ID ${entry.facilityId} has the same floor entered more than once.`,
+      );
+    }
+
+    seen.add(key);
+  }
+
+  return {
+    entries,
+    error: errors.length > 0 ? errors[0] : null,
+  };
 }
 
 function readStationForm(formData: FormData) {
@@ -75,17 +180,22 @@ function readStationForm(formData: FormData) {
     isVerified: formData.get("is_verified") === "on",
   };
 
+  const parsedFacilities = readStationFacilities(formData);
+
   return {
     values,
+    // Legacy checkbox fields remain supported for existing forms.
     facilityIds: readIds(formData, "facility_ids"),
+    stationFacilities: parsedFacilities.entries,
+    stationFacilitiesError: parsedFacilities.error,
     topPickIds: readIds(formData, "top_pick_ids"),
   };
 }
 
-/** Field errors + "selected facility / top pick does not exist" errors. */
 function validateStationSelections(
   values: StationFormValues,
   facilityIds: number[],
+  stationFacilities: StationFacilityInput[],
   topPickIds: number[],
   allFacilities: Facility[],
   allTopPicks: TopPick[],
@@ -95,7 +205,12 @@ function validateStationSelections(
   const validFacilityIds = new Set(allFacilities.map((item) => item.id));
   const validTopPickIds = new Set(allTopPicks.map((item) => item.id));
 
-  if (facilityIds.some((id) => !validFacilityIds.has(id))) {
+  const selectedFacilityIds = [
+    ...facilityIds,
+    ...stationFacilities.map((entry) => entry.facilityId),
+  ];
+
+  if (selectedFacilityIds.some((id) => !validFacilityIds.has(id))) {
     errors.facilities = "One or more selected facilities are invalid.";
   }
 
@@ -110,6 +225,7 @@ function toStationInput(
   values: StationFormValues,
   facilityIds: number[],
   topPickIds: number[],
+  stationFacilities: StationFacilityInput[],
 ) {
   return {
     name: values.name,
@@ -120,6 +236,7 @@ function toStationInput(
     description: values.description || null,
     about: values.about || null,
     facilityIds,
+    stationFacilities,
     topPickIds,
     isVerified: values.isVerified,
   };
@@ -129,7 +246,6 @@ function toStationInput(
    Create
 ======================================== */
 
-/** "New station" page: shows the form, saves it on POST. */
 export async function handleStationCreate(
   request: Request,
   db: D1Database,
@@ -159,30 +275,47 @@ export async function handleStationCreate(
     return result;
   }
 
-  const { values, facilityIds, topPickIds } = readStationForm(
-    await request.formData(),
-  );
+  const {
+    values,
+    facilityIds,
+    stationFacilities,
+    stationFacilitiesError,
+    topPickIds,
+  } = readStationForm(await request.formData());
 
   result.values = values;
+
   result.errors = validateStationSelections(
     values,
     facilityIds,
+    stationFacilities,
     topPickIds,
     facilities,
     topPicks,
   );
+
+  if (stationFacilitiesError) {
+    result.errors.facilities = stationFacilitiesError;
+  }
 
   if (hasErrors(result.errors)) {
     return result;
   }
 
   try {
-    await createStation(db, toStationInput(values, facilityIds, topPickIds));
+    await createStation(
+      db,
+      toStationInput(
+        values,
+        facilityIds,
+        topPickIds,
+        stationFacilities,
+      ),
+    );
 
     result.redirectTo = LIST_PATH;
   } catch (err) {
     console.error(err);
-
     result.formError = "Unable to create station. The slug may already exist.";
   }
 
@@ -193,7 +326,6 @@ export async function handleStationCreate(
    Edit
 ======================================== */
 
-/** "Edit station" page: starts from the stored station, saves on POST. */
 export async function handleStationUpdate(
   request: Request,
   db: D1Database,
@@ -230,52 +362,78 @@ export async function handleStationUpdate(
     return result;
   }
 
-  const { values, facilityIds, topPickIds } = readStationForm(formData);
+  const {
+    values,
+    facilityIds,
+    stationFacilities,
+    stationFacilitiesError,
+    topPickIds,
+  } = readStationForm(formData);
 
   const allFacilities = await getFacilities(db);
   const allTopPicks = await getTopPicks(db);
 
   result.values = values;
+
   result.errors = validateStationSelections(
     values,
     facilityIds,
+    stationFacilities,
     topPickIds,
     allFacilities,
     allTopPicks,
   );
+
+  if (stationFacilitiesError) {
+    result.errors.facilities = stationFacilitiesError;
+  }
 
   if (!hasErrors(result.errors)) {
     try {
       await updateStation(
         db,
         id,
-        toStationInput(values, facilityIds, topPickIds),
+        toStationInput(
+          values,
+          facilityIds,
+          topPickIds,
+          stationFacilities,
+        ),
       );
 
       result.redirectTo = LIST_PATH;
-
       return result;
     } catch (err) {
       console.error(err);
-
       result.formError =
         "Unable to update station. The name or slug may already exist.";
     }
   }
 
-  // The form is shown again: keep what the person selected.
-  result.stationFacilities = facilityIds
-    .map((facilityId) => allFacilities.find((item) => item.id === facilityId))
-    .filter((item): item is Facility => Boolean(item))
-    .map((item) => ({
-      ...item,
-      facility_count: null,
-      floor: null,
-      note: null,
-    }));
+  // Preserve submitted floor-wise rows when showing validation errors again.
+  result.stationFacilities = stationFacilities.map((entry) => {
+    const facility = allFacilities.find(
+      (item) => item.id === entry.facilityId,
+    );
+
+    return {
+      id: 0,
+      facility_id: entry.facilityId,
+      name: facility?.name ?? "Unknown facility",
+      slug: facility?.slug ?? "",
+      icon: facility?.icon ?? null,
+      icon_dark: facility?.icon_dark ?? null,
+      sort_order: facility?.sort_order ?? 0,
+      facility_count: entry.facilityCount,
+      floor: entry.floor,
+      note: entry.note ?? null,
+    };
+  });
 
   result.availableFacilities = allFacilities.filter(
-    (item) => !facilityIds.includes(item.id),
+    (item) =>
+      !stationFacilities.some((entry) => entry.facilityId === item.id) &&
+      !facilityIds.includes(item.id),
   );
 
   result.stationTopPicks = topPickIds
@@ -299,7 +457,6 @@ export async function handleStationUpdate(
    Delete
 ======================================== */
 
-/** Deletes a station on POST. Returns the URL to redirect to. */
 export async function handleStationDelete(
   request: Request,
   db: D1Database,
@@ -324,7 +481,6 @@ export async function handleStationDelete(
    List
 ======================================== */
 
-/** Stations list page: search, pagination and the pagination URL. */
 export async function loadStationList(db: D1Database, url: URL) {
   const { search, page } = readListQuery(url);
 

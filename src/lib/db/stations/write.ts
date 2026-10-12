@@ -2,14 +2,8 @@
    Create, update and delete stations
 ======================================== */
 
-import type {
-  CreateStationInput,
-  UpdateStationInput,
-} from "./types";
-import {
-  resolveFacilityIds,
-  resolveTopPickIds,
-} from "./relations";
+import type { CreateStationInput, UpdateStationInput } from "./types";
+import { resolveFacilityIds, resolveTopPickIds } from "./relations";
 
 /* ========================================
    Create Station
@@ -63,18 +57,41 @@ export async function createStation(
     )
     .run();
 
-
-  const stationId = Number(
-    result.meta.last_row_id,
-  );
+  const stationId = Number(result.meta.last_row_id);
 
   const statements: D1PreparedStatement[] = [];
 
-  facilityIds.forEach((facilityId) => {
-    statements.push(
-      db
-        .prepare(
-          `
+  if (input.stationFacilities) {
+    input.stationFacilities.forEach((facility) => {
+      statements.push(
+        db
+          .prepare(
+            `
+            INSERT INTO station_facilities (
+              station_id,
+              facility_id,
+              floor,
+              facility_count,
+              note
+            )
+            VALUES (?, ?, ?, ?, ?)
+          `,
+          )
+          .bind(
+            stationId,
+            facility.facilityId,
+            facility.floor.trim(),
+            facility.facilityCount,
+            facility.note?.trim() || null,
+          ),
+      );
+    });
+  } else {
+    facilityIds.forEach((facilityId) => {
+      statements.push(
+        db
+          .prepare(
+            `
             INSERT INTO station_facilities (
               station_id,
               facility_id,
@@ -82,10 +99,11 @@ export async function createStation(
             )
             VALUES (?, ?, NULL)
           `,
-        )
-        .bind(stationId, facilityId),
-    );
-  });
+          )
+          .bind(stationId, facilityId),
+      );
+    });
+  }
 
   topPickIds.forEach((topPickId, index) => {
     statements.push(
@@ -101,11 +119,7 @@ export async function createStation(
             VALUES (?, ?, ?, NULL)
           `,
         )
-        .bind(
-          stationId,
-          topPickId,
-          index + 1,
-        ),
+        .bind(stationId, topPickId, index + 1),
     );
   });
 
@@ -165,21 +179,9 @@ export async function updateStation(
       input.longitude ?? null,
       input.description?.trim() || null,
       input.about?.trim() || null,
-      input.isVerified === undefined
-        ? null
-        : input.isVerified
-          ? 1
-          : 0,
-      input.isVerified === undefined
-        ? null
-        : input.isVerified
-          ? 1
-          : 0,
-      input.isVerified === undefined
-        ? null
-        : input.isVerified
-          ? 1
-          : 0,
+      input.isVerified === undefined ? null : input.isVerified ? 1 : 0,
+      input.isVerified === undefined ? null : input.isVerified ? 1 : 0,
+      input.isVerified === undefined ? null : input.isVerified ? 1 : 0,
       id,
     )
     .run();
@@ -204,11 +206,37 @@ export async function updateStation(
       .bind(id),
   ];
 
-  facilityIds.forEach((facilityId) => {
-    statements.push(
-      db
-        .prepare(
-          `
+  if (input.stationFacilities) {
+    input.stationFacilities.forEach((facility) => {
+      statements.push(
+        db
+          .prepare(
+            `
+            INSERT INTO station_facilities (
+              station_id,
+              facility_id,
+              floor,
+              facility_count,
+              note
+            )
+            VALUES (?, ?, ?, ?, ?)
+          `,
+          )
+          .bind(
+            id,
+            facility.facilityId,
+            facility.floor.trim(),
+            facility.facilityCount,
+            facility.note?.trim() || null,
+          ),
+      );
+    });
+  } else {
+    facilityIds.forEach((facilityId) => {
+      statements.push(
+        db
+          .prepare(
+            `
             INSERT INTO station_facilities (
               station_id,
               facility_id,
@@ -216,10 +244,11 @@ export async function updateStation(
             )
             VALUES (?, ?, NULL)
           `,
-        )
-        .bind(id, facilityId),
-    );
-  });
+          )
+          .bind(id, facilityId)
+      );
+    });
+  }
 
   topPickIds.forEach((topPickId, index) => {
     statements.push(
@@ -235,11 +264,7 @@ export async function updateStation(
             VALUES (?, ?, ?, NULL)
           `,
         )
-        .bind(
-          id,
-          topPickId,
-          index + 1,
-        ),
+        .bind(id, topPickId, index + 1),
     );
   });
 
@@ -252,10 +277,7 @@ export async function updateStation(
    Delete Station
 ======================================== */
 
-export async function deleteStation(
-  db: D1Database,
-  id: number,
-): Promise<void> {
+export async function deleteStation(db: D1Database, id: number): Promise<void> {
   await db.batch([
     db
       .prepare(

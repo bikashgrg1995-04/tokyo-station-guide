@@ -19,7 +19,6 @@ const {
   longitude: longitudeValue,
   description,
   about,
-  isVerified,
 } = values;
 ---
 
@@ -207,27 +206,5 @@ const {
         <small>Optional. Up to 1000 characters.</small>
       )
     }
-  </div>
-
-  <!-- Station Verification -->
-  <div class="admin-form-group">
-    <label for="is_verified">Station Verification</label>
-
-    <div class="admin-verification-toggle">
-      <div class="admin-verification-copy">
-        <span class="admin-verification-title"> Verified station </span>
-        <small> Enable verification for this station. </small>
-      </div>
-
-      <label class="admin-switch" for="is_verified">
-        <input
-          id="is_verified"
-          name="is_verified"
-          type="checkbox"
-          checked={isVerified}
-        />
-        <span class="admin-switch-slider"></span>
-      </label>
-    </div>
   </div>
 </div>

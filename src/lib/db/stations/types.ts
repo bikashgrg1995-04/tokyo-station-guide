@@ -94,6 +94,13 @@ export interface StationEditItem extends StationAdminListItem {
   platforms: string | null;
 }
 
+export interface StationFacilityInput {
+  facilityId: number;
+  floor: string;
+  facilityCount: number;
+  note?: string | null;
+}
+
 export interface CreateStationInput {
   name: string;
   nameJapanese?: string | null;
@@ -103,6 +110,8 @@ export interface CreateStationInput {
   description?: string | null;
   about?: string | null;
   facilities?: string | null;
+  /** Floor-wise facility entries to save. */
+  stationFacilities?: StationFacilityInput[];
   topPicks?: string | null;
   /** Facility ids to save (used instead of `facilities` when given). */
   facilityIds?: number[];
@@ -120,6 +129,8 @@ export interface UpdateStationInput {
   description?: string | null;
   about?: string | null;
   facilities?: string | null;
+  /** Floor-wise facility entries to save. */
+  stationFacilities?: StationFacilityInput[];
   topPicks?: string | null;
   /** Facility ids to save (used instead of `facilities` when given). */
   facilityIds?: number[];

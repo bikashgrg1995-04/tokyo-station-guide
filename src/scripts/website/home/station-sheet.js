@@ -320,7 +320,7 @@ function facilityDetailHtml(f) {
 
   if (f.count != null && f.count !== "") {
     bits.push(
-      esc(f.count) + (Number(f.count) === 1 ? " location" : " locations"),
+      esc(f.count) + (Number(f.count) === 1 ? " unit" : " units"),
     );
   }
 

@@ -8,15 +8,14 @@ import Alert from "../../../../components/common/Alert.astro";
 import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
 import Button from "../../../../components/common/Button.astro";
 import ConfirmDialog from "../../../../components/common/ConfirmDialog.astro";
+
 import StationFormFields from "../../../../components/admin/StationFormFields.astro";
 import StationFacilitiesPanel from "../../../../components/admin/StationFacilitiesPanel.astro";
 import FacilityModal from "../../../../components/admin/FacilityModal.astro";
 import StationTopPicks from "../../../../components/admin/StationTopPicks.astro";
-import StationPlatformsPanel from "../../../../components/admin/StationPlatformsPanel.astro";
 
 import { getStationById } from "../../../../lib/db/stations";
 import { handleStationUpdate } from "../../../../lib/services/stations";
-import { handleStationPlatforms } from "../../../../lib/services/station-platforms";
 
 export const prerender = false;
 
@@ -35,48 +34,15 @@ if (!station) {
   return Astro.redirect("/admin/stations");
 }
 
-// Detect platform submissions without consuming the original request body.
-let isPlatformRequest = false;
-
-if (Astro.request.method === "POST") {
-  const submittedData = await Astro.request.clone().formData();
-  const platformAction = String(
-    submittedData.get("platform_action") ?? "",
-  );
-
-  isPlatformRequest = ["create", "update", "delete"].includes(
-    platformAction,
-  );
-}
-
-// Only the handler responsible for this submission receives the POST body.
-const stationRequest = isPlatformRequest
-  ? new Request(Astro.request.url)
-  : Astro.request;
-
-const platformsRequest = isPlatformRequest
-  ? Astro.request
-  : new Request(Astro.request.url);
-
 const form = await handleStationUpdate(
-  stationRequest,
+  Astro.request,
   db,
   id,
   station,
 );
 
-const platformForm = await handleStationPlatforms(
-  platformsRequest,
-  db,
-  id,
-);
-
 if (form.redirectTo) {
   return Astro.redirect(form.redirectTo);
-}
-
-if (platformForm.redirectTo) {
-  return Astro.redirect(platformForm.redirectTo);
 }
 
 const {
@@ -91,7 +57,11 @@ const {
 const facilityError = errors.facilities;
 ---
 
-<AdminLayout title={`Edit ${station.name}`} activePath="/admin/stations">
+<AdminLayout
+  title={`Edit ${station.name}`}
+  activePath="/admin/stations"
+>
+  <!-- Topbar -->
   <header class="admin-topbar">
     <Breadcrumbs
       backHref="/admin/stations"
@@ -107,7 +77,6 @@ const facilityError = errors.facilities;
       Update the railway station information for the Tokyo Station Guide.
     </p>
 
-    <!-- Main station form -->
     <form
       method="POST"
       class="admin-form"
@@ -115,6 +84,7 @@ const facilityError = errors.facilities;
     >
       <input type="hidden" name="action" value="update" />
 
+      <!-- Station Details -->
       <section class="admin-panel">
         <div class="admin-panel-body">
           <div class="admin-station-form">
@@ -129,22 +99,63 @@ const facilityError = errors.facilities;
 
             {formError && <Alert>{formError}</Alert>}
 
-            <StationFormFields values={form.values} errors={errors} />
+            <StationFormFields
+              values={form.values}
+              errors={errors}
+            />
           </div>
         </div>
       </section>
 
-      <!-- Facilities and Top Picks -->
-      <div class="admin-station-features-grid">
+      <!-- Station Verification + Facilities -->
+      <div class="admin-station-setup-grid">
+        <section class="admin-panel admin-station-verification-panel">
+          <div class="admin-panel-body">
+            <div class="admin-station-feature-header">
+              <div>
+                <h3>Station Verification</h3>
+                <p>Manage the verification status of this station.</p>
+              </div>
+            </div>
+
+            <div class="admin-verification-toggle">
+              <div class="admin-verification-copy">
+                <span class="admin-verification-title">
+                  Verified station
+                </span>
+
+                <small>
+                  Mark this station as verified.
+                </small>
+              </div>
+
+              <label class="admin-switch" for="is_verified">
+                <input
+                  id="is_verified"
+                  name="is_verified"
+                  type="checkbox"
+                  checked={form.values.isVerified}
+                />
+                <span class="admin-switch-slider"></span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- Floor-wise Facilities -->
         <StationFacilitiesPanel
           assigned={stationFacilities}
           canAdd={availableFacilities.length > 0}
           error={facilityError}
-          allAddedMessage="All available facilities are already assigned."
+          allAddedMessage="No facilities are available in the master list."
         >
-          Facilities available at <strong>{station.name}</strong>.
+          Manage facilities for <strong>{station.name}</strong>, including floor,
+          quantity, and optional notes.
         </StationFacilitiesPanel>
+      </div>
 
+      <!-- Top Picks -->
+      <section class="admin-station-top-picks-section">
         <section class="admin-panel admin-station-feature-panel">
           <div class="admin-panel-body">
             <StationTopPicks
@@ -154,9 +165,9 @@ const facilityError = errors.facilities;
             />
           </div>
         </section>
-      </div>
+      </section>
 
-      <!-- Main station form actions -->
+      <!-- Form Actions -->
       <div class="admin-form-actions">
         <Button href="/admin/stations" variant="secondary">
           Cancel
@@ -171,36 +182,27 @@ const facilityError = errors.facilities;
         </Button>
       </div>
     </form>
-
-    <!-- Separate platform forms: must remain outside the station form -->
-    <StationPlatformsPanel
-      stationName={station.name}
-      stationId={id}
-      platforms={platformForm.platforms}
-      lines={platformForm.lines}
-      values={platformForm.values}
-      errors={platformForm.errors}
-      formError={platformForm.formError}
-      editingId={platformForm.editingId}
-    />
   </div>
 
   <Fragment slot="after">
+    <!-- Add Facilities Modal -->
     <FacilityModal
       facilities={availableFacilities}
-      description={`Select one or more facilities to add to ${station.name}.`}
-      emptyDescription="All facilities from the master list are already assigned to this station."
+      description={`Select facilities to add floor entries for ${station.name}.`}
+      emptyDescription="No facilities are available in the master facility list."
     />
 
+    <!-- Remove Facility Entry Confirmation -->
     <ConfirmDialog
       id="remove-facility-confirm-dialog"
-      title="Remove Facility"
-      description="Are you sure you want to remove this facility from the station?"
+      title="Remove Facility Entry"
+      description="Are you sure you want to remove this floor entry?"
       confirmText="Remove"
       cancelText="Cancel"
       variant="danger"
     />
 
+    <!-- Save Station Confirmation -->
     <ConfirmDialog
       id="edit-station-confirm-dialog"
       title="Save Changes"

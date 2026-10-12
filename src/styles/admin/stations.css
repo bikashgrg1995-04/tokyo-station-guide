@@ -689,3 +689,230 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+
+/* ========================================
+   Station Form — Balanced Layout
+======================================== */
+
+.admin-station-form {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.admin-station-features-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.admin-station-feature-panel,
+.admin-station-feature-panel .admin-panel-body {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.admin-station-feature-panel .admin-panel-body {
+  padding: 18px;
+}
+
+/* Keep feature headers from pushing the panel wider */
+.admin-station-feature-header {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-station-feature-header > div:first-child {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+/* Facility table: preserve every column */
+.admin-station-feature-panel .admin-table-wrapper,
+.admin-station-feature-panel .admin-table-container,
+.admin-station-feature-panel .admin-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-compact-table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.admin-compact-table th,
+.admin-compact-table td {
+  padding: 10px;
+  vertical-align: middle;
+}
+
+.admin-compact-table .admin-line-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Verification card should fit its parent */
+.admin-verification-toggle {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1100px) {
+  .admin-station-features-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-station-feature-panel .admin-panel-body {
+    padding: 14px;
+  }
+
+  .admin-compact-table {
+    min-width: 580px;
+  }
+}
+
+
+
+/* ========================================
+   Add / Edit Station — Final Layout
+======================================== */
+
+.admin-station-form {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Verification beside Facilities */
+.admin-station-setup-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.8fr);
+  gap: 18px;
+  align-items: start;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.admin-station-setup-grid > * {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Verification panel */
+.admin-station-verification-panel {
+  min-width: 0;
+  height: fit-content;
+}
+
+.admin-station-verification-panel .admin-panel-body {
+  padding: 18px;
+}
+
+.admin-station-verification-panel .admin-station-feature-header {
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.admin-station-verification-panel .admin-verification-toggle {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Facilities and Top Picks panels */
+.admin-station-setup-grid .admin-station-feature-panel,
+.admin-station-top-picks-section .admin-station-feature-panel {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-station-setup-grid .admin-panel-body,
+.admin-station-top-picks-section .admin-panel-body {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Top Picks occupies the full width below */
+.admin-station-top-picks-section {
+  width: 100%;
+  min-width: 0;
+  margin-top: 20px;
+}
+
+.admin-station-top-picks-section > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Prevent tables from cutting off columns */
+.admin-station-setup-grid .admin-table-wrapper,
+.admin-station-setup-grid .admin-table-container,
+.admin-station-setup-grid .admin-table-scroll,
+.admin-station-top-picks-section .admin-table-wrapper,
+.admin-station-top-picks-section .admin-table-container,
+.admin-station-top-picks-section .admin-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-compact-table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.admin-compact-table th,
+.admin-compact-table td {
+  padding: 10px;
+  vertical-align: middle;
+}
+
+.admin-compact-table .admin-line-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Responsive layout */
+@media (max-width: 900px) {
+  .admin-station-setup-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-station-setup-grid .admin-panel-body,
+  .admin-station-top-picks-section .admin-panel-body {
+    padding: 14px;
+  }
+
+  .admin-compact-table {
+    min-width: 580px;
+  }
+
+  .admin-station-top-picks-section {
+    margin-top: 16px;
+  }
+}
