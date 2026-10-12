@@ -83,7 +83,7 @@ export async function handleStationPlatforms(
     })(),
   };
 
-    if (request.method !== "POST" && result.editingId !== null) {
+  if (request.method !== "POST" && result.editingId !== null) {
     const platform = result.platforms.find(
       (item) => item.id === result.editingId,
     );
@@ -119,10 +119,17 @@ export async function handleStationPlatforms(
       result.formError = "Invalid platform selected.";
       return result;
     }
+    const platformExists = result.platforms.some(
+      (platform) => platform.id === platformId,
+    );
 
+    if (!platformExists) {
+      result.formError = "Platform not found for this station.";
+      return result;
+    }
     try {
       await deleteStationPlatform(db, stationId, platformId);
-      result.redirectTo = `/admin/stations/${stationId}/edit#station-platforms`;
+      result.redirectTo = `/admin/stations/${stationId}/platforms#station-platforms`;
     } catch (err) {
       console.error("Failed to delete station platform:", err);
       result.formError = "Unable to delete this platform.";
@@ -166,10 +173,18 @@ export async function handleStationPlatforms(
     if (action === "create") {
       await createStationPlatform(db, stationId, input);
     } else {
+      const platformExists = result.platforms.some(
+        (platform) => platform.id === platformId,
+      );
+
+      if (!platformExists) {
+        result.formError = "Platform not found for this station.";
+        return result;
+      }
       await updateStationPlatform(db, stationId, platformId, input);
     }
 
-    result.redirectTo = `/admin/stations/${stationId}/edit#station-platforms`;
+    result.redirectTo = `/admin/stations/${stationId}/platforms#station-platforms`;
   } catch (err) {
     console.error("Failed to save station platform:", err);
     result.formError = "Unable to save this platform. Please try again.";

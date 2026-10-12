@@ -1,5 +1,9 @@
+
 ---
 import Button from "../common/Button.astro";
+import SearchInput from "../common/SearchInput.astro";
+import EmptyState from "../common/EmptyState.astro";
+import ConfirmDialog from "../common/ConfirmDialog.astro";
 
 import type { StationPlatform } from "../../lib/db/station-platforms";
 import type { Line } from "../../lib/db/lines";
@@ -31,58 +35,131 @@ const {
 } = Astro.props;
 
 const editPlatform = platforms.find((platform) => platform.id === editingId);
+const hasValidationErrors = Object.values(errors).some(Boolean);
+const showModalInitially = editingId !== null || hasValidationErrors;
+
+const formValues =
+  editingId !== null && editPlatform && !hasValidationErrors
+    ? {
+        lineId: editPlatform.line_id == null ? "" : String(editPlatform.line_id),
+        platformNumber: editPlatform.platform_number,
+        destinations: editPlatform.destinations ?? "",
+        notes: editPlatform.notes ?? "",
+        sortOrder: String(editPlatform.sort_order),
+      }
+    : values;
+
+const showDeleteError = Boolean(formError) && editingId === null && !hasValidationErrors;
 ---
 
 <section class="admin-panel" id="station-platforms">
-  <div class="admin-panel-body">
-    <div class="admin-station-form">
-      <div class="admin-station-form-header">
-        <h3>Platforms</h3>
-        <p>
-          Manage platforms and passenger guidance for
-          <strong>{stationName}</strong>.
-        </p>
+  <div class="admin-panel-body admin-table-panel-body">
+    {showDeleteError && (
+      <div class="admin-form-error" role="alert">
+        {formError}
       </div>
+    )}
 
-      {formError && <p class="admin-form-error" role="alert">{formError}</p>}
+    <div class="admin-list-toolbar">
+      <form
+        id="platform-search-form"
+        class="admin-search-form"
+        role="search"
+        onsubmit="return false;"
+      >
+        <SearchInput
+          id="platform-search"
+          name="search"
+          placeholder="Search platforms..."
+          ariaLabel="Search platforms by number, destination, or line"
+        />
+      </form>
 
-      {platforms.length > 0 ? (
+      <Button type="button" variant="primary" id="open-add-platform">
+        + Add Platform
+      </Button>
+    </div>
+
+    <div class="admin-table-meta">
+      <span id="platform-results-count" aria-live="polite">
+        {platforms.length} • Total Platforms
+      </span>
+    </div>
+
+    {platforms.length > 0 ? (
+      <>
         <div class="admin-table-wrapper">
           <table class="admin-table">
             <thead>
               <tr>
+                <th>ID</th>
                 <th>Platform</th>
                 <th>Destinations</th>
-                <th>Line</th>
-                <th>Sort</th>
+                <th>Railway Line</th>
+                <th>Walking Guidance</th>
+                <th>Sort Order</th>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
+
+            <tbody id="platform-table-body">
               {platforms.map((platform) => (
-                <tr>
-                  <td><strong>{platform.platform_number}</strong></td>
-                  <td>{platform.destinations || "—"}</td>
-                  <td>{platform.line_name || "—"}</td>
+                <tr
+                  data-platform-row
+                  data-search={`${platform.id} ${platform.platform_number} ${platform.destinations ?? ""} ${platform.line_name ?? ""} ${platform.notes ?? ""}`.toLowerCase()}
+                >
+                  <td class="admin-table-id">{platform.id}</td>
+
+                  <td>
+                    <strong>{platform.platform_number}</strong>
+                  </td>
+
+                  <td>
+                    {platform.destinations || (
+                      <span class="admin-table-muted">—</span>
+                    )}
+                  </td>
+
+                  <td>
+                    {platform.line_name || (
+                      <span class="admin-table-muted">—</span>
+                    )}
+                  </td>
+
+                  <td>
+                    {platform.notes ? (
+                      <span title={platform.notes}>Available</span>
+                    ) : (
+                      <span class="admin-table-muted">Not added</span>
+                    )}
+                  </td>
+
                   <td>{platform.sort_order}</td>
+
                   <td>
                     <div class="admin-table-actions">
-                      <a
-                        class="admin-table-action"
-                        href={`?edit_platform=${platform.id}#station-platforms`}
+                      <button
+                        type="button"
+                        class="admin-table-action admin-table-action-edit"
+                        data-edit-platform
+                        data-id={platform.id}
+                        data-number={platform.platform_number}
+                        data-destinations={platform.destinations ?? ""}
+                        data-line-id={platform.line_id ?? ""}
+                        data-notes={platform.notes ?? ""}
+                        data-sort-order={platform.sort_order}
                       >
                         Edit
-                      </a>
-                      <form method="POST">
-                        <input type="hidden" name="platform_action" value="delete" />
-                        <input type="hidden" name="platform_id" value={platform.id} />
-                        <button
-                          class="admin-table-action admin-table-action-delete"
-                          type="submit"
-                        >
-                          Delete
-                        </button>
-                      </form>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="admin-table-action admin-table-action-delete js-delete-platform"
+                        data-platform-id={platform.id}
+                        data-platform-name={platform.platform_number}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -90,101 +167,257 @@ const editPlatform = platforms.find((platform) => platform.id === editingId);
             </tbody>
           </table>
         </div>
-      ) : (
-        <p class="admin-empty">No platforms have been added to this station yet.</p>
-      )}
 
-      <hr />
+        <div class="admin-table-footer">
+          <span id="platform-page-info" aria-live="polite"></span>
 
-      <h4>{editingId ? "Edit Platform" : "Add Platform"}</h4>
+          <label class="admin-platform-page-size" for="platform-page-size">
+            Rows
+            <select id="platform-page-size">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </label>
 
-      <form method="POST" class="admin-form">
-        <input
-          type="hidden"
-          name="platform_action"
-          value={editingId ? "update" : "create"}
-        />
-        {editingId && <input type="hidden" name="platform_id" value={editingId} />}
+          <div class="admin-table-actions">
+            <button
+              type="button"
+              class="admin-table-action"
+              id="platform-prev"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              class="admin-table-action"
+              id="platform-next"
+            >
+              Next
+            </button>
+          </div>
+        </div>
 
-        <div class="admin-form-group">
-          <label for="platform_number">Platform Number</label>
-          <input
-            id="platform_number"
-            name="platform_number"
-            required
-            maxlength="50"
-            placeholder="e.g. 1–2 or U 3–4"
-            value={editingId ? editPlatform?.platform_number : values.platformNumber}
+        <div id="platform-no-results" hidden>
+          <EmptyState
+            icon="◉"
+            title="No platforms found"
+            description="Try a different search term."
           />
-          {errors.platformNumber && <small class="admin-field-error">{errors.platformNumber}</small>}
         </div>
-
-        <div class="admin-form-group">
-          <label for="destinations">Destinations</label>
-          <input
-            id="destinations"
-            name="destinations"
-            required
-            maxlength="500"
-            placeholder="e.g. Shinjuku, Tachikawa"
-            value={editingId ? editPlatform?.destinations ?? "" : values.destinations}
-          />
-          {errors.destinations && <small class="admin-field-error">{errors.destinations}</small>}
-        </div>
-
-        <div class="admin-form-group">
-          <label for="line_id">Railway Line (optional)</label>
-          <select id="line_id" name="line_id">
-            <option value="">No line selected</option>
-            {lines.map((line) => (
-              <option
-                value={line.id}
-                selected={String(editingId ? editPlatform?.line_id ?? "" : values.lineId) === String(line.id)}
-              >
-                {line.name}{line.code ? ` (${line.code})` : ""}
-              </option>
-            ))}
-          </select>
-          {errors.lineId && <small class="admin-field-error">{errors.lineId}</small>}
-        </div>
-
-        <div class="admin-form-group">
-          <label for="notes">Walking Guidance</label>
-          <textarea
-            id="notes"
-            name="notes"
-            rows="4"
-            maxlength="2000"
-            placeholder="How passengers can reach this platform..."
-          >{editingId ? editPlatform?.notes ?? "" : values.notes}</textarea>
-          {errors.notes && <small class="admin-field-error">{errors.notes}</small>}
-        </div>
-
-        <div class="admin-form-group">
-          <label for="sort_order">Sort Order</label>
-          <input
-            id="sort_order"
-            name="sort_order"
-            type="number"
-            min="0"
-            step="1"
-            required
-            value={editingId ? editPlatform?.sort_order ?? 0 : values.sortOrder}
-          />
-          {errors.sortOrder && <small class="admin-field-error">{errors.sortOrder}</small>}
-        </div>
-
-        <div class="admin-form-actions">
-          {editingId && (
-            <Button href={`/admin/stations/${stationId}/edit#station-platforms`} variant="secondary">
-              Cancel Edit
-            </Button>
-          )}
-          <Button type="submit" variant="primary">
-            {editingId ? "Update Platform" : "Add Platform"}
-          </Button>
-        </div>
-      </form>
-    </div>
+      </>
+    ) : (
+      <EmptyState
+        icon="◉"
+        title="No platforms yet"
+        description="Add the first platform for this station to get started."
+      />
+    )}
   </div>
 </section>
+
+<!-- Add / Edit modal -->
+<div
+  id="platform-modal"
+  class:list={[
+    "admin-line-station-modal",
+    showModalInitially ? "is-open" : "",
+  ]}
+  hidden={!showModalInitially}
+  aria-hidden={showModalInitially ? "false" : "true"}
+>
+  <div
+    class="admin-line-station-modal-backdrop"
+    data-close-platform-modal
+  ></div>
+
+  <div
+    class="admin-line-station-modal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="platform-modal-title"
+  >
+    <div class="admin-line-station-modal-header">
+      <div>
+        <h2 id="platform-modal-title">
+          {editingId ? "Edit Platform" : "Add Platform"}
+        </h2>
+        <p>Manage platform information for <strong>{stationName}</strong>.</p>
+      </div>
+
+      <button
+        type="button"
+        class="admin-line-station-modal-close"
+        data-close-platform-modal
+        aria-label="Close platform form"
+      >
+        ×
+      </button>
+    </div>
+
+    <form method="POST" class="admin-form" id="platform-form">
+      <input
+        type="hidden"
+        name="platform_action"
+        id="platform-action"
+        value={editingId ? "update" : "create"}
+      />
+
+      <input
+        type="hidden"
+        name="platform_id"
+        id="platform-id"
+        value={editingId ?? ""}
+      />
+
+      {formError && !showDeleteError && (
+        <div class="admin-form-error" role="alert">{formError}</div>
+      )}
+
+      <div class="admin-form-group">
+        <label for="platform_number">Platform Number</label>
+        <input
+          id="platform_number"
+          name="platform_number"
+          required
+          maxlength="50"
+          placeholder="e.g. 1–2 or U 3–4"
+          value={formValues.platformNumber}
+        />
+        {errors.platformNumber && (
+          <small class="admin-field-error">{errors.platformNumber}</small>
+        )}
+      </div>
+
+      <div class="admin-form-group">
+        <label for="destinations">Destinations</label>
+        <input
+          id="destinations"
+          name="destinations"
+          required
+          maxlength="500"
+          placeholder="e.g. Shinjuku, Tachikawa"
+          value={formValues.destinations}
+        />
+        {errors.destinations && (
+          <small class="admin-field-error">{errors.destinations}</small>
+        )}
+      </div>
+
+      <div class="admin-form-group">
+        <label for="line_id">Railway Line (optional)</label>
+        <select id="line_id" name="line_id">
+          <option value="">No line selected</option>
+          {lines.map((line) => (
+            <option
+              value={line.id}
+              selected={formValues.lineId === String(line.id)}
+            >
+              {line.name}{line.code ? ` (${line.code})` : ""}
+            </option>
+          ))}
+        </select>
+        {errors.lineId && (
+          <small class="admin-field-error">{errors.lineId}</small>
+        )}
+      </div>
+
+      <div class="admin-form-group">
+        <label for="notes">Walking Guidance</label>
+        <textarea
+          id="notes"
+          name="notes"
+          rows="4"
+          maxlength="2000"
+          placeholder="Explain how passengers can reach this platform..."
+        >{formValues.notes}</textarea>
+        {errors.notes && (
+          <small class="admin-field-error">{errors.notes}</small>
+        )}
+      </div>
+
+      <div class="admin-form-group">
+        <label for="sort_order">Sort Order</label>
+        <input
+          id="sort_order"
+          name="sort_order"
+          type="number"
+          min="0"
+          step="1"
+          required
+          value={formValues.sortOrder}
+        />
+        {errors.sortOrder && (
+          <small class="admin-field-error">{errors.sortOrder}</small>
+        )}
+      </div>
+
+      <div class="admin-form-actions">
+        <Button type="button" variant="secondary" id="cancel-platform-form">
+          Cancel
+        </Button>
+
+        <Button type="submit" variant="primary" id="platform-submit">
+          {editingId ? "Update Platform" : "Add Platform"}
+        </Button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Hidden delete form submitted only after confirmation -->
+<form
+  method="POST"
+  id="delete-platform-form"
+  action={`/admin/stations/${stationId}/platforms`}
+  hidden
+>
+  <input type="hidden" name="platform_action" value="delete" />
+  <input type="hidden" name="platform_id" id="delete-platform-id" value="" />
+</form>
+
+<ConfirmDialog
+  id="delete-platform-dialog"
+  formId="delete-platform-form"
+  title="Delete Platform"
+  description="Are you sure you want to delete this platform?"
+  confirmText="Delete Platform"
+  cancelText="Cancel"
+  variant="danger"
+  showName={true}
+  warning="This action cannot be undone."
+/>
+
+<script>
+  import "../../scripts/admin/station-platforms-panel.ts";
+</script>
+
+<style>
+  .admin-line-station-modal[hidden] {
+    display: none;
+  }
+
+  .admin-platform-page-size {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--admin-muted);
+    font-size: 12px;
+  }
+
+  .admin-platform-page-size select {
+    min-height: 32px;
+    padding: 0 8px;
+    border: 1px solid var(--admin-border);
+    border-radius: 7px;
+    background: var(--admin-surface);
+    color: var(--admin-text);
+  }
+
+  @media (max-width: 760px) {
+    .admin-table-footer {
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+  }
+</style>
