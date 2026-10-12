@@ -1,15 +1,13 @@
-
 /**
- * Shared floor-wise facility picker for New Station and Edit Station.
+ * Floor-wise facility picker for Edit Station.
  *
  * Supports:
- * - Adding the same facility on multiple floors.
- * - Adding another floor directly from an existing facility row.
- * - Quantity and optional notes for each floor entry.
- * - Removing one floor entry at a time.
- * - Updating empty states and modal selection counters.
- *
- * Database changes happen only when the station form is submitted.
+ * - Selecting a station floor using floor pills.
+ * - Showing only facilities not yet assigned to the selected floor.
+ * - Assigning the same facility to multiple floors.
+ * - Saving floor IDs instead of free-text floor names.
+ * - Editing quantity and optional notes.
+ * - Removing individual floor assignments.
  */
 export function initializeFacilityPicker(): void {
   /* ========================================
@@ -38,6 +36,24 @@ export function initializeFacilityPicker(): void {
     document.querySelectorAll<HTMLInputElement>(".add-facility-checkbox"),
   );
 
+  const facilityOptions = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-facility-option]"),
+  );
+
+  const floorOptions = Array.from(
+    document.querySelectorAll<HTMLButtonElement>(
+      "[data-facility-floor-option]",
+    ),
+  );
+
+  const selectedFloorInput = document.getElementById(
+    "selected-facility-floor-id",
+  );
+
+  const floorEmptyMessage = document.getElementById(
+    "facility-floor-empty-message",
+  );
+
   const selectedFacilityCount = document.getElementById(
     "selected-facility-count",
   );
@@ -57,6 +73,58 @@ export function initializeFacilityPicker(): void {
   );
 
   /* ========================================
+     Floor Helpers
+  ======================================== */
+
+  function getSelectedFloorId(): number | null {
+    if (!(selectedFloorInput instanceof HTMLInputElement)) {
+      return null;
+    }
+
+    const floorId = Number(selectedFloorInput.value);
+
+    return Number.isInteger(floorId) && floorId > 0 ? floorId : null;
+  }
+
+  function getSelectedFloorName(): string {
+    const selectedFloorId = getSelectedFloorId();
+
+    const selectedButton = floorOptions.find(
+      (button) => Number(button.dataset.floorId) === selectedFloorId,
+    );
+
+    return selectedButton?.textContent?.trim() ?? "";
+  }
+
+  function selectFloor(floorId: number): void {
+    const selectedButton = floorOptions.find(
+      (button) => Number(button.dataset.floorId) === floorId,
+    );
+
+    if (!selectedButton) {
+      return;
+    }
+
+    if (selectedFloorInput instanceof HTMLInputElement) {
+      selectedFloorInput.value = String(floorId);
+    }
+
+    floorOptions.forEach((button) => {
+      const isSelected = Number(button.dataset.floorId) === floorId;
+
+      button.setAttribute("aria-pressed", String(isSelected));
+    });
+
+    // A selection from another floor must not carry over.
+    facilityCheckboxes.forEach((checkbox) => {
+      checkbox.checked = false;
+    });
+
+    updateFacilityOptions();
+    updateSelectedFacilityCount();
+  }
+
+  /* ========================================
      Facility Table Helpers
   ======================================== */
 
@@ -66,9 +134,7 @@ export function initializeFacilityPicker(): void {
     }
 
     return Array.from(
-      facilityBody.querySelectorAll<HTMLTableRowElement>(
-        "[data-facility-row]",
-      ),
+      facilityBody.querySelectorAll<HTMLTableRowElement>("[data-facility-row]"),
     );
   }
 
@@ -103,15 +169,73 @@ export function initializeFacilityPicker(): void {
     }
   }
 
-  function updateAllFacilitiesMessage(): void {
-    if (!(allFacilitiesMessage instanceof HTMLElement)) {
-      return;
+  function updateFacilityOptions(): void {
+    const selectedFloorId = getSelectedFloorId();
+
+    const existingRows = getFacilityRows();
+    const assignedFacilityIds = new Set<number>();
+
+    existingRows.forEach((row) => {
+      const rowFloorId = Number(row.dataset.floorId);
+      const rowFacilityId = Number(row.dataset.facilityId);
+
+      if (
+        selectedFloorId !== null &&
+        rowFloorId === selectedFloorId &&
+        Number.isInteger(rowFacilityId) &&
+        rowFacilityId > 0
+      ) {
+        assignedFacilityIds.add(rowFacilityId);
+      }
+    });
+
+    console.log("[Facility Debug] Already assigned IDs:", [
+      ...assignedFacilityIds,
+    ]);
+
+    let visibleOptionCount = 0;
+
+    facilityOptions.forEach((option) => {
+      const facilityId = Number(option.dataset.facilityOptionId);
+
+      const alreadyAssigned = assignedFacilityIds.has(facilityId);
+
+      const shouldShow =
+        selectedFloorId !== null &&
+        Number.isInteger(facilityId) &&
+        facilityId > 0 &&
+        !alreadyAssigned;
+
+      option.hidden = !shouldShow;
+
+      if (!shouldShow) {
+        const checkbox = option.querySelector<HTMLInputElement>(
+          ".add-facility-checkbox",
+        );
+
+        if (checkbox) {
+          checkbox.checked = false;
+        }
+      } else {
+        visibleOptionCount += 1;
+      }
+
+      console.log("[Facility Debug] Option result:", {
+        facilityId,
+        alreadyAssigned,
+        shouldShow,
+      });
+    });
+
+    if (floorEmptyMessage instanceof HTMLElement) {
+      floorEmptyMessage.hidden = visibleOptionCount > 0;
     }
 
-    const options = document.querySelectorAll("[data-facility-option]");
+    if (allFacilitiesMessage instanceof HTMLElement) {
+      allFacilitiesMessage.hidden = facilityOptions.length > 0;
+    }
 
-    // Facilities may be assigned on multiple floors.
-    allFacilitiesMessage.hidden = options.length > 0;
+    updateSelectedFacilityCount();
   }
 
   function createInput(
@@ -157,55 +281,35 @@ export function initializeFacilityPicker(): void {
     return input;
   }
 
-  function createAddFloorButton(
-    facilityName: string,
-  ): HTMLButtonElement {
-    const button = document.createElement("button");
-
-    button.type = "button";
-    button.className = "admin-table-action";
-    button.setAttribute("data-add-facility-floor", "");
-    button.dataset.facilityName = facilityName;
-    button.textContent = "+ Add floor";
-    button.setAttribute(
-      "aria-label",
-      `Add another floor for ${facilityName}`,
-    );
-
-    return button;
-  }
-
-  function ensureAddFloorButtons(): void {
-    getFacilityRows().forEach((row) => {
-      const actions = row.querySelector(".admin-table-actions");
-
-      if (!(actions instanceof HTMLElement)) {
-        return;
-      }
-
-      if (actions.querySelector("[data-add-facility-floor]")) {
-        return;
-      }
-
-      const facilityName = row.dataset.facilityName ?? "this facility";
-
-      actions.insertBefore(
-        createAddFloorButton(facilityName),
-        actions.firstChild,
-      );
-    });
-  }
-
   function addFacilityToTable(
     facilityId: number,
     facilityName: string,
-    afterRow?: HTMLTableRowElement,
+    floorId: number,
+    floorName: string,
   ): HTMLTableRowElement | null {
     if (!(facilityBody instanceof HTMLTableSectionElement)) {
       return null;
     }
 
-    if (!Number.isInteger(facilityId) || facilityId <= 0) {
+    if (
+      !Number.isInteger(facilityId) ||
+      facilityId <= 0 ||
+      !Number.isInteger(floorId) ||
+      floorId <= 0 ||
+      !facilityName ||
+      !floorName
+    ) {
+      return null;
+    }
+
+    // Prevent duplicate assignments to the same floor.
+    const duplicate = getFacilityRows().some(
+      (row) =>
+        Number(row.dataset.facilityId) === facilityId &&
+        Number(row.dataset.floorId) === floorId,
+    );
+
+    if (duplicate) {
       return null;
     }
 
@@ -214,6 +318,8 @@ export function initializeFacilityPicker(): void {
     row.setAttribute("data-facility-row", "");
     row.dataset.facilityId = String(facilityId);
     row.dataset.facilityName = facilityName;
+    row.dataset.floorId = String(floorId);
+    row.dataset.floorName = floorName;
 
     /* Facility name and ID */
 
@@ -231,18 +337,22 @@ export function initializeFacilityPicker(): void {
     nameCell.appendChild(nameElement);
     nameCell.appendChild(facilityIdInput);
 
-    /* Floor */
+    /* Floor pill and floor ID */
 
     const floorCell = document.createElement("td");
 
-    const floorInput = createInput("facility_entry_floor", "", {
-      placeholder: "e.g. B1, 1F, 2F",
-      maxLength: 30,
-      required: true,
-      ariaLabel: `Floor for ${facilityName}`,
-    });
+    const floorPill = document.createElement("span");
+    floorPill.className = "admin-floor-pill";
+    floorPill.setAttribute("data-floor-pill", "");
+    floorPill.textContent = floorName;
 
-    floorCell.appendChild(floorInput);
+    const floorIdInput = document.createElement("input");
+    floorIdInput.type = "hidden";
+    floorIdInput.name = "facility_entry_floor_id";
+    floorIdInput.value = String(floorId);
+
+    floorCell.appendChild(floorPill);
+    floorCell.appendChild(floorIdInput);
 
     /* Quantity */
 
@@ -277,15 +387,13 @@ export function initializeFacilityPicker(): void {
     const actions = document.createElement("div");
     actions.className = "admin-table-actions";
 
-    actions.appendChild(createAddFloorButton(facilityName));
-
     const removeButton = document.createElement("button");
     removeButton.type = "button";
-    removeButton.className =
-      "admin-table-action admin-table-action-delete";
+    removeButton.className = "admin-table-action admin-table-action-delete";
 
     removeButton.setAttribute("data-remove-facility", "");
     removeButton.dataset.facilityName = facilityName;
+    removeButton.dataset.floorName = floorName;
     removeButton.textContent = "Remove";
 
     actions.appendChild(removeButton);
@@ -297,14 +405,9 @@ export function initializeFacilityPicker(): void {
     row.appendChild(noteCell);
     row.appendChild(actionsCell);
 
-    const emptyRow = document.getElementById(
-      "station-facilities-empty-row",
-    );
+    const emptyRow = document.getElementById("station-facilities-empty-row");
 
-    // Put a new floor directly below the row that requested it.
-    if (afterRow?.parentElement === facilityBody) {
-      facilityBody.insertBefore(row, afterRow.nextSibling);
-    } else if (emptyRow?.parentElement === facilityBody) {
+    if (emptyRow?.parentElement === facilityBody) {
       facilityBody.insertBefore(row, emptyRow);
     } else {
       facilityBody.appendChild(row);
@@ -316,13 +419,14 @@ export function initializeFacilityPicker(): void {
   }
 
   function removeFacilityRow(row: HTMLTableRowElement): void {
-    // Remove only this floor entry, not every row for the facility.
     row.remove();
+
     updateFacilityEmptyState();
+    updateFacilityOptions();
   }
 
   /* ========================================
-     Facility Modal
+     Modal Selection
   ======================================== */
 
   function updateSelectedFacilityCount(): void {
@@ -331,7 +435,7 @@ export function initializeFacilityPicker(): void {
     }
 
     const selectedCount = facilityCheckboxes.filter(
-      (checkbox) => checkbox.checked,
+      (checkbox) => checkbox.checked && !checkbox.closest("[hidden]"),
     ).length;
 
     selectedFacilityCount.textContent = `${selectedCount} ${
@@ -339,7 +443,8 @@ export function initializeFacilityPicker(): void {
     } selected`;
 
     if (addSelectedFacilitiesButton instanceof HTMLButtonElement) {
-      addSelectedFacilitiesButton.disabled = selectedCount === 0;
+      addSelectedFacilitiesButton.disabled =
+        selectedCount === 0 || getSelectedFloorId() === null;
     }
   }
 
@@ -348,10 +453,26 @@ export function initializeFacilityPicker(): void {
       return;
     }
 
+    if (floorOptions.length === 0) {
+      return;
+    }
+
+    const currentFloorId = getSelectedFloorId();
+
+    const currentFloorExists = floorOptions.some(
+      (button) => Number(button.dataset.floorId) === currentFloorId,
+    );
+
+    if (!currentFloorExists) {
+      const firstFloorId = Number(floorOptions[0].dataset.floorId);
+
+      selectFloor(firstFloorId);
+    } else {
+      updateFacilityOptions();
+    }
+
     addFacilityModal.hidden = false;
     addFacilityModal.setAttribute("aria-hidden", "false");
-
-    updateSelectedFacilityCount();
   }
 
   function closeAddFacilityModal(): void {
@@ -373,12 +494,24 @@ export function initializeFacilityPicker(): void {
     button.addEventListener("click", openAddFacilityModal);
   });
 
+  floorOptions.forEach((button) => {
+    button.addEventListener("click", () => {
+      const floorId = Number(button.dataset.floorId);
+
+      if (Number.isInteger(floorId) && floorId > 0) {
+        selectFloor(floorId);
+      }
+    });
+  });
+
   facilityCheckboxes.forEach((checkbox) => {
     checkbox.addEventListener("change", updateSelectedFacilityCount);
   });
 
   closeAddFacilityButton?.addEventListener("click", closeAddFacilityModal);
+
   cancelAddFacilitiesButton?.addEventListener("click", closeAddFacilityModal);
+
   closeAddFacilityBackdrop?.addEventListener("click", closeAddFacilityModal);
 
   /* ========================================
@@ -386,8 +519,15 @@ export function initializeFacilityPicker(): void {
   ======================================== */
 
   addSelectedFacilitiesButton?.addEventListener("click", () => {
+    const floorId = getSelectedFloorId();
+    const floorName = getSelectedFloorName();
+
+    if (floorId === null || !floorName) {
+      return;
+    }
+
     const selectedCheckboxes = facilityCheckboxes.filter(
-      (checkbox) => checkbox.checked,
+      (checkbox) => checkbox.checked && !checkbox.closest("[hidden]"),
     );
 
     if (selectedCheckboxes.length === 0) {
@@ -399,70 +539,16 @@ export function initializeFacilityPicker(): void {
       const facilityId = Number(checkbox.dataset.facilityId);
       const facilityName = checkbox.dataset.facilityName ?? "";
 
-      if (
-        !Number.isInteger(facilityId) ||
-        facilityId <= 0 ||
-        !facilityName
-      ) {
+      if (!Number.isInteger(facilityId) || facilityId <= 0 || !facilityName) {
         return;
       }
 
-      // Duplicate assignments are intentional: each row represents a floor.
-      addFacilityToTable(facilityId, facilityName);
+      addFacilityToTable(facilityId, facilityName, floorId, floorName);
     });
 
+    updateFacilityOptions();
     closeAddFacilityModal();
   });
-
-  /* ========================================
-     Add Another Floor
-  ======================================== */
-
-  if (facilityBody instanceof HTMLTableSectionElement) {
-    facilityBody.addEventListener("click", (event) => {
-      const target = event.target;
-
-      if (!(target instanceof Element)) {
-        return;
-      }
-
-      const addFloorButton = target.closest("[data-add-facility-floor]");
-
-      if (!(addFloorButton instanceof HTMLElement)) {
-        return;
-      }
-
-      const row = addFloorButton.closest("[data-facility-row]");
-
-      if (!(row instanceof HTMLTableRowElement)) {
-        return;
-      }
-
-      const facilityId = Number(row.dataset.facilityId);
-      const facilityName = row.dataset.facilityName ?? "";
-
-      if (
-        !Number.isInteger(facilityId) ||
-        facilityId <= 0 ||
-        !facilityName
-      ) {
-        return;
-      }
-
-      const newRow = addFacilityToTable(
-        facilityId,
-        facilityName,
-        row,
-      );
-
-      // Focus the floor input so the next step is obvious.
-      newRow
-        ?.querySelector<HTMLInputElement>(
-          '[name="facility_entry_floor"]',
-        )
-        ?.focus();
-    });
-  }
 
   /* ========================================
      Remove Facility Entry
@@ -500,16 +586,13 @@ export function initializeFacilityPicker(): void {
         removeButton.dataset.facilityName ??
         "this facility";
 
-      const floorInput = row.querySelector<HTMLInputElement>(
-        '[name="facility_entry_floor"]',
-      );
-
-      const floor = floorInput?.value.trim();
+      const floorName =
+        row.dataset.floorName ?? removeButton.dataset.floorName ?? "";
 
       removeFacilityDialog.dispatchEvent(
         new CustomEvent("dialog:open", {
           detail: {
-            name: floor ? `${facilityName} — ${floor}` : facilityName,
+            name: floorName ? `${facilityName} — ${floorName}` : facilityName,
           },
         }),
       );
@@ -530,8 +613,15 @@ export function initializeFacilityPicker(): void {
      Initial State
   ======================================== */
 
-  ensureAddFloorButtons();
+  if (floorOptions.length > 0) {
+    const firstFloorId = Number(floorOptions[0].dataset.floorId);
+
+    if (Number.isInteger(firstFloorId) && firstFloorId > 0) {
+      selectFloor(firstFloorId);
+    }
+  }
+
   updateFacilityEmptyState();
-  updateAllFacilitiesMessage();
+  updateFacilityOptions();
   updateSelectedFacilityCount();
 }

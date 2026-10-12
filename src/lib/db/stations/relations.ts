@@ -13,32 +13,54 @@
  *   "Wi-Fi"
  * ]
  */
+
+
 export async function getStationFacilitiesJson(
   db: D1Database,
   stationId: number,
 ): Promise<string | null> {
   const result = await db
-    .prepare(
-      `
-        SELECT
-          f.name
-        FROM station_facilities sf
-        INNER JOIN facilities f
-          ON f.id = sf.facility_id
-        WHERE sf.station_id = ?
-        ORDER BY
-          f.sort_order ASC,
-          f.name ASC
-      `,
-    )
+    .prepare(`
+      SELECT
+        f.id AS facility_id,
+        f.name,
+        f.slug,
+        f.icon,
+        f.icon_dark,
+        sf.id AS floor_id,
+        sf.name AS floor,
+        sf.name_japanese AS floor_japanese,
+        sff.facility_count AS count,
+        sff.note
+      FROM station_floor_facilities sff
+      INNER JOIN station_floors sf
+        ON sf.id = sff.floor_id
+      INNER JOIN facilities f
+        ON f.id = sff.facility_id
+      WHERE sf.station_id = ?
+      ORDER BY
+        sf.floor_order ASC,
+        sf.name ASC,
+        f.sort_order ASC,
+        f.name ASC
+    `)
     .bind(stationId)
-    .all<{ name: string }>();
+    .all<{
+      facility_id: number;
+      name: string;
+      slug: string;
+      icon: string | null;
+      icon_dark: string | null;
+      floor_id: number;
+      floor: string;
+      floor_japanese: string | null;
+      count: number | null;
+      note: string | null;
+    }>();
 
-  if (!result.results.length) {
-    return null;
-  }
+  if (!result.results.length) return null;
 
-  return JSON.stringify(result.results.map((item) => item.name));
+  return JSON.stringify(result.results);
 }
 
 export async function getStationFacilityDetailsJson(
@@ -48,12 +70,14 @@ export async function getStationFacilityDetailsJson(
   const result = await db
     .prepare(
       `
-        SELECT
+        SELECT DISTINCT
           f.name,
           f.icon
-        FROM station_facilities sf
+        FROM station_floor_facilities sff
+        INNER JOIN station_floors sf
+          ON sf.id = sff.floor_id
         INNER JOIN facilities f
-          ON f.id = sf.facility_id
+          ON f.id = sff.facility_id
         WHERE sf.station_id = ?
         ORDER BY
           f.sort_order ASC,
@@ -69,6 +93,7 @@ export async function getStationFacilityDetailsJson(
 
   return JSON.stringify(result.results);
 }
+
 
 /*
  * Convert station_top_picks relational data into the

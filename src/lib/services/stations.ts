@@ -1,4 +1,3 @@
-
 import {
   createStation,
   deleteStation,
@@ -23,7 +22,8 @@ import {
   type TopPick,
 } from "../db/top-picks";
 
-import type { StationFacilityInput } from "./..//db/stations//types";
+import { getStationFloors } from "../db/station-floors";
+import type { StationFacilityInput } from "../db/stations/types";
 
 import {
   hasErrors,
@@ -79,19 +79,19 @@ function readIds(formData: FormData, key: string): number[] {
 }
 
 /**
- * Reads repeated facility fields in matching order.
+ * Reads repeated floor-wise facility fields in matching order.
  *
  * Expected field names:
- * facility_entry_facility_id
- * facility_entry_floor
- * facility_entry_count
- * facility_entry_note
+ * - facility_entry_facility_id
+ * - facility_entry_floor_id
+ * - facility_entry_count
+ * - facility_entry_note
  */
 function readStationFacilities(
   formData: FormData,
 ): ParsedStationFacilities {
   const facilityIds = formData.getAll("facility_entry_facility_id");
-  const floors = formData.getAll("facility_entry_floor");
+  const floorIds = formData.getAll("facility_entry_floor_id");
   const counts = formData.getAll("facility_entry_count");
   const notes = formData.getAll("facility_entry_note");
 
@@ -100,23 +100,24 @@ function readStationFacilities(
 
   const rowCount = Math.max(
     facilityIds.length,
-    floors.length,
+    floorIds.length,
     counts.length,
     notes.length,
   );
 
   for (let index = 0; index < rowCount; index += 1) {
     const rawFacilityId = String(facilityIds[index] ?? "").trim();
-    const floor = String(floors[index] ?? "").trim();
+    const rawFloorId = String(floorIds[index] ?? "").trim();
     const rawCount = String(counts[index] ?? "").trim();
     const note = String(notes[index] ?? "").trim();
 
     // Ignore rows that are entirely empty.
-    if (!rawFacilityId && !floor && !rawCount && !note) {
+    if (!rawFacilityId && !rawFloorId && !rawCount && !note) {
       continue;
     }
 
     const facilityId = Number(rawFacilityId);
+    const floorId = Number(rawFloorId);
     const facilityCount = Number(rawCount);
 
     if (!Number.isInteger(facilityId) || facilityId <= 0) {
@@ -124,8 +125,8 @@ function readStationFacilities(
       continue;
     }
 
-    if (!floor) {
-      errors.push(`Row ${index + 1}: enter a floor.`);
+    if (!Number.isInteger(floorId) || floorId <= 0) {
+      errors.push(`Row ${index + 1}: select a valid floor.`);
       continue;
     }
 
@@ -134,28 +135,30 @@ function readStationFacilities(
       !Number.isInteger(facilityCount) ||
       facilityCount < 1
     ) {
-      errors.push(`Row ${index + 1}: quantity must be a whole number of at least 1.`);
+      errors.push(
+        `Row ${index + 1}: quantity must be a whole number of at least 1.`,
+      );
       continue;
     }
 
     entries.push({
       facilityId,
-      floor,
+      floorId,
       facilityCount,
       note: note || null,
     });
   }
 
-  // The database unique index treats the same floor for the same
-  // facility as a duplicate assignment.
+  // The same facility can be assigned to different floors,
+  // but not more than once to the same floor.
   const seen = new Set<string>();
 
   for (const entry of entries) {
-    const key = `${entry.facilityId}:${entry.floor.toLocaleLowerCase()}`;
+    const key = `${entry.facilityId}:${entry.floorId}`;
 
     if (seen.has(key)) {
       errors.push(
-        `Facility ID ${entry.facilityId} has the same floor entered more than once.`,
+        `Facility ID ${entry.facilityId} is assigned to the same floor more than once.`,
       );
     }
 
@@ -184,7 +187,7 @@ function readStationForm(formData: FormData) {
 
   return {
     values,
-    // Legacy checkbox fields remain supported for existing forms.
+    // Retained for compatibility with older form fields.
     facilityIds: readIds(formData, "facility_ids"),
     stationFacilities: parsedFacilities.entries,
     stationFacilitiesError: parsedFacilities.error,
@@ -298,6 +301,12 @@ export async function handleStationCreate(
     result.errors.facilities = stationFacilitiesError;
   }
 
+  // New station creation must not assign facilities before floors exist.
+  if (stationFacilities.length > 0 || facilityIds.length > 0) {
+    result.errors.facilities =
+      "Create the station first, then add floors and assign facilities from Edit Station.";
+  }
+
   if (hasErrors(result.errors)) {
     return result;
   }
@@ -305,12 +314,7 @@ export async function handleStationCreate(
   try {
     await createStation(
       db,
-      toStationInput(
-        values,
-        facilityIds,
-        topPickIds,
-        stationFacilities,
-      ),
+      toStationInput(values, [], topPickIds, []),
     );
 
     result.redirectTo = LIST_PATH;
@@ -372,6 +376,8 @@ export async function handleStationUpdate(
 
   const allFacilities = await getFacilities(db);
   const allTopPicks = await getTopPicks(db);
+  const stationFloors = await getStationFloors(db, id);
+  const validFloorIds = new Set(stationFloors.map((floor) => floor.id));
 
   result.values = values;
 
@@ -386,6 +392,11 @@ export async function handleStationUpdate(
 
   if (stationFacilitiesError) {
     result.errors.facilities = stationFacilitiesError;
+  }
+
+  if (stationFacilities.some((entry) => !validFloorIds.has(entry.floorId))) {
+    result.errors.facilities =
+      "One or more selected floors do not belong to this station.";
   }
 
   if (!hasErrors(result.errors)) {
@@ -410,31 +421,34 @@ export async function handleStationUpdate(
     }
   }
 
-  // Preserve submitted floor-wise rows when showing validation errors again.
+  // Preserve submitted facility rows when validation fails.
   result.stationFacilities = stationFacilities.map((entry) => {
     const facility = allFacilities.find(
       (item) => item.id === entry.facilityId,
+    );
+    const floor = stationFloors.find(
+      (item) => item.id === entry.floorId,
     );
 
     return {
       id: 0,
       facility_id: entry.facilityId,
+      floor_id: entry.floorId,
+      floor_name: floor?.name ?? "Unknown floor",
+      floor_name_japanese: floor?.name_japanese ?? null,
       name: facility?.name ?? "Unknown facility",
       slug: facility?.slug ?? "",
       icon: facility?.icon ?? null,
       icon_dark: facility?.icon_dark ?? null,
       sort_order: facility?.sort_order ?? 0,
       facility_count: entry.facilityCount,
-      floor: entry.floor,
       note: entry.note ?? null,
     };
   });
 
-  result.availableFacilities = allFacilities.filter(
-    (item) =>
-      !stationFacilities.some((entry) => entry.facilityId === item.id) &&
-      !facilityIds.includes(item.id),
-  );
+  // A facility remains available because it can be assigned on
+  // another floor. The modal will filter assignments per selected floor.
+  result.availableFacilities = allFacilities;
 
   result.stationTopPicks = topPickIds
     .map((topPickId, index): StationTopPick | null => {

@@ -1,8 +1,5 @@
-// New station page: facilities and confirmation before creating
-import { initializeFacilityPicker } from "./shared/facility-picker";
+// New station page: confirmation before creating.
 import { initializeSubmitConfirm } from "./shared/submit-confirm";
-
-initializeFacilityPicker();
 
 initializeSubmitConfirm({
   formId: "add-station-form",

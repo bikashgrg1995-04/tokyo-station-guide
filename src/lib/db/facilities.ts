@@ -13,18 +13,22 @@ export interface Facility {
 }
 
 
+
 export interface StationFacility {
   id: number;
   facility_id: number;
+  floor_id: number;
+  floor_name: string;
+  floor_name_japanese: string | null;
   name: string;
   slug: string;
   icon: string | null;
   icon_dark: string | null;
   sort_order: number;
   facility_count: number | null;
-  floor: string | null;
   note: string | null;
 }
+
 
 
 export interface FacilityInput {
@@ -272,7 +276,6 @@ export async function deleteFacility(
 /* ========================================
    Get Facilities Assigned to Station
 ======================================== */
-
 export async function getStationFacilities(
   db: D1Database,
   stationId: number,
@@ -281,24 +284,29 @@ export async function getStationFacilities(
     .prepare(
       `
         SELECT
-          sf.id,
+          sff.id,
           f.id AS facility_id,
           f.name,
           f.slug,
           f.icon,
           f.icon_dark,
           f.sort_order,
-          sf.facility_count,
-          sf.floor,
-          sf.note
-        FROM station_facilities sf
+          sff.facility_count,
+          sff.note,
+          sf.id AS floor_id,
+          sf.name AS floor_name,
+          sf.name_japanese AS floor_name_japanese
+        FROM station_floor_facilities sff
+        INNER JOIN station_floors sf
+          ON sf.id = sff.floor_id
         INNER JOIN facilities f
-          ON f.id = sf.facility_id
+          ON f.id = sff.facility_id
         WHERE sf.station_id = ?
         ORDER BY
+          sf.floor_order ASC,
+          sf.name ASC,
           f.sort_order ASC,
-          f.name ASC,
-          sf.floor ASC
+          f.name ASC
       `,
     )
     .bind(stationId)
@@ -307,36 +315,14 @@ export async function getStationFacilities(
   return result.results;
 }
 
+
 /* ========================================
    Get Facilities Not Assigned to Station
 ======================================== */
-
 export async function getAvailableFacilitiesForStation(
   db: D1Database,
-  stationId: number,
+  _stationId: number,
 ): Promise<Facility[]> {
-  const result = await db
-    .prepare(
-      `
-        SELECT
-          f.id,
-          f.name,
-          f.slug,
-          f.icon,
-          f.icon_dark,
-          f.sort_order
-        FROM facilities f
-        WHERE NOT EXISTS (
-          SELECT 1
-          FROM station_facilities sf
-          WHERE sf.station_id = ?
-            AND sf.facility_id = f.id
-        )
-        ORDER BY f.sort_order ASC, f.name ASC
-      `,
-    )
-    .bind(stationId)
-    .all<Facility>();
-
-  return result.results;
+  return getFacilities(db);
 }
+

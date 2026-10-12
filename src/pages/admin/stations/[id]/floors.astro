@@ -1,0 +1,75 @@
+---
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import "../../../../styles/admin/forms.css";
+import "../../../../styles/admin/stations.css";
+import "../../../../styles/admin/tables.css";
+import "../../../../styles/admin/lines.css";
+
+import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
+import StationFloorsPanel from "../../../../components/admin/StationFloorsPanel.astro";
+
+import { getStationById } from "../../../../lib/db/stations";
+import { handleStationFloors } from "../../../../lib/services/station-floors";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+const db = env.DB;
+
+const id = Number(Astro.params.id);
+
+if (!Number.isInteger(id) || id <= 0) {
+  return Astro.redirect("/admin/stations");
+}
+
+const station = await getStationById(db, id);
+
+if (!station) {
+  return Astro.redirect("/admin/stations");
+}
+
+const floorForm = await handleStationFloors(
+  Astro.request,
+  db,
+  id,
+);
+
+if (floorForm.redirectTo) {
+  return Astro.redirect(floorForm.redirectTo);
+}
+---
+
+<AdminLayout
+  title={`Manage Floors - ${station.name}`}
+  activePath="/admin/stations"
+>
+  <header class="admin-topbar">
+    <Breadcrumbs
+      backHref="/admin/stations"
+      parentLabel="Stations"
+      current="Manage Floors"
+    />
+  </header>
+
+  <div class="admin-content">
+    <div class="admin-page-header">
+      <div>
+        <h2>Manage Floors</h2>
+        <p>
+          Manage floors and their display order for
+          <strong>{station.name}</strong>.
+        </p>
+      </div>
+    </div>
+
+    <StationFloorsPanel
+      stationName={station.name}
+      stationId={station.id}
+      floors={floorForm.floors}
+      values={floorForm.values}
+      errors={floorForm.errors}
+      formError={floorForm.formError}
+      editingId={floorForm.editingId}
+    />
+  </div>
+</AdminLayout>

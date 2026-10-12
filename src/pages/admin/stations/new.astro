@@ -10,8 +10,6 @@ import Button from "../../../components/common/Button.astro";
 import ConfirmDialog from "../../../components/common/ConfirmDialog.astro";
 
 import StationFormFields from "../../../components/admin/StationFormFields.astro";
-import StationFacilitiesPanel from "../../../components/admin/StationFacilitiesPanel.astro";
-import FacilityModal from "../../../components/admin/FacilityModal.astro";
 import StationTopPicks from "../../../components/admin/StationTopPicks.astro";
 
 import { handleStationCreate } from "../../../lib/services/stations";
@@ -27,7 +25,7 @@ if (form.redirectTo) {
 }
 
 const { name } = form.values;
-const { errors, facilities, topPicks } = form;
+const { errors, topPicks } = form;
 const error = form.formError;
 ---
 
@@ -43,9 +41,7 @@ const error = form.formError;
   <div class="admin-content">
     <h2>Add Station</h2>
 
-    <p>
-      Add a railway or subway station to the Tokyo Station Guide.
-    </p>
+    <p>Add a railway or subway station to the Tokyo Station Guide.</p>
 
     <form method="POST" class="admin-form" id="add-station-form">
       <!-- Station Details -->
@@ -59,10 +55,7 @@ const error = form.formError;
 
             {error && <Alert>{error}</Alert>}
 
-            <StationFormFields
-              values={form.values}
-              errors={errors}
-            />
+            <StationFormFields values={form.values} errors={errors} />
           </div>
         </div>
       </section>
@@ -80,13 +73,9 @@ const error = form.formError;
 
             <div class="admin-verification-toggle">
               <div class="admin-verification-copy">
-                <span class="admin-verification-title">
-                  Verified station
-                </span>
+                <span class="admin-verification-title"> Verified station </span>
 
-                <small>
-                  Mark this station as verified.
-                </small>
+                <small> Mark this station as verified. </small>
               </div>
 
               <label class="admin-switch" for="is_verified">
@@ -102,13 +91,13 @@ const error = form.formError;
           </div>
         </section>
 
-        <StationFacilitiesPanel
-          canAdd={facilities.length > 0}
-          error={errors.facilities}
-          allAddedMessage="No facilities are available in the master list."
-        >
-          Add facilities and specify their floor, quantity, and optional note.
-        </StationFacilitiesPanel>
+        <section class="admin-card">
+          <h2>Facilities</h2>
+          <p>
+            Create the station first, then add its floors and assign facilities
+            from the Edit Station page.
+          </p>
+        </section>
       </div>
 
       <!-- Top Picks -->
@@ -122,15 +111,9 @@ const error = form.formError;
 
       <!-- Form Actions -->
       <div class="admin-form-actions">
-        <Button href="/admin/stations" variant="secondary">
-          Cancel
-        </Button>
+        <Button href="/admin/stations" variant="secondary"> Cancel </Button>
 
-        <Button
-          type="submit"
-          variant="primary"
-          id="create-station-button"
-        >
+        <Button type="submit" variant="primary" id="create-station-button">
           Create Station
         </Button>
       </div>
@@ -138,13 +121,6 @@ const error = form.formError;
   </div>
 
   <Fragment slot="after">
-    <!-- Add Facilities Modal -->
-    <FacilityModal
-      facilities={facilities}
-      description="Select facilities to add to this station. You can add the same facility on multiple floors."
-      emptyDescription="Add facilities to the master facility list first."
-    />
-
     <!-- Remove Facility Confirmation -->
     <ConfirmDialog
       id="remove-facility-confirm-dialog"

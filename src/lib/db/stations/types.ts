@@ -96,7 +96,7 @@ export interface StationEditItem extends StationAdminListItem {
 
 export interface StationFacilityInput {
   facilityId: number;
-  floor: string;
+  floorId: number;
   facilityCount: number;
   note?: string | null;
 }

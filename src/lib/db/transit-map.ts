@@ -1,4 +1,3 @@
-
 /* ========================================
    Transit Map Database Helpers
 ======================================== */
@@ -118,39 +117,51 @@ export async function getTransitMapData(
           s.is_verified AS station_is_verified,
           s.verified_at AS station_verified_at,
 
-          /* Facilities */
+         
+/* Facilities */
 
-          (
-            SELECT
-              json_group_array(
-                json_object(
-                  'name', facility.name,
-                  'slug', facility.slug,
-                  'icon', facility.icon,
-                  'icon_dark', facility.icon_dark,
-                  'floor', facility.floor,
-                  'count', facility.facility_count,
-                  'note', facility.note
-                )
-              )
-            FROM (
-              SELECT
-                f.name,
-                f.slug,
-                f.icon,
-                f.icon_dark,
-                sf.floor,
-                sf.facility_count,
-                sf.note
-              FROM station_facilities sf
-              INNER JOIN facilities f
-                ON f.id = sf.facility_id
-              WHERE sf.station_id = s.id
-              ORDER BY
-                f.sort_order ASC,
-                f.name ASC
-            ) facility
-          ) AS station_facilities,
+(
+  SELECT
+    json_group_array(
+      json_object(
+        'facility_id', facility.facility_id,
+        'name', facility.name,
+        'slug', facility.slug,
+        'icon', facility.icon,
+        'icon_dark', facility.icon_dark,
+        'floor_id', facility.floor_id,
+        'floor', facility.floor,
+        'floor_japanese', facility.floor_japanese,
+        'count', facility.facility_count,
+        'note', facility.note
+      )
+    )
+  FROM (
+    SELECT
+      f.id AS facility_id,
+      f.name,
+      f.slug,
+      f.icon,
+      f.icon_dark,
+      sf.id AS floor_id,
+      sf.name AS floor,
+      sf.name_japanese AS floor_japanese,
+      sff.facility_count,
+      sff.note,
+      sf.floor_order
+    FROM station_floor_facilities sff
+    INNER JOIN station_floors sf
+      ON sf.id = sff.floor_id
+    INNER JOIN facilities f
+      ON f.id = sff.facility_id
+    WHERE sf.station_id = s.id
+    ORDER BY
+      sf.floor_order ASC,
+      f.sort_order ASC,
+      f.name ASC
+  ) facility
+) AS station_facilities,
+
 
           /* Top Picks */
 
@@ -264,10 +275,7 @@ export async function getTransitMapData(
      Build Stations By Line
   ====================================== */
 
-  const stationsByLine: Record<
-    string,
-    TransitMapStation[]
-  > = {};
+  const stationsByLine: Record<string, TransitMapStation[]> = {};
 
   for (const line of lines) {
     stationsByLine[String(line.id)] = [];
@@ -278,8 +286,7 @@ export async function getTransitMapData(
       continue;
     }
 
-    const lineStations =
-      stationsByLine[String(row.line_id)];
+    const lineStations = stationsByLine[String(row.line_id)];
 
     if (!lineStations) {
       continue;
@@ -307,10 +314,7 @@ export async function getTransitMapData(
      Build Searchable Stations
   ====================================== */
 
-  const searchableMap = new Map<
-    number,
-    TransitSearchStation
-  >();
+  const searchableMap = new Map<number, TransitSearchStation>();
 
   for (const row of rows) {
     let station = searchableMap.get(row.station_id);
@@ -349,22 +353,16 @@ export async function getTransitMapData(
      Build Transit Lines
   ====================================== */
 
-  const transitLines: TransitMapLine[] = lines.map(
-    (line: Line) => ({
-      id: line.id,
-      name: line.name,
-      code: line.code,
-      color: line.color || "#9caf31",
-      operatorId: line.operator_id,
-      operator: line.operator_name,
-      description: line.description,
-      shape:
-        line.code === "JY" ||
-        /yamanote/i.test(line.name)
-          ? "loop"
-          : null,
-    }),
-  );
+  const transitLines: TransitMapLine[] = lines.map((line: Line) => ({
+    id: line.id,
+    name: line.name,
+    code: line.code,
+    color: line.color || "#9caf31",
+    operatorId: line.operator_id,
+    operator: line.operator_name,
+    description: line.description,
+    shape: line.code === "JY" || /yamanote/i.test(line.name) ? "loop" : null,
+  }));
 
   return {
     lines: transitLines,

@@ -1,0 +1,357 @@
+
+---
+import Button from "../common/Button.astro";
+import SearchInput from "../common/SearchInput.astro";
+import EmptyState from "../common/EmptyState.astro";
+import ConfirmDialog from "../common/ConfirmDialog.astro";
+
+import type { StationFloor } from "../../lib/db/station-floors";
+import type {
+  StationFloorFormErrors,
+  StationFloorFormValues,
+} from "../../lib/validators/station-floor";
+
+interface Props {
+  stationName: string;
+  stationId: number;
+  floors: StationFloor[];
+  values: StationFloorFormValues;
+  errors: StationFloorFormErrors;
+  formError: string;
+  editingId: number | null;
+}
+
+const {
+  stationName,
+  stationId,
+  floors,
+  values,
+  errors,
+  formError,
+  editingId,
+} = Astro.props;
+
+const editFloor = floors.find((floor) => floor.id === editingId);
+const hasValidationErrors = Object.values(errors).some(Boolean);
+const showModalInitially = editingId !== null || hasValidationErrors;
+
+const formValues =
+  editingId !== null && editFloor && !hasValidationErrors
+    ? {
+        name: editFloor.name,
+        nameJapanese: editFloor.name_japanese ?? "",
+        floorOrder: String(editFloor.floor_order),
+      }
+    : values;
+
+const showDeleteError =
+  Boolean(formError) && editingId === null && !hasValidationErrors;
+---
+
+<section class="admin-panel" id="station-floors">
+  <div class="admin-panel-body admin-table-panel-body">
+    {showDeleteError && (
+      <div class="admin-form-error" role="alert">
+        {formError}
+      </div>
+    )}
+
+    <div class="admin-list-toolbar">
+      <form
+        class="admin-search-form"
+        role="search"
+        onsubmit="return false;"
+      >
+        <SearchInput
+          id="floor-search"
+          name="search"
+          placeholder="Search floors..."
+          ariaLabel="Search floors by name or Japanese name"
+        />
+      </form>
+
+      <Button type="button" variant="primary" id="open-add-floor">
+        + Add Floor
+      </Button>
+    </div>
+
+    <div class="admin-table-meta">
+      <span id="floor-results-count" aria-live="polite">
+        {floors.length} Total Floors
+      </span>
+    </div>
+
+    {floors.length > 0 ? (
+      <>
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Floor Name</th>
+                <th>Japanese Name</th>
+                <th>Sort Order</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {floors.map((floor) => (
+                <tr
+                  data-floor-row
+                  data-search={`${floor.id} ${floor.name} ${floor.name_japanese ?? ""}`.toLowerCase()}
+                >
+                  <td class="admin-table-id">{floor.id}</td>
+                  <td><strong>{floor.name}</strong></td>
+                  <td>
+                    {floor.name_japanese || (
+                      <span class="admin-table-muted">—</span>
+                    )}
+                  </td>
+                  <td>{floor.floor_order}</td>
+                  <td>
+                    <div class="admin-table-actions">
+                      <button
+                        type="button"
+                        class="admin-table-action admin-table-action-edit"
+                        data-edit-floor
+                        data-id={floor.id}
+                        data-name={floor.name}
+                        data-name-japanese={floor.name_japanese ?? ""}
+                        data-floor-order={floor.floor_order}
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        class="admin-table-action admin-table-action-delete js-delete-floor"
+                        data-floor-id={floor.id}
+                        data-floor-name={floor.name}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="admin-table-footer">
+          <span id="floor-page-info" aria-live="polite"></span>
+
+          <label class="admin-floor-page-size" for="floor-page-size">
+            Rows
+            <select id="floor-page-size">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+
+          <div class="admin-table-actions">
+            <button type="button" class="admin-table-action" id="floor-prev">
+              Previous
+            </button>
+            <button type="button" class="admin-table-action" id="floor-next">
+              Next
+            </button>
+          </div>
+        </div>
+
+        <div id="floor-no-results" hidden>
+          <EmptyState
+            icon="⌕"
+            title="No floors found"
+            description="Try a different search term."
+          />
+        </div>
+      </>
+    ) : (
+      <EmptyState
+        icon="⌕"
+        title="No floors yet"
+        description="Add the first floor for this station to get started."
+      />
+    )}
+  </div>
+</section>
+
+<!-- Add / Edit modal -->
+<div
+  id="floor-modal"
+  class:list={[
+    "admin-line-station-modal",
+    showModalInitially ? "is-open" : "",
+  ]}
+  hidden={!showModalInitially}
+  aria-hidden={showModalInitially ? "false" : "true"}
+>
+  <div
+    class="admin-line-station-modal-backdrop"
+    data-close-floor-modal
+  ></div>
+
+  <div
+    class="admin-line-station-modal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="floor-modal-title"
+  >
+    <div class="admin-line-station-modal-header">
+      <div>
+        <h2 id="floor-modal-title">
+          {editingId ? "Edit Floor" : "Add Floor"}
+        </h2>
+        <p>
+          Manage floor information for <strong>{stationName}</strong>.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="admin-line-station-modal-close"
+        data-close-floor-modal
+        aria-label="Close floor form"
+      >
+        ×
+      </button>
+    </div>
+
+    <form method="POST" class="admin-form" id="floor-form">
+      <input
+        type="hidden"
+        name="floor_action"
+        id="floor-action"
+        value={editingId ? "update" : "create"}
+      />
+
+      <input
+        type="hidden"
+        name="floor_id"
+        id="floor-id"
+        value={editingId ?? ""}
+      />
+
+      {formError && !showDeleteError && (
+        <div class="admin-form-error" role="alert">
+          {formError}
+        </div>
+      )}
+
+      <div class="admin-form-group">
+        <label for="floor-name">Floor Name</label>
+        <input
+          id="floor-name"
+          name="name"
+          required
+          maxlength="100"
+          placeholder="e.g. B1, 1F, 2F, Ground Floor"
+          value={formValues.name}
+        />
+        {errors.name && (
+          <small class="admin-field-error">{errors.name}</small>
+        )}
+      </div>
+
+      <div class="admin-form-group">
+        <label for="floor-name-japanese">Japanese Name (optional)</label>
+        <input
+          id="floor-name-japanese"
+          name="name_japanese"
+          maxlength="100"
+          placeholder="e.g. 1階"
+          value={formValues.nameJapanese}
+        />
+        {errors.nameJapanese && (
+          <small class="admin-field-error">{errors.nameJapanese}</small>
+        )}
+      </div>
+
+      <div class="admin-form-group">
+        <label for="floor-order">Sort Order</label>
+        <input
+          id="floor-order"
+          name="floor_order"
+          type="number"
+          min="0"
+          step="1"
+          required
+          value={formValues.floorOrder}
+        />
+        {errors.floorOrder && (
+          <small class="admin-field-error">{errors.floorOrder}</small>
+        )}
+      </div>
+
+      <div class="admin-form-actions">
+        <Button type="button" variant="secondary" id="cancel-floor-form">
+          Cancel
+        </Button>
+
+        <Button type="submit" variant="primary" id="floor-submit">
+          {editingId ? "Update Floor" : "Add Floor"}
+        </Button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete form submitted only after confirmation -->
+<form
+  method="POST"
+  id="delete-floor-form"
+  action={`/admin/stations/${stationId}/floors`}
+  hidden
+>
+  <input type="hidden" name="floor_action" value="delete" />
+  <input type="hidden" name="floor_id" id="delete-floor-id" value="" />
+</form>
+
+<ConfirmDialog
+  id="delete-floor-dialog"
+  formId="delete-floor-form"
+  title="Delete Floor"
+  description="Are you sure you want to delete this floor?"
+  confirmText="Delete Floor"
+  cancelText="Cancel"
+  variant="danger"
+  showName={true}
+  warning="Deleting this floor also removes its facility, top-pick and exit assignments. Platforms assigned to this floor will become unassigned. This action cannot be undone."
+/>
+
+<script>
+  import "../../scripts/admin/station-floors-panel.ts";
+</script>
+
+<style>
+  .admin-line-station-modal[hidden] {
+    display: none;
+  }
+
+  .admin-floor-page-size {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--admin-muted);
+    font-size: 12px;
+  }
+
+  .admin-floor-page-size select {
+    min-height: 32px;
+    padding: 0 8px;
+    border: 1px solid var(--admin-border);
+    border-radius: 7px;
+    background: var(--admin-surface);
+    color: var(--admin-text);
+  }
+
+  @media (max-width: 760px) {
+    .admin-table-footer {
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+  }
+</style>

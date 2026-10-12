@@ -345,7 +345,6 @@ function facilityCountLabel(count) {
 
 /* ---------- Tab contents ---------- */
 
-
 function facilitiesHtml(stn) {
   var items = parseList(stationField(stn, ["facilities"]));
   var groups = groupedFacilities(items);
@@ -394,7 +393,6 @@ function facilitiesHtml(stn) {
     "</div>"
   );
 }
-
 
 /* One selected facility; show every floor record separately. */
 function facilityDetailHtml(group) {
@@ -453,31 +451,29 @@ function platformsHtml(stn) {
   var selected = view.platformSel;
   var active = items[selected];
 
-  
-var rows = items
-  .map(function (p) {
-    var title = p.destinations || "Platform " + (p.number || "");
-    var sub = [p.line, p.location].filter(Boolean).join(" · ");
+  var rows = items
+    .map(function (p) {
+      var title = p.destinations || "Platform " + (p.number || "");
+      var sub = [p.line, p.location].filter(Boolean).join(" · ");
 
-    return (
-      '<div class="row platform-row">' +
-      '<span class="l"><b>' +
-      esc(title) +
-      "</b>" +
-      (sub ? "<small>" + esc(sub) + "</small>" : "") +
-      "</span>" +
-      '<span class="pf"' +
-      (p.color ? ' style="background:' + esc(p.color) + '"' : "") +
-      ">" +
-      esc(p.number || "") +
-      "</span>" +
-      "</div>"
-    );
-  })
-  .join("");
+      return (
+        '<div class="row platform-row">' +
+        '<span class="l"><b>' +
+        esc(title) +
+        "</b>" +
+        (sub ? "<small>" + esc(sub) + "</small>" : "") +
+        "</span>" +
+        '<span class="pf"' +
+        (p.color ? ' style="background:' + esc(p.color) + '"' : "") +
+        ">" +
+        esc(p.number || "") +
+        "</span>" +
+        "</div>"
+      );
+    })
+    .join("");
 
-return '<div class="platform-list">' + rows + "</div>";
-
+  return '<div class="platform-list">' + rows + "</div>";
 }
 
 function picksHtml(stn) {

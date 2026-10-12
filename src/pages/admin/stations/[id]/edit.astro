@@ -13,6 +13,7 @@ import StationFormFields from "../../../../components/admin/StationFormFields.as
 import StationFacilitiesPanel from "../../../../components/admin/StationFacilitiesPanel.astro";
 import FacilityModal from "../../../../components/admin/FacilityModal.astro";
 import StationTopPicks from "../../../../components/admin/StationTopPicks.astro";
+import { getStationFloors } from "../../../../lib/db/station-floors";
 
 import { getStationById } from "../../../../lib/db/stations";
 import { handleStationUpdate } from "../../../../lib/services/stations";
@@ -34,12 +35,9 @@ if (!station) {
   return Astro.redirect("/admin/stations");
 }
 
-const form = await handleStationUpdate(
-  Astro.request,
-  db,
-  id,
-  station,
-);
+const stationFloors = await getStationFloors(db, id);
+
+const form = await handleStationUpdate(Astro.request, db, id, station);
 
 if (form.redirectTo) {
   return Astro.redirect(form.redirectTo);
@@ -57,10 +55,7 @@ const {
 const facilityError = errors.facilities;
 ---
 
-<AdminLayout
-  title={`Edit ${station.name}`}
-  activePath="/admin/stations"
->
+<AdminLayout title={`Edit ${station.name}`} activePath="/admin/stations">
   <!-- Topbar -->
   <header class="admin-topbar">
     <Breadcrumbs
@@ -73,15 +68,9 @@ const facilityError = errors.facilities;
   <div class="admin-content">
     <h2>Edit Station</h2>
 
-    <p>
-      Update the railway station information for the Tokyo Station Guide.
-    </p>
+    <p>Update the railway station information for the Tokyo Station Guide.</p>
 
-    <form
-      method="POST"
-      class="admin-form"
-      id="edit-station-form"
-    >
+    <form method="POST" class="admin-form" id="edit-station-form">
       <input type="hidden" name="action" value="update" />
 
       <!-- Station Details -->
@@ -99,10 +88,7 @@ const facilityError = errors.facilities;
 
             {formError && <Alert>{formError}</Alert>}
 
-            <StationFormFields
-              values={form.values}
-              errors={errors}
-            />
+            <StationFormFields values={form.values} errors={errors} />
           </div>
         </div>
       </section>
@@ -120,13 +106,9 @@ const facilityError = errors.facilities;
 
             <div class="admin-verification-toggle">
               <div class="admin-verification-copy">
-                <span class="admin-verification-title">
-                  Verified station
-                </span>
+                <span class="admin-verification-title"> Verified station </span>
 
-                <small>
-                  Mark this station as verified.
-                </small>
+                <small> Mark this station as verified. </small>
               </div>
 
               <label class="admin-switch" for="is_verified">
@@ -145,12 +127,12 @@ const facilityError = errors.facilities;
         <!-- Floor-wise Facilities -->
         <StationFacilitiesPanel
           assigned={stationFacilities}
-          canAdd={availableFacilities.length > 0}
+          canAdd={stationFloors.length > 0 && availableFacilities.length > 0}
           error={facilityError}
           allAddedMessage="No facilities are available in the master list."
         >
-          Manage facilities for <strong>{station.name}</strong>, including floor,
-          quantity, and optional notes.
+          Manage facilities for <strong>{station.name}</strong>, including
+          floor, quantity, and optional notes.
         </StationFacilitiesPanel>
       </div>
 
@@ -169,15 +151,9 @@ const facilityError = errors.facilities;
 
       <!-- Form Actions -->
       <div class="admin-form-actions">
-        <Button href="/admin/stations" variant="secondary">
-          Cancel
-        </Button>
+        <Button href="/admin/stations" variant="secondary"> Cancel </Button>
 
-        <Button
-          type="submit"
-          variant="primary"
-          id="save-station-button"
-        >
+        <Button type="submit" variant="primary" id="save-station-button">
           Save Changes
         </Button>
       </div>
@@ -188,6 +164,7 @@ const facilityError = errors.facilities;
     <!-- Add Facilities Modal -->
     <FacilityModal
       facilities={availableFacilities}
+      floors={stationFloors}
       description={`Select facilities to add floor entries for ${station.name}.`}
       emptyDescription="No facilities are available in the master facility list."
     />

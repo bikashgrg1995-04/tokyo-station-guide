@@ -17,12 +17,7 @@ export interface Props {
   allAddedMessage: string;
 }
 
-const {
-  assigned = [],
-  canAdd,
-  error,
-  allAddedMessage,
-} = Astro.props;
+const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
 ---
 
 <section class="admin-panel admin-station-feature-panel">
@@ -33,27 +28,21 @@ const {
         <p><slot /></p>
       </div>
 
-      {canAdd && (
-        <Button
-          type="button"
-          variant="primary"
-          id="open-add-facility-button"
-        >
-          + Add
-        </Button>
-      )}
+      {
+        canAdd && (
+          <Button type="button" variant="primary" id="open-add-facility-button">
+            + Add
+          </Button>
+        )
+      }
     </div>
 
     {error && <Alert>{error}</Alert>}
 
-    <!-- Identifies the new floor-wise form, including when all rows are removed. -->
-    <input
-      type="hidden"
-      name="station_facilities_enabled"
-      value="1"
-    />
+    <!-- Identifies the floor-wise facility form, even when all rows are removed. -->
+    <input type="hidden" name="station_facilities_enabled" value="1" />
 
-    <!-- Facility rows contain their own submitted inputs. -->
+    <!-- Dynamically added facility rows are managed by facility-picker.ts. -->
     <div id="station-facility-inputs" hidden></div>
 
     <div class="admin-table-wrapper">
@@ -72,95 +61,114 @@ const {
         </thead>
 
         <tbody id="station-facilities-body">
-          {assigned.map((facility, index) => (
-            <tr
-              data-facility-row
-              data-entry-id={`existing-${index}`}
-              data-facility-id={facility.facility_id}
-              data-facility-name={facility.name}
-            >
-              <td>
-                <div class="admin-line-name">
-                  {facility.name}
-                </div>
+          {
+            assigned.map((facility, index) => (
+              <tr
+                data-facility-row
+                data-facility-id={facility.facility_id}
+                data-floor-id={facility.floor_id}
+                data-facility-name={facility.name}
+                data-floor-name={facility.floor_name}
+              >
+                <td>
+                  <div class="admin-line-name">{facility.name}</div>
 
-                <input
-                  type="hidden"
-                  name="facility_entry_facility_id"
-                  value={facility.facility_id}
-                />
-              </td>
+                  <input
+                    type="hidden"
+                    name="facility_entry_facility_id"
+                    value={facility.facility_id}
+                  />
+                </td>
 
-              <td>
-                <input
-                  type="text"
-                  name="facility_entry_floor"
-                  value={facility.floor ?? ""}
-                  placeholder="e.g. B1, 1F, 2F"
-                  maxlength="30"
-                  required
-                  aria-label={`Floor for ${facility.name}`}
-                />
-              </td>
-
-              <td>
-                <input
-                  type="number"
-                  name="facility_entry_count"
-                  value={facility.facility_count ?? 1}
-                  min="1"
-                  step="1"
-                  required
-                  aria-label={`Quantity of ${facility.name}`}
-                />
-              </td>
-
-              <td>
-                <input
-                  type="text"
-                  name="facility_entry_note"
-                  value={facility.note ?? ""}
-                  placeholder="Optional note"
-                  maxlength="500"
-                  aria-label={`Note for ${facility.name}`}
-                />
-              </td>
-
-              <td>
-                <div class="admin-table-actions">
-                  <button
-                    type="button"
-                    class="admin-table-action admin-table-action-delete"
-                    data-remove-facility
-                    data-facility-name={facility.name}
+                <td>
+                  <span
+                    class="admin-floor-pill"
+                    data-floor-pill
+                    title={
+                      facility.floor_name_japanese
+                        ? `${facility.floor_name} · ${facility.floor_name_japanese}`
+                        : facility.floor_name
+                    }
                   >
-                    Remove
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
+                    {facility.floor_name}
+                  </span>
 
-          <tr
-            id="station-facilities-empty-row"
-            hidden={assigned.length > 0}
-          >
+                  <input
+                    type="hidden"
+                    name="facility_entry_floor_id"
+                    value={facility.floor_id}
+                  />
+                </td>
+
+                <td>
+                  <input
+                    type="number"
+                    name="facility_entry_count"
+                    value={facility.facility_count ?? 1}
+                    min="1"
+                    step="1"
+                    required
+                    aria-label={`Quantity of ${facility.name}`}
+                  />
+                </td>
+
+                <td>
+                  <input
+                    type="text"
+                    name="facility_entry_note"
+                    value={facility.note ?? ""}
+                    placeholder="Optional note"
+                    maxlength="500"
+                    aria-label={`Note for ${facility.name}`}
+                  />
+                </td>
+
+                <td>
+                  <div class="admin-table-actions">
+                    <button
+                      type="button"
+                      class="admin-table-action admin-table-action-delete"
+                      data-remove-facility
+                      data-facility-name={facility.name}
+                      data-floor-name={facility.floor_name}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))
+          }
+
+          <tr id="station-facilities-empty-row" hidden={assigned.length > 0}>
             <td colspan="5">
-              <div class="admin-feature-empty">
-                No facilities assigned.
-              </div>
+              <div class="admin-feature-empty">No facilities assigned.</div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <p
-      id="all-facilities-message"
-      class="admin-feature-message"
-      hidden
-    >
+    <p id="all-facilities-message" class="admin-feature-message" hidden>
       {allAddedMessage}
     </p>
   </div>
 </section>
+
+<style>
+  .admin-floor-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    padding: 0.3rem 0.65rem;
+    border: 1px solid var(--admin-border, #d1d5db);
+    border-radius: 999px;
+    background: var(--admin-muted-bg, #f3f4f6);
+    color: var(--admin-text, #374151);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+</style>

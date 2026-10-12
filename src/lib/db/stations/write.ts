@@ -3,7 +3,7 @@
 ======================================== */
 
 import type { CreateStationInput, UpdateStationInput } from "./types";
-import { resolveFacilityIds, resolveTopPickIds } from "./relations";
+import { resolveTopPickIds } from "./relations";
 
 /* ========================================
    Create Station
@@ -13,14 +13,7 @@ export async function createStation(
   db: D1Database,
   input: CreateStationInput,
 ): Promise<number> {
-  /*
-   * Validate/resolve relations before creating the station.
-   * This prevents creating a station with invalid
-   * facility/top-pick references.
-   */
-  const facilityIds =
-    input.facilityIds ?? (await resolveFacilityIds(db, input.facilities));
-
+  // New stations are created without facility assignments.
   const topPickIds =
     input.topPickIds ?? (await resolveTopPickIds(db, input.topPicks));
 
@@ -61,50 +54,6 @@ export async function createStation(
 
   const statements: D1PreparedStatement[] = [];
 
-  if (input.stationFacilities) {
-    input.stationFacilities.forEach((facility) => {
-      statements.push(
-        db
-          .prepare(
-            `
-            INSERT INTO station_facilities (
-              station_id,
-              facility_id,
-              floor,
-              facility_count,
-              note
-            )
-            VALUES (?, ?, ?, ?, ?)
-          `,
-          )
-          .bind(
-            stationId,
-            facility.facilityId,
-            facility.floor.trim(),
-            facility.facilityCount,
-            facility.note?.trim() || null,
-          ),
-      );
-    });
-  } else {
-    facilityIds.forEach((facilityId) => {
-      statements.push(
-        db
-          .prepare(
-            `
-            INSERT INTO station_facilities (
-              station_id,
-              facility_id,
-              note
-            )
-            VALUES (?, ?, NULL)
-          `,
-          )
-          .bind(stationId, facilityId),
-      );
-    });
-  }
-
   topPickIds.forEach((topPickId, index) => {
     statements.push(
       db
@@ -123,7 +72,7 @@ export async function createStation(
     );
   });
 
-  if (statements.length) {
+  if (statements.length > 0) {
     await db.batch(statements);
   }
 
@@ -139,13 +88,6 @@ export async function updateStation(
   id: number,
   input: UpdateStationInput,
 ): Promise<void> {
-  /*
-   * Resolve relations first so invalid names do not
-   * partially modify the station.
-   */
-  const facilityIds =
-    input.facilityIds ?? (await resolveFacilityIds(db, input.facilities));
-
   const topPickIds =
     input.topPickIds ?? (await resolveTopPickIds(db, input.topPicks));
 
@@ -186,16 +128,69 @@ export async function updateStation(
     )
     .run();
 
-  const statements: D1PreparedStatement[] = [
-    db
-      .prepare(
-        `
-          DELETE FROM station_facilities
-          WHERE station_id = ?
-        `,
-      )
-      .bind(id),
+  const statements: D1PreparedStatement[] = [];
 
+  /*
+   * Replace floor-wise facility assignments only when the caller
+   * explicitly supplies stationFacilities.
+   *
+   * Legacy station_facilities records are intentionally preserved.
+   */
+  if (input.stationFacilities !== undefined) {
+    statements.push(
+      db
+        .prepare(
+          `
+            DELETE FROM station_floor_facilities
+            WHERE floor_id IN (
+              SELECT id
+              FROM station_floors
+              WHERE station_id = ?
+            )
+          `,
+        )
+        .bind(id),
+    );
+
+    input.stationFacilities.forEach((facility, index) => {
+      statements.push(
+        db
+          .prepare(
+            `
+              INSERT INTO station_floor_facilities (
+                floor_id,
+                facility_id,
+                note,
+                facility_count,
+                sort_order
+              )
+              SELECT ?, ?, ?, ?, ?
+              WHERE EXISTS (
+                SELECT 1
+                FROM station_floors
+                WHERE id = ?
+                  AND station_id = ?
+              )
+            `,
+          )
+          .bind(
+            facility.floorId,
+            facility.facilityId,
+            facility.note?.trim() || null,
+            facility.facilityCount,
+            index + 1,
+            facility.floorId,
+            id,
+          ),
+      );
+    });
+  }
+
+  /*
+   * Preserve the existing top-pick update behavior.
+   * Floor-wise top-pick assignments are not modified here.
+   */
+  statements.push(
     db
       .prepare(
         `
@@ -204,51 +199,7 @@ export async function updateStation(
         `,
       )
       .bind(id),
-  ];
-
-  if (input.stationFacilities) {
-    input.stationFacilities.forEach((facility) => {
-      statements.push(
-        db
-          .prepare(
-            `
-            INSERT INTO station_facilities (
-              station_id,
-              facility_id,
-              floor,
-              facility_count,
-              note
-            )
-            VALUES (?, ?, ?, ?, ?)
-          `,
-          )
-          .bind(
-            id,
-            facility.facilityId,
-            facility.floor.trim(),
-            facility.facilityCount,
-            facility.note?.trim() || null,
-          ),
-      );
-    });
-  } else {
-    facilityIds.forEach((facilityId) => {
-      statements.push(
-        db
-          .prepare(
-            `
-            INSERT INTO station_facilities (
-              station_id,
-              facility_id,
-              note
-            )
-            VALUES (?, ?, NULL)
-          `,
-          )
-          .bind(id, facilityId)
-      );
-    });
-  }
+  );
 
   topPickIds.forEach((topPickId, index) => {
     statements.push(
@@ -268,7 +219,7 @@ export async function updateStation(
     );
   });
 
-  if (statements.length) {
+  if (statements.length > 0) {
     await db.batch(statements);
   }
 }
@@ -277,8 +228,33 @@ export async function updateStation(
    Delete Station
 ======================================== */
 
-export async function deleteStation(db: D1Database, id: number): Promise<void> {
+export async function deleteStation(
+  db: D1Database,
+  id: number,
+): Promise<void> {
   await db.batch([
+    db
+      .prepare(
+        `
+          DELETE FROM station_floor_facilities
+          WHERE floor_id IN (
+            SELECT id
+            FROM station_floors
+            WHERE station_id = ?
+          )
+        `,
+      )
+      .bind(id),
+
+    db
+      .prepare(
+        `
+          DELETE FROM station_floors
+          WHERE station_id = ?
+        `,
+      )
+      .bind(id),
+
     db
       .prepare(
         `
