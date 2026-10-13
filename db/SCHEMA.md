@@ -24,8 +24,8 @@ The SQL itself lives in `db/migrations/` (applied in numeric order).
 | `admin_users` | Admin accounts (PBKDF2 hash) | `pages/admin/auth/login.astro` |
 | `login_attempts` | Failed logins for throttling (purged after 1 day) | `auth/login-throttle.ts` |
 
-Removed in 0014/0015: `station_floor_top_picks` (never used), `station_facilities`
-(legacy, replaced by floors in 0011).
+Not in the schema any more: `station_floor_top_picks` (never used) and `station_facilities`
+(legacy, replaced by floors). Existing databases lose them in 0014.
 
 ## Relationships
 
@@ -51,9 +51,23 @@ deleting a line sets `station_platforms.line_id` to NULL.
   `featured_stations.image_url` hold a URL or a `public/` path.
 - SQL belongs in `src/lib/db/`. Four files still run it directly (see open items).
 
+## Migration history
+
+`0001_schema.sql` is a **squashed baseline**: the final state of the old migrations 0001-0013.
+`0014_cleanup_legacy_schema.sql` brings databases created before the squash up to date
+(it does nothing on a new database) and can be deleted once every database has applied it.
+
+- Wrangler tracks migrations by file name. A database that already ran the old 0001-0013
+  has `0001_schema.sql` recorded, so it skips the baseline and only runs 0014. **Never rename 0001.**
+- A database that has NOT applied all of the old 0001-0013 must be brought up to 0013 first,
+  using the old files from git (`git show f5682c3:db/migrations/<file>`). Check with
+  `npx wrangler d1 migrations list <db-name> --remote` (add `-c wrangler.client.jsonc` for the client).
+- To squash again later: only after every database has applied everything, rewrite the baseline
+  to the new final state, keep its file name, and keep the column order the same as the live schema.
+
 ## Changing the schema
 
-1. Add a new `db/migrations/NNNN_name.sql`. Never edit one that has been applied.
+1. Add a new `db/migrations/NNNN_name.sql` (next number after 0014). Never edit one that has been applied, except the 0001 baseline when squashing as described above.
 2. Additive first: add the column/table, ship code that uses it, then clean up.
 3. Dropping something: remove all code that touches it and deploy that first,
    then add the `DROP` as its own migration. Back up D1 before applying remotely.
