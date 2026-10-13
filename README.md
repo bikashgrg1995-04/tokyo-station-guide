@@ -62,6 +62,7 @@ src/
   styles/           admin/, website/, common/
   config/           site constants
 db/
+  SCHEMA.md         what every table is for, who owns it, how to change it
   migrations/       schema (applied by wrangler)
   seed/             test data, reset, admin template
 scripts/            command-line tools (not part of the app)

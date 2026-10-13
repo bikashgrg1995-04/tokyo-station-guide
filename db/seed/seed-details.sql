@@ -251,7 +251,14 @@ INSERT OR IGNORE INTO facilities (name, slug, icon, sort_order) VALUES
   ('Department Stores', 'department-stores', NULL, 9),
   ('Tourist Information', 'tourist-information', NULL, 10);
 
-WITH m(station, facility) AS (VALUES
+-- Staging table: one VALUES list feeds both the floor and the floor-facility insert.
+CREATE TABLE IF NOT EXISTS _seed_station_facilities (
+  station TEXT NOT NULL,
+  facility TEXT NOT NULL
+);
+DELETE FROM _seed_station_facilities;
+
+INSERT INTO _seed_station_facilities (station, facility) VALUES
   ('tokyo', 'coin-lockers'),
   ('tokyo', 'ticket-office'),
   ('tokyo', '7-bank-atm'),
@@ -385,12 +392,22 @@ WITH m(station, facility) AS (VALUES
   ('haneda-airport-t1-t2', 'coin-lockers'),
   ('haneda-airport-t1-t2', 'ticket-office'),
   ('haneda-airport-t1-t2', 'wi-fi'),
-  ('haneda-airport-t1-t2', 'currency-exchange')
-)
-INSERT OR IGNORE INTO station_facilities (station_id, facility_id)
-SELECT s.id, f.id FROM m
+  ('haneda-airport-t1-t2', 'currency-exchange');
+
+-- One default floor per station that has facilities.
+INSERT OR IGNORE INTO station_floors (station_id, name, floor_order)
+SELECT DISTINCT s.id, 'Main floor', 0
+FROM _seed_station_facilities m
+JOIN stations s ON s.slug = m.station;
+
+INSERT OR IGNORE INTO station_floor_facilities (floor_id, facility_id, sort_order)
+SELECT sf.id, f.id, 0
+FROM _seed_station_facilities m
 JOIN stations s ON s.slug = m.station
+JOIN station_floors sf ON sf.station_id = s.id AND sf.name = 'Main floor'
 JOIN facilities f ON f.slug = m.facility;
+
+DROP TABLE _seed_station_facilities;
 
 -- ---------- Top picks ----------
 INSERT OR IGNORE INTO top_picks (name, slug, category) VALUES
