@@ -209,38 +209,6 @@ export async function getOperatorById(
   return result ?? null;
 }
 
-
-/* ========================================
-   Get Operator By Slug
-======================================== */
-
-export async function getOperatorBySlug(
-  db: D1Database,
-  slug: string,
-): Promise<Operator | null> {
-  const result = await db
-    .prepare(
-      `
-        SELECT
-          id,
-          name,
-          slug,
-          description,
-          website_url,
-          created_at,
-          updated_at
-        FROM operators
-        WHERE slug = ?
-        LIMIT 1
-      `,
-    )
-    .bind(slug)
-    .first<Operator>();
-
-  return result ?? null;
-}
-
-
 /* ========================================
    Create Operator
 ======================================== */

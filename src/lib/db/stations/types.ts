@@ -10,13 +10,6 @@ export interface StationLine {
   operator_name: string;
 }
 
-export interface StationPlatformItem {
-  number: string;
-  line: string | null;
-  lineCode: string | null;
-  notes: string | null;
-}
-
 export interface Station {
   id: number;
   name: string;
@@ -31,7 +24,7 @@ export interface Station {
    * Compatibility fields.
    *
    * The actual data is stored relationally in:
-   * - station_facilities -> facilities
+   * - station_floors -> station_floor_facilities -> facilities
    * - station_top_picks -> top_picks
    * - line_stations -> lines -> operators
    *
@@ -57,16 +50,6 @@ export interface StationListItem {
   name: string;
   name_japanese: string | null;
   slug: string;
-}
-
-export interface StationSearchResult {
-  id: number;
-  name: string;
-  name_japanese: string | null;
-  slug: string;
-  line_name: string | null;
-  line_code: string | null;
-  station_code: string | null;
 }
 
 export interface StationAdminListItem {

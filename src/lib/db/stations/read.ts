@@ -3,8 +3,6 @@
 ======================================== */
 
 import type {
-  StationLine,
-  Station,
   StationListItem,
   StationAdminListItem,
   StationEditItem,
@@ -12,91 +10,10 @@ import type {
 } from "./types";
 import {
   getStationFacilitiesJson,
-  getStationFacilityDetailsJson,
   getStationTopPicksJson,
   getStationConnectionsJson,
   getStationPlatformsJson,
 } from "./relations";
-
-/* ========================================
-   Get Station By Slug
-======================================== */
-
-export async function getStationBySlug(
-  db: D1Database,
-  slug: string,
-): Promise<Station | null> {
-  const station = await db
-    .prepare(
-      `
-        SELECT
-          id,
-          name,
-          name_japanese,
-          slug,
-          latitude,
-          longitude,
-          description,
-          about,
-          is_verified,
-          verified_at,
-          created_at,
-          updated_at
-        FROM stations
-        WHERE slug = ?
-        LIMIT 1
-      `,
-    )
-    .bind(slug)
-    .first<
-      Omit<Station, "lines" | "facilities" | "top_picks" | "connections">
-    >();
-
-  if (!station) {
-    return null;
-  }
-
-  const lines = await db
-    .prepare(
-      `
-        SELECT
-          l.id,
-          l.name,
-          l.slug,
-          l.code,
-          o.name AS operator_name
-        FROM line_stations ls
-        INNER JOIN lines l
-          ON l.id = ls.line_id
-        INNER JOIN operators o
-          ON o.id = l.operator_id
-        WHERE ls.station_id = ?
-        ORDER BY ls.station_order ASC
-      `,
-    )
-    .bind(station.id)
-    .all<StationLine>();
-
-  const facilities = await getStationFacilitiesJson(db, station.id);
-
-  const facilityDetails = await getStationFacilityDetailsJson(db, station.id);
-
-  const topPicks = await getStationTopPicksJson(db, station.id);
-
-  const connections = await getStationConnectionsJson(db, station.id);
-
-  const platforms = await getStationPlatformsJson(db, station.id);
-
-  return {
-    ...station,
-    facilities,
-    facility_details: facilityDetails,
-    top_picks: topPicks,
-    connections,
-    platforms,
-    lines: lines.results,
-  };
-}
 
 /* ========================================
    Get Stations

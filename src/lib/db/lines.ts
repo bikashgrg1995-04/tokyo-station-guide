@@ -235,43 +235,6 @@ export async function getLineById(
   return result ?? null;
 }
 
-
-/* ========================================
-   Get Line By Slug
-======================================== */
-
-export async function getLineBySlug(
-  db: D1Database,
-  slug: string,
-): Promise<Line | null> {
-  const result = await db
-    .prepare(
-      `
-        SELECT
-          l.id,
-          l.operator_id,
-          o.name AS operator_name,
-          l.name,
-          l.slug,
-          l.code,
-          l.description,
-          l.color,
-          l.created_at,
-          l.updated_at
-        FROM lines l
-        INNER JOIN operators o
-          ON o.id = l.operator_id
-        WHERE l.slug = ?
-        LIMIT 1
-      `,
-    )
-    .bind(slug)
-    .first<Line>();
-
-  return result ?? null;
-}
-
-
 /* ========================================
    Create Line
 ======================================== */

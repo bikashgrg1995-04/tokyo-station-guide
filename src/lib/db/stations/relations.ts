@@ -3,7 +3,8 @@
 ======================================== */
 
 /*
- * Convert station_facilities relational data into the
+ * Convert floor-wise facility data (station_floors ->
+ * station_floor_facilities) into the
  * JSON string expected by the existing UI.
  *
  * Example:
@@ -102,38 +103,6 @@ export async function getStationFacilitiesJson(
 
   return JSON.stringify(facilities);
 }
-
-export async function getStationFacilityDetailsJson(
-  db: D1Database,
-  stationId: number,
-): Promise<string | null> {
-  const result = await db
-    .prepare(
-      `
-        SELECT DISTINCT
-          f.name,
-          f.icon
-        FROM station_floor_facilities sff
-        INNER JOIN station_floors sf
-          ON sf.id = sff.floor_id
-        INNER JOIN facilities f
-          ON f.id = sff.facility_id
-        WHERE sf.station_id = ?
-        ORDER BY
-          f.sort_order ASC,
-          f.name ASC
-      `,
-    )
-    .bind(stationId)
-    .all<{ name: string; icon: string | null }>();
-
-  if (!result.results.length) {
-    return null;
-  }
-
-  return JSON.stringify(result.results);
-}
-
 
 /*
  * Convert station_top_picks relational data into the
@@ -249,53 +218,6 @@ export function parseStringListJson(json: string | null | undefined): string[] {
   } catch {
     return [];
   }
-}
-
-/*
- * Resolve facility names entered by the admin to actual
- * facility IDs.
- *
- * We support both:
- * - facility name
- * - facility slug
- */
-export async function resolveFacilityIds(
-  db: D1Database,
-  json: string | null | undefined,
-): Promise<number[]> {
-  const names = parseStringListJson(json);
-
-  if (!names.length) {
-    return [];
-  }
-
-  const ids: number[] = [];
-
-  for (const name of names) {
-    const result = await db
-      .prepare(
-        `
-          SELECT id
-          FROM facilities
-          WHERE
-            LOWER(name) = LOWER(?)
-            OR LOWER(slug) = LOWER(?)
-          LIMIT 1
-        `,
-      )
-      .bind(name, name)
-      .first<{ id: number }>();
-
-    if (!result) {
-      throw new Error(`Facility "${name}" does not exist.`);
-    }
-
-    if (!ids.includes(result.id)) {
-      ids.push(result.id);
-    }
-  }
-
-  return ids;
 }
 
 /*

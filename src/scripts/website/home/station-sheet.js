@@ -463,9 +463,6 @@ function platformsHtml(stn) {
     return '<p class="sheet-empty">No platform information yet.</p>';
   }
 
-  var selected = view.platformSel;
-  var active = items[selected];
-
   var rows = items
     .map(function (p) {
       var title = p.destinations || "Platform " + (p.number || "");

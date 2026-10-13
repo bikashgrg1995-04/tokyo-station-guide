@@ -1,5 +1,4 @@
 
-import { initializeDeleteConfirm } from "./shared/delete-confirm";
 
 const modal = document.querySelector<HTMLElement>("#platform-modal");
 const form = document.querySelector<HTMLFormElement>("#platform-form");

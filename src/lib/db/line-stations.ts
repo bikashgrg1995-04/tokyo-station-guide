@@ -1,14 +1,4 @@
-/* ========================================
-   Line Stations Database Helpers
-================================ */
 
-export interface LineStation {
-  id: number;
-  line_id: number;
-  station_id: number;
-  station_order: number;
-  station_code: string | null;
-}
 
 export interface LineStationItem {
   id: number;
@@ -213,5 +203,3 @@ export async function removeStationFromLine(
     .bind(id)
     .run();
 }
-
-

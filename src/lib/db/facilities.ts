@@ -243,7 +243,7 @@ export async function hasFacilityAssignments(
     .prepare(
       `
         SELECT 1 AS assigned
-        FROM station_facilities
+        FROM station_floor_facilities
         WHERE facility_id = ?
         LIMIT 1
       `,

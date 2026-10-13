@@ -133,8 +133,6 @@ export async function updateStation(
   /*
    * Replace floor-wise facility assignments only when the caller
    * explicitly supplies stationFacilities.
-   *
-   * Legacy station_facilities records are intentionally preserved.
    */
   if (input.stationFacilities !== undefined) {
     // Delete existing assignments. Their exit links are removed
@@ -294,15 +292,6 @@ export async function deleteStation(
       .prepare(
         `
           DELETE FROM station_floors
-          WHERE station_id = ?
-        `,
-      )
-      .bind(id),
-
-    db
-      .prepare(
-        `
-          DELETE FROM station_facilities
           WHERE station_id = ?
         `,
       )

@@ -55,39 +55,6 @@ export async function getStationExits(
 }
 
 /**
- * Get all exits on a specific floor belonging to a station.
- */
-export async function getFloorExits(
-  db: D1Database,
-  stationId: number,
-  floorId: number,
-): Promise<StationExit[]> {
-  const result = await db
-    .prepare(
-      `
-        SELECT
-          id,
-          station_id,
-          floor_id,
-          name,
-          code,
-          description,
-          color_code,
-          sort_order,
-          created_at,
-          updated_at
-        FROM station_exits
-        WHERE station_id = ? AND floor_id = ?
-        ORDER BY sort_order ASC, name ASC
-      `,
-    )
-    .bind(stationId, floorId)
-    .all<StationExit>();
-
-  return result.results;
-}
-
-/**
  * Create an exit only if the floor belongs to the station.
  */
 export async function createStationExit(

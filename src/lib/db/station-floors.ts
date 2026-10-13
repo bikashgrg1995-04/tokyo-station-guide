@@ -45,34 +45,6 @@ export async function getStationFloors(
 }
 
 /**
- * Get one floor, scoped to its station.
- */
-export async function getStationFloorById(
-  db: D1Database,
-  stationId: number,
-  floorId: number,
-): Promise<StationFloor | null> {
-  return db
-    .prepare(
-      `
-        SELECT
-          id,
-          station_id,
-          name,
-          name_japanese,
-          floor_order,
-          created_at,
-          updated_at
-        FROM station_floors
-        WHERE station_id = ? AND id = ?
-        LIMIT 1
-      `,
-    )
-    .bind(stationId, floorId)
-    .first<StationFloor>();
-}
-
-/**
  * Create a floor for a station.
  */
 export async function createStationFloor(

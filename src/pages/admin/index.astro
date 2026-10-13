@@ -633,7 +633,6 @@ function formatDate(value: string): string {
     };
 
     let activeId: number | null = null;
-    let activeSuggestion: SuggestionData | null = null;
     let busy = false;
 
     function escapeHtml(value: unknown): string {
@@ -847,7 +846,6 @@ function formatDate(value: string): string {
         return;
 
       activeId = id;
-      activeSuggestion = null;
       feedback.textContent = "";
       modalTitle.textContent = "Loading suggestion…";
       modalSubtitle.textContent = "";
@@ -873,7 +871,6 @@ function formatDate(value: string): string {
           throw new Error(result.message || "Could not load this suggestion.");
         }
 
-        activeSuggestion = result.suggestion;
         modalTitle.textContent = result.station.name;
         modalSubtitle.textContent = `Suggestion #${result.suggestion.id} · Status: ${result.suggestion.status}`;
 
