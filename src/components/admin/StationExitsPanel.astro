@@ -1,0 +1,228 @@
+
+---
+import Alert from "../common/Alert.astro";
+import Button from "../common/Button.astro";
+import type { StationExit } from "../../lib/db/station-exits";
+import type { StationFloor } from "../../lib/db/station-floors";
+
+export interface Props {
+  assigned?: StationExit[];
+  floors: StationFloor[];
+  canAdd: boolean;
+  error?: string;
+}
+
+const { assigned = [], floors, canAdd, error } = Astro.props;
+
+const floorName = (floorId: number) =>
+  floors.find((floor) => floor.id === floorId)?.name ?? "Unknown floor";
+---
+
+<section class="admin-panel admin-station-feature-panel">
+  <div class="admin-panel-body">
+    <div class="admin-station-feature-header">
+      <div>
+        <h3>Exits</h3>
+        <p>Manage station exits by floor. Multiple exits can belong to the same floor.</p>
+      </div>
+
+      {
+        canAdd && (
+          <Button
+            type="button"
+            variant="primary"
+            id="open-add-exit-button"
+          >
+            + Add Exit
+          </Button>
+        )
+      }
+    </div>
+
+    {error && <Alert>{error}</Alert>}
+
+    <!-- Prevent legacy form submissions from accidentally deleting exits. -->
+    <input type="hidden" name="station_exits_enabled" value="1" />
+
+    <!-- New exit rows are inserted here by station-exit-picker.ts. -->
+    <div id="station-exit-inputs" hidden></div>
+
+    <div class="admin-table-wrapper">
+      <table class="admin-table admin-compact-table" id="station-exits-table">
+        <thead>
+          <tr>
+            <th>Exit</th>
+            <th>Floor</th>
+            <th>Code</th>
+            <th>Color</th>
+            <th>Description</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody id="station-exits-body">
+          {
+            assigned.map((exit) => (
+              <tr data-exit-row data-exit-id={exit.id}>
+                <td>
+                  <input
+                    type="hidden"
+                    name="exit_entry_id"
+                    value={exit.id}
+                  />
+
+                  <input
+                    type="text"
+                    name="exit_entry_name"
+                    value={exit.name}
+                    maxlength="150"
+                    required
+                    aria-label={`Exit name, ${exit.name}`}
+                  />
+
+                  <input
+                    type="hidden"
+                    name="exit_entry_sort_order"
+                    value={exit.sort_order}
+                  />
+
+                  <input
+                    type="hidden"
+                    name="exit_entry_floor_id"
+                    value={exit.floor_id}
+                  />
+                </td>
+
+                <td>
+                  <span class="admin-floor-pill">
+                    {floorName(exit.floor_id)}
+                  </span>
+                </td>
+
+                <td>
+                  <input
+                    type="text"
+                    name="exit_entry_code"
+                    value={exit.code ?? ""}
+                    maxlength="50"
+                    placeholder="e.g. A1"
+                    aria-label={`Code for ${exit.name}`}
+                  />
+                </td>
+
+                <td>
+                  <div class="exit-color-field">
+                    <input
+                      type="color"
+                      value={exit.color_code ?? "#2563EB"}
+                      data-exit-color-picker
+                      aria-label={`Color picker for ${exit.name}`}
+                    />
+
+                    <input
+                      type="text"
+                      name="exit_entry_color_code"
+                      value={exit.color_code ?? ""}
+                      maxlength="7"
+                      pattern="^#([0-9a-fA-F]{6})$"
+                      placeholder="#2563EB"
+                      data-exit-color-text
+                      aria-label={`HEX color for ${exit.name}`}
+                    />
+                  </div>
+                </td>
+
+                <td>
+                  <input
+                    type="text"
+                    name="exit_entry_description"
+                    value={exit.description ?? ""}
+                    maxlength="500"
+                    placeholder="Optional description"
+                    aria-label={`Description for ${exit.name}`}
+                  />
+                </td>
+
+                <td>
+                  <div class="admin-table-actions">
+                    <button
+                      type="button"
+                      class="admin-table-action admin-table-action-delete"
+                      data-remove-exit
+                      data-exit-name={exit.name}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))
+          }
+
+          <tr id="station-exits-empty-row" hidden={assigned.length > 0}>
+            <td colspan="6">
+              <div class="admin-feature-empty">No exits assigned yet.</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="admin-feature-message" id="station-exits-help">
+      Choose a floor for each exit. You can add multiple exits to the same floor.
+      Leave the HEX color blank if no specific color is needed.
+    </p>
+  </div>
+</section>
+
+<style>
+  .admin-floor-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    padding: 0.3rem 0.65rem;
+    border: 1px solid var(--admin-border, #d1d5db);
+    border-radius: 999px;
+    background: var(--admin-muted-bg, #f3f4f6);
+    color: var(--admin-text, #374151);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+
+  .exit-color-field {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 150px;
+  }
+
+  .exit-color-field input[type="color"] {
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 2.25rem;
+    padding: 2px;
+    border: 1px solid var(--admin-border, #d1d5db);
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .exit-color-field input[type="text"] {
+    width: 6.5rem;
+    min-width: 0;
+  }
+
+  #station-exits-table input[type="text"] {
+    box-sizing: border-box;
+    max-width: 100%;
+  }
+
+  @media (max-width: 768px) {
+    #station-exits-table {
+      min-width: 850px;
+    }
+  }
+</style>

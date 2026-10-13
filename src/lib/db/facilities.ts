@@ -27,9 +27,18 @@ export interface StationFacility {
   sort_order: number;
   facility_count: number | null;
   note: string | null;
+  exits: StationFacilityExit[];
 }
 
-
+export interface StationFacilityExit {
+  id: number;
+  name: string;
+  code: string | null;
+  color_code: string | null;
+  floor_id: number;
+  floor_name: string;
+  floor_name_japanese: string | null;
+}
 
 export interface FacilityInput {
   name: string;
@@ -276,6 +285,11 @@ export async function deleteFacility(
 /* ========================================
    Get Facilities Assigned to Station
 ======================================== */
+
+/* ========================================
+   Get Facilities Assigned to Station
+======================================== */
+
 export async function getStationFacilities(
   db: D1Database,
   stationId: number,
@@ -310,9 +324,75 @@ export async function getStationFacilities(
       `,
     )
     .bind(stationId)
-    .all<StationFacility>();
+    .all<Omit<StationFacility, "exits">>();
 
-  return result.results;
+  const facilities = result.results;
+
+  if (facilities.length === 0) {
+    return [];
+  }
+
+  const exitResult = await db
+    .prepare(
+      `
+        SELECT
+          sffe.station_floor_facility_id,
+          se.id,
+          se.name,
+          se.code,
+          se.color_code,
+          esf.id AS floor_id,
+          esf.name AS floor_name,
+          esf.name_japanese AS floor_name_japanese
+        FROM station_floor_facility_exits sffe
+        INNER JOIN station_exits se
+          ON se.id = sffe.station_exit_id
+        INNER JOIN station_floors esf
+          ON esf.id = se.floor_id
+        INNER JOIN station_floors assigned_floor
+          ON assigned_floor.id = (
+            SELECT sff.floor_id
+            FROM station_floor_facilities sff
+            WHERE sff.id = sffe.station_floor_facility_id
+          )
+        WHERE assigned_floor.station_id = ?
+        ORDER BY esf.floor_order ASC, se.sort_order ASC, se.name ASC
+      `,
+    )
+    .bind(stationId)
+    .all<{
+      station_floor_facility_id: number;
+      id: number;
+      name: string;
+      code: string | null;
+      color_code: string | null;
+      floor_id: number;
+      floor_name: string;
+      floor_name_japanese: string | null;
+    }>();
+
+  const exitsByFacility = new Map<number, StationFacilityExit[]>();
+
+  for (const exit of exitResult.results) {
+    const exits = exitsByFacility.get(exit.station_floor_facility_id) ?? [];
+
+    exits.push({
+      id: exit.id,
+      name: exit.name,
+      code: exit.code,
+      color_code: exit.color_code,
+      floor_id: exit.floor_id,
+      floor_name: exit.floor_name,
+      floor_name_japanese: exit.floor_name_japanese,
+    });
+
+    exitsByFacility.set(exit.station_floor_facility_id, exits);
+  }
+
+  return facilities.map((facility) => ({
+    ...facility,
+    exits: exitsByFacility.get(facility.id) ?? [],
+  }));
 }
 
 

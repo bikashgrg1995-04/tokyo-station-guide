@@ -31,7 +31,25 @@ export async function getStationFacilitiesJson(
         sf.name AS floor,
         sf.name_japanese AS floor_japanese,
         sff.facility_count AS count,
-        sff.note
+        sff.note,
+        COALESCE(
+          (
+            SELECT json_group_array(
+              json_object(
+                'id', se.id,
+                'name', se.name,
+                'name_jp', se.name,
+                'code', se.code,
+                'color', se.color_code
+              )
+            )
+            FROM station_floor_facility_exits sffe
+            INNER JOIN station_exits se
+              ON se.id = sffe.station_exit_id
+            WHERE sffe.station_floor_facility_id = sff.id
+          ),
+          '[]'
+        ) AS exits
       FROM station_floor_facilities sff
       INNER JOIN station_floors sf
         ON sf.id = sff.floor_id
@@ -56,11 +74,33 @@ export async function getStationFacilitiesJson(
       floor_japanese: string | null;
       count: number | null;
       note: string | null;
+      exits: string | null;
     }>();
 
   if (!result.results.length) return null;
 
-  return JSON.stringify(result.results);
+  const facilities = result.results.map((facility) => {
+    let exits: Array<{
+      id: number;
+      name: string;
+      name_jp: string;
+      code: string | null;
+      color: string | null;
+    }> = [];
+
+    try {
+      exits = JSON.parse(facility.exits || "[]");
+    } catch {
+      exits = [];
+    }
+
+    return {
+      ...facility,
+      exits,
+    };
+  });
+
+  return JSON.stringify(facilities);
 }
 
 export async function getStationFacilityDetailsJson(

@@ -99,6 +99,7 @@ export interface StationFacilityInput {
   floorId: number;
   facilityCount: number;
   note?: string | null;
+  exitIds?: number[];
 }
 
 export interface CreateStationInput {

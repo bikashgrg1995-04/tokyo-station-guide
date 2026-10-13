@@ -18,12 +18,7 @@ export interface Props {
   emptyDescription: string;
 }
 
-const {
-  facilities,
-  floors,
-  description,
-  emptyDescription,
-} = Astro.props;
+const { facilities, floors, description, emptyDescription } = Astro.props;
 ---
 
 <div
@@ -32,10 +27,8 @@ const {
   hidden
   aria-hidden="true"
 >
-  <div
-    class="admin-line-station-modal-backdrop"
-    data-close-add-facility-modal
-  ></div>
+  <div class="admin-line-station-modal-backdrop" data-close-add-facility-modal>
+  </div>
 
   <div
     class="admin-line-station-modal-dialog"
@@ -60,109 +53,104 @@ const {
       </button>
     </div>
 
-    {floors.length === 0 ? (
-      <EmptyState
-        title="No Floors Available"
-        description="Create at least one floor for this station before assigning facilities."
-      />
-    ) : facilities.length > 0 ? (
-      <div class="admin-form" id="add-facilities-form">
-        <fieldset class="admin-facility-floor-selector">
-          <legend>Select Floor</legend>
+    {
+      floors.length === 0 ? (
+        <EmptyState
+          title="No Floors Available"
+          description="Create at least one floor for this station before assigning facilities."
+        />
+      ) : facilities.length > 0 ? (
+        <div class="admin-form" id="add-facilities-form">
+          <fieldset class="admin-facility-floor-selector">
+            <legend>Select Floor</legend>
+
+            <div
+              id="facility-floor-options"
+              class="admin-facility-floor-options"
+              role="group"
+              aria-label="Choose a floor for the facilities"
+            >
+              {floors.map((floor, index) => (
+                <button
+                  type="button"
+                  class="admin-floor-pill"
+                  data-facility-floor-option
+                  data-floor-id={floor.id}
+                  aria-pressed="false"
+                  title={
+                    floor.name_japanese
+                      ? `${floor.name} · ${floor.name_japanese}`
+                      : floor.name
+                  }
+                >
+                  {floor.name}
+                </button>
+              ))}
+            </div>
+
+            <input type="hidden" id="selected-facility-floor-id" value="" />
+          </fieldset>
 
           <div
-            id="facility-floor-options"
-            class="admin-facility-floor-options"
-            role="group"
-            aria-label="Choose a floor for the facilities"
+            id="facility-floor-empty-message"
+            class="admin-feature-message"
+            hidden
           >
-            {floors.map((floor, index) => (
-              <button
-                type="button"
-                class="admin-floor-pill"
-                data-facility-floor-option
-                data-floor-id={floor.id}
-                aria-pressed="false"
-                title={
-                  floor.name_japanese
-                    ? `${floor.name} · ${floor.name_japanese}`
-                    : floor.name
-                }
+            All facilities have already been assigned to this floor.
+          </div>
+
+          <div class="admin-facility-checkbox-grid">
+            {facilities.map((facility) => (
+              <label
+                class="admin-facility-checkbox-item"
+                data-facility-option
+                data-facility-option-id={facility.id}
+                data-facility-name={facility.name}
+                hidden
               >
-                {floor.name}
-              </button>
+                <input
+                  type="checkbox"
+                  value={facility.id}
+                  class="add-facility-checkbox"
+                  data-facility-id={facility.id}
+                  data-facility-name={facility.name}
+                />
+
+                <span>{facility.name}</span>
+              </label>
             ))}
           </div>
 
-          <input
-            type="hidden"
-            id="selected-facility-floor-id"
-            value=""
-          />
-        </fieldset>
+          <p id="selected-facility-count" class="admin-feature-message">
+            0 facilities selected
+          </p>
 
-        <div
-          id="facility-floor-empty-message"
-          class="admin-feature-message"
-          hidden
-        >
-          All facilities have already been assigned to this floor.
-        </div>
-
-        <div class="admin-facility-checkbox-grid">
-          {facilities.map((facility) => (
-            <label
-              class="admin-facility-checkbox-item"
-              data-facility-option
-              data-facility-option-id={facility.id}
-              data-facility-name={facility.name}
-              hidden
+          <div class="admin-form-actions">
+            <Button
+              type="button"
+              variant="secondary"
+              id="cancel-add-facilities"
             >
-              <input
-                type="checkbox"
-                value={facility.id}
-                class="add-facility-checkbox"
-                data-facility-id={facility.id}
-                data-facility-name={facility.name}
-              />
+              Cancel
+            </Button>
 
-              <span>{facility.name}</span>
-            </label>
-          ))}
+            <Button
+              type="button"
+              variant="primary"
+              id="add-selected-facilities"
+              disabled
+            >
+              Add Selected
+            </Button>
+          </div>
         </div>
-
-        <p
-          id="selected-facility-count"
-          class="admin-feature-message"
-        >
-          0 facilities selected
-        </p>
-
-        <div class="admin-form-actions">
-          <Button
-            type="button"
-            variant="secondary"
-            id="cancel-add-facilities"
-          >
-            Cancel
-          </Button>
-
-          <Button
-            type="button"
-            variant="primary"
-            id="add-selected-facilities"
-            disabled
-          >
-            Add Selected
-          </Button>
-        </div>
-      </div>
-    ) : (
-      <EmptyState
-        title="No Facilities Available"
-        description={emptyDescription}
-      />
-    )}
+      ) : (
+        <EmptyState
+          title="No Facilities Available"
+          description={emptyDescription}
+        />
+      )
+    }
   </div>
 </div>
 
@@ -210,9 +198,7 @@ const {
     outline-offset: 2px;
   }
 
-  
-[data-facility-option][hidden] {
-  display: none !important;
-}
-
+  [data-facility-option][hidden] {
+    display: none !important;
+  }
 </style>

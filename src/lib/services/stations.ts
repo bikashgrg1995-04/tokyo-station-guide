@@ -26,6 +26,15 @@ import { getStationFloors } from "../db/station-floors";
 import type { StationFacilityInput } from "../db/stations/types";
 
 import {
+  createStationExit,
+  deleteStationExit,
+  getStationExits,
+  updateStationExit,
+  type StationExit,
+  type StationExitInput,
+} from "../db/station-exits";
+
+import {
   hasErrors,
   paginationUrlFor,
   readListQuery,
@@ -42,6 +51,7 @@ import {
 
 const LIST_PATH = "/admin/stations";
 const PER_PAGE = 10;
+const HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{6})$/;
 
 interface StationFormBase {
   redirectTo: string | null;
@@ -60,10 +70,16 @@ export interface StationEditResult extends StationFormBase {
   availableFacilities: Facility[];
   stationTopPicks: StationTopPick[];
   availableTopPicks: TopPick[];
+  stationExits: StationExit[];
 }
 
 interface ParsedStationFacilities {
   entries: StationFacilityInput[];
+  error: string | null;
+}
+
+interface ParsedStationExits {
+  entries: Array<StationExitInput & { id: number | null }>;
   error: string | null;
 }
 
@@ -79,13 +95,49 @@ function readIds(formData: FormData, key: string): number[] {
 }
 
 /**
+ * Reads the selected exit IDs from one facility row.
+ */
+function readFacilityExitIds(
+  rawValue: FormDataEntryValue | undefined,
+  rowNumber: number,
+  errors: string[],
+): number[] {
+  const raw = String(rawValue ?? "").trim();
+
+  if (!raw || raw === "[]") {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+
+    if (
+      !Array.isArray(parsed) ||
+      parsed.some(
+        (value) =>
+          typeof value !== "number" ||
+          !Number.isInteger(value) ||
+          value <= 0,
+      )
+    ) {
+      errors.push(
+        `Facility row ${rowNumber}: selected exits contain invalid IDs.`,
+      );
+      return [];
+    }
+
+    return [...new Set(parsed as number[])];
+  } catch {
+    errors.push(
+      `Facility row ${rowNumber}: selected exits could not be read.`,
+    );
+    return [];
+  }
+}
+
+/**
  * Reads repeated floor-wise facility fields in matching order.
- *
- * Expected field names:
- * - facility_entry_facility_id
- * - facility_entry_floor_id
- * - facility_entry_count
- * - facility_entry_note
+ * Each facility row also submits its selected exit IDs as JSON.
  */
 function readStationFacilities(
   formData: FormData,
@@ -94,6 +146,9 @@ function readStationFacilities(
   const floorIds = formData.getAll("facility_entry_floor_id");
   const counts = formData.getAll("facility_entry_count");
   const notes = formData.getAll("facility_entry_note");
+  const exitIdsJson = formData.getAll(
+    "facility_entry_exit_ids_json",
+  );
 
   const entries: StationFacilityInput[] = [];
   const errors: string[] = [];
@@ -103,6 +158,7 @@ function readStationFacilities(
     floorIds.length,
     counts.length,
     notes.length,
+    exitIdsJson.length,
   );
 
   for (let index = 0; index < rowCount; index += 1) {
@@ -111,8 +167,20 @@ function readStationFacilities(
     const rawCount = String(counts[index] ?? "").trim();
     const note = String(notes[index] ?? "").trim();
 
-    // Ignore rows that are entirely empty.
-    if (!rawFacilityId && !rawFloorId && !rawCount && !note) {
+    const exitIds = readFacilityExitIds(
+      exitIdsJson[index],
+      index + 1,
+      errors,
+    );
+
+    if (
+      !rawFacilityId &&
+      !rawFloorId &&
+      !rawCount &&
+      !note &&
+      (!String(exitIdsJson[index] ?? "").trim() ||
+        String(exitIdsJson[index]).trim() === "[]")
+    ) {
       continue;
     }
 
@@ -121,12 +189,12 @@ function readStationFacilities(
     const facilityCount = Number(rawCount);
 
     if (!Number.isInteger(facilityId) || facilityId <= 0) {
-      errors.push(`Row ${index + 1}: select a valid facility.`);
+      errors.push(`Facility row ${index + 1}: select a valid facility.`);
       continue;
     }
 
     if (!Number.isInteger(floorId) || floorId <= 0) {
-      errors.push(`Row ${index + 1}: select a valid floor.`);
+      errors.push(`Facility row ${index + 1}: select a valid floor.`);
       continue;
     }
 
@@ -136,7 +204,7 @@ function readStationFacilities(
       facilityCount < 1
     ) {
       errors.push(
-        `Row ${index + 1}: quantity must be a whole number of at least 1.`,
+        `Facility row ${index + 1}: quantity must be a whole number of at least 1.`,
       );
       continue;
     }
@@ -146,11 +214,10 @@ function readStationFacilities(
       floorId,
       facilityCount,
       note: note || null,
+      exitIds,
     });
   }
 
-  // The same facility can be assigned to different floors,
-  // but not more than once to the same floor.
   const seen = new Set<string>();
 
   for (const entry of entries) {
@@ -167,7 +234,115 @@ function readStationFacilities(
 
   return {
     entries,
-    error: errors.length > 0 ? errors[0] : null,
+    error: errors[0] ?? null,
+  };
+}
+
+/**
+ * Reads exit rows submitted by the admin form.
+ */
+function readStationExits(formData: FormData): ParsedStationExits {
+  const ids = formData.getAll("exit_entry_id");
+  const floorIds = formData.getAll("exit_entry_floor_id");
+  const names = formData.getAll("exit_entry_name");
+  const codes = formData.getAll("exit_entry_code");
+  const descriptions = formData.getAll("exit_entry_description");
+  const colors = formData.getAll("exit_entry_color_code");
+  const sortOrders = formData.getAll("exit_entry_sort_order");
+
+  const entries: ParsedStationExits["entries"] = [];
+  const errors: string[] = [];
+
+  const rowCount = Math.max(
+    ids.length,
+    floorIds.length,
+    names.length,
+    codes.length,
+    descriptions.length,
+    colors.length,
+    sortOrders.length,
+  );
+
+  for (let index = 0; index < rowCount; index += 1) {
+    const rawId = String(ids[index] ?? "").trim();
+    const rawFloorId = String(floorIds[index] ?? "").trim();
+    const name = String(names[index] ?? "").trim();
+    const code = String(codes[index] ?? "").trim();
+    const description = String(descriptions[index] ?? "").trim();
+    const colorCode = String(colors[index] ?? "").trim();
+    const rawSortOrder = String(sortOrders[index] ?? "").trim();
+
+    if (
+      !rawId &&
+      !rawFloorId &&
+      !name &&
+      !code &&
+      !description &&
+      !colorCode &&
+      !rawSortOrder
+    ) {
+      continue;
+    }
+
+    const id = rawId ? Number(rawId) : null;
+    const floorId = Number(rawFloorId);
+    const sortOrder = rawSortOrder ? Number(rawSortOrder) : index + 1;
+
+    if (id !== null && (!Number.isInteger(id) || id <= 0)) {
+      errors.push(`Exit row ${index + 1}: invalid exit ID.`);
+      continue;
+    }
+
+    if (!Number.isInteger(floorId) || floorId <= 0) {
+      errors.push(`Exit row ${index + 1}: select a valid floor.`);
+      continue;
+    }
+
+    if (!name) {
+      errors.push(`Exit row ${index + 1}: exit name is required.`);
+      continue;
+    }
+
+    if (colorCode && !HEX_COLOR_REGEX.test(colorCode)) {
+      errors.push(
+        `Exit row ${index + 1}: color must be a HEX value such as #E53935.`,
+      );
+      continue;
+    }
+
+    if (!Number.isInteger(sortOrder) || sortOrder < 0) {
+      errors.push(
+        `Exit row ${index + 1}: sort order must be a non-negative whole number.`,
+      );
+      continue;
+    }
+
+    entries.push({
+      id,
+      floorId,
+      name,
+      code: code || null,
+      description: description || null,
+      colorCode: colorCode || null,
+      sortOrder,
+    });
+  }
+
+  const seenIds = new Set<number>();
+
+  for (const entry of entries) {
+    if (entry.id === null) continue;
+
+    if (seenIds.has(entry.id)) {
+      errors.push(`Exit ID ${entry.id} was submitted more than once.`);
+    }
+
+    seenIds.add(entry.id);
+  }
+
+  return {
+    entries,
+    error: errors[0] ?? null,
   };
 }
 
@@ -184,13 +359,15 @@ function readStationForm(formData: FormData) {
   };
 
   const parsedFacilities = readStationFacilities(formData);
+  const parsedExits = readStationExits(formData);
 
   return {
     values,
-    // Retained for compatibility with older form fields.
     facilityIds: readIds(formData, "facility_ids"),
     stationFacilities: parsedFacilities.entries,
     stationFacilitiesError: parsedFacilities.error,
+    stationExits: parsedExits.entries,
+    stationExitsError: parsedExits.error,
     topPickIds: readIds(formData, "top_pick_ids"),
   };
 }
@@ -213,11 +390,11 @@ function validateStationSelections(
     ...stationFacilities.map((entry) => entry.facilityId),
   ];
 
-  if (selectedFacilityIds.some((id) => !validFacilityIds.has(id))) {
+  if (selectedFacilityIds.some((itemId) => !validFacilityIds.has(itemId))) {
     errors.facilities = "One or more selected facilities are invalid.";
   }
 
-  if (topPickIds.some((id) => !validTopPickIds.has(id))) {
+  if (topPickIds.some((itemId) => !validTopPickIds.has(itemId))) {
     errors.topPicks = "One or more selected top picks are invalid.";
   }
 
@@ -274,9 +451,7 @@ export async function handleStationCreate(
     topPicks,
   };
 
-  if (request.method !== "POST") {
-    return result;
-  }
+  if (request.method !== "POST") return result;
 
   const {
     values,
@@ -301,22 +476,15 @@ export async function handleStationCreate(
     result.errors.facilities = stationFacilitiesError;
   }
 
-  // New station creation must not assign facilities before floors exist.
   if (stationFacilities.length > 0 || facilityIds.length > 0) {
     result.errors.facilities =
       "Create the station first, then add floors and assign facilities from Edit Station.";
   }
 
-  if (hasErrors(result.errors)) {
-    return result;
-  }
+  if (hasErrors(result.errors)) return result;
 
   try {
-    await createStation(
-      db,
-      toStationInput(values, [], topPickIds, []),
-    );
-
+    await createStation(db, toStationInput(values, [], topPickIds, []));
     result.redirectTo = LIST_PATH;
   } catch (err) {
     console.error(err);
@@ -354,11 +522,10 @@ export async function handleStationUpdate(
     availableFacilities: await getAvailableFacilitiesForStation(db, id),
     stationTopPicks: await getStationTopPicks(db, id),
     availableTopPicks: await getAvailableTopPicksForStation(db, id),
+    stationExits: await getStationExits(db, id),
   };
 
-  if (request.method !== "POST") {
-    return result;
-  }
+  if (request.method !== "POST") return result;
 
   const formData = await request.formData();
 
@@ -366,11 +533,16 @@ export async function handleStationUpdate(
     return result;
   }
 
+  // Only synchronize exits when the exits panel submits its marker.
+  const exitsEnabled = formData.get("station_exits_enabled") === "1";
+
   const {
     values,
     facilityIds,
     stationFacilities,
     stationFacilitiesError,
+    stationExits,
+    stationExitsError,
     topPickIds,
   } = readStationForm(formData);
 
@@ -378,6 +550,8 @@ export async function handleStationUpdate(
   const allTopPicks = await getTopPicks(db);
   const stationFloors = await getStationFloors(db, id);
   const validFloorIds = new Set(stationFloors.map((floor) => floor.id));
+  const existingExits = await getStationExits(db, id);
+  const existingExitIds = new Set(existingExits.map((exit) => exit.id));
 
   result.values = values;
 
@@ -399,7 +573,37 @@ export async function handleStationUpdate(
       "One or more selected floors do not belong to this station.";
   }
 
-  if (!hasErrors(result.errors)) {
+  // Facility assignments may only reference exits belonging to this station.
+  const invalidFacilityExitSelection = stationFacilities.some((entry) =>
+    (entry.exitIds ?? []).some((exitId) => !existingExitIds.has(exitId)),
+  );
+
+  if (invalidFacilityExitSelection) {
+    result.errors.facilities =
+      "One or more selected exits do not belong to this station.";
+  }
+
+  if (exitsEnabled) {
+    if (stationExitsError) {
+      result.formError = stationExitsError;
+    }
+
+    if (stationExits.some((entry) => !validFloorIds.has(entry.floorId))) {
+      result.formError =
+        "One or more selected exit floors do not belong to this station.";
+    }
+
+    if (
+      stationExits.some(
+        (entry) => entry.id !== null && !existingExitIds.has(entry.id),
+      )
+    ) {
+      result.formError =
+        "One or more submitted exits do not belong to this station.";
+    }
+  }
+
+  if (!hasErrors(result.errors) && !result.formError) {
     try {
       await updateStation(
         db,
@@ -412,23 +616,67 @@ export async function handleStationUpdate(
         ),
       );
 
+      if (exitsEnabled) {
+        for (const entry of stationExits) {
+          const { id: exitId, ...exitInput } = entry;
+
+          if (exitId === null) {
+            await createStationExit(db, id, exitInput);
+          } else {
+            await updateStationExit(db, id, exitId, exitInput);
+          }
+        }
+
+        const submittedExitIds = new Set(
+          stationExits
+            .map((entry) => entry.id)
+            .filter((exitId): exitId is number => exitId !== null),
+        );
+
+        for (const existingExit of existingExits) {
+          if (!submittedExitIds.has(existingExit.id)) {
+            await deleteStationExit(db, id, existingExit.id);
+          }
+        }
+      }
+
       result.redirectTo = LIST_PATH;
       return result;
     } catch (err) {
       console.error(err);
       result.formError =
-        "Unable to update station. The name or slug may already exist.";
+        "Unable to update station or exits. Please check the submitted values and try again.";
     }
   }
 
-  // Preserve submitted facility rows when validation fails.
+  // Preserve submitted facility rows and selected exits after validation errors.
   result.stationFacilities = stationFacilities.map((entry) => {
     const facility = allFacilities.find(
       (item) => item.id === entry.facilityId,
     );
-    const floor = stationFloors.find(
-      (item) => item.id === entry.floorId,
-    );
+    const floor = stationFloors.find((item) => item.id === entry.floorId);
+
+    const selectedExits = (entry.exitIds ?? []).flatMap((exitId) => {
+      const exit = existingExits.find((item) => item.id === exitId);
+
+      if (!exit) return [];
+
+      const exitFloor = stationFloors.find(
+        (item) => item.id === exit.floor_id,
+      );
+
+      return [
+        {
+          id: exit.id,
+          name: exit.name,
+          code: exit.code,
+          color_code: exit.color_code,
+          floor_id: exit.floor_id,
+          floor_name: exitFloor?.name ?? "Unknown floor",
+          floor_name_japanese: exitFloor?.name_japanese ?? null,
+        },
+      ];
+    });
 
     return {
       id: 0,
@@ -443,11 +691,10 @@ export async function handleStationUpdate(
       sort_order: facility?.sort_order ?? 0,
       facility_count: entry.facilityCount,
       note: entry.note ?? null,
+      exits: selectedExits,
     };
   });
 
-  // A facility remains available because it can be assigned on
-  // another floor. The modal will filter assignments per selected floor.
   result.availableFacilities = allFacilities;
 
   result.stationTopPicks = topPickIds
@@ -463,6 +710,31 @@ export async function handleStationUpdate(
   result.availableTopPicks = allTopPicks.filter(
     (item) => !topPickIds.includes(item.id),
   );
+
+  // If the exits panel was not submitted, retain database exits unchanged.
+  if (!exitsEnabled) {
+    result.stationExits = existingExits;
+  } else {
+    result.stationExits = stationExits.map((entry) => {
+      const existing =
+        entry.id === null
+          ? null
+          : existingExits.find((exit) => exit.id === entry.id);
+
+      return {
+        id: entry.id ?? 0,
+        station_id: id,
+        floor_id: entry.floorId,
+        name: entry.name,
+        code: entry.code ?? null,
+        description: entry.description ?? null,
+        color_code: entry.colorCode ?? null,
+        sort_order: entry.sortOrder ?? 0,
+        created_at: existing?.created_at ?? "",
+        updated_at: existing?.updated_at ?? "",
+      };
+    });
+  }
 
   return result;
 }

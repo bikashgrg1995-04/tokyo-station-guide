@@ -1,3 +1,4 @@
+
 ---
 import AdminLayout from "../../../../layouts/AdminLayout.astro";
 import "../../../../styles/admin/forms.css";
@@ -12,9 +13,12 @@ import ConfirmDialog from "../../../../components/common/ConfirmDialog.astro";
 import StationFormFields from "../../../../components/admin/StationFormFields.astro";
 import StationFacilitiesPanel from "../../../../components/admin/StationFacilitiesPanel.astro";
 import FacilityModal from "../../../../components/admin/FacilityModal.astro";
+import StationExitsPanel from "../../../../components/admin/StationExitsPanel.astro";
+import ExitModal from "../../../../components/admin/ExitModal.astro";
+import FacilityExitPickerModal from "../../../../components/admin/FacilityExitPickerModal.astro";
 import StationTopPicks from "../../../../components/admin/StationTopPicks.astro";
-import { getStationFloors } from "../../../../lib/db/station-floors";
 
+import { getStationFloors } from "../../../../lib/db/station-floors";
 import { getStationById } from "../../../../lib/db/stations";
 import { handleStationUpdate } from "../../../../lib/services/stations";
 
@@ -50,25 +54,44 @@ const {
   availableFacilities,
   stationTopPicks,
   availableTopPicks,
+  stationExits,
 } = form;
 
 const facilityError = errors.facilities;
 ---
 
 <AdminLayout title={`Edit ${station.name}`} activePath="/admin/stations">
-  <!-- Topbar -->
   <header class="admin-topbar">
     <Breadcrumbs
       backHref="/admin/stations"
       parentLabel="Stations"
       current="Edit Station"
     />
+
+    <div class="admin-topbar-actions">
+      <Button
+        href={`/admin/stations/${id}/platforms`}
+        variant="secondary"
+      >
+        Manage Platforms
+      </Button>
+
+      <Button
+        href={`/admin/stations/${id}/floors`}
+        variant="secondary"
+      >
+        Manage Floors
+      </Button>
+    </div>
   </header>
 
   <div class="admin-content">
     <h2>Edit Station</h2>
 
-    <p>Update the railway station information for the Tokyo Station Guide.</p>
+    <p>
+      Update the railway station information, facilities, exits, and top picks
+      for the Tokyo Station Guide.
+    </p>
 
     <form method="POST" class="admin-form" id="edit-station-form">
       <input type="hidden" name="action" value="update" />
@@ -93,7 +116,7 @@ const facilityError = errors.facilities;
         </div>
       </section>
 
-      <!-- Station Verification + Facilities -->
+      <!-- Verification and Facilities -->
       <div class="admin-station-setup-grid">
         <section class="admin-panel admin-station-verification-panel">
           <div class="admin-panel-body">
@@ -106,9 +129,11 @@ const facilityError = errors.facilities;
 
             <div class="admin-verification-toggle">
               <div class="admin-verification-copy">
-                <span class="admin-verification-title"> Verified station </span>
+                <span class="admin-verification-title">
+                  Verified station
+                </span>
 
-                <small> Mark this station as verified. </small>
+                <small>Mark this station as verified.</small>
               </div>
 
               <label class="admin-switch" for="is_verified">
@@ -124,7 +149,6 @@ const facilityError = errors.facilities;
           </div>
         </section>
 
-        <!-- Floor-wise Facilities -->
         <StationFacilitiesPanel
           assigned={stationFacilities}
           canAdd={stationFloors.length > 0 && availableFacilities.length > 0}
@@ -132,9 +156,22 @@ const facilityError = errors.facilities;
           allAddedMessage="No facilities are available in the master list."
         >
           Manage facilities for <strong>{station.name}</strong>, including
-          floor, quantity, and optional notes.
+          floor, quantity, nearby exits, and optional notes.
         </StationFacilitiesPanel>
       </div>
+
+      <!-- Floor-wise Exits -->
+      <section class="admin-station-exits-section">
+        <section class="admin-panel admin-station-feature-panel">
+          <div class="admin-panel-body">
+            <StationExitsPanel
+              assigned={stationExits}
+              floors={stationFloors}
+              canAdd={stationFloors.length > 0}
+            />
+          </div>
+        </section>
+      </section>
 
       <!-- Top Picks -->
       <section class="admin-station-top-picks-section">
@@ -151,9 +188,15 @@ const facilityError = errors.facilities;
 
       <!-- Form Actions -->
       <div class="admin-form-actions">
-        <Button href="/admin/stations" variant="secondary"> Cancel </Button>
+        <Button href="/admin/stations" variant="secondary">
+          Cancel
+        </Button>
 
-        <Button type="submit" variant="primary" id="save-station-button">
+        <Button
+          type="submit"
+          variant="primary"
+          id="save-station-button"
+        >
           Save Changes
         </Button>
       </div>
@@ -169,7 +212,16 @@ const facilityError = errors.facilities;
       emptyDescription="No facilities are available in the master facility list."
     />
 
-    <!-- Remove Facility Entry Confirmation -->
+    <!-- Add Station Exits Modal -->
+    <ExitModal floors={stationFloors} />
+
+    <!-- Select Nearby Exits for Facility Assignments -->
+    <FacilityExitPickerModal
+      exits={stationExits}
+      floors={stationFloors}
+    />
+
+    <!-- Remove Facility Confirmation -->
     <ConfirmDialog
       id="remove-facility-confirm-dialog"
       title="Remove Facility Entry"
@@ -191,6 +243,8 @@ const facilityError = errors.facilities;
 
     <script>
       import "../../../../scripts/admin/stations-edit.ts";
+      import "../../../../scripts/admin/station-exit-picker.ts";
+      import "../../../../scripts/admin/facility-exit-picker.ts";
     </script>
   </Fragment>
 </AdminLayout>

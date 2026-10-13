@@ -400,44 +400,59 @@ function facilityDetailHtml(group) {
     return '<span class="hint">Tap an icon for detail.</span>';
   }
 
-  var rows = group.floors
-    .map(function (f) {
-      var bits = [];
+  var allExits = [];
+  var floorDetails = [];
 
-      if (f.floor) {
-        bits.push("Floor " + esc(f.floor));
+  group.floors.forEach(function (f) {
+    parseExits(f.exits).forEach(function (exit) {
+      var exists = allExits.some(function (item) {
+        return item.id != null && item.id === exit.id;
+      });
+
+      if (!exists) {
+        allExits.push(exit);
       }
+    });
 
-      var count = facilityCountLabel(f.count);
+    var bits = [];
 
-      if (count) {
-        bits.push(count);
-      }
+    if (f.floor) {
+      bits.push("Floor " + esc(f.floor));
+    }
 
-      var exits = exitChips(f.exits);
+    var count = facilityCountLabel(f.count);
 
-      return (
-        '<div class="facility-floor-detail">' +
-        "<div><b>" +
-        (bits.length ? bits.join(" · ") : "Facility details") +
-        "</b></div>" +
-        (exits
-          ? '<div><span class="near">Near</span>' + exits + "</div>"
-          : "") +
-        (f.note ? "<div>" + esc(f.note) + "</div>" : "") +
-        sourceTag(f.source) +
-        "</div>"
-      );
-    })
-    .join("");
+    if (count) {
+      bits.push(count);
+    }
+
+    var detail = bits.join(" · ");
+
+    if (f.note) {
+      detail += (detail ? ", " : "") + esc(f.note);
+    }
+
+    if (detail) {
+      floorDetails.push(detail);
+    }
+  });
+
+  var exits = exitChips(allExits);
 
   return (
-    "<div><b>" +
-    esc(group.name) +
-    "</b></div>" +
     '<div class="facility-floor-details">' +
-    rows +
-    "</div>"
+    (exits
+      ? '<div class="facility-nearby-row">' +
+        '<span class="near">Nearby Exit</span>' +
+        '<div class="facility-nearby-exits">' +
+        exits +
+        '</div>' +
+        '</div>'
+      : '') +
+    (floorDetails.length
+      ? '<div>' + floorDetails.join(", ") + '</div>'
+      : '') +
+    '</div>'
   );
 }
 

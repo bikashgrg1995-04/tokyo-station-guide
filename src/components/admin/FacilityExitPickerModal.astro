@@ -1,0 +1,251 @@
+---
+import type { StationFloor } from "../../lib/db/station-floors";
+import type { StationExit } from "../../lib/db/station-exits";
+
+interface Props {
+  exits: StationExit[];
+  floors: StationFloor[];
+}
+
+const { exits, floors } = Astro.props;
+
+const floorNames = new Map(
+  floors.map((floor) => [floor.id, floor.name]),
+);
+---
+
+<div
+  id="facility-exit-picker-modal"
+  class="facility-exit-picker-modal"
+  hidden
+>
+  <div class="facility-exit-picker-backdrop" data-close-facility-exit-picker></div>
+
+  <section
+    class="facility-exit-picker-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="facility-exit-picker-title"
+  >
+    <header class="facility-exit-picker-header">
+      <div>
+        <h2 id="facility-exit-picker-title">Select Nearby Exits</h2>
+        <p>Select one or more exits for this facility.</p>
+      </div>
+
+      <button
+        type="button"
+        class="admin-table-action"
+        aria-label="Close"
+        data-close-facility-exit-picker
+      >
+        ✕
+      </button>
+    </header>
+
+    <div class="facility-exit-picker-body">
+      <div class="facility-exit-picker-filters">
+        <button
+          type="button"
+          class="facility-exit-floor-filter active"
+          data-exit-floor-filter="all"
+        >
+          All Floors
+        </button>
+
+        {floors.map((floor) => (
+          <button
+            type="button"
+            class="facility-exit-floor-filter"
+            data-exit-floor-filter={String(floor.id)}
+          >
+            {floor.name}
+          </button>
+        ))}
+      </div>
+
+      <div class="facility-exit-picker-list">
+        {exits.length > 0 ? (
+          exits.map((exit) => (
+            <label
+              class="facility-exit-picker-option"
+              data-exit-floor={String(exit.floor_id)}
+            >
+              <input
+                type="checkbox"
+                value={String(exit.id)}
+                data-facility-exit-option
+              />
+
+              <span class="facility-exit-picker-option-copy">
+                <strong>{exit.name}</strong>
+                <small>
+                  {floorNames.get(exit.floor_id) ?? "Unknown floor"}
+                  {exit.code ? ` · ${exit.code}` : ""}
+                </small>
+              </span>
+            </label>
+          ))
+        ) : (
+          <p class="facility-exit-picker-empty">
+            No exits have been created for this station yet.
+          </p>
+        )}
+      </div>
+    </div>
+
+    <footer class="facility-exit-picker-footer">
+      <span data-facility-exit-selection-count>0 exits selected</span>
+
+      <div>
+        <button
+          type="button"
+          class="admin-table-action"
+          data-close-facility-exit-picker
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          class="admin-table-action"
+          data-save-facility-exits
+        >
+          Apply Selected Exits
+        </button>
+      </div>
+    </footer>
+  </section>
+</div>
+
+<style>
+  .facility-exit-picker-modal[hidden] {
+    display: none;
+  }
+
+  .facility-exit-picker-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+  }
+
+  .facility-exit-picker-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 55%);
+  }
+
+  .facility-exit-picker-dialog {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 620px);
+    max-height: min(80vh, 720px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--admin-card, #fff);
+    color: var(--admin-text, #222);
+    box-shadow: 0 16px 48px rgb(0 0 0 / 20%);
+  }
+
+  .facility-exit-picker-header,
+  .facility-exit-picker-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px;
+  }
+
+  .facility-exit-picker-header {
+    border-bottom: 1px solid var(--admin-border, #e5e7eb);
+  }
+
+  .facility-exit-picker-header h2 {
+    margin: 0 0 5px;
+    font-size: 1.1rem;
+  }
+
+  .facility-exit-picker-header p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--admin-muted, #6b7280);
+  }
+
+  .facility-exit-picker-body {
+    padding: 18px 20px;
+    overflow-y: auto;
+  }
+
+  .facility-exit-picker-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .facility-exit-floor-filter {
+    padding: 7px 12px;
+    border: 1px solid var(--admin-border, #d1d5db);
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .facility-exit-floor-filter.active {
+    background: var(--admin-primary, #2563eb);
+    border-color: var(--admin-primary, #2563eb);
+    color: white;
+  }
+
+  .facility-exit-picker-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .facility-exit-picker-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--admin-border, #e5e7eb);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .facility-exit-picker-option-copy {
+    display: grid;
+    gap: 4px;
+  }
+
+  .facility-exit-picker-option-copy small {
+    color: var(--admin-muted, #6b7280);
+  }
+
+  .facility-exit-picker-empty {
+    padding: 16px 0;
+    color: var(--admin-muted, #6b7280);
+  }
+
+  .facility-exit-picker-footer {
+    border-top: 1px solid var(--admin-border, #e5e7eb);
+  }
+
+  .facility-exit-picker-footer > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  @media (max-width: 520px) {
+    .facility-exit-picker-footer {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+</style>

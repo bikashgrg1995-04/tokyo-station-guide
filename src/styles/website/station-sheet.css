@@ -850,3 +850,17 @@ html[data-theme="dark"] .station-sheet {
 #sheet-close {
   display: none !important;
 }
+
+.facility-nearby-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.facility-nearby-exits {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}

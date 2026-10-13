@@ -1,19 +1,13 @@
+
 ---
 import Alert from "../common/Alert.astro";
 import Button from "../common/Button.astro";
 import type { StationFacility } from "../../lib/db/facilities";
 
 export interface Props {
-  /** Existing floor-wise facility entries on the edit page. */
   assigned?: StationFacility[];
-
-  /** Whether the Add button should be displayed. */
   canAdd: boolean;
-
-  /** Validation error for facility entries. */
   error?: string;
-
-  /** Message displayed when no facilities are available. */
   allAddedMessage: string;
 }
 
@@ -39,10 +33,8 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
 
     {error && <Alert>{error}</Alert>}
 
-    <!-- Identifies the floor-wise facility form, even when all rows are removed. -->
     <input type="hidden" name="station_facilities_enabled" value="1" />
 
-    <!-- Dynamically added facility rows are managed by facility-picker.ts. -->
     <div id="station-facility-inputs" hidden></div>
 
     <div class="admin-table-wrapper">
@@ -55,6 +47,7 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
             <th>Facility</th>
             <th>Floor</th>
             <th>Quantity</th>
+            <th>Nearby Exits</th>
             <th>Note (optional)</th>
             <th>Actions</th>
           </tr>
@@ -62,7 +55,7 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
 
         <tbody id="station-facilities-body">
           {
-            assigned.map((facility, index) => (
+            assigned.map((facility) => (
               <tr
                 data-facility-row
                 data-facility-id={facility.facility_id}
@@ -72,7 +65,6 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
               >
                 <td>
                   <div class="admin-line-name">{facility.name}</div>
-
                   <input
                     type="hidden"
                     name="facility_entry_facility_id"
@@ -113,6 +105,41 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
                 </td>
 
                 <td>
+                  <div class="facility-exit-pills" data-facility-exit-pills>
+                    {facility.exits.map((exit) => (
+                      <span
+                        class="facility-exit-pill"
+                        data-assigned-exit-id={exit.id}
+                        title={`${exit.floor_name}${exit.code ? ` · ${exit.code}` : ""}`}
+                      >
+                        {exit.name}
+                      </span>
+                    ))}
+
+                    {facility.exits.length === 0 && (
+                      <span class="facility-exit-empty" data-no-exits>
+                        No exits assigned
+                      </span>
+                    )}
+                  </div>
+
+                  <input
+                    type="hidden"
+                    name="facility_entry_exit_ids_json"
+                    value={JSON.stringify(facility.exits.map((exit) => exit.id))}
+                    data-facility-exit-ids
+                  />
+
+                  <button
+                    type="button"
+                    class="admin-table-action"
+                    data-open-facility-exits
+                  >
+                    + Add Exits
+                  </button>
+                </td>
+
+                <td>
                   <input
                     type="text"
                     name="facility_entry_note"
@@ -141,7 +168,7 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
           }
 
           <tr id="station-facilities-empty-row" hidden={assigned.length > 0}>
-            <td colspan="5">
+            <td colspan="6">
               <div class="admin-feature-empty">No facilities assigned.</div>
             </td>
           </tr>
@@ -170,5 +197,30 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
     font-weight: 600;
     line-height: 1.4;
     white-space: nowrap;
+  }
+
+  .facility-exit-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .facility-exit-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--admin-border, #d1d5db);
+    border-radius: 999px;
+    background: var(--admin-muted-bg, #f3f4f6);
+    color: var(--admin-text, #374151);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .facility-exit-empty {
+    color: var(--admin-text-muted, #6b7280);
+    font-size: 0.8125rem;
   }
 </style>

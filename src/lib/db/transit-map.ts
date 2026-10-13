@@ -133,7 +133,8 @@ export async function getTransitMapData(
         'floor', facility.floor,
         'floor_japanese', facility.floor_japanese,
         'count', facility.facility_count,
-        'note', facility.note
+        'note', facility.note,
+        'exits', json(facility.exits)
       )
     )
   FROM (
@@ -148,7 +149,22 @@ export async function getTransitMapData(
       sf.name_japanese AS floor_japanese,
       sff.facility_count,
       sff.note,
-      sf.floor_order
+      sf.floor_order,
+      (
+        SELECT json_group_array(
+          json_object(
+            'id', se.id,
+            'name', se.name,
+            'name_jp', se.name,
+            'code', se.code,
+            'color', se.color_code
+          )
+        )
+        FROM station_floor_facility_exits sffe
+        INNER JOIN station_exits se
+          ON se.id = sffe.station_exit_id
+        WHERE sffe.station_floor_facility_id = sff.id
+      ) AS exits
     FROM station_floor_facilities sff
     INNER JOIN station_floors sf
       ON sf.id = sff.floor_id

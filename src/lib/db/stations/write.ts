@@ -137,6 +137,8 @@ export async function updateStation(
    * Legacy station_facilities records are intentionally preserved.
    */
   if (input.stationFacilities !== undefined) {
+    // Delete existing assignments. Their exit links are removed
+    // automatically through ON DELETE CASCADE.
     statements.push(
       db
         .prepare(
@@ -152,6 +154,7 @@ export async function updateStation(
         .bind(id),
     );
 
+    // Insert the new facility assignments first.
     input.stationFacilities.forEach((facility, index) => {
       statements.push(
         db
@@ -178,11 +181,52 @@ export async function updateStation(
             facility.facilityId,
             facility.note?.trim() || null,
             facility.facilityCount,
-            index + 1,
+            index,
             facility.floorId,
             id,
           ),
       );
+    });
+
+    // Insert the exit relationships after the assignment inserts.
+    // D1 batch statements execute in order.
+    input.stationFacilities.forEach((facility) => {
+      const exitIds = [...new Set(facility.exitIds ?? [])];
+
+      exitIds.forEach((exitId) => {
+        statements.push(
+          db
+            .prepare(
+              `
+                INSERT INTO station_floor_facility_exits (
+                  station_floor_facility_id,
+                  station_exit_id
+                )
+                SELECT sff.id, se.id
+                FROM station_floor_facilities sff
+                INNER JOIN station_floors sf
+                  ON sf.id = sff.floor_id
+                INNER JOIN station_exits se
+                  ON se.id = ?
+                WHERE sff.floor_id = ?
+                  AND sff.facility_id = ?
+                  AND sf.station_id = ?
+                  AND se.station_id = ?
+                ON CONFLICT (
+                  station_floor_facility_id,
+                  station_exit_id
+                ) DO NOTHING
+              `,
+            )
+            .bind(
+              exitId,
+              facility.floorId,
+              facility.facilityId,
+              id,
+              id,
+            ),
+        );
+      });
     });
   }
 

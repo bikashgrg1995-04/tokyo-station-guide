@@ -1,3 +1,4 @@
+
 /**
  * Floor-wise facility picker for Edit Station.
  *
@@ -7,6 +8,7 @@
  * - Assigning the same facility to multiple floors.
  * - Saving floor IDs instead of free-text floor names.
  * - Editing quantity and optional notes.
+ * - Preparing selected exit IDs for each facility assignment.
  * - Removing individual floor assignments.
  */
 export function initializeFacilityPicker(): void {
@@ -157,7 +159,7 @@ export function initializeFacilityPicker(): void {
       emptyRow.id = "station-facilities-empty-row";
 
       const cell = document.createElement("td");
-      cell.colSpan = 5;
+      cell.colSpan = 6;
 
       const message = document.createElement("div");
       message.className = "admin-feature-empty";
@@ -189,10 +191,6 @@ export function initializeFacilityPicker(): void {
       }
     });
 
-    console.log("[Facility Debug] Already assigned IDs:", [
-      ...assignedFacilityIds,
-    ]);
-
     let visibleOptionCount = 0;
 
     facilityOptions.forEach((option) => {
@@ -219,12 +217,6 @@ export function initializeFacilityPicker(): void {
       } else {
         visibleOptionCount += 1;
       }
-
-      console.log("[Facility Debug] Option result:", {
-        facilityId,
-        alreadyAssigned,
-        shouldShow,
-      });
     });
 
     if (floorEmptyMessage instanceof HTMLElement) {
@@ -368,6 +360,37 @@ export function initializeFacilityPicker(): void {
 
     countCell.appendChild(countInput);
 
+    /* Nearby Exits */
+
+    const exitsCell = document.createElement("td");
+
+    const exitPills = document.createElement("div");
+    exitPills.className = "facility-exit-pills";
+    exitPills.setAttribute("data-facility-exit-pills", "");
+
+    const emptyExits = document.createElement("span");
+    emptyExits.className = "facility-exit-empty";
+    emptyExits.setAttribute("data-no-exits", "");
+    emptyExits.textContent = "No exits assigned";
+
+    exitPills.appendChild(emptyExits);
+
+    const exitIdsInput = document.createElement("input");
+    exitIdsInput.type = "hidden";
+    exitIdsInput.name = "facility_entry_exit_ids_json";
+    exitIdsInput.value = "[]";
+    exitIdsInput.setAttribute("data-facility-exit-ids", "");
+
+    const addExitsButton = document.createElement("button");
+    addExitsButton.type = "button";
+    addExitsButton.className = "admin-table-action";
+    addExitsButton.setAttribute("data-open-facility-exits", "");
+    addExitsButton.textContent = "+ Add Exits";
+
+    exitsCell.appendChild(exitPills);
+    exitsCell.appendChild(exitIdsInput);
+    exitsCell.appendChild(addExitsButton);
+
     /* Optional note */
 
     const noteCell = document.createElement("td");
@@ -402,6 +425,7 @@ export function initializeFacilityPicker(): void {
     row.appendChild(nameCell);
     row.appendChild(floorCell);
     row.appendChild(countCell);
+    row.appendChild(exitsCell);
     row.appendChild(noteCell);
     row.appendChild(actionsCell);
 
