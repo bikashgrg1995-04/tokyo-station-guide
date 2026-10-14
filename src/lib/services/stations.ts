@@ -27,12 +27,7 @@ import type { StationFacilityInput } from "../db/stations/types";
 
 import { getStationExits, type StationExit } from "../db/station-exits";
 
-import {
-  hasErrors,
-  paginationUrlFor,
-  readListQuery,
-  readText,
-} from "./common";
+import { hasErrors, paginationUrlFor, readListQuery, readText } from "./common";
 
 import {
   type StationFormValues,
@@ -102,9 +97,7 @@ function readFacilityExitIds(
       !Array.isArray(parsed) ||
       parsed.some(
         (value) =>
-          typeof value !== "number" ||
-          !Number.isInteger(value) ||
-          value <= 0,
+          typeof value !== "number" || !Number.isInteger(value) || value <= 0,
       )
     ) {
       errors.push(
@@ -115,9 +108,7 @@ function readFacilityExitIds(
 
     return [...new Set(parsed as number[])];
   } catch {
-    errors.push(
-      `Facility row ${rowNumber}: selected exits could not be read.`,
-    );
+    errors.push(`Facility row ${rowNumber}: selected exits could not be read.`);
     return [];
   }
 }
@@ -126,16 +117,12 @@ function readFacilityExitIds(
  * Reads repeated floor-wise facility fields in matching order.
  * Each facility row also submits its selected exit IDs as JSON.
  */
-function readStationFacilities(
-  formData: FormData,
-): ParsedStationFacilities {
+function readStationFacilities(formData: FormData): ParsedStationFacilities {
   const facilityIds = formData.getAll("facility_entry_facility_id");
   const floorIds = formData.getAll("facility_entry_floor_id");
   const counts = formData.getAll("facility_entry_count");
   const notes = formData.getAll("facility_entry_note");
-  const exitIdsJson = formData.getAll(
-    "facility_entry_exit_ids_json",
-  );
+  const exitIdsJson = formData.getAll("facility_entry_exit_ids_json");
 
   const entries: StationFacilityInput[] = [];
   const errors: string[] = [];
@@ -154,11 +141,7 @@ function readStationFacilities(
     const rawCount = String(counts[index] ?? "").trim();
     const note = String(notes[index] ?? "").trim();
 
-    const exitIds = readFacilityExitIds(
-      exitIdsJson[index],
-      index + 1,
-      errors,
-    );
+    const exitIds = readFacilityExitIds(exitIdsJson[index], index + 1, errors);
 
     if (
       !rawFacilityId &&
@@ -185,11 +168,7 @@ function readStationFacilities(
       continue;
     }
 
-    if (
-      !rawCount ||
-      !Number.isInteger(facilityCount) ||
-      facilityCount < 1
-    ) {
+    if (!rawCount || !Number.isInteger(facilityCount) || facilityCount < 1) {
       errors.push(
         `Facility row ${index + 1}: quantity must be a whole number of at least 1.`,
       );
@@ -459,12 +438,7 @@ export async function handleStationUpdate(
       await updateStation(
         db,
         id,
-        toStationInput(
-          values,
-          facilityIds,
-          topPickIds,
-          stationFacilities,
-        ),
+        toStationInput(values, facilityIds, topPickIds, stationFacilities),
       );
 
       result.redirectTo = LIST_PATH;
@@ -478,9 +452,7 @@ export async function handleStationUpdate(
 
   // Preserve submitted facility rows and selected exits after validation errors.
   result.stationFacilities = stationFacilities.map((entry) => {
-    const facility = allFacilities.find(
-      (item) => item.id === entry.facilityId,
-    );
+    const facility = allFacilities.find((item) => item.id === entry.facilityId);
     const floor = stationFloors.find((item) => item.id === entry.floorId);
 
     const selectedExits = (entry.exitIds ?? []).flatMap((exitId) => {
@@ -488,9 +460,7 @@ export async function handleStationUpdate(
 
       if (!exit) return [];
 
-      const exitFloor = stationFloors.find(
-        (item) => item.id === exit.floor_id,
-      );
+      const exitFloor = stationFloors.find((item) => item.id === exit.floor_id);
 
       return [
         {
@@ -529,7 +499,18 @@ export async function handleStationUpdate(
       const topPick = allTopPicks.find((item) => item.id === topPickId);
 
       return topPick
-        ? { ...topPick, sort_order: index + 1, walking_minutes: null }
+        ? {
+            ...topPick,
+            sort_order: index + 1,
+            walking_minutes: null,
+            floor_id: null,
+            floor_name: null,
+            floor_name_japanese: null,
+            exit_id: null,
+            exit_name: null,
+            exit_code: null,
+            location_type: "outside",
+          }
         : null;
     })
     .filter((item): item is StationTopPick => Boolean(item));

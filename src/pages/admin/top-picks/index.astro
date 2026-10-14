@@ -155,6 +155,13 @@ const deleteError = Astro.url.searchParams.get("error");
                         <td>
                           <div class="admin-table-actions">
                             <a
+                              href={`/admin/top-picks/${topPick.id}/stations`}
+                              class="admin-table-action"
+                            >
+                              Station
+                            </a>
+
+                            <a
                               href={`/admin/top-picks/${topPick.id}/edit`}
                               class="admin-table-action admin-table-action-edit"
                             >

@@ -13,7 +13,6 @@ import StationFormFields from "../../../../components/admin/StationFormFields.as
 import StationFacilitiesPanel from "../../../../components/admin/StationFacilitiesPanel.astro";
 import FacilityModal from "../../../../components/admin/FacilityModal.astro";
 import FacilityExitPickerModal from "../../../../components/admin/FacilityExitPickerModal.astro";
-import StationTopPicks from "../../../../components/admin/StationTopPicks.astro";
 
 import { getStationFloors } from "../../../../lib/db/station-floors";
 import { getStationById } from "../../../../lib/db/stations";
@@ -49,8 +48,6 @@ const {
   formError,
   stationFacilities,
   availableFacilities,
-  stationTopPicks,
-  availableTopPicks,
   stationExits,
 } = form;
 
@@ -84,6 +81,10 @@ const facilityError = errors.facilities;
     <h2>Edit Station</h2>
 
     <p>
+      Update <strong>{station.name}</strong> and manage its facilities. Floors, platforms,
+      exits and Top Picks have their own pages.
+    </p>
+    <p>
       Update <strong>{station.name}</strong>: its details, facilities and top
       picks. Floors, platforms and exits have their own pages.
     </p>
@@ -115,18 +116,9 @@ const facilityError = errors.facilities;
         <strong>{station.name}</strong>.
       </StationFacilitiesPanel>
 
-      <!-- Top Picks -->
-      <StationTopPicks
-        stationName={station.name}
-        assignedTopPicks={stationTopPicks}
-        availableTopPicks={availableTopPicks}
-      />
-
       <!-- Form Actions -->
       <div class="admin-form-actions">
-        <Button href="/admin/stations" variant="secondary">
-          Cancel
-        </Button>
+        <Button href="/admin/stations" variant="secondary"> Cancel </Button>
 
         <Button type="submit" variant="primary" id="save-station-button">
           Save Changes

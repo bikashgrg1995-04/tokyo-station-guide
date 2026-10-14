@@ -882,3 +882,161 @@ html[data-theme="dark"] .station-sheet {
   flex-wrap: wrap;
   gap: 5px;
 }
+
+
+/* =========================================
+   Top Picks — compact, three-row layout
+========================================= */
+
+.pk {
+  padding: 11px 0;
+  border-bottom: 1px solid var(--sheet-border);
+}
+
+.pk:first-child {
+  padding-top: 4px;
+}
+
+.pk:last-child {
+  border-bottom: 0;
+}
+
+/* Row 1: name + location status */
+.pk-heading {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pk-name {
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* Location status pills */
+.pk-status {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 10.5px;
+  line-height: 1.35;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.pk-status-inside {
+  background: rgba(52, 199, 89, 0.14);
+  color: #248a43;
+}
+
+.pk-status-outside {
+  background: var(--sheet-chip-bg);
+  color: var(--sheet-muted);
+}
+
+.pk-status-connected {
+  background: rgba(0, 122, 255, 0.12);
+  color: #007aff;
+}
+
+html[data-theme="dark"] .pk-status-inside {
+  color: #65d982;
+}
+
+html[data-theme="dark"] .pk-status-connected {
+  color: #64aaff;
+}
+
+/* Row 2: exit pill + walking time */
+.pk-travel {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 7px;
+  min-width: 0;
+}
+
+.pk-exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 1px 5px;
+  border: 1px solid var(--sheet-chip-border);
+  border-radius: 999px;
+  background: var(--sheet-chip-bg);
+  color: var(--sheet-muted);
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+
+.pk-exit-dot {
+  flex: 0 0 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sheet-muted);
+}
+
+.pk-walk {
+  color: var(--sheet-muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+/* Optional description */
+.pk-description {
+  margin-top: 6px;
+  color: var(--sheet-muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* Row 3: fee | hours | last entry | other info */
+.pk-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 0;
+  margin-top: 7px;
+  color: var(--sheet-muted);
+  font-size: 11px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.pk-separator {
+  padding: 0 5px;
+  color: var(--sheet-border);
+  white-space: pre;
+}
+
+@media (max-width: 360px) {
+  .pk-name {
+    font-size: 13px;
+  }
+
+  .pk-status {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+
+  .pk-info {
+    font-size: 10.5px;
+  }
+}

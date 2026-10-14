@@ -10,7 +10,6 @@ import Button from "../../../components/common/Button.astro";
 import ConfirmDialog from "../../../components/common/ConfirmDialog.astro";
 
 import StationFormFields from "../../../components/admin/StationFormFields.astro";
-import StationTopPicks from "../../../components/admin/StationTopPicks.astro";
 
 import { handleStationCreate } from "../../../lib/services/stations";
 
@@ -24,8 +23,7 @@ if (form.redirectTo) {
   return Astro.redirect(form.redirectTo);
 }
 
-const { name } = form.values;
-const { errors, topPicks } = form;
+const { errors } = form;
 const error = form.formError;
 ---
 
@@ -63,13 +61,6 @@ const error = form.formError;
         facilities, and use <strong>Floors</strong>, <strong>Platforms</strong>{" "}
         and <strong>Exits</strong> in the station list to manage the rest.
       </p>
-
-      <!-- Top Picks -->
-      <StationTopPicks
-        stationName={name || "this station"}
-        assignedTopPicks={[]}
-        availableTopPicks={topPicks}
-      />
 
       <!-- Form Actions -->
       <div class="admin-form-actions">

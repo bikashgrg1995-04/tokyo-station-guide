@@ -446,13 +446,11 @@ function facilityDetailHtml(group) {
         '<span class="near">Nearby Exit</span>' +
         '<div class="facility-nearby-exits">' +
         exits +
-        '</div>' +
-        '</div>'
-      : '') +
-    (floorDetails.length
-      ? '<div>' + floorDetails.join(", ") + '</div>'
-      : '') +
-    '</div>'
+        "</div>" +
+        "</div>"
+      : "") +
+    (floorDetails.length ? "<div>" + floorDetails.join(", ") + "</div>" : "") +
+    "</div>"
   );
 }
 
@@ -488,6 +486,78 @@ function platformsHtml(stn) {
   return '<div class="platform-list">' + rows + "</div>";
 }
 
+/* ---------- Top Picks helpers ---------- */
+
+function tokyoWeekday() {
+  var weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tokyo",
+    weekday: "short",
+  }).format(new Date());
+
+  return {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  }[weekday];
+}
+
+function formatPickTime(value) {
+  if (!value) {
+    return "";
+  }
+
+  var match = String(value).match(/^(\d{1,2}):(\d{2})/);
+
+  if (!match) {
+    return String(value);
+  }
+
+  return String(match[1]).padStart(2, "0") + ":" + match[2];
+}
+
+function pickOpeningHours(raw) {
+  var hours = parseList(raw);
+
+  if (!hours.length) {
+    return null;
+  }
+
+  var today = tokyoWeekday();
+
+  var schedule = hours.find(function (item) {
+    return Number(item.day_of_week) === today;
+  });
+
+  if (!schedule) {
+    return null;
+  }
+
+  if (Number(schedule.is_closed) === 1) {
+    return {
+      hours: isJp() ? "定休日" : "Closed",
+      lastEntry: "",
+    };
+  }
+
+  if (!schedule.opening_time || !schedule.closing_time) {
+    return null;
+  }
+
+  return {
+    hours:
+      formatPickTime(schedule.opening_time) +
+      "–" +
+      formatPickTime(schedule.closing_time),
+    lastEntry: formatPickTime(schedule.last_entry_time),
+  };
+}
+
+/* ---------- Top Picks ---------- */
+
 function picksHtml(stn) {
   var items = parseList(stationField(stn, ["top_picks", "topPicks"]));
 
@@ -495,34 +565,103 @@ function picksHtml(stn) {
     return '<p class="sheet-empty">No top picks yet.</p>';
   }
 
+  var locationLabels = {
+    inside: isJp() ? "駅構内" : "Inside",
+    connected: isJp() ? "駅直結" : "Connected",
+    outside: isJp() ? "駅の外" : "Outside",
+  };
+
   return items
     .map(function (t) {
-      var loc = String(t.location || "").toLowerCase();
-      var kind =
-        loc === "inside"
-          ? '<span class="io i">In station</span>'
-          : loc === "outside"
-            ? '<span class="io">Outside</span>'
-            : t.category
-              ? '<span class="io">' + esc(t.category) + "</span>"
-              : "";
+      var locationType = String(t.location_type || "").toLowerCase();
 
-      var mins =
-        t.minutes != null && t.minutes !== ""
-          ? "<span>" + esc(t.minutes) + " min walk</span>"
+      var locationLabel = locationLabels[locationType] || "";
+
+      var status = locationLabel
+        ? '<span class="io pk-status pk-status-' +
+          esc(locationType) +
+          '">' +
+          esc(locationLabel) +
+          "</span>"
+        : "";
+
+      /* Exit name only, with its actual station exit color. */
+      var exitName = isJp()
+        ? t.exit_name_japanese || t.exit_name || ""
+        : t.exit_name || "";
+
+      var exit = exitName
+        ? '<span class="pk-exit">' +
+          '<i class="pk-exit-dot"' +
+          (t.exit_color
+            ? ' style="background-color:' + esc(t.exit_color) + '"'
+            : "") +
+          "></i>" +
+          esc(exitName) +
+          "</span>"
+        : "";
+
+      /* Walking time is shown only for outside locations. */
+      var minutes =
+        locationType === "outside" && t.minutes != null && t.minutes !== ""
+          ? '<span class="pk-walk">' +
+            esc(
+              isJp()
+                ? "徒歩約" + t.minutes + "分"
+                : "About " + t.minutes + " min walk",
+            ) +
+            "</span>"
           : "";
 
-      var meta = exitChips(t.exits) + mins + sourceTag(t.source);
+      var travelRow =
+        exit || minutes
+          ? '<div class="pk-travel">' + exit + minutes + "</div>"
+          : "";
+
+      /* Build the information row in the required order. */
+      var info = [];
+
+      if (t.entry_fee != null && String(t.entry_fee).trim() !== "") {
+        info.push(
+          (isJp() ? "入場料: " : "Entry fee: ") + String(t.entry_fee).trim(),
+        );
+      }
+
+      var schedule = pickOpeningHours(t.opening_hours);
+
+      if (schedule && schedule.hours) {
+        info.push((isJp() ? "営業時間: " : "Hours: ") + schedule.hours);
+      }
+
+      if (schedule && schedule.lastEntry) {
+        info.push(
+          (isJp() ? "最終入場: " : "Last entry: ") + schedule.lastEntry,
+        );
+      }
+
+      if (t.notes != null && String(t.notes).trim() !== "") {
+        info.push(String(t.notes).trim());
+      }
+
+      /* Description appears at the very end of the information row. */
+      if (t.description != null && String(t.description).trim() !== "") {
+        info.push(String(t.description).trim());
+      }
+
+      var infoHtml = info.length
+        ? '<div class="pk-info">' + info.map(esc).join(" | ") + "</div>"
+        : "";
 
       return (
-        '<div class="pk"><b>' +
+        '<div class="pk">' +
+        '<div class="pk-heading">' +
+        '<b class="pk-name">' +
         esc(isJp() && t.name_jp ? t.name_jp : t.name) +
-        "</b> " +
-        kind +
-        (meta ? '<div class="m">' + meta + "</div>" : "") +
-        (t.description
-          ? '<div class="m"><span>' + esc(t.description) + "</span></div>"
-          : "") +
+        "</b>" +
+        status +
+        "</div>" +
+        travelRow +
+        infoHtml +
         "</div>"
       );
     })

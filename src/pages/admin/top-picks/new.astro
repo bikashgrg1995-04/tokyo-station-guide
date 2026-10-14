@@ -28,13 +28,35 @@ const {
   category,
   description,
   imageUrl,
+  entryFee,
+  notes,
+  openingHours,
 } = form.values;
 
 const { errors, formError } = form;
+
+const DAYS = [
+  { value: 0, label: "Sunday" },
+  { value: 1, label: "Monday" },
+  { value: 2, label: "Tuesday" },
+  { value: 3, label: "Wednesday" },
+  { value: 4, label: "Thursday" },
+  { value: 5, label: "Friday" },
+  { value: 6, label: "Saturday" },
+];
+
+function getDayHours(day: number) {
+  return openingHours.find((hour) => hour.day_of_week === day) ?? {
+    day_of_week: day,
+    is_closed: false,
+    opening_time: "09:00",
+    closing_time: "17:00",
+    last_entry_time: "",
+  };
+}
 ---
 
 <AdminLayout title="Add Top Pick" activePath="/admin/top-picks">
-  <!-- Topbar -->
   <header class="admin-topbar">
     <Breadcrumbs
       backHref="/admin/top-picks"
@@ -43,13 +65,10 @@ const { errors, formError } = form;
     />
   </header>
 
-  <!-- Content -->
   <div class="admin-content">
-    <!-- Page Header -->
     <div class="admin-page-header">
       <div>
         <h2>Add Top Pick</h2>
-
         <p>
           Create a popular place that can be featured on relevant
           station pages throughout the Tokyo Station Guide.
@@ -57,26 +76,19 @@ const { errors, formError } = form;
       </div>
     </div>
 
-    <!-- Form Panel -->
     <section class="admin-panel">
       <div class="admin-panel-body">
         <div class="admin-operator-form">
-          <!-- Form Header -->
           <div class="admin-operator-form-header">
             <h2>Top Pick Details</h2>
-
             <p>Enter the information for this featured place.</p>
           </div>
 
-          <!-- General Error -->
           {formError && <Alert>{formError}</Alert>}
 
-          <!-- Top Pick Form -->
           <form method="POST" class="admin-form">
-            <!-- Name -->
             <div class="admin-form-group">
               <label for="name">Name</label>
-
               <input
                 id="name"
                 name="name"
@@ -88,18 +100,13 @@ const { errors, formError } = form;
                 aria-invalid={errors.name ? "true" : "false"}
                 aria-describedby={errors.name ? "name-error" : undefined}
               />
-
               {errors.name && (
-                <small id="name-error" class="admin-form-error">
-                  {errors.name}
-                </small>
+                <small id="name-error" class="admin-form-error">{errors.name}</small>
               )}
             </div>
 
-            <!-- Japanese Name -->
             <div class="admin-form-group">
               <label for="name_japanese">Japanese Name</label>
-
               <input
                 id="name_japanese"
                 name="name_japanese"
@@ -108,11 +115,8 @@ const { errors, formError } = form;
                 value={nameJapanese}
                 placeholder="東京タワー"
                 aria-invalid={errors.nameJapanese ? "true" : "false"}
-                aria-describedby={
-                  errors.nameJapanese ? "name-japanese-error" : undefined
-                }
+                aria-describedby={errors.nameJapanese ? "name-japanese-error" : undefined}
               />
-
               {errors.nameJapanese && (
                 <small id="name-japanese-error" class="admin-form-error">
                   {errors.nameJapanese}
@@ -120,10 +124,8 @@ const { errors, formError } = form;
               )}
             </div>
 
-            <!-- Slug -->
             <div class="admin-form-group">
               <label for="slug">Slug</label>
-
               <input
                 id="slug"
                 name="slug"
@@ -135,27 +137,19 @@ const { errors, formError } = form;
                 aria-invalid={errors.slug ? "true" : "false"}
                 aria-describedby={errors.slug ? "slug-error" : undefined}
               />
-
               {errors.slug ? (
-                <small id="slug-error" class="admin-form-error">
-                  {errors.slug}
-                </small>
+                <small id="slug-error" class="admin-form-error">{errors.slug}</small>
               ) : (
-                <small>
-                  Use lowercase letters, numbers and hyphens.
-                </small>
+                <small>Use lowercase letters, numbers and hyphens.</small>
               )}
             </div>
 
-            <!-- Category -->
             <div class="admin-form-group">
               <label for="category">Category</label>
-
               <select
                 id="category"
                 name="category"
                 required
-                value={category}
                 aria-invalid={errors.category ? "true" : "false"}
                 aria-describedby={errors.category ? "category-error" : undefined}
               >
@@ -165,18 +159,13 @@ const { errors, formError } = form;
                   </option>
                 ))}
               </select>
-
               {errors.category && (
-                <small id="category-error" class="admin-form-error">
-                  {errors.category}
-                </small>
+                <small id="category-error" class="admin-form-error">{errors.category}</small>
               )}
             </div>
 
-            <!-- Description -->
             <div class="admin-form-group">
               <label for="description">Description</label>
-
               <textarea
                 id="description"
                 name="description"
@@ -184,24 +173,17 @@ const { errors, formError } = form;
                 maxlength="2000"
                 placeholder="A famous Tokyo landmark..."
                 aria-invalid={errors.description ? "true" : "false"}
-                aria-describedby={
-                  errors.description ? "description-error" : undefined
-                }
+                aria-describedby={errors.description ? "description-error" : undefined}
               >{description}</textarea>
-
               {errors.description ? (
-                <small id="description-error" class="admin-form-error">
-                  {errors.description}
-                </small>
+                <small id="description-error" class="admin-form-error">{errors.description}</small>
               ) : (
                 <small>Optional. Maximum 2000 characters.</small>
               )}
             </div>
 
-            <!-- Image URL -->
             <div class="admin-form-group">
               <label for="image_url">Image URL</label>
-
               <input
                 id="image_url"
                 name="image_url"
@@ -212,24 +194,123 @@ const { errors, formError } = form;
                 aria-invalid={errors.imageUrl ? "true" : "false"}
                 aria-describedby={errors.imageUrl ? "image-url-error" : undefined}
               />
-
               {errors.imageUrl ? (
-                <small id="image-url-error" class="admin-form-error">
-                  {errors.imageUrl}
-                </small>
+                <small id="image-url-error" class="admin-form-error">{errors.imageUrl}</small>
               ) : (
-                <small>
-                  Optional. Provide an HTTP or HTTPS image URL.
-                </small>
+                <small>Optional. Provide an HTTP or HTTPS image URL.</small>
               )}
             </div>
 
-            <!-- Actions -->
+            <hr />
+
+            <div class="admin-operator-form-header">
+              <h2>Visitor Information</h2>
+              <p>These details belong to the place and are shared across assigned stations.</p>
+            </div>
+
+            <div class="admin-form-group">
+              <label for="entry_fee">Entry Fee</label>
+              <input
+                id="entry_fee"
+                name="entry_fee"
+                type="text"
+                maxlength="150"
+                value={entryFee}
+                placeholder="Free / Adults ¥1,200"
+                aria-invalid={errors.entryFee ? "true" : "false"}
+                aria-describedby={errors.entryFee ? "entry-fee-error" : undefined}
+              />
+              {errors.entryFee ? (
+                <small id="entry-fee-error" class="admin-form-error">{errors.entryFee}</small>
+              ) : (
+                <small>Optional. Include currency and different ticket prices if needed.</small>
+              )}
+            </div>
+
+            <div class="admin-form-group">
+              <label for="notes">Visitor Notes</label>
+              <textarea
+                id="notes"
+                name="notes"
+                rows="4"
+                maxlength="2000"
+                placeholder="Useful visitor information, ticket advice, or access notes..."
+                aria-invalid={errors.notes ? "true" : "false"}
+                aria-describedby={errors.notes ? "notes-error" : undefined}
+              >{notes}</textarea>
+              {errors.notes ? (
+                <small id="notes-error" class="admin-form-error">{errors.notes}</small>
+              ) : (
+                <small>Optional. Maximum 2000 characters.</small>
+              )}
+            </div>
+
+            <hr />
+
+            <div class="admin-operator-form-header">
+              <h2>Opening Hours</h2>
+              <p>Set the usual opening schedule. Mark a day as closed when the place does not open.</p>
+            </div>
+
+            {errors.openingHours && (
+              <Alert>{errors.openingHours}</Alert>
+            )}
+
+            {DAYS.map((day) => {
+              const hours = getDayHours(day.value);
+
+              return (
+                <fieldset class="admin-form-group" style="border: 1px solid var(--admin-border, #ddd); border-radius: 8px; padding: 16px; min-width: 0;">
+                  <legend style="font-weight: 600; padding: 0 6px;">{day.label}</legend>
+
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+                    <input
+                      id={`closed_${day.value}`}
+                      name={`closed_${day.value}`}
+                      type="checkbox"
+                      checked={hours.is_closed}
+                    />
+                    <label for={`closed_${day.value}`}>Closed</label>
+                  </div>
+
+                  <div class="admin-form-group">
+                    <label for={`opening_time_${day.value}`}>Opening Time</label>
+                    <input
+                      id={`opening_time_${day.value}`}
+                      name={`opening_time_${day.value}`}
+                      type="time"
+                      value={hours.opening_time ?? ""}
+                    />
+                  </div>
+
+                  <div class="admin-form-group">
+                    <label for={`closing_time_${day.value}`}>Closing Time</label>
+                    <input
+                      id={`closing_time_${day.value}`}
+                      name={`closing_time_${day.value}`}
+                      type="time"
+                      value={hours.closing_time ?? ""}
+                    />
+                  </div>
+
+                  <div class="admin-form-group">
+                    <label for={`last_entry_time_${day.value}`}>Last Entry Time</label>
+                    <input
+                      id={`last_entry_time_${day.value}`}
+                      name={`last_entry_time_${day.value}`}
+                      type="time"
+                      value={hours.last_entry_time ?? ""}
+                    />
+                    <small>Optional. Leave blank if not applicable.</small>
+                  </div>
+                </fieldset>
+              );
+            })}
+
             <div class="admin-form-actions">
               <Button href="/admin/top-picks" variant="secondary">
                 Cancel
               </Button>
-
               <Button type="submit" variant="primary">
                 Create Top Pick
               </Button>

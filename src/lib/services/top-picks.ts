@@ -7,6 +7,7 @@ import {
   updateTopPick,
   type TopPick,
   type TopPickCategory,
+  type TopPickOpeningHour,
 } from "../db/top-picks";
 
 import {
@@ -36,6 +37,25 @@ export interface TopPickFormResult {
 }
 
 function readTopPickForm(formData: FormData): TopPickFormValues {
+  const openingHours: TopPickOpeningHour[] = [];
+
+  for (let day = 0; day <= 6; day++) {
+    const isClosed = formData.get(`closed_${day}`) === "on";
+
+    openingHours.push({
+      day_of_week: day,
+      is_closed: isClosed,
+      opening_time: isClosed
+        ? null
+        : readText(formData, `opening_time_${day}`) || null,
+      closing_time: isClosed
+        ? null
+        : readText(formData, `closing_time_${day}`) || null,
+      last_entry_time:
+        readText(formData, `last_entry_time_${day}`) || null,
+    });
+  }
+
   return {
     name: readText(formData, "name"),
     nameJapanese: readText(formData, "name_japanese"),
@@ -43,6 +63,9 @@ function readTopPickForm(formData: FormData): TopPickFormValues {
     category: readText(formData, "category"),
     description: readText(formData, "description"),
     imageUrl: readText(formData, "image_url"),
+    entryFee: readText(formData, "entry_fee"),
+    notes: readText(formData, "notes"),
+    openingHours,
   };
 }
 
@@ -106,6 +129,15 @@ export async function handleTopPickCreate(
       category: "landmark",
       description: "",
       imageUrl: "",
+      entryFee: "",
+      notes: "",
+      openingHours: Array.from({ length: 7 }, (_, day) => ({
+        day_of_week: day,
+        is_closed: false,
+        opening_time: "",
+        closing_time: "",
+        last_entry_time: "",
+      })),
     },
     errors: emptyTopPickErrors(),
     formError: "",
@@ -127,6 +159,9 @@ export async function handleTopPickCreate(
         category: values.category as TopPickCategory,
         description: values.description || null,
         imageUrl: values.imageUrl || null,
+        entryFee: values.entryFee || null,
+        notes: values.notes || null,
+        openingHours: values.openingHours,
       });
     },
   );
@@ -147,6 +182,23 @@ export async function handleTopPickUpdate(
       category: topPick?.category ?? "landmark",
       description: topPick?.description ?? "",
       imageUrl: topPick?.image_url ?? "",
+      entryFee: topPick?.entry_fee ?? "",
+      notes: topPick?.notes ?? "",
+      openingHours: Array.from({ length: 7 }, (_, day) => {
+        const existing = topPick?.opening_hours?.find(
+          (hour) => hour.day_of_week === day,
+        );
+
+        return (
+          existing ?? {
+            day_of_week: day,
+            is_closed: false,
+            opening_time: "",
+            closing_time: "",
+            last_entry_time: "",
+          }
+        );
+      }),
     },
     errors: emptyTopPickErrors(),
     formError: "",
@@ -168,6 +220,9 @@ export async function handleTopPickUpdate(
         category: values.category as TopPickCategory,
         description: values.description || null,
         imageUrl: values.imageUrl || null,
+        entryFee: values.entryFee || null,
+        notes: values.notes || null,
+        openingHours: values.openingHours,
       });
     },
   );

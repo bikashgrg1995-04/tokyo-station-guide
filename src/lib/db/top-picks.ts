@@ -1,3 +1,4 @@
+
 /* ========================================
    Top Picks Database Helpers
 ======================================== */
@@ -13,6 +14,17 @@ export const TOP_PICK_CATEGORIES = [
 
 export type TopPickCategory = (typeof TOP_PICK_CATEGORIES)[number];
 
+export type TopPickLocationType = "inside" | "connected" | "outside";
+
+export interface TopPickOpeningHour {
+  id?: number;
+  day_of_week: number; // 0 = Sunday, 6 = Saturday
+  is_closed: boolean;
+  opening_time: string | null;
+  closing_time: string | null;
+  last_entry_time: string | null;
+}
+
 export interface TopPick {
   id: number;
   name: string;
@@ -21,6 +33,9 @@ export interface TopPick {
   category: string;
   description: string | null;
   image_url: string | null;
+  entry_fee: string | null;
+  notes: string | null;
+  opening_hours?: TopPickOpeningHour[];
 }
 
 export interface StationTopPick {
@@ -31,8 +46,17 @@ export interface StationTopPick {
   category: string;
   description: string | null;
   image_url: string | null;
+  entry_fee: string | null;
+  notes: string | null;
   sort_order: number;
   walking_minutes: number | null;
+  floor_id: number | null;
+  floor_name: string | null;
+  floor_name_japanese: string | null;
+  exit_id: number | null;
+  exit_name: string | null;
+  exit_code: string | null;
+  location_type: TopPickLocationType;
 }
 
 export interface TopPickInput {
@@ -42,6 +66,9 @@ export interface TopPickInput {
   category: TopPickCategory;
   description?: string | null;
   imageUrl?: string | null;
+  entryFee?: string | null;
+  notes?: string | null;
+  openingHours?: TopPickOpeningHour[];
 }
 
 export interface PaginatedTopPicks {
@@ -50,6 +77,115 @@ export interface PaginatedTopPicks {
   currentPage: number;
   totalPages: number;
   perPage: number;
+}
+
+/* ========================================
+   Shared Opening Hours Helpers
+======================================== */
+
+async function getTopPickOpeningHours(
+  db: D1Database,
+  topPickId: number,
+): Promise<TopPickOpeningHour[]> {
+  const result = await db
+    .prepare(
+      `
+        SELECT
+          id,
+          day_of_week,
+          is_closed,
+          opening_time,
+          closing_time,
+          last_entry_time
+        FROM top_pick_opening_hours
+        WHERE top_pick_id = ?
+        ORDER BY day_of_week ASC
+      `,
+    )
+    .bind(topPickId)
+    .all<TopPickOpeningHour>();
+
+  return result.results.map((hour) => ({
+    ...hour,
+    is_closed: Boolean(hour.is_closed),
+  }));
+}
+
+async function replaceTopPickOpeningHours(
+  db: D1Database,
+  topPickId: number,
+  openingHours: TopPickOpeningHour[],
+): Promise<void> {
+  // Validate weekdays and reject duplicate days before changing data.
+  const seenDays = new Set<number>();
+
+  for (const hour of openingHours) {
+    if (
+      !Number.isInteger(hour.day_of_week) ||
+      hour.day_of_week < 0 ||
+      hour.day_of_week > 6
+    ) {
+      throw new Error("Opening hours contain an invalid day of the week.");
+    }
+
+    if (seenDays.has(hour.day_of_week)) {
+      throw new Error("Opening hours contain a duplicate day.");
+    }
+
+    seenDays.add(hour.day_of_week);
+
+    if (
+      !hour.is_closed &&
+      (!hour.opening_time ||
+        !hour.closing_time ||
+        !/^\d{2}:\d{2}$/.test(hour.opening_time) ||
+        !/^\d{2}:\d{2}$/.test(hour.closing_time))
+    ) {
+      throw new Error("Valid opening and closing times are required.");
+    }
+
+    if (
+      hour.last_entry_time &&
+      !/^\d{2}:\d{2}$/.test(hour.last_entry_time)
+    ) {
+      throw new Error("Last entry time must use HH:MM format.");
+    }
+  }
+
+  // Use a D1 batch so deletion and inserts execute together.
+  const statements: D1PreparedStatement[] = [
+    db
+      .prepare(
+        `DELETE FROM top_pick_opening_hours WHERE top_pick_id = ?`,
+      )
+      .bind(topPickId),
+    ...openingHours.map((hour) =>
+      db
+        .prepare(
+          `
+            INSERT INTO top_pick_opening_hours (
+              top_pick_id,
+              day_of_week,
+              is_closed,
+              opening_time,
+              closing_time,
+              last_entry_time
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+          `,
+        )
+        .bind(
+          topPickId,
+          hour.day_of_week,
+          hour.is_closed ? 1 : 0,
+          hour.is_closed ? null : hour.opening_time,
+          hour.is_closed ? null : hour.closing_time,
+          hour.last_entry_time || null,
+        ),
+    ),
+  ];
+
+  await db.batch(statements);
 }
 
 /* ========================================
@@ -69,7 +205,9 @@ export async function getTopPicks(
           slug,
           category,
           description,
-          image_url
+          image_url,
+          entry_fee,
+          notes
         FROM top_picks
         ORDER BY name ASC
       `,
@@ -108,10 +246,14 @@ export async function getTopPicksPaginated(
           OR slug LIKE ?
           OR category LIKE ?
           OR description LIKE ?
+          OR entry_fee LIKE ?
+          OR notes LIKE ?
       `,
     )
     .bind(
       search,
+      searchValue,
+      searchValue,
       searchValue,
       searchValue,
       searchValue,
@@ -135,7 +277,9 @@ export async function getTopPicksPaginated(
           slug,
           category,
           description,
-          image_url
+          image_url,
+          entry_fee,
+          notes
         FROM top_picks
         WHERE
           ? = ''
@@ -144,12 +288,16 @@ export async function getTopPicksPaginated(
           OR slug LIKE ?
           OR category LIKE ?
           OR description LIKE ?
+          OR entry_fee LIKE ?
+          OR notes LIKE ?
         ORDER BY name ASC
         LIMIT ? OFFSET ?
       `,
     )
     .bind(
       search,
+      searchValue,
+      searchValue,
       searchValue,
       searchValue,
       searchValue,
@@ -187,7 +335,9 @@ export async function getTopPickById(
           slug,
           category,
           description,
-          image_url
+          image_url,
+          entry_fee,
+          notes
         FROM top_picks
         WHERE id = ?
         LIMIT 1
@@ -196,7 +346,16 @@ export async function getTopPickById(
     .bind(id)
     .first<TopPick>();
 
-  return result ?? null;
+  if (!result) {
+    return null;
+  }
+
+  const openingHours = await getTopPickOpeningHours(db, id);
+
+  return {
+    ...result,
+    opening_hours: openingHours,
+  };
 }
 
 /* ========================================
@@ -216,9 +375,11 @@ export async function createTopPick(
           slug,
           category,
           description,
-          image_url
+          image_url,
+          entry_fee,
+          notes
         )
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
     )
     .bind(
@@ -228,10 +389,22 @@ export async function createTopPick(
       input.category,
       input.description?.trim() || null,
       input.imageUrl?.trim() || null,
+      input.entryFee?.trim() || null,
+      input.notes?.trim() || null,
     )
     .run();
 
-  return result.meta.last_row_id;
+  const topPickId = Number(result.meta.last_row_id);
+
+  if (input.openingHours !== undefined) {
+    await replaceTopPickOpeningHours(
+      db,
+      topPickId,
+      input.openingHours,
+    );
+  }
+
+  return topPickId;
 }
 
 /* ========================================
@@ -253,7 +426,9 @@ export async function updateTopPick(
           slug = ?,
           category = ?,
           description = ?,
-          image_url = ?
+          image_url = ?,
+          entry_fee = ?,
+          notes = ?
         WHERE id = ?
       `,
     )
@@ -264,9 +439,19 @@ export async function updateTopPick(
       input.category,
       input.description?.trim() || null,
       input.imageUrl?.trim() || null,
+      input.entryFee?.trim() || null,
+      input.notes?.trim() || null,
       id,
     )
     .run();
+
+  if (input.openingHours !== undefined) {
+    await replaceTopPickOpeningHours(
+      db,
+      id,
+      input.openingHours,
+    );
+  }
 }
 
 /* ========================================
@@ -338,11 +523,24 @@ export async function getStationTopPicks(
           tp.category,
           tp.description,
           tp.image_url,
+          tp.entry_fee,
+          tp.notes,
           stp.sort_order,
-          stp.walking_minutes
+          stp.walking_minutes,
+          stp.floor_id,
+          sf.name AS floor_name,
+          sf.name_japanese AS floor_name_japanese,
+          stp.exit_id,
+          se.name AS exit_name,
+          se.code AS exit_code,
+          stp.location_type
         FROM station_top_picks stp
         INNER JOIN top_picks tp
           ON tp.id = stp.top_pick_id
+        LEFT JOIN station_floors sf
+          ON sf.id = stp.floor_id
+        LEFT JOIN station_exits se
+          ON se.id = stp.exit_id
         WHERE stp.station_id = ?
         ORDER BY stp.sort_order ASC, tp.name ASC
       `,
@@ -371,7 +569,9 @@ export async function getAvailableTopPicksForStation(
           tp.slug,
           tp.category,
           tp.description,
-          tp.image_url
+          tp.image_url,
+          tp.entry_fee,
+          tp.notes
         FROM top_picks tp
         WHERE NOT EXISTS (
           SELECT 1

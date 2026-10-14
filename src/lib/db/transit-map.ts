@@ -1,3 +1,4 @@
+
 /* ========================================
    Transit Map Database Helpers
 ======================================== */
@@ -28,11 +29,6 @@ export interface TransitMapStation {
   code: string | null;
   order: number;
 
-  /*
-   * Station detail popup fields.
-   * Generated from normalized relational tables
-   * and returned as JSON strings for the frontend.
-   */
   description: string | null;
   about: string | null;
   is_verified: number;
@@ -41,7 +37,14 @@ export interface TransitMapStation {
   /** JSON: [{ name, slug, icon, icon_dark, floor, count, note }] */
   facilities: string | null;
 
-  /** JSON: [{ name, name_jp, category, description, minutes }] */
+  /**
+   * JSON: [{
+   *   name, name_jp, category, description, image_url,
+   *   entry_fee, notes, minutes, floor_id, floor_name,
+   *   floor_name_japanese, exit_id, exit_name, exit_code,
+   *   exit_color, location_type, opening_hours, sort_order
+   * }]
+   */
   top_picks: string | null;
 
   /** JSON: [{ name, code, color, type, operator }] */
@@ -97,11 +100,6 @@ export async function getTransitMapData(
     }),
   );
 
-  /*
-   * Get all stations and their line relations.
-   * LEFT JOIN keeps stations without a line.
-   */
-
   const stationResult = await db
     .prepare(
       `
@@ -117,67 +115,65 @@ export async function getTransitMapData(
           s.is_verified AS station_is_verified,
           s.verified_at AS station_verified_at,
 
-         
-/* Facilities */
+          /* Facilities */
 
-(
-  SELECT
-    json_group_array(
-      json_object(
-        'facility_id', facility.facility_id,
-        'name', facility.name,
-        'slug', facility.slug,
-        'icon', facility.icon,
-        'icon_dark', facility.icon_dark,
-        'floor_id', facility.floor_id,
-        'floor', facility.floor,
-        'floor_japanese', facility.floor_japanese,
-        'count', facility.facility_count,
-        'note', facility.note,
-        'exits', json(facility.exits)
-      )
-    )
-  FROM (
-    SELECT
-      f.id AS facility_id,
-      f.name,
-      f.slug,
-      f.icon,
-      f.icon_dark,
-      sf.id AS floor_id,
-      sf.name AS floor,
-      sf.name_japanese AS floor_japanese,
-      sff.facility_count,
-      sff.note,
-      sf.floor_order,
-      (
-        SELECT json_group_array(
-          json_object(
-            'id', se.id,
-            'name', se.name,
-            'name_jp', se.name,
-            'code', se.code,
-            'color', se.color_code
-          )
-        )
-        FROM station_floor_facility_exits sffe
-        INNER JOIN station_exits se
-          ON se.id = sffe.station_exit_id
-        WHERE sffe.station_floor_facility_id = sff.id
-      ) AS exits
-    FROM station_floor_facilities sff
-    INNER JOIN station_floors sf
-      ON sf.id = sff.floor_id
-    INNER JOIN facilities f
-      ON f.id = sff.facility_id
-    WHERE sf.station_id = s.id
-    ORDER BY
-      sf.floor_order ASC,
-      f.sort_order ASC,
-      f.name ASC
-  ) facility
-) AS station_facilities,
-
+          (
+            SELECT
+              json_group_array(
+                json_object(
+                  'facility_id', facility.facility_id,
+                  'name', facility.name,
+                  'slug', facility.slug,
+                  'icon', facility.icon,
+                  'icon_dark', facility.icon_dark,
+                  'floor_id', facility.floor_id,
+                  'floor', facility.floor,
+                  'floor_japanese', facility.floor_japanese,
+                  'count', facility.facility_count,
+                  'note', facility.note,
+                  'exits', json(facility.exits)
+                )
+              )
+            FROM (
+              SELECT
+                f.id AS facility_id,
+                f.name,
+                f.slug,
+                f.icon,
+                f.icon_dark,
+                sf.id AS floor_id,
+                sf.name AS floor,
+                sf.name_japanese AS floor_japanese,
+                sff.facility_count,
+                sff.note,
+                sf.floor_order,
+                (
+                  SELECT json_group_array(
+                    json_object(
+                      'id', se.id,
+                      'name', se.name,
+                      'name_jp', se.name,
+                      'code', se.code,
+                      'color', se.color_code
+                    )
+                  )
+                  FROM station_floor_facility_exits sffe
+                  INNER JOIN station_exits se
+                    ON se.id = sffe.station_exit_id
+                  WHERE sffe.station_floor_facility_id = sff.id
+                ) AS exits
+              FROM station_floor_facilities sff
+              INNER JOIN station_floors sf
+                ON sf.id = sff.floor_id
+              INNER JOIN facilities f
+                ON f.id = sff.facility_id
+              WHERE sf.station_id = s.id
+              ORDER BY
+                sf.floor_order ASC,
+                f.sort_order ASC,
+                f.name ASC
+            ) facility
+          ) AS station_facilities,
 
           /* Top Picks */
 
@@ -189,7 +185,20 @@ export async function getTransitMapData(
                   'name_jp', top_pick.name_japanese,
                   'category', top_pick.category,
                   'description', top_pick.description,
-                  'minutes', top_pick.walking_minutes
+                  'image_url', top_pick.image_url,
+                  'entry_fee', top_pick.entry_fee,
+                  'notes', top_pick.notes,
+                  'minutes', top_pick.walking_minutes,
+                  'floor_id', top_pick.floor_id,
+                  'floor_name', top_pick.floor_name,
+                  'floor_name_japanese', top_pick.floor_name_japanese,
+                  'exit_id', top_pick.exit_id,
+                  'exit_name', top_pick.exit_name,
+                  'exit_code', top_pick.exit_code,
+                  'exit_color', top_pick.exit_color,
+                  'location_type', top_pick.location_type,
+                  'opening_hours', json(top_pick.opening_hours),
+                  'sort_order', top_pick.sort_order
                 )
               )
             FROM (
@@ -198,12 +207,44 @@ export async function getTransitMapData(
                 tp.name_japanese,
                 tp.category,
                 tp.description,
-                stp.walking_minutes
+                tp.image_url,
+                tp.entry_fee,
+                tp.notes,
+                stp.walking_minutes,
+                stp.floor_id,
+                sf.name AS floor_name,
+                sf.name_japanese AS floor_name_japanese,
+                stp.exit_id,
+                se.name AS exit_name,
+                se.code AS exit_code,
+                se.color_code AS exit_color,
+                stp.location_type,
+                stp.sort_order,
+                (
+                  SELECT
+                    json_group_array(
+                      json_object(
+                        'day_of_week', oph.day_of_week,
+                        'is_closed', oph.is_closed,
+                        'opening_time', oph.opening_time,
+                        'closing_time', oph.closing_time,
+                        'last_entry_time', oph.last_entry_time
+                      )
+                    )
+                  FROM top_pick_opening_hours oph
+                  WHERE oph.top_pick_id = tp.id
+                ) AS opening_hours
               FROM station_top_picks stp
               INNER JOIN top_picks tp
                 ON tp.id = stp.top_pick_id
+              LEFT JOIN station_floors sf
+                ON sf.id = stp.floor_id
+              LEFT JOIN station_exits se
+                ON se.id = stp.exit_id
               WHERE stp.station_id = s.id
-              ORDER BY stp.sort_order ASC
+              ORDER BY
+                stp.sort_order ASC,
+                tp.name ASC
             ) top_pick
           ) AS station_top_picks,
 

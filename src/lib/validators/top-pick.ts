@@ -1,3 +1,6 @@
+
+import type { TopPickOpeningHour } from "../db/top-picks";
+
 export interface TopPickFormValues {
   name: string;
   nameJapanese: string;
@@ -5,12 +8,17 @@ export interface TopPickFormValues {
   category: string;
   description: string;
   imageUrl: string;
+  entryFee: string;
+  notes: string;
+  openingHours: TopPickOpeningHour[];
 }
 
 export type TopPickFormErrors = Record<
-  keyof TopPickFormValues,
+  Exclude<keyof TopPickFormValues, "openingHours">,
   string
->;
+> & {
+  openingHours: string;
+};
 
 export const TOP_PICK_CATEGORIES = [
   "landmark",
@@ -21,6 +29,8 @@ export const TOP_PICK_CATEGORIES = [
   "temple",
 ] as const;
 
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 export function emptyTopPickErrors(): TopPickFormErrors {
   return {
     name: "",
@@ -29,6 +39,9 @@ export function emptyTopPickErrors(): TopPickFormErrors {
     category: "",
     description: "",
     imageUrl: "",
+    entryFee: "",
+    notes: "",
+    openingHours: "",
   };
 }
 
@@ -72,6 +85,14 @@ export function validateTopPickForm(
       "Description must be 2000 characters or less.";
   }
 
+  if (values.entryFee.trim().length > 150) {
+    errors.entryFee = "Entry fee must be 150 characters or less.";
+  }
+
+  if (values.notes.length > 2000) {
+    errors.notes = "Notes must be 2000 characters or less.";
+  }
+
   if (values.imageUrl.trim()) {
     try {
       const url = new URL(values.imageUrl.trim());
@@ -81,6 +102,58 @@ export function validateTopPickForm(
       }
     } catch {
       errors.imageUrl = "Enter a valid image URL.";
+    }
+  }
+
+  if (values.openingHours.length > 7) {
+    errors.openingHours = "Opening hours cannot contain more than 7 days.";
+  } else {
+    const seenDays = new Set<number>();
+
+    for (const hour of values.openingHours) {
+      if (
+        !Number.isInteger(hour.day_of_week) ||
+        hour.day_of_week < 0 ||
+        hour.day_of_week > 6
+      ) {
+        errors.openingHours = "Select a valid day for opening hours.";
+        break;
+      }
+
+      if (seenDays.has(hour.day_of_week)) {
+        errors.openingHours = "Each weekday can only be entered once.";
+        break;
+      }
+
+      seenDays.add(hour.day_of_week);
+
+      if (hour.is_closed) {
+        continue;
+      }
+
+      if (
+        !hour.opening_time ||
+        !TIME_PATTERN.test(hour.opening_time)
+      ) {
+        errors.openingHours =
+          "Enter a valid opening time for every open day.";
+        break;
+      }
+
+      if (
+        !hour.closing_time ||
+        !TIME_PATTERN.test(hour.closing_time)
+      ) {
+        errors.openingHours =
+          "Enter a valid closing time for every open day.";
+        break;
+      }
+
+      if (hour.last_entry_time && !TIME_PATTERN.test(hour.last_entry_time)) {
+        errors.openingHours =
+          "Last entry time must use HH:MM format.";
+        break;
+      }
     }
   }
 
