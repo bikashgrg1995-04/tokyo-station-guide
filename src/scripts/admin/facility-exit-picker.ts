@@ -169,6 +169,19 @@
     if (pillContainer) {
       pillContainer.replaceChildren();
 
+      // Pills are clipped to one line in the table, so list them all here.
+      pillContainer.title = selectedIds
+        .map(
+          (id) =>
+            options
+              .find((item) => item.value === id)
+              ?.closest(".facility-exit-picker-option")
+              ?.querySelector("strong")
+              ?.textContent?.trim() ?? "",
+        )
+        .filter(Boolean)
+        .join(", ");
+
       if (selectedIds.length === 0) {
         const empty = document.createElement("span");
         empty.className = "facility-exit-empty";

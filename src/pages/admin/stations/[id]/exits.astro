@@ -1,0 +1,74 @@
+---
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import "../../../../styles/admin/forms.css";
+import "../../../../styles/admin/stations.css";
+import "../../../../styles/admin/tables.css";
+import "../../../../styles/admin/lines.css";
+
+import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
+import StationExitsPanel from "../../../../components/admin/StationExitsPanel.astro";
+
+import { getStationById } from "../../../../lib/db/stations";
+import { handleStationExits } from "../../../../lib/services/station-exits";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+const db = env.DB;
+
+const id = Number(Astro.params.id);
+
+if (!Number.isInteger(id) || id <= 0) {
+  return Astro.redirect("/admin/stations");
+}
+
+const station = await getStationById(db, id);
+
+if (!station) {
+  return Astro.redirect("/admin/stations");
+}
+
+const exitForm = await handleStationExits(Astro.request, db, id);
+
+if (exitForm.redirectTo) {
+  return Astro.redirect(exitForm.redirectTo);
+}
+---
+
+<AdminLayout
+  title={`Manage Exits - ${station.name}`}
+  activePath="/admin/stations"
+>
+  <header class="admin-topbar">
+    <Breadcrumbs
+      backHref="/admin/stations"
+      parentLabel="Stations"
+      current="Manage Exits"
+    />
+  </header>
+
+  <div class="admin-content">
+    <div class="admin-page-header">
+      <div>
+        <h2>Manage Exits</h2>
+        <p>
+          Manage the exits of <strong>{station.name}</strong>, including their
+          floor, code, color and directions. Facilities pick their nearby exits
+          from this list on the Edit Station page.
+        </p>
+      </div>
+    </div>
+
+    <StationExitsPanel
+      stationName={station.name}
+      stationId={station.id}
+      exits={exitForm.exits}
+      floors={exitForm.floors}
+      values={exitForm.values}
+      errors={exitForm.errors}
+      formError={exitForm.formError}
+      editingId={exitForm.editingId}
+      nextSortOrder={exitForm.nextSortOrder}
+    />
+  </div>
+</AdminLayout>

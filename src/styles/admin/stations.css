@@ -785,134 +785,283 @@
 }
 
 
-
 /* ========================================
-   Add / Edit Station — Final Layout
+   Add / Edit Station — Compact Layout
+   Stacked full-width sections, compact fields.
 ======================================== */
 
-.admin-station-form {
-  width: 100%;
-  max-width: none;
-  min-width: 0;
-  box-sizing: border-box;
+.admin-station-page > h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.3;
 }
 
-/* Verification beside Facilities */
-.admin-station-setup-grid {
+.admin-station-page > p {
+  margin: 4px 0 16px;
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-station-page > p strong {
+  color: var(--admin-text);
+  font-weight: 600;
+}
+
+/* One column: every section is full width, never side by side. */
+.admin-station-page .admin-form {
   display: grid;
-  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.8fr);
-  gap: 18px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.admin-station-page .admin-panel,
+.admin-station-page .admin-panel-body {
   width: 100%;
-  margin-top: 20px;
-}
-
-.admin-station-setup-grid > * {
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-/* Verification panel */
-.admin-station-verification-panel {
-  min-width: 0;
-  height: fit-content;
-}
-
-.admin-station-verification-panel .admin-panel-body {
-  padding: 18px;
-}
-
-.admin-station-verification-panel .admin-station-feature-header {
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-
-.admin-station-verification-panel .admin-verification-toggle {
-  width: 100%;
-  max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
 }
 
-/* Facilities and Top Picks panels */
-.admin-station-setup-grid .admin-station-feature-panel,
-.admin-station-top-picks-section .admin-station-feature-panel {
-  width: 100%;
+.admin-station-page .admin-panel-body {
+  padding: 16px;
+}
+
+.admin-station-page .admin-station-form-header {
+  margin-bottom: 12px;
+}
+
+.admin-station-page .admin-station-form-header h3 {
+  font-size: 16px;
+}
+
+.admin-station-page .admin-station-feature-header {
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-station-page .admin-station-feature-header > div:first-child {
+  flex: 1 1 220px;
   min-width: 0;
-  max-width: 100%;
+}
+
+.admin-station-page .admin-station-feature-header h3 {
+  font-size: 16px;
+}
+
+.admin-station-page .admin-station-feature-header p {
+  font-size: 12px;
+}
+
+.admin-station-page .admin-form-actions {
+  margin-top: 0;
+  padding-top: 14px;
+}
+
+.admin-station-note {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px dashed var(--admin-border);
+  border-radius: 10px;
+  color: var(--admin-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.admin-station-note strong {
+  color: var(--admin-text);
+  font-weight: 600;
+}
+
+/* ---- Station fields: 12-column grid ---- */
+
+.admin-station-fields {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+.admin-station-fields > .span-3 {
+  grid-column: span 3;
+}
+
+.admin-station-fields > .span-4 {
+  grid-column: span 4;
+}
+
+.admin-station-fields > .span-6 {
+  grid-column: span 6;
+}
+
+.admin-station-fields .admin-form-group {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.admin-station-fields .admin-form-group label,
+.admin-station-field-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-label-hint {
+  margin-left: 4px;
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.admin-station-fields .admin-form-group input,
+.admin-station-fields .admin-form-group textarea {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.admin-station-fields .admin-form-group small {
+  margin-top: 3px;
+}
+
+.admin-station-fields .admin-station-description {
+  min-height: 64px !important;
+}
+
+.admin-station-verified {
+  min-width: 0;
+}
+
+.admin-station-verified .admin-verification-toggle {
   box-sizing: border-box;
+  max-width: none;
+  min-height: 38px;
+  padding: 6px 12px;
+  border-radius: 8px;
 }
 
-.admin-station-setup-grid .admin-panel-body,
-.admin-station-top-picks-section .admin-panel-body {
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-/* Top Picks occupies the full width below */
-.admin-station-top-picks-section {
-  width: 100%;
-  min-width: 0;
-  margin-top: 20px;
-}
-
-.admin-station-top-picks-section > * {
-  min-width: 0;
-  max-width: 100%;
-}
-
-/* Prevent tables from cutting off columns */
-.admin-station-setup-grid .admin-table-wrapper,
-.admin-station-setup-grid .admin-table-container,
-.admin-station-setup-grid .admin-table-scroll,
-.admin-station-top-picks-section .admin-table-wrapper,
-.admin-station-top-picks-section .admin-table-container,
-.admin-station-top-picks-section .admin-table-scroll {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
+/* ---- Facilities and top picks tables ---- */
 
 .admin-compact-table {
   width: 100%;
-  min-width: 620px;
-  border-collapse: collapse;
+  min-width: 0;
+  border-collapse: separate;
 }
 
 .admin-compact-table th,
 .admin-compact-table td {
-  padding: 10px;
+  padding: 6px 10px;
   vertical-align: middle;
 }
 
-.admin-compact-table .admin-line-name {
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.admin-compact-table th:first-child,
+.admin-compact-table td:first-child {
+  padding-left: 14px;
+}
+
+.admin-compact-table th:last-child,
+.admin-compact-table td:last-child {
+  padding-right: 14px;
+}
+
+.admin-compact-table input:not([type="hidden"]):not([type="color"]):not([type="checkbox"]) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 9px;
+  border: 1px solid var(--admin-border);
+  border-radius: 7px;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.admin-compact-table input[type="number"] {
+  width: 76px;
+}
+
+.admin-compact-table input[name="facility_entry_note"] {
+  min-width: 160px;
+}
+
+.admin-top-pick-japanese {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.3;
+  opacity: 0.65;
+}
+
+/* Pills are created by scripts too, so these must be global styles. */
+.admin-floor-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  background: var(--admin-muted-bg, #f3f4f6);
+  color: var(--admin-text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
   white-space: nowrap;
 }
 
-/* Responsive layout */
+/* Nearby exits: one line (full list in the tooltip), button beside it. */
+.facility-exit-pills {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+  max-width: 220px;
+  margin: 0 0.5rem 0 0;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.facility-exit-pill {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  background: var(--admin-muted-bg, #f3f4f6);
+  color: var(--admin-text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.facility-exit-empty {
+  color: var(--admin-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+[data-open-facility-exits] {
+  height: 28px;
+  vertical-align: middle;
+}
+
 @media (max-width: 900px) {
-  .admin-station-setup-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .admin-station-fields > .span-3,
+  .admin-station-fields > .span-4 {
+    grid-column: span 6;
   }
 }
 
-@media (max-width: 760px) {
-  .admin-station-setup-grid .admin-panel-body,
-  .admin-station-top-picks-section .admin-panel-body {
+@media (max-width: 560px) {
+  .admin-station-fields > .span-3,
+  .admin-station-fields > .span-4,
+  .admin-station-fields > .span-6 {
+    grid-column: 1 / -1;
+  }
+
+  .admin-station-page .admin-panel-body {
     padding: 14px;
-  }
-
-  .admin-compact-table {
-    min-width: 580px;
-  }
-
-  .admin-station-top-picks-section {
-    margin-top: 16px;
   }
 }

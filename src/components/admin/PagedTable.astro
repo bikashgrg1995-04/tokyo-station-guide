@@ -1,0 +1,76 @@
+---
+/**
+ * A table with a fixed height (5 rows), a search box above it and
+ * pagination below it. Put the <table> in the default slot.
+ *
+ * The behaviour lives in scripts/admin/shared/table-pager.ts and works on
+ * the first <tbody>, so rows can still be added and removed by other scripts.
+ */
+import "../../styles/admin/paged-table.css";
+import SearchInput from "../common/SearchInput.astro";
+
+export interface Props {
+  id: string;
+  /** Selects one data row inside the table (not the empty-state row). */
+  rowSelector: string;
+  /** Plural noun for the labels, e.g. "facility entries". */
+  noun: string;
+  searchLabel: string;
+  searchPlaceholder: string;
+  pageSize?: number;
+}
+
+const {
+  id,
+  rowSelector,
+  noun,
+  searchLabel,
+  searchPlaceholder,
+  pageSize = 5,
+} = Astro.props;
+---
+
+<div
+  class="admin-paged-table"
+  id={id}
+  data-paged-table
+  data-row-selector={rowSelector}
+  data-page-size={pageSize}
+  data-noun={noun}
+>
+  <div class="admin-paged-toolbar" data-paged-toolbar>
+    <!--
+      The station form is one big <form>. This search box points at a form
+      that does not exist, so it is not part of it: it is never submitted
+      and pressing Enter in it cannot save the station.
+    -->
+    <SearchInput
+      id={`${id}-search`}
+      name=""
+      form={`${id}-no-form`}
+      placeholder={searchPlaceholder}
+      ariaLabel={searchLabel}
+    />
+
+    <span class="admin-paged-count" data-paged-count aria-live="polite"></span>
+  </div>
+
+  <div class="admin-table-wrapper admin-paged-wrapper">
+    <slot />
+  </div>
+
+  <p class="admin-feature-empty" data-paged-empty hidden>
+    No {noun} match your search.
+  </p>
+
+  <div class="admin-table-footer admin-paged-footer" data-paged-footer>
+    <span data-paged-info aria-live="polite"></span>
+    <div class="admin-table-pagination" data-paged-nav></div>
+  </div>
+</div>
+
+<script>
+  import { initializePagedTables } from "../../scripts/admin/shared/table-pager";
+
+  initializePagedTables();
+</script>

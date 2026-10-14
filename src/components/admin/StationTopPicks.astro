@@ -1,6 +1,7 @@
 ---
 import Button from "../common/Button.astro";
 import ConfirmDialog from "../common/ConfirmDialog.astro";
+import PagedTable from "./PagedTable.astro";
 
 interface TopPick {
   id: number;
@@ -31,247 +32,127 @@ const {
      Top Picks
 ======================================== -->
 
-<section class="admin-panel">
-
+<section class="admin-panel admin-station-feature-panel">
   <div class="admin-panel-body">
-
-    <div class="admin-station-form">
-
-      <!-- Header -->
-
-      <div class="admin-station-form-header">
-
-        <div
-          style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            gap:16px;
-          "
-        >
-
-          <div>
-
-            <h3>
-              Top Picks
-            </h3>
-
-            <p>
-              Manage the top picks available at
-              <strong>{stationName}</strong>.
-              Changes are applied when you save the station.
-            </p>
-
-          </div>
-
-          {
-            availableTopPicks.length > 0 && (
-              <Button
-                type="button"
-                variant="primary"
-                id="open-add-top-pick-button"
-              >
-                + Add Top Pick
-              </Button>
-            )
-          }
-
-        </div>
-
+    <div class="admin-station-feature-header">
+      <div>
+        <h3>Top Picks</h3>
+        <p>
+          Places worth visiting near <strong>{stationName}</strong>. Changes
+          are applied when you save the station.
+        </p>
       </div>
 
-
-      <!-- ========================================
-           Temporary Top Pick Inputs
-      ======================================== -->
-
-      <div id="station-top-pick-inputs">
-
-        {
-          assignedTopPicks.map(
-            (topPick) => (
-              <input
-                type="hidden"
-                name="top_pick_ids"
-                value={topPick.id}
-                data-top-pick-input={topPick.id}
-              />
-            ),
-          )
-        }
-
-      </div>
-
-
-      <!-- ========================================
-           Top Pick Table
-      ======================================== -->
-
-      <div class="admin-table-wrapper">
-
-        <table
-          class="admin-table"
-          id="station-top-picks-table"
-        >
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Top Pick
-              </th>
-
-              <th>
-                Slug
-              </th>
-
-              <th>
-                Category
-              </th>
-
-              <th>
-                Actions
-              </th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody id="station-top-picks-body">
-
-            {
-              assignedTopPicks.length > 0 ? (
-
-                assignedTopPicks.map(
-                  (topPick) => (
-
-                    <tr
-                      data-top-pick-row
-                      data-top-pick-id={topPick.id}
-                    >
-
-                      <td>
-
-                        <div class="admin-line-name">
-                          {topPick.name}
-                        </div>
-
-                        {
-                          topPick.name_japanese && (
-                            <div
-                              style="
-                                margin-top:4px;
-                                opacity:0.65;
-                                font-size:0.85rem;
-                              "
-                            >
-                              {topPick.name_japanese}
-                            </div>
-                          )
-                        }
-
-                      </td>
-
-
-                      <td>
-
-                        <span class="admin-line-slug">
-                          {topPick.slug}
-                        </span>
-
-                      </td>
-
-
-                      <td>
-
-                        <span class="admin-line-slug">
-                          {topPick.category}
-                        </span>
-
-                      </td>
-
-
-                      <td>
-
-                        <div class="admin-table-actions">
-
-                          <button
-                            type="button"
-                            class="admin-table-action admin-table-action-delete"
-                            data-remove-top-pick={topPick.id}
-                            data-top-pick-name={topPick.name}
-                          >
-                            Remove
-                          </button>
-
-                        </div>
-
-                      </td>
-
-                    </tr>
-
-                  ),
-                )
-
-              ) : (
-
-                <tr id="station-top-picks-empty-row">
-
-                  <td colspan="4">
-
-                    <div class="admin-empty">
-
-                      <div class="admin-empty-icon">
-                        ◦
-                      </div>
-
-                      <h3>
-                        No Top Picks Assigned
-                      </h3>
-
-                      <p>
-                        There are currently no top picks
-                        assigned to this station.
-                      </p>
-
-                    </div>
-
-                  </td>
-
-                </tr>
-
-              )
-            }
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-
-      <!-- ========================================
-           All Top Picks Assigned
-      ======================================== -->
-
-      <p
-        id="all-top-picks-message"
-        style="
-          margin-top:12px;
-          opacity:0.7;
-        "
-        hidden
-      >
-        All available top picks are already assigned
-        to this station.
-      </p>
-
+      {
+        availableTopPicks.length > 0 && (
+          <Button
+            type="button"
+            variant="primary"
+            id="open-add-top-pick-button"
+          >
+            + Add Top Pick
+          </Button>
+        )
+      }
     </div>
 
-  </div>
+    <!-- Hidden inputs: the submitted top pick IDs, in display order. -->
+    <div id="station-top-pick-inputs">
+      {
+        assignedTopPicks.map((topPick) => (
+          <input
+            type="hidden"
+            name="top_pick_ids"
+            value={topPick.id}
+            data-top-pick-input={topPick.id}
+          />
+        ))
+      }
+    </div>
 
+    <PagedTable
+      id="station-top-picks-paged"
+      rowSelector="[data-top-pick-row]"
+      noun="top picks"
+      searchLabel="Search assigned top picks"
+      searchPlaceholder="Search name, slug or category..."
+    >
+      <table
+        class="admin-table admin-compact-table"
+        id="station-top-picks-table"
+      >
+        <thead>
+          <tr>
+            <th>Top Pick</th>
+            <th>Slug</th>
+            <th>Category</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody id="station-top-picks-body">
+          {
+            assignedTopPicks.length > 0 ? (
+              assignedTopPicks.map((topPick) => (
+                <tr data-top-pick-row data-top-pick-id={topPick.id}>
+                  <td>
+                    <div class="admin-line-name">{topPick.name}</div>
+
+                    {topPick.name_japanese && (
+                      <div class="admin-top-pick-japanese">
+                        {topPick.name_japanese}
+                      </div>
+                    )}
+                  </td>
+
+                  <td>
+                    <span class="admin-line-slug">{topPick.slug}</span>
+                  </td>
+
+                  <td>
+                    <span class="admin-line-slug">{topPick.category}</span>
+                  </td>
+
+                  <td>
+                    <div class="admin-table-actions">
+                      <button
+                        type="button"
+                        class="admin-table-action admin-table-action-delete"
+                        data-remove-top-pick={topPick.id}
+                        data-top-pick-name={topPick.name}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr id="station-top-picks-empty-row">
+                <td colspan="4">
+                  <div class="admin-empty">
+                    <div class="admin-empty-icon">◦</div>
+
+                    <h3>No Top Picks Assigned</h3>
+
+                    <p>
+                      There are currently no top picks assigned to this
+                      station.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            )
+          }
+        </tbody>
+      </table>
+    </PagedTable>
+
+    <!-- Shown by the script when every top pick is already assigned. -->
+    <p id="all-top-picks-message" class="admin-feature-message" hidden>
+      All available top picks are already assigned to this station.
+    </p>
+  </div>
 </section>
 
 

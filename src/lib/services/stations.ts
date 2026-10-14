@@ -25,14 +25,7 @@ import {
 import { getStationFloors } from "../db/station-floors";
 import type { StationFacilityInput } from "../db/stations/types";
 
-import {
-  createStationExit,
-  deleteStationExit,
-  getStationExits,
-  updateStationExit,
-  type StationExit,
-  type StationExitInput,
-} from "../db/station-exits";
+import { getStationExits, type StationExit } from "../db/station-exits";
 
 import {
   hasErrors,
@@ -51,7 +44,6 @@ import {
 
 const LIST_PATH = "/admin/stations";
 const PER_PAGE = 10;
-const HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{6})$/;
 
 interface StationFormBase {
   redirectTo: string | null;
@@ -75,11 +67,6 @@ export interface StationEditResult extends StationFormBase {
 
 interface ParsedStationFacilities {
   entries: StationFacilityInput[];
-  error: string | null;
-}
-
-interface ParsedStationExits {
-  entries: Array<StationExitInput & { id: number | null }>;
   error: string | null;
 }
 
@@ -238,114 +225,6 @@ function readStationFacilities(
   };
 }
 
-/**
- * Reads exit rows submitted by the admin form.
- */
-function readStationExits(formData: FormData): ParsedStationExits {
-  const ids = formData.getAll("exit_entry_id");
-  const floorIds = formData.getAll("exit_entry_floor_id");
-  const names = formData.getAll("exit_entry_name");
-  const codes = formData.getAll("exit_entry_code");
-  const descriptions = formData.getAll("exit_entry_description");
-  const colors = formData.getAll("exit_entry_color_code");
-  const sortOrders = formData.getAll("exit_entry_sort_order");
-
-  const entries: ParsedStationExits["entries"] = [];
-  const errors: string[] = [];
-
-  const rowCount = Math.max(
-    ids.length,
-    floorIds.length,
-    names.length,
-    codes.length,
-    descriptions.length,
-    colors.length,
-    sortOrders.length,
-  );
-
-  for (let index = 0; index < rowCount; index += 1) {
-    const rawId = String(ids[index] ?? "").trim();
-    const rawFloorId = String(floorIds[index] ?? "").trim();
-    const name = String(names[index] ?? "").trim();
-    const code = String(codes[index] ?? "").trim();
-    const description = String(descriptions[index] ?? "").trim();
-    const colorCode = String(colors[index] ?? "").trim();
-    const rawSortOrder = String(sortOrders[index] ?? "").trim();
-
-    if (
-      !rawId &&
-      !rawFloorId &&
-      !name &&
-      !code &&
-      !description &&
-      !colorCode &&
-      !rawSortOrder
-    ) {
-      continue;
-    }
-
-    const id = rawId ? Number(rawId) : null;
-    const floorId = Number(rawFloorId);
-    const sortOrder = rawSortOrder ? Number(rawSortOrder) : index + 1;
-
-    if (id !== null && (!Number.isInteger(id) || id <= 0)) {
-      errors.push(`Exit row ${index + 1}: invalid exit ID.`);
-      continue;
-    }
-
-    if (!Number.isInteger(floorId) || floorId <= 0) {
-      errors.push(`Exit row ${index + 1}: select a valid floor.`);
-      continue;
-    }
-
-    if (!name) {
-      errors.push(`Exit row ${index + 1}: exit name is required.`);
-      continue;
-    }
-
-    if (colorCode && !HEX_COLOR_REGEX.test(colorCode)) {
-      errors.push(
-        `Exit row ${index + 1}: color must be a HEX value such as #E53935.`,
-      );
-      continue;
-    }
-
-    if (!Number.isInteger(sortOrder) || sortOrder < 0) {
-      errors.push(
-        `Exit row ${index + 1}: sort order must be a non-negative whole number.`,
-      );
-      continue;
-    }
-
-    entries.push({
-      id,
-      floorId,
-      name,
-      code: code || null,
-      description: description || null,
-      colorCode: colorCode || null,
-      sortOrder,
-    });
-  }
-
-  const seenIds = new Set<number>();
-
-  for (const entry of entries) {
-    if (entry.id === null) continue;
-
-    if (seenIds.has(entry.id)) {
-      errors.push(`Exit ID ${entry.id} was submitted more than once.`);
-    }
-
-    seenIds.add(entry.id);
-  }
-
-  return {
-    entries,
-    error: errors[0] ?? null,
-  };
-}
-
 function readStationForm(formData: FormData) {
   const values: StationFormValues = {
     name: readText(formData, "name"),
@@ -359,15 +238,12 @@ function readStationForm(formData: FormData) {
   };
 
   const parsedFacilities = readStationFacilities(formData);
-  const parsedExits = readStationExits(formData);
 
   return {
     values,
     facilityIds: readIds(formData, "facility_ids"),
     stationFacilities: parsedFacilities.entries,
     stationFacilitiesError: parsedFacilities.error,
-    stationExits: parsedExits.entries,
-    stationExitsError: parsedExits.error,
     topPickIds: readIds(formData, "top_pick_ids"),
   };
 }
@@ -533,16 +409,11 @@ export async function handleStationUpdate(
     return result;
   }
 
-  // Only synchronize exits when the exits panel submits its marker.
-  const exitsEnabled = formData.get("station_exits_enabled") === "1";
-
   const {
     values,
     facilityIds,
     stationFacilities,
     stationFacilitiesError,
-    stationExits,
-    stationExitsError,
     topPickIds,
   } = readStationForm(formData);
 
@@ -583,26 +454,6 @@ export async function handleStationUpdate(
       "One or more selected exits do not belong to this station.";
   }
 
-  if (exitsEnabled) {
-    if (stationExitsError) {
-      result.formError = stationExitsError;
-    }
-
-    if (stationExits.some((entry) => !validFloorIds.has(entry.floorId))) {
-      result.formError =
-        "One or more selected exit floors do not belong to this station.";
-    }
-
-    if (
-      stationExits.some(
-        (entry) => entry.id !== null && !existingExitIds.has(entry.id),
-      )
-    ) {
-      result.formError =
-        "One or more submitted exits do not belong to this station.";
-    }
-  }
-
   if (!hasErrors(result.errors) && !result.formError) {
     try {
       await updateStation(
@@ -616,36 +467,12 @@ export async function handleStationUpdate(
         ),
       );
 
-      if (exitsEnabled) {
-        for (const entry of stationExits) {
-          const { id: exitId, ...exitInput } = entry;
-
-          if (exitId === null) {
-            await createStationExit(db, id, exitInput);
-          } else {
-            await updateStationExit(db, id, exitId, exitInput);
-          }
-        }
-
-        const submittedExitIds = new Set(
-          stationExits
-            .map((entry) => entry.id)
-            .filter((exitId): exitId is number => exitId !== null),
-        );
-
-        for (const existingExit of existingExits) {
-          if (!submittedExitIds.has(existingExit.id)) {
-            await deleteStationExit(db, id, existingExit.id);
-          }
-        }
-      }
-
       result.redirectTo = LIST_PATH;
       return result;
     } catch (err) {
       console.error(err);
       result.formError =
-        "Unable to update station or exits. Please check the submitted values and try again.";
+        "Unable to update the station. Please check the submitted values and try again.";
     }
   }
 
@@ -711,30 +538,8 @@ export async function handleStationUpdate(
     (item) => !topPickIds.includes(item.id),
   );
 
-  // If the exits panel was not submitted, retain database exits unchanged.
-  if (!exitsEnabled) {
-    result.stationExits = existingExits;
-  } else {
-    result.stationExits = stationExits.map((entry) => {
-      const existing =
-        entry.id === null
-          ? null
-          : existingExits.find((exit) => exit.id === entry.id);
-
-      return {
-        id: entry.id ?? 0,
-        station_id: id,
-        floor_id: entry.floorId,
-        name: entry.name,
-        code: entry.code ?? null,
-        description: entry.description ?? null,
-        color_code: entry.colorCode ?? null,
-        sort_order: entry.sortOrder ?? 0,
-        created_at: existing?.created_at ?? "",
-        updated_at: existing?.updated_at ?? "",
-      };
-    });
-  }
+  // Exits are managed on their own page; the picker keeps the saved ones.
+  result.stationExits = existingExits;
 
   return result;
 }

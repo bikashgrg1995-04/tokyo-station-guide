@@ -38,7 +38,7 @@ const error = form.formError;
     />
   </header>
 
-  <div class="admin-content">
+  <div class="admin-content admin-station-page">
     <h2>Add Station</h2>
 
     <p>Add a railway or subway station to the Tokyo Station Guide.</p>
@@ -47,67 +47,29 @@ const error = form.formError;
       <!-- Station Details -->
       <section class="admin-panel">
         <div class="admin-panel-body">
-          <div class="admin-station-form">
-            <div class="admin-station-form-header">
-              <h3>Station Details</h3>
-              <p>Enter the basic information for this station.</p>
-            </div>
-
-            {error && <Alert>{error}</Alert>}
-
-            <StationFormFields values={form.values} errors={errors} />
+          <div class="admin-station-form-header">
+            <h3>Station Details</h3>
           </div>
+
+          {error && <Alert>{error}</Alert>}
+
+          <StationFormFields values={form.values} errors={errors} />
         </div>
       </section>
 
-      <!-- Station Verification + Facilities -->
-      <div class="admin-station-setup-grid">
-        <section class="admin-panel admin-station-verification-panel">
-          <div class="admin-panel-body">
-            <div class="admin-station-feature-header">
-              <div>
-                <h3>Station Verification</h3>
-                <p>Manage this station's verification status.</p>
-              </div>
-            </div>
-
-            <div class="admin-verification-toggle">
-              <div class="admin-verification-copy">
-                <span class="admin-verification-title"> Verified station </span>
-
-                <small> Mark this station as verified. </small>
-              </div>
-
-              <label class="admin-switch" for="is_verified">
-                <input
-                  id="is_verified"
-                  name="is_verified"
-                  type="checkbox"
-                  checked={form.values.isVerified}
-                />
-                <span class="admin-switch-slider"></span>
-              </label>
-            </div>
-          </div>
-        </section>
-
-        <section class="admin-card">
-          <h2>Facilities</h2>
-          <p>
-            Create the station first, then add its floors and assign facilities
-            from the Edit Station page.
-          </p>
-        </section>
-      </div>
+      <!-- Floors, platforms, exits and facilities come after the station exists -->
+      <p class="admin-station-note">
+        After creating the station, open <strong>Edit</strong> to add its
+        facilities, and use <strong>Floors</strong>, <strong>Platforms</strong>{" "}
+        and <strong>Exits</strong> in the station list to manage the rest.
+      </p>
 
       <!-- Top Picks -->
-      <section class="admin-station-top-picks-section">
-        <StationTopPicks
-          stationName={name || "this station"}
-          assignedTopPicks={[]}
-          availableTopPicks={topPicks}
-        />
-      </section>
+      <StationTopPicks
+        stationName={name || "this station"}
+        assignedTopPicks={[]}
+        availableTopPicks={topPicks}
+      />
 
       <!-- Form Actions -->
       <div class="admin-form-actions">
@@ -121,16 +83,6 @@ const error = form.formError;
   </div>
 
   <Fragment slot="after">
-    <!-- Remove Facility Confirmation -->
-    <ConfirmDialog
-      id="remove-facility-confirm-dialog"
-      title="Remove Facility"
-      description="Are you sure you want to remove this facility entry from the station?"
-      confirmText="Remove"
-      cancelText="Cancel"
-      variant="danger"
-    />
-
     <!-- Create Station Confirmation -->
     <ConfirmDialog
       id="create-station-confirm-dialog"

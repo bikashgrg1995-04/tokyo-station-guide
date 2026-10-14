@@ -1,0 +1,104 @@
+/* ========================================
+   Paged table: fixed height, search above, pagination below
+   (see components/admin/PagedTable.astro)
+======================================== */
+
+.admin-paged-table {
+  --paged-head: 46px;
+  --paged-row: 56px;
+  --paged-rows: 5;
+
+  min-width: 0;
+}
+
+/* ---- Search + count above the table ---- */
+
+.admin-paged-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.admin-paged-toolbar .common-search {
+  flex: 0 1 340px;
+  min-width: 0;
+  width: 100%;
+  max-width: 340px;
+}
+
+.admin-paged-toolbar .common-search-input {
+  min-height: 36px;
+  padding-block: 7px;
+}
+
+.admin-paged-count {
+  flex: 0 0 auto;
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---- Fixed height: always room for 5 rows ---- */
+
+.admin-paged-wrapper {
+  min-height: calc(var(--paged-head) + var(--paged-row) * var(--paged-rows));
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+}
+
+.admin-paged-wrapper .admin-table {
+  width: 100%;
+}
+
+.admin-paged-wrapper .admin-table td {
+  height: var(--paged-row);
+  padding-block: 6px;
+}
+
+.admin-paged-wrapper .admin-table th {
+  height: var(--paged-head);
+}
+
+/* The empty-state row is taller than a data row; let it use the space. */
+.admin-paged-wrapper .admin-table tbody tr:only-child td {
+  height: auto;
+}
+
+/* ---- Pagination below the table ---- */
+
+.admin-paged-footer {
+  min-height: 0;
+  padding: 10px 2px 0;
+  border-top: 0;
+}
+
+.admin-paged-footer[hidden],
+.admin-paged-table [data-paged-empty][hidden],
+.admin-table-pagination[hidden] {
+  display: none;
+}
+
+.admin-table-pagination span {
+  padding: 0 2px;
+  color: var(--admin-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .admin-paged-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-paged-toolbar .common-search {
+    flex-basis: auto;
+    max-width: none;
+  }
+
+  .admin-paged-count {
+    align-self: flex-end;
+  }
+}

@@ -1,4 +1,9 @@
 ---
+/**
+ * Station fields shared by the Add and Edit pages, in a compact 12-column
+ * grid. The verification switch is part of the grid, so there is no separate
+ * verification panel.
+ */
 import type {
   StationFormErrors,
   StationFormValues,
@@ -19,14 +24,14 @@ const {
   longitude: longitudeValue,
   description,
   about,
+  isVerified,
 } = values;
 ---
 
-<div class="admin-form-grid">
+<div class="admin-station-fields">
   <!-- Station Name -->
-
-  <div class="admin-form-group">
-    <label for="name"> Station Name </label>
+  <div class="admin-form-group span-4">
+    <label for="name">Station Name</label>
 
     <input
       id="name"
@@ -49,9 +54,8 @@ const {
   </div>
 
   <!-- Japanese Name -->
-
-  <div class="admin-form-group">
-    <label for="name_japanese"> Japanese Name </label>
+  <div class="admin-form-group span-4">
+    <label for="name_japanese">Japanese Name</label>
 
     <input
       id="name_japanese"
@@ -74,9 +78,10 @@ const {
   </div>
 
   <!-- Slug -->
-
-  <div class="admin-form-group full-width">
-    <label for="slug"> Slug </label>
+  <div class="admin-form-group span-4">
+    <label for="slug">
+      Slug <span class="admin-label-hint">lowercase, numbers, hyphens</span>
+    </label>
 
     <input
       id="slug"
@@ -86,26 +91,23 @@ const {
       value={slug}
       required
       aria-invalid={errors.slug ? "true" : "false"}
-      aria-describedby={errors.slug ? "slug-error" : "slug-help"}
+      aria-describedby={errors.slug ? "slug-error" : undefined}
     />
 
     {
-      errors.slug ? (
+      errors.slug && (
         <small id="slug-error" class="admin-form-error">
           {errors.slug}
-        </small>
-      ) : (
-        <small id="slug-help">
-          Used in the station URL. Use lowercase letters, numbers, and hyphens.
         </small>
       )
     }
   </div>
 
   <!-- Latitude -->
-
-  <div class="admin-form-group">
-    <label for="latitude"> Latitude </label>
+  <div class="admin-form-group span-3">
+    <label for="latitude">
+      Latitude <span class="admin-label-hint">-90 to 90</span>
+    </label>
 
     <input
       id="latitude"
@@ -115,24 +117,23 @@ const {
       placeholder="e.g. 35.681236"
       value={latitudeValue}
       aria-invalid={errors.latitude ? "true" : "false"}
-      aria-describedby={errors.latitude ? "latitude-error" : "latitude-help"}
+      aria-describedby={errors.latitude ? "latitude-error" : undefined}
     />
 
     {
-      errors.latitude ? (
+      errors.latitude && (
         <small id="latitude-error" class="admin-form-error">
           {errors.latitude}
         </small>
-      ) : (
-        <small id="latitude-help">Optional. Range: -90 to 90.</small>
       )
     }
   </div>
 
   <!-- Longitude -->
-
-  <div class="admin-form-group">
-    <label for="longitude"> Longitude </label>
+  <div class="admin-form-group span-3">
+    <label for="longitude">
+      Longitude <span class="admin-label-hint">-180 to 180</span>
+    </label>
 
     <input
       id="longitude"
@@ -142,29 +143,46 @@ const {
       placeholder="e.g. 139.767125"
       value={longitudeValue}
       aria-invalid={errors.longitude ? "true" : "false"}
-      aria-describedby={errors.longitude ? "longitude-error" : "longitude-help"}
+      aria-describedby={errors.longitude ? "longitude-error" : undefined}
     />
 
     {
-      errors.longitude ? (
+      errors.longitude && (
         <small id="longitude-error" class="admin-form-error">
           {errors.longitude}
         </small>
-      ) : (
-        <small id="longitude-help">Optional. Range: -180 to 180.</small>
       )
     }
   </div>
 
-  <!-- Description -->
+  <!-- Verification (not a .admin-form-group: its switch has its own styles) -->
+  <div class="admin-station-verified span-6">
+    <span class="admin-station-field-label">Verification</span>
 
-  <div class="admin-form-group full-width">
-    <label for="description"> Description </label>
+    <div class="admin-verification-toggle">
+      <span class="admin-verification-title">Verified station</span>
+
+      <label class="admin-switch" for="is_verified">
+        <input
+          id="is_verified"
+          name="is_verified"
+          type="checkbox"
+          checked={isVerified}
+          aria-label="Mark this station as verified"
+        />
+        <span class="admin-switch-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Description -->
+  <div class="admin-form-group span-6">
+    <label for="description">Description</label>
 
     <textarea
       id="description"
       name="description"
-      rows="5"
+      rows="3"
       class="admin-station-description"
       placeholder="Brief description of this station..."
       aria-invalid={errors.description ? "true" : "false"}
@@ -182,14 +200,15 @@ const {
   </div>
 
   <!-- About -->
-
-  <div class="admin-form-group full-width">
-    <label for="about"> About (station popup) </label>
+  <div class="admin-form-group span-6">
+    <label for="about">
+      About <span class="admin-label-hint">station popup, up to 1000 characters</span>
+    </label>
 
     <textarea
       id="about"
       name="about"
-      rows="4"
+      rows="3"
       class="admin-station-description"
       placeholder="Short text shown in the About section of the station popup..."
       aria-invalid={errors.about ? "true" : "false"}
@@ -198,12 +217,10 @@ const {
     >
 
     {
-      errors.about ? (
+      errors.about && (
         <small id="about-error" class="admin-form-error">
           {errors.about}
         </small>
-      ) : (
-        <small>Optional. Up to 1000 characters.</small>
       )
     }
   </div>

@@ -2,6 +2,7 @@
 ---
 import Alert from "../common/Alert.astro";
 import Button from "../common/Button.astro";
+import PagedTable from "./PagedTable.astro";
 import type { StationFacility } from "../../lib/db/facilities";
 
 export interface Props {
@@ -37,7 +38,13 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
 
     <div id="station-facility-inputs" hidden></div>
 
-    <div class="admin-table-wrapper">
+    <PagedTable
+      id="station-facilities-paged"
+      rowSelector="[data-facility-row]"
+      noun="facility entries"
+      searchLabel="Search assigned facilities"
+      searchPlaceholder="Search facility, floor, exit or note..."
+    >
       <table
         class="admin-table admin-compact-table"
         id="station-facilities-table"
@@ -105,7 +112,11 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
                 </td>
 
                 <td>
-                  <div class="facility-exit-pills" data-facility-exit-pills>
+                  <div
+                    class="facility-exit-pills"
+                    data-facility-exit-pills
+                    title={facility.exits.map((exit) => exit.name).join(", ")}
+                  >
                     {facility.exits.map((exit) => (
                       <span
                         class="facility-exit-pill"
@@ -174,53 +185,10 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
           </tr>
         </tbody>
       </table>
-    </div>
+    </PagedTable>
 
     <p id="all-facilities-message" class="admin-feature-message" hidden>
       {allAddedMessage}
     </p>
   </div>
 </section>
-
-<style>
-  .admin-floor-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    max-width: 100%;
-    padding: 0.3rem 0.65rem;
-    border: 1px solid var(--admin-border, #d1d5db);
-    border-radius: 999px;
-    background: var(--admin-muted-bg, #f3f4f6);
-    color: var(--admin-text, #374151);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    line-height: 1.4;
-    white-space: nowrap;
-  }
-
-  .facility-exit-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .facility-exit-pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.25rem 0.6rem;
-    border: 1px solid var(--admin-border, #d1d5db);
-    border-radius: 999px;
-    background: var(--admin-muted-bg, #f3f4f6);
-    color: var(--admin-text, #374151);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    line-height: 1.4;
-  }
-
-  .facility-exit-empty {
-    color: var(--admin-text-muted, #6b7280);
-    font-size: 0.8125rem;
-  }
-</style>
