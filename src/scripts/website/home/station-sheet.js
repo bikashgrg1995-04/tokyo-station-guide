@@ -436,13 +436,13 @@ function facilityDetailHtml(group) {
     }
 
     if (detail) {
-  floorDetails.push(
-    detail +
-      (f.note && String(f.note).trim()
-        ? " · " + esc(String(f.note).trim())
-        : "")
-  );
-}
+      floorDetails.push(
+        detail +
+          (f.note && String(f.note).trim()
+            ? " · " + esc(String(f.note).trim())
+            : ""),
+      );
+    }
   });
 
   var exits = exitChips(allExits);
@@ -458,7 +458,6 @@ function facilityDetailHtml(group) {
         "</div>"
       : "") +
     (floorDetails.length ? "<div>" + floorDetails.join(", ") + "</div>" : "") +
-   
     "</div>"
   );
 }
@@ -648,12 +647,10 @@ function picksHtml(stn) {
         );
       }
 
-      
       /* Show Visitor Notes only; do not display Description. */
       if (t.notes != null && String(t.notes).trim() !== "") {
         info.push(String(t.notes).trim());
       }
-
 
       var infoHtml = info.length
         ? '<div class="pk-info">' + info.map(esc).join(" | ") + "</div>"
@@ -904,7 +901,7 @@ function openSheet() {
   var descEl = $("#sheet-desc");
 
   descEl.textContent = desc || "";
-  descEl.hidden = !desc;
+  descEl.hidden = false;
 
   /* First tab that has something to show */
   var has = {
