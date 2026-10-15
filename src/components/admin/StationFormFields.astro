@@ -20,11 +20,11 @@ const {
   name,
   nameJapanese,
   slug,
-  latitude: latitudeValue,
-  longitude: longitudeValue,
+  locationUrl,
   description,
   about,
   isVerified,
+  verifiedAt,
 } = values;
 ---
 
@@ -103,64 +103,49 @@ const {
     }
   </div>
 
-  <!-- Latitude -->
-  <div class="admin-form-group span-3">
-    <label for="latitude">
-      Latitude <span class="admin-label-hint">-90 to 90</span>
+  <!-- Location link -->
+  <div class="admin-form-group span-6">
+    <label for="location_url">
+      Location link <span class="admin-label-hint">map URL</span>
     </label>
 
     <input
-      id="latitude"
-      name="latitude"
-      type="number"
-      step="any"
-      placeholder="e.g. 35.681236"
-      value={latitudeValue}
-      aria-invalid={errors.latitude ? "true" : "false"}
-      aria-describedby={errors.latitude ? "latitude-error" : undefined}
+      id="location_url"
+      name="location_url"
+      type="url"
+      maxlength="500"
+      placeholder="e.g. https://maps.app.goo.gl/..."
+      value={locationUrl}
+      aria-invalid={errors.locationUrl ? "true" : "false"}
+      aria-describedby={errors.locationUrl ? "location-url-error" : undefined}
     />
 
     {
-      errors.latitude && (
-        <small id="latitude-error" class="admin-form-error">
-          {errors.latitude}
-        </small>
-      )
-    }
-  </div>
-
-  <!-- Longitude -->
-  <div class="admin-form-group span-3">
-    <label for="longitude">
-      Longitude <span class="admin-label-hint">-180 to 180</span>
-    </label>
-
-    <input
-      id="longitude"
-      name="longitude"
-      type="number"
-      step="any"
-      placeholder="e.g. 139.767125"
-      value={longitudeValue}
-      aria-invalid={errors.longitude ? "true" : "false"}
-      aria-describedby={errors.longitude ? "longitude-error" : undefined}
-    />
-
-    {
-      errors.longitude && (
-        <small id="longitude-error" class="admin-form-error">
-          {errors.longitude}
+      errors.locationUrl && (
+        <small id="location-url-error" class="admin-form-error">
+          {errors.locationUrl}
         </small>
       )
     }
   </div>
 
   <!-- Verification (not a .admin-form-group: its switch has its own styles) -->
-  <div class="admin-station-verified span-6">
+  <div class="admin-station-verified span-6" data-verification>
     <span class="admin-station-field-label">Verification</span>
 
     <div class="admin-verification-toggle">
       <span class="admin-verification-title">Verified station</span>
+
+      <input
+        id="verified_at"
+        name="verified_at"
+        type="date"
+        class="admin-verified-date"
+        value={verifiedAt}
+        disabled={!isVerified}
+        aria-label="Verification date"
+        aria-invalid={errors.verifiedAt ? "true" : "false"}
+      />
 
       <label class="admin-switch" for="is_verified">
         <input
@@ -173,6 +158,12 @@ const {
         <span class="admin-switch-slider"></span>
       </label>
     </div>
+
+    {
+      errors.verifiedAt && (
+        <small class="admin-form-error">{errors.verifiedAt}</small>
+      )
+    }
   </div>
 
   <!-- Description -->
@@ -225,3 +216,29 @@ const {
     }
   </div>
 </div>
+
+<script>
+  // The date is only editable while the station is marked as verified.
+  // Turning the switch on pre-fills today's date; it can then be changed.
+  document
+    .querySelectorAll<HTMLElement>("[data-verification]")
+    .forEach((box) => {
+      const toggle = box.querySelector<HTMLInputElement>("#is_verified");
+      const date = box.querySelector<HTMLInputElement>("#verified_at");
+
+      if (!toggle || !date) return;
+
+      const sync = () => {
+        date.disabled = !toggle.checked;
+
+        if (toggle.checked && !date.value) {
+          const now = new Date();
+          const month = String(now.getMonth() + 1).padStart(2, "0");
+          const day = String(now.getDate()).padStart(2, "0");
+          date.value = `${now.getFullYear()}-${month}-${day}`;
+        }
+      };
+
+      toggle.addEventListener("change", sync);
+    });
+</script>

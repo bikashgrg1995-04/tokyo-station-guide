@@ -33,7 +33,6 @@ import {
   type StationFormValues,
   type StationFormErrors,
   emptyStationErrors,
-  toNumberOrNull,
   validateStationForm,
 } from "../validators/station";
 
@@ -209,11 +208,11 @@ function readStationForm(formData: FormData) {
     name: readText(formData, "name"),
     nameJapanese: readText(formData, "name_japanese"),
     slug: readText(formData, "slug").toLowerCase(),
-    latitude: readText(formData, "latitude"),
-    longitude: readText(formData, "longitude"),
+    locationUrl: readText(formData, "location_url"),
     description: readText(formData, "description"),
     about: readText(formData, "about"),
     isVerified: formData.get("is_verified") === "on",
+    verifiedAt: readText(formData, "verified_at"),
   };
 
   const parsedFacilities = readStationFacilities(formData);
@@ -266,14 +265,14 @@ function toStationInput(
     name: values.name,
     nameJapanese: values.nameJapanese || null,
     slug: values.slug,
-    latitude: toNumberOrNull(values.latitude),
-    longitude: toNumberOrNull(values.longitude),
+    locationUrl: values.locationUrl || null,
     description: values.description || null,
     about: values.about || null,
     facilityIds,
     stationFacilities,
     topPickIds,
     isVerified: values.isVerified,
+    verifiedAt: values.isVerified ? values.verifiedAt || null : null,
   };
 }
 
@@ -294,11 +293,11 @@ export async function handleStationCreate(
       name: "",
       nameJapanese: "",
       slug: "",
-      latitude: "",
-      longitude: "",
+      locationUrl: "",
       description: "",
       about: "",
       isVerified: false,
+      verifiedAt: "",
     },
     errors: emptyStationErrors(),
     formError: "",
@@ -365,11 +364,11 @@ export async function handleStationUpdate(
       name: station.name,
       nameJapanese: station.name_japanese ?? "",
       slug: station.slug,
-      latitude: station.latitude !== null ? String(station.latitude) : "",
-      longitude: station.longitude !== null ? String(station.longitude) : "",
+      locationUrl: station.location_url ?? "",
       description: station.description ?? "",
       about: station.about ?? "",
       isVerified: station.is_verified === 1,
+      verifiedAt: station.verified_at?.slice(0, 10) ?? "",
     },
     errors: emptyStationErrors(),
     formError: "",

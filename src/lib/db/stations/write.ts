@@ -24,15 +24,14 @@ export async function createStation(
           name,
           name_japanese,
           slug,
-          latitude,
-          longitude,
+          location_url,
           description,
           about,
           is_verified,
           verified_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CASE
-          WHEN ? = 1 THEN CURRENT_TIMESTAMP
+        VALUES (?, ?, ?, ?, ?, ?, ?, CASE
+          WHEN ? = 1 THEN COALESCE(?, date('now'))
           ELSE NULL
         END)
       `,
@@ -41,12 +40,12 @@ export async function createStation(
       input.name.trim(),
       input.nameJapanese?.trim() || null,
       input.slug.trim(),
-      input.latitude ?? null,
-      input.longitude ?? null,
+      input.locationUrl?.trim() || null,
       input.description?.trim() || null,
       input.about?.trim() || null,
       input.isVerified ? 1 : 0,
       input.isVerified ? 1 : 0,
+      input.verifiedAt || null,
     )
     .run();
 
@@ -99,14 +98,13 @@ export async function updateStation(
           name = ?,
           name_japanese = ?,
           slug = ?,
-          latitude = ?,
-          longitude = ?,
+          location_url = ?,
           description = ?,
           about = ?,
           is_verified = COALESCE(?, is_verified),
           verified_at = CASE
             WHEN ? = 0 THEN NULL
-            WHEN ? = 1 AND is_verified = 0 THEN CURRENT_TIMESTAMP
+            WHEN ? = 1 THEN COALESCE(?, verified_at, date('now'))
             ELSE verified_at
           END,
           updated_at = CURRENT_TIMESTAMP
@@ -117,13 +115,13 @@ export async function updateStation(
       input.name.trim(),
       input.nameJapanese?.trim() || null,
       input.slug.trim(),
-      input.latitude ?? null,
-      input.longitude ?? null,
+      input.locationUrl?.trim() || null,
       input.description?.trim() || null,
       input.about?.trim() || null,
       input.isVerified === undefined ? null : input.isVerified ? 1 : 0,
       input.isVerified === undefined ? null : input.isVerified ? 1 : 0,
       input.isVerified === undefined ? null : input.isVerified ? 1 : 0,
+      input.verifiedAt || null,
       id,
     )
     .run();

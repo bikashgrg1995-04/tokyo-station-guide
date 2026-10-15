@@ -679,7 +679,11 @@ function verifiedText(stn) {
   var when = "";
 
   if (at) {
-    var iso = /[zZ]|[+-]\d\d:?\d\d$/.test(at) ? at : at.replace(" ", "T") + "Z";
+    var iso = /^\d{4}-\d{2}-\d{2}$/.test(at)
+      ? at + "T00:00:00Z"
+      : /[zZ]|[+-]\d\d:?\d\d$/.test(at)
+        ? at
+        : at.replace(" ", "T") + "Z";
 
     var d = new Date(iso);
 
@@ -688,6 +692,7 @@ function verifiedText(stn) {
         day: "numeric",
         month: isJp() ? "long" : "short",
         year: "numeric",
+        timeZone: "UTC",
       });
     }
   }

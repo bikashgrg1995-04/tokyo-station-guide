@@ -2,13 +2,13 @@ export interface StationFormValues {
   name: string;
   nameJapanese: string;
   slug: string;
-  /** Latitude as typed in the form. */
-  latitude: string;
-  /** Longitude as typed in the form. */
-  longitude: string;
+  /** Link to the station on a map (http/https). */
+  locationUrl: string;
   description: string;
   about: string;
   isVerified: boolean;
+  /** Date the station was verified, as YYYY-MM-DD. */
+  verifiedAt: string;
 }
 
 export type StationFormErrors = Record<
@@ -21,13 +21,13 @@ export function emptyStationErrors(): StationFormErrors {
     name: "",
     nameJapanese: "",
     slug: "",
-    latitude: "",
-    longitude: "",
+    locationUrl: "",
     description: "",
     about: "",
     facilities: "",
     topPicks: "",
     isVerified: "",
+    verifiedAt: "",
   };
 }
 
@@ -39,8 +39,6 @@ export function validateStationForm(
   values: StationFormValues,
 ): StationFormErrors {
   const { name, nameJapanese, slug, description, about } = values;
-  const latitude = toNumberOrNull(values.latitude);
-  const longitude = toNumberOrNull(values.longitude);
   const errors = emptyStationErrors();
 
   if (!name) {
@@ -62,16 +60,33 @@ export function validateStationForm(
     errors.slug = "Slug must be 150 characters or less.";
   }
 
-  if (latitude !== null && !Number.isFinite(latitude)) {
-    errors.latitude = "Latitude must be a valid number.";
-  } else if (latitude !== null && (latitude < -90 || latitude > 90)) {
-    errors.latitude = "Latitude must be between -90 and 90.";
+  if (values.locationUrl) {
+    let validUrl = false;
+
+    try {
+      const url = new URL(values.locationUrl);
+      validUrl = url.protocol === "https:" || url.protocol === "http:";
+    } catch {
+      validUrl = false;
+    }
+
+    if (!validUrl) {
+      errors.locationUrl = "Location link must be a valid http(s) URL.";
+    } else if (values.locationUrl.length > 500) {
+      errors.locationUrl = "Location link must be 500 characters or less.";
+    }
   }
 
-  if (longitude !== null && !Number.isFinite(longitude)) {
-    errors.longitude = "Longitude must be a valid number.";
-  } else if (longitude !== null && (longitude < -180 || longitude > 180)) {
-    errors.longitude = "Longitude must be between -180 and 180.";
+  if (values.isVerified && values.verifiedAt) {
+    const date = new Date(`${values.verifiedAt}T00:00:00Z`);
+
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(values.verifiedAt) ||
+      Number.isNaN(date.getTime()) ||
+      date.toISOString().slice(0, 10) !== values.verifiedAt
+    ) {
+      errors.verifiedAt = "Pick a valid verification date.";
+    }
   }
 
   if (description.length > 1000) {

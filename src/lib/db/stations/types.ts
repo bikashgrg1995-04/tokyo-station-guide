@@ -15,8 +15,7 @@ export interface Station {
   name: string;
   name_japanese: string | null;
   slug: string;
-  latitude: number | null;
-  longitude: number | null;
+  location_url: string | null;
   description: string | null;
   about: string | null;
 
@@ -57,8 +56,7 @@ export interface StationAdminListItem {
   name: string;
   name_japanese: string | null;
   slug: string;
-  latitude: number | null;
-  longitude: number | null;
+  location_url: string | null;
   description: string | null;
   is_verified: number;
   verified_at: string | null;
@@ -89,8 +87,7 @@ export interface CreateStationInput {
   name: string;
   nameJapanese?: string | null;
   slug: string;
-  latitude?: number | null;
-  longitude?: number | null;
+  locationUrl?: string | null;
   description?: string | null;
   about?: string | null;
   facilities?: string | null;
@@ -102,14 +99,15 @@ export interface CreateStationInput {
   /** Top pick ids to save, in order (used instead of `topPicks` when given). */
   topPickIds?: number[];
   isVerified?: boolean;
+  /** Verification date (YYYY-MM-DD). Defaults to today when verified. */
+  verifiedAt?: string | null;
 }
 
 export interface UpdateStationInput {
   name: string;
   nameJapanese?: string | null;
   slug: string;
-  latitude?: number | null;
-  longitude?: number | null;
+  locationUrl?: string | null;
   description?: string | null;
   about?: string | null;
   facilities?: string | null;
@@ -121,6 +119,8 @@ export interface UpdateStationInput {
   /** Top pick ids to save, in order (used instead of `topPicks` when given). */
   topPickIds?: number[];
   isVerified?: boolean;
+  /** Verification date (YYYY-MM-DD). Defaults to today when verified. */
+  verifiedAt?: string | null;
 }
 
 export interface PaginatedStations {

@@ -57,15 +57,16 @@
   font-size: 12px;
 }
 
-.admin-station-coordinates {
-  color: var(--admin-muted);
-  font-family: monospace;
-  font-size: 11px;
-  line-height: 1.5;
+.admin-station-map-link {
+  color: var(--admin-primary, #2563eb);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-.admin-station-coordinates div {
-  white-space: nowrap;
+.admin-station-map-link:hover {
+  text-decoration: underline;
 }
 
 
@@ -931,6 +932,23 @@
 
 .admin-station-verified {
   min-width: 0;
+}
+
+.admin-station-verified .admin-verified-date {
+  box-sizing: border-box;
+  height: 28px;
+  margin-left: auto;
+  padding: 0 8px;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.admin-station-verified .admin-verified-date:disabled {
+  opacity: 0.45;
 }
 
 .admin-station-verified .admin-verification-toggle {

@@ -9,7 +9,7 @@ The SQL itself lives in `db/migrations/` (applied in numeric order).
 |---|---|---|
 | `operators` | Railway companies (JR East, Tokyo Metro, …) | `db/operators.ts` |
 | `lines` | Train lines, belong to one operator | `db/lines.ts` |
-| `stations` | Stations (name, JP name, coordinates, about, verification) | `db/stations/*` |
+| `stations` | Stations (name, JP name, map location link, about, verification with a manually picked date) | `db/stations/*` |
 | `line_stations` | Which station is on which line, in order, with station code | `db/line-stations.ts` |
 | `facilities` | Shared list of facility types (icon + dark icon in R2) | `db/facilities.ts` |
 | `station_floors` | Floors of a station | `db/station-floors.ts` |

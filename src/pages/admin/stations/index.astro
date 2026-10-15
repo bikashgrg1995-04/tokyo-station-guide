@@ -104,7 +104,7 @@ const {
                             <th>Station</th>
                             <th>Slug</th>
                             <th>Verification</th>
-                            <th>Coordinates</th>
+                            <th>Location</th>
                             <th>Actions</th>
                           </tr>
                         </thead>
@@ -154,7 +154,7 @@ const {
                                         {
                                           station.verified_at && (
                                             <small class="admin-station-verified-date">
-                                              {station.verified_at}
+                                              {station.verified_at.slice(0, 10)}
                                             </small>
                                           )
                                         }
@@ -170,19 +170,15 @@ const {
 
                                 <td>
                                   {
-                                    station.latitude !== null &&
-                                    station.longitude !== null ? (
-                                      <div class="admin-station-coordinates">
-
-                                        <div>
-                                          {station.latitude}
-                                        </div>
-
-                                        <div>
-                                          {station.longitude}
-                                        </div>
-
-                                      </div>
+                                    station.location_url ? (
+                                      <a
+                                        class="admin-station-map-link"
+                                        href={station.location_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        Open map ↗
+                                      </a>
                                     ) : (
                                       <span class="admin-table-muted">
                                         —
