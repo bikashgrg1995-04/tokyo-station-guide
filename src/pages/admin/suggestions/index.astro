@@ -83,20 +83,6 @@ function snippet(value: string | null, max = 110): string {
   return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
 }
 
-/** Older suggestions were field-by-field edits with no message. */
-function legacySummary(suggestion: (typeof suggestions)[number]): string {
-  const changed = [
-    suggestion.suggested_name && "name",
-    suggestion.suggested_name_japanese && "Japanese name",
-    suggestion.suggested_description && "description",
-    suggestion.suggested_about && "about",
-    suggestion.suggested_latitude !== null && "latitude",
-    suggestion.suggested_longitude !== null && "longitude",
-  ].filter(Boolean);
-
-  return changed.length > 0 ? `Field changes: ${changed.join(", ")}` : "";
-}
-
 // Data for the detail dialog. Embedded as JSON so it opens instantly.
 const dialogData = suggestions.map((suggestion) => ({
   id: suggestion.id,
@@ -109,17 +95,6 @@ const dialogData = suggestions.map((suggestion) => ({
   message: suggestion.message,
   submittedAt: formatDate(suggestion.created_at),
   reviewedAt: suggestion.reviewed_at ? formatDate(suggestion.reviewed_at) : null,
-  submitterName: suggestion.submitter_name,
-  submitterEmail: suggestion.submitter_email,
-  reason: suggestion.reason,
-  legacy: [
-    ["Station name", suggestion.suggested_name],
-    ["Japanese name", suggestion.suggested_name_japanese],
-    ["Description", suggestion.suggested_description],
-    ["About", suggestion.suggested_about],
-    ["Latitude", suggestion.suggested_latitude],
-    ["Longitude", suggestion.suggested_longitude],
-  ].filter(([, value]) => value !== null && value !== ""),
 }));
 
 const dialogJson = JSON.stringify(dialogData).replace(/</g, "\\u003c");
@@ -198,9 +173,7 @@ const dialogJson = JSON.stringify(dialogData).replace(/</g, "\\u003c");
                         )}
                       </td>
                       <td class="admin-suggestion-text">
-                        {snippet(suggestion.message) ||
-                          legacySummary(suggestion) ||
-                          "—"}
+                        {snippet(suggestion.message) || "—"}
                       </td>
                       <td class="admin-suggestion-date">
                         {formatDate(suggestion.created_at)}
@@ -318,8 +291,6 @@ const dialogJson = JSON.stringify(dialogData).replace(/</g, "\\u003c");
   <script type="application/json" id="suggestions-data" set:html={dialogJson} />
 
   <script>
-    type LegacyRow = [string, string | number];
-
     type SuggestionRow = {
       id: number;
       status: "pending" | "approved" | "rejected";
@@ -331,10 +302,6 @@ const dialogJson = JSON.stringify(dialogData).replace(/</g, "\\u003c");
       message: string | null;
       submittedAt: string;
       reviewedAt: string | null;
-      submitterName: string | null;
-      submitterEmail: string | null;
-      reason: string | null;
-      legacy: LegacyRow[];
     };
 
     const rows: SuggestionRow[] = JSON.parse(
@@ -437,33 +404,10 @@ const dialogJson = JSON.stringify(dialogData).replace(/</g, "\\u003c");
         el(
           "p",
           "suggestion-message-text",
-          row.message || row.reason || "No message was written.",
+          row.message || "No message was written.",
         ),
       );
       body.append(message);
-
-      // Older suggestions: the fields the visitor changed (read-only)
-      if (row.legacy.length > 0) {
-        const legacy = el("section", "suggestion-message-block");
-        legacy.append(el("h3", undefined, "Fields changed (older suggestion)"));
-
-        const list = el("dl", "suggestion-legacy");
-        for (const [label, value] of row.legacy) {
-          list.append(el("dt", undefined, label), el("dd", undefined, String(value)));
-        }
-        legacy.append(list);
-        body.append(legacy);
-      }
-
-      if (row.submitterName || row.submitterEmail) {
-        body.append(
-          el(
-            "p",
-            "suggestion-review-note",
-            `From ${[row.submitterName, row.submitterEmail].filter(Boolean).join(" · ")}`,
-          ),
-        );
-      }
 
       const pending = row.status === "pending";
       resolveButton.hidden = !pending;

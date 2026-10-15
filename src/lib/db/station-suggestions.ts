@@ -38,18 +38,6 @@ export interface StationSuggestion {
   /** What the visitor wants to suggest. */
   message: string | null;
 
-  /** Older suggestions were field-by-field edits; kept for reference. */
-  suggested_name: string | null;
-  suggested_name_japanese: string | null;
-  suggested_description: string | null;
-  suggested_about: string | null;
-  suggested_latitude: number | null;
-  suggested_longitude: number | null;
-  reason: string | null;
-
-  submitter_name: string | null;
-  submitter_email: string | null;
-
   status: StationSuggestionStatus;
   reviewed_at: string | null;
   created_at: string;

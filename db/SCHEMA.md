@@ -20,7 +20,7 @@ The SQL itself lives in `db/migrations/` (applied in numeric order).
 | `top_picks` | Shared list of nearby attractions | `db/top-picks.ts` |
 | `station_top_picks` | Which pick is recommended at which station | `db/top-picks.ts`, `db/stations/write.ts` |
 | `featured_stations` | Home page "Popular Station Hubs" | `db/featured-stations.ts` |
-| `station_suggestions` | Visitor message about a station (and the line they were viewing); the admin reads it and edits the station by hand. Status: pending = New, approved = Resolved, rejected = Dismissed. Old `suggested_*` columns are legacy | `db/station-suggestions.ts` |
+| `station_suggestions` | Visitor message about a station (and the line they were viewing); the admin reads it and edits the station by hand. Status: pending = New, approved = Resolved, rejected = Dismissed. | `db/station-suggestions.ts` |
 | `admin_users` | Admin accounts (PBKDF2 hash) | `pages/admin/auth/login.astro` |
 | `login_attempts` | Failed logins for throttling (purged after 1 day) | `auth/login-throttle.ts` |
 
