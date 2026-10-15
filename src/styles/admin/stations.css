@@ -1011,15 +1011,13 @@
   white-space: nowrap;
 }
 
-/* Nearby exits: one line (full list in the tooltip), button beside it. */
+/* Nearby exits: pills wrap onto the next line when they do not fit. */
 .facility-exit-pills {
-  display: inline-flex;
-  flex-wrap: nowrap;
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.3rem;
-  max-width: 220px;
-  margin: 0 0.5rem 0 0;
-  overflow: hidden;
-  vertical-align: middle;
+  max-width: 320px;
+  margin: 0 0 0.35rem;
 }
 
 .facility-exit-pill {
