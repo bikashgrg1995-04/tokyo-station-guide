@@ -80,17 +80,17 @@ export function validateTopPickForm(
     errors.category = "Select a valid category.";
   }
 
-  if (values.description.length > 2000) {
-    errors.description =
-      "Description must be 2000 characters or less.";
-  }
+  if (values.description.length > 1000) {
+  errors.description =
+    "Description must be 1000 characters or less.";
+}
 
   if (values.entryFee.trim().length > 150) {
     errors.entryFee = "Entry fee must be 150 characters or less.";
   }
 
-  if (values.notes.length > 2000) {
-    errors.notes = "Notes must be 2000 characters or less.";
+  if (values.notes.length > 150) {
+    errors.notes = "Notes must be 150 characters or less.";
   }
 
   if (values.imageUrl.trim()) {

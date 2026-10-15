@@ -198,7 +198,7 @@ const admin = await Astro.session?.get<{
                       id="description"
                       name="description"
                       rows="5"
-                      maxlength="2000"
+                      maxlength="1000"
                       placeholder="A famous Tokyo landmark..."
                       aria-invalid={errors.description ? "true" : "false"}
                       aria-describedby={errors.description ? "description-error" : undefined}
@@ -206,7 +206,7 @@ const admin = await Astro.session?.get<{
                     {errors.description ? (
                       <small id="description-error" class="admin-form-error">{errors.description}</small>
                     ) : (
-                      <small>Optional. Maximum 2000 characters.</small>
+                      <small>Optional. Maximum 1000 characters.</small>
                     )}
                   </div>
 
@@ -261,7 +261,7 @@ const admin = await Astro.session?.get<{
                       id="notes"
                       name="notes"
                       rows="4"
-                      maxlength="2000"
+                      maxlength="150"
                       placeholder="Useful visitor information, ticket advice, or access notes..."
                       aria-invalid={errors.notes ? "true" : "false"}
                       aria-describedby={errors.notes ? "notes-error" : undefined}
@@ -269,7 +269,7 @@ const admin = await Astro.session?.get<{
                     {errors.notes ? (
                       <small id="notes-error" class="admin-form-error">{errors.notes}</small>
                     ) : (
-                      <small>Optional. Maximum 2000 characters.</small>
+                      <small>Optional. Maximum 150 characters.</small>
                     )}
                   </div>
 

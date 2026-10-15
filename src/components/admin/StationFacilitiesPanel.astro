@@ -1,4 +1,3 @@
-
 ---
 import Alert from "../common/Alert.astro";
 import Button from "../common/Button.astro";
@@ -138,7 +137,9 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
                   <input
                     type="hidden"
                     name="facility_entry_exit_ids_json"
-                    value={JSON.stringify(facility.exits.map((exit) => exit.id))}
+                    value={JSON.stringify(
+                      facility.exits.map((exit) => exit.id),
+                    )}
                     data-facility-exit-ids
                   />
 
@@ -156,8 +157,8 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
                     type="text"
                     name="facility_entry_note"
                     value={facility.note ?? ""}
-                    placeholder="Optional note"
-                    maxlength="500"
+                    placeholder="Optional note (max 200 characters)"
+                    maxlength="200"
                     aria-label={`Note for ${facility.name}`}
                   />
                 </td>

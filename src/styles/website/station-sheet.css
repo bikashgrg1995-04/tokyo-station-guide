@@ -167,10 +167,10 @@ html[data-theme="dark"] .station-sheet {
 
 .sheet-desc {
   margin: 8px 0 6px;
-  font-size: 13px;
-  line-height: 1.8;
+  font-size: 12px;
+  line-height: 1.2;
 
-  height: 45px; /* 3 lines × 18.2px */
+  height: 60px; /* 3 lines × 18.2px */
   overflow: hidden;
 
   display: -webkit-box;

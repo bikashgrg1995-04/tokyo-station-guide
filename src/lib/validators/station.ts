@@ -93,8 +93,8 @@ export function validateStationForm(
     errors.description = "Description must be 1000 characters or less.";
   }
 
-  if (about.length > 1000) {
-    errors.about = "About must be 1000 characters or less.";
+  if (about.length > 150) {
+    errors.about = "About must be 150 characters or less.";
   }
 
   return errors;

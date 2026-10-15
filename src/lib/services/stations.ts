@@ -140,6 +140,12 @@ function readStationFacilities(formData: FormData): ParsedStationFacilities {
     const rawCount = String(counts[index] ?? "").trim();
     const note = String(notes[index] ?? "").trim();
 
+    if (note.length > 200) {
+      errors.push(
+        `Facility row ${index + 1}: note must not exceed 200 characters.`,
+      );
+      continue;
+    }
     const exitIds = readFacilityExitIds(exitIdsJson[index], index + 1, errors);
 
     if (

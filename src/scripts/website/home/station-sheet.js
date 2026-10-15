@@ -395,6 +395,8 @@ function facilitiesHtml(stn) {
 }
 
 /* One selected facility; show every floor record separately. */
+
+/* One selected facility; show every floor record separately. */
 function facilityDetailHtml(group) {
   if (!group) {
     return '<span class="hint">Tap an icon for detail.</span>';
@@ -402,6 +404,7 @@ function facilityDetailHtml(group) {
 
   var allExits = [];
   var floorDetails = [];
+  var facilityNotes = [];
 
   group.floors.forEach(function (f) {
     parseExits(f.exits).forEach(function (exit) {
@@ -428,12 +431,12 @@ function facilityDetailHtml(group) {
 
     var detail = bits.join(" · ");
 
-    if (f.note) {
-      detail += (detail ? ", " : "") + esc(f.note);
-    }
-
     if (detail) {
       floorDetails.push(detail);
+    }
+
+    if (f.note && String(f.note).trim()) {
+      facilityNotes.push(esc(String(f.note).trim()));
     }
   });
 
@@ -450,6 +453,11 @@ function facilityDetailHtml(group) {
         "</div>"
       : "") +
     (floorDetails.length ? "<div>" + floorDetails.join(", ") + "</div>" : "") +
+    (facilityNotes.length
+      ? '<div class="facility-extra-note">' +
+        facilityNotes.join(", ") +
+        "</div>"
+      : "") +
     "</div>"
   );
 }
@@ -639,14 +647,12 @@ function picksHtml(stn) {
         );
       }
 
+      
+      /* Show Visitor Notes only; do not display Description. */
       if (t.notes != null && String(t.notes).trim() !== "") {
         info.push(String(t.notes).trim());
       }
 
-      /* Description appears at the very end of the information row. */
-      if (t.description != null && String(t.description).trim() !== "") {
-        info.push(String(t.description).trim());
-      }
 
       var infoHtml = info.length
         ? '<div class="pk-info">' + info.map(esc).join(" | ") + "</div>"
@@ -821,7 +827,8 @@ function prepareSuggestionForm(stn) {
 
   var line = currentLine();
 
-  $("#suggestion-line-id").value = line && line.id != null ? String(line.id) : "";
+  $("#suggestion-line-id").value =
+    line && line.id != null ? String(line.id) : "";
 
   section.hidden = true;
   button.setAttribute("aria-expanded", "false");
@@ -1084,7 +1091,8 @@ export function initStationSheet() {
         }
 
         message.textContent =
-          result.message || "Thank you! Your suggestion has been sent for review.";
+          result.message ||
+          "Thank you! Your suggestion has been sent for review.";
         message.classList.remove("is-error");
         message.classList.add("is-success");
         message.hidden = false;

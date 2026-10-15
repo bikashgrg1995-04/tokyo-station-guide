@@ -397,7 +397,7 @@ export function initializeFacilityPicker(): void {
 
     const noteInput = createInput("facility_entry_note", "", {
       placeholder: "Optional note",
-      maxLength: 500,
+      maxLength: 200,
       ariaLabel: `Note for ${facilityName}`,
     });
 
