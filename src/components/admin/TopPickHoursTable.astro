@@ -1,0 +1,333 @@
+---
+import type { TopPickOpeningHour } from "../../lib/db/top-picks";
+
+export interface Props {
+  /** Hours currently in the form (saved values or re-rendered input). */
+  openingHours: TopPickOpeningHour[];
+}
+
+const { openingHours } = Astro.props;
+
+const DAYS = [
+  { value: 0, label: "Sunday" },
+  { value: 1, label: "Monday" },
+  { value: 2, label: "Tuesday" },
+  { value: 3, label: "Wednesday" },
+  { value: 4, label: "Thursday" },
+  { value: 5, label: "Friday" },
+  { value: 6, label: "Saturday" },
+];
+
+const rows = DAYS.map((day) => {
+  const hours = openingHours.find((hour) => hour.day_of_week === day.value) ?? {
+    day_of_week: day.value,
+    is_closed: false,
+    opening_time: "09:00",
+    closing_time: "17:00",
+    last_entry_time: "",
+  };
+
+  return { ...day, hours };
+});
+---
+
+<div class="admin-hours" data-hours-table>
+  <table class="admin-hours-table">
+    <thead>
+      <tr>
+        <th scope="col">Day</th>
+        <th scope="col" class="admin-hours-closed-col">Closed</th>
+        <th scope="col">Opens</th>
+        <th scope="col">Closes</th>
+        <th scope="col">Last entry</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <!-- Bulk row: fills every open day. These inputs are not submitted. -->
+      <tr class="admin-hours-bulk">
+        <th scope="row">All days</th>
+        <td class="admin-hours-closed-col">
+          <button type="button" class="admin-hours-apply" data-hours-apply>
+            Apply
+          </button>
+        </td>
+        <td>
+          <input
+            type="time"
+            value="09:00"
+            data-bulk="opening"
+            aria-label="Opening time for all days"
+          />
+        </td>
+        <td>
+          <input
+            type="time"
+            value="17:00"
+            data-bulk="closing"
+            aria-label="Closing time for all days"
+          />
+        </td>
+        <td>
+          <input
+            type="time"
+            data-bulk="last_entry"
+            aria-label="Last entry time for all days"
+          />
+        </td>
+      </tr>
+
+      {
+        rows.map(({ value, label, hours }) => (
+          <tr
+            class:list={["admin-hours-row", { "is-closed": hours.is_closed }]}
+            data-hours-row
+          >
+            <th scope="row">{label}</th>
+
+            <td class="admin-hours-closed-col">
+              <input
+                id={`closed_${value}`}
+                name={`closed_${value}`}
+                type="checkbox"
+                checked={hours.is_closed}
+                data-hours-closed
+                aria-label={`${label} closed`}
+              />
+            </td>
+
+            <td>
+              <input
+                id={`opening_time_${value}`}
+                name={`opening_time_${value}`}
+                type="time"
+                value={hours.opening_time ?? ""}
+                disabled={hours.is_closed}
+                data-field="opening"
+                aria-label={`${label} opening time`}
+              />
+            </td>
+
+            <td>
+              <input
+                id={`closing_time_${value}`}
+                name={`closing_time_${value}`}
+                type="time"
+                value={hours.closing_time ?? ""}
+                disabled={hours.is_closed}
+                data-field="closing"
+                aria-label={`${label} closing time`}
+              />
+            </td>
+
+            <td>
+              <input
+                id={`last_entry_time_${value}`}
+                name={`last_entry_time_${value}`}
+                type="time"
+                value={hours.last_entry_time ?? ""}
+                disabled={hours.is_closed}
+                data-field="last_entry"
+                aria-label={`${label} last entry time`}
+              />
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+
+  <p class="admin-hours-note">
+    Last entry is optional. Closed days are saved without times.
+  </p>
+</div>
+
+<script>
+  function setRowClosed(row: HTMLElement, closed: boolean) {
+    row.classList.toggle("is-closed", closed);
+
+    row
+      .querySelectorAll<HTMLInputElement>("input[data-field]")
+      .forEach((input) => {
+        input.disabled = closed;
+      });
+  }
+
+  document
+    .querySelectorAll<HTMLElement>("[data-hours-table]")
+    .forEach((table) => {
+      table.addEventListener("change", (event) => {
+        const target = event.target as HTMLInputElement;
+
+        if (!target.matches("[data-hours-closed]")) {
+          return;
+        }
+
+        const row = target.closest<HTMLElement>("[data-hours-row]");
+
+        if (row) {
+          setRowClosed(row, target.checked);
+        }
+      });
+
+      table
+        .querySelector<HTMLButtonElement>("[data-hours-apply]")
+        ?.addEventListener("click", () => {
+          const bulk = {
+            opening:
+              table.querySelector<HTMLInputElement>('[data-bulk="opening"]')
+                ?.value ?? "",
+            closing:
+              table.querySelector<HTMLInputElement>('[data-bulk="closing"]')
+                ?.value ?? "",
+            last_entry:
+              table.querySelector<HTMLInputElement>('[data-bulk="last_entry"]')
+                ?.value ?? "",
+          };
+
+          table
+            .querySelectorAll<HTMLElement>("[data-hours-row]")
+            .forEach((row) => {
+              if (row.classList.contains("is-closed")) {
+                return;
+              }
+
+              (Object.keys(bulk) as (keyof typeof bulk)[]).forEach((field) => {
+                const input = row.querySelector<HTMLInputElement>(
+                  `input[data-field="${field}"]`,
+                );
+
+                if (input) {
+                  input.value = bulk[field];
+                }
+              });
+            });
+        });
+    });
+</script>
+
+<style>
+  .admin-hours {
+    min-width: 0;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    border: 1px solid var(--admin-border);
+    border-radius: 9px;
+    background: var(--admin-surface);
+  }
+
+  .admin-hours-table {
+    width: 100%;
+    min-width: 460px;
+    border-collapse: collapse;
+  }
+
+  .admin-hours-table th,
+  .admin-hours-table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--admin-border);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .admin-hours-table thead th {
+    padding: 6px 8px;
+    background: #f8fafc;
+    color: var(--admin-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .admin-hours-table tbody th {
+    width: 96px;
+    color: var(--admin-text);
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .admin-hours-table tbody tr:last-child th,
+  .admin-hours-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .admin-hours-closed-col {
+    width: 64px;
+    text-align: center !important;
+  }
+
+  .admin-hours-table input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    accent-color: var(--admin-primary);
+    cursor: pointer;
+  }
+
+  .admin-hours-table input[type="time"] {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 96px;
+    height: 30px;
+    padding: 0 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #ffffff;
+    color: var(--admin-text);
+    font: inherit;
+    font-size: 12.5px;
+  }
+
+  .admin-hours-table input[type="time"]:focus {
+    border-color: var(--admin-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+  }
+
+  .admin-hours-table input[type="time"]:disabled {
+    background: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+  }
+
+  .admin-hours-row.is-closed th {
+    color: var(--admin-muted);
+  }
+
+  .admin-hours-bulk {
+    background: #f8fafc;
+  }
+
+  .admin-hours-bulk th {
+    color: var(--admin-muted) !important;
+    font-weight: 600;
+  }
+
+  .admin-hours-apply {
+    height: 26px;
+    padding: 0 10px;
+    border: 1px solid var(--admin-border);
+    border-radius: 6px;
+    background: var(--admin-surface);
+    color: var(--admin-primary);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .admin-hours-apply:hover {
+    border-color: #cbd5e1;
+    background: #f1f5f9;
+  }
+
+  .admin-hours-note {
+    margin: 0;
+    padding: 6px 10px;
+    border-top: 1px solid var(--admin-border);
+    color: var(--admin-muted);
+    font-size: 11px;
+  }
+</style>

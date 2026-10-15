@@ -7,6 +7,7 @@ import "../../../../styles/admin/operators.css";
 import EmptyState from "../../../../components/common/EmptyState.astro";
 import Alert from "../../../../components/common/Alert.astro";
 import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
+import TopPickHoursTable from "../../../../components/admin/TopPickHoursTable.astro";
 import Button from "../../../../components/common/Button.astro";
 import ConfirmDialog from "../../../../components/common/ConfirmDialog.astro";
 
@@ -56,25 +57,6 @@ const admin = await Astro.session?.get<{
   name: string;
 }>("admin");
 
-const DAYS = [
-  { value: 0, label: "Sunday" },
-  { value: 1, label: "Monday" },
-  { value: 2, label: "Tuesday" },
-  { value: 3, label: "Wednesday" },
-  { value: 4, label: "Thursday" },
-  { value: 5, label: "Friday" },
-  { value: 6, label: "Saturday" },
-];
-
-function getDayHours(day: number) {
-  return openingHours.find((hour) => hour.day_of_week === day) ?? {
-    day_of_week: day,
-    is_closed: false,
-    opening_time: "09:00",
-    closing_time: "17:00",
-    last_entry_time: "",
-  };
-}
 ---
 
 <AdminLayout title="Edit Top Pick" activePath="/admin/top-picks">
@@ -228,7 +210,7 @@ function getDayHours(day: number) {
                     )}
                   </div>
 
-                  <div class="admin-form-group">
+                  <div class="admin-form-group full-width">
                     <label for="image_url">Image URL</label>
                     <input
                       id="image_url"
@@ -254,7 +236,7 @@ function getDayHours(day: number) {
                     <p>These details belong to the place and are shared across assigned stations.</p>
                   </div>
 
-                  <div class="admin-form-group">
+                  <div class="admin-form-group full-width">
                     <label for="entry_fee">Entry Fee</label>
                     <input
                       id="entry_fee"
@@ -300,59 +282,7 @@ function getDayHours(day: number) {
 
                   {errors.openingHours && <Alert>{errors.openingHours}</Alert>}
 
-                  {DAYS.map((day) => {
-                    const hours = getDayHours(day.value);
-
-                    return (
-                      <fieldset
-                        class="admin-form-group"
-                        style="border: 1px solid var(--admin-border, #ddd); border-radius: 7px; padding: 10px 12px; min-width: 0;"
-                      >
-                        <legend style="font-size: 12.5px; font-weight: 600; padding: 0 5px;">{day.label}</legend>
-
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                          <input
-                            id={`closed_${day.value}`}
-                            name={`closed_${day.value}`}
-                            type="checkbox"
-                            checked={hours.is_closed}
-                          />
-                          <label for={`closed_${day.value}`}>Closed</label>
-                        </div>
-
-                        <div class="admin-form-group">
-                          <label for={`opening_time_${day.value}`}>Opening Time</label>
-                          <input
-                            id={`opening_time_${day.value}`}
-                            name={`opening_time_${day.value}`}
-                            type="time"
-                            value={hours.opening_time ?? ""}
-                          />
-                        </div>
-
-                        <div class="admin-form-group">
-                          <label for={`closing_time_${day.value}`}>Closing Time</label>
-                          <input
-                            id={`closing_time_${day.value}`}
-                            name={`closing_time_${day.value}`}
-                            type="time"
-                            value={hours.closing_time ?? ""}
-                          />
-                        </div>
-
-                        <div class="admin-form-group">
-                          <label for={`last_entry_time_${day.value}`}>Last Entry Time</label>
-                          <input
-                            id={`last_entry_time_${day.value}`}
-                            name={`last_entry_time_${day.value}`}
-                            type="time"
-                            value={hours.last_entry_time ?? ""}
-                          />
-                          <small>Optional. Leave blank if not applicable.</small>
-                        </div>
-                      </fieldset>
-                    );
-                  })}
+                  <TopPickHoursTable openingHours={openingHours} />
 
                   <div class="admin-form-actions">
                     <Button href="/admin/top-picks" variant="secondary">

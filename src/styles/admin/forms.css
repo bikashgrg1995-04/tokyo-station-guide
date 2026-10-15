@@ -321,6 +321,46 @@
 }
 
 /* ========================================
+   Compact two-column layout
+   Short fields sit side by side; textareas, section headers,
+   dividers, alerts, tables and actions always take the full row.
+   Add .full-width to any other field that should not be paired.
+======================================== */
+
+.admin-operator-form .admin-form,
+.admin-line-form .admin-form {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  column-gap: 14px;
+
+  align-items: start;
+}
+
+.admin-operator-form .admin-form > *,
+.admin-line-form .admin-form > * {
+  grid-column: 1 / -1;
+}
+
+.admin-operator-form .admin-form > .admin-form-group:not(.full-width):not(:has(textarea)),
+.admin-line-form .admin-form > .admin-form-group:not(.full-width):not(:has(textarea)) {
+  grid-column: auto;
+}
+
+@media (max-width: 560px) {
+  .admin-operator-form .admin-form,
+  .admin-line-form .admin-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-operator-form .admin-form > .admin-form-group:not(.full-width):not(:has(textarea)),
+  .admin-line-form .admin-form > .admin-form-group:not(.full-width):not(:has(textarea)) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ========================================
    Responsive
 ======================================== */
 

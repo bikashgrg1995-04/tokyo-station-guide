@@ -100,10 +100,10 @@
   margin-bottom: 12px;
 }
 
-/* Later section headers inside the same form sit closer to the fields above */
-.admin-form .admin-operator-form-header {
-  margin-top: 16px;
-  padding-top: 12px;
+/* Section dividers inside a form (an <hr> followed by a header) */
+.admin-form hr {
+  margin: 6px 0 12px;
+  border: 0;
   border-top: 1px solid var(--admin-border);
 }
 
