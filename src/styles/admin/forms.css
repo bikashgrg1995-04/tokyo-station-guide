@@ -11,7 +11,7 @@
 }
 
 .admin-form-group {
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .admin-form-group:last-child {
@@ -25,23 +25,23 @@
 .admin-form-group label {
   display: block;
 
-  margin-bottom: 7px;
+  margin-bottom: 4px;
 
   color: #374151;
 
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .admin-form-group small {
   display: block;
 
-  margin-top: 6px;
+  margin-top: 3px;
 
   color: var(--admin-muted);
 
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 /* ========================================
@@ -53,10 +53,10 @@
 .admin-form-group select {
   width: 100%;
 
-  padding: 12px 13px;
+  padding: 7px 10px;
 
   border: 1px solid #d1d5db;
-  border-radius: 9px;
+  border-radius: 7px;
 
   outline: none;
 
@@ -73,11 +73,11 @@
 }
 
 .admin-form-group textarea {
-  min-height: 120px;
+  min-height: 72px;
 
   resize: vertical;
 
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .admin-form-group select {
@@ -103,8 +103,8 @@
   border-color: var(--admin-primary);
 
   box-shadow:
-    0 0 0 3px
-    rgba(37, 99, 235, 0.1);
+    0 0 0 2px
+    rgba(37, 99, 235, 0.12);
 }
 
 /* ========================================
@@ -136,14 +136,14 @@
 .admin-form-checkbox {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
+  gap: 8px;
 
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .admin-form-checkbox input {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 
   margin: 2px 0 0;
 
@@ -157,8 +157,8 @@
 
   color: #374151;
 
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.4;
 
   cursor: pointer;
 }
@@ -171,10 +171,10 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
 
-  margin-top: 24px;
-  padding-top: 20px;
+  margin-top: 16px;
+  padding-top: 12px;
 
   border-top: 1px solid var(--admin-border);
 }
@@ -187,14 +187,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 6px;
 
-  min-height: 38px;
+  min-height: 32px;
 
-  padding: 9px 15px;
+  padding: 6px 12px;
 
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: 7px;
 
   background: var(--admin-primary);
   color: #ffffff;
@@ -202,7 +202,7 @@
   text-decoration: none;
 
   font: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
 
   cursor: pointer;
@@ -225,6 +225,17 @@
 .admin-button:focus-visible {
   outline: 2px solid rgba(37, 99, 235, 0.3);
   outline-offset: 2px;
+}
+
+/* Compact the shared <Button> inside forms and dialogs */
+
+.admin-form-actions .common-button,
+.admin-modal-actions .common-button,
+.admin-line-station-modal-dialog .common-button-medium {
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: 12.5px;
 }
 
 /* ========================================
@@ -266,15 +277,15 @@
 ======================================== */
 
 .admin-alert {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 
-  padding: 12px 14px;
+  padding: 8px 12px;
 
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: 7px;
 
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12.5px;
+  line-height: 1.4;
 }
 
 .admin-alert-error {
@@ -302,7 +313,7 @@
 
   grid-template-columns: repeat(2, minmax(0, 1fr));
 
-  gap: 18px;
+  gap: 12px 14px;
 }
 
 .admin-form-grid .full-width {
@@ -336,13 +347,13 @@
 .admin-icon-current {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 6px;
 }
 
 .admin-icon-current img,
 .admin-icon-thumb {
-  border-radius: 10px;
+  border-radius: 8px;
   object-fit: contain;
   background: rgba(20, 30, 50, 0.06);
 }

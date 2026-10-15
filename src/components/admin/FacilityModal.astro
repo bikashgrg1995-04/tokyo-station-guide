@@ -157,33 +157,34 @@ const { facilities, floors, description, emptyDescription } = Astro.props;
 <style>
   .admin-facility-floor-selector {
     min-width: 0;
-    margin: 0 0 1rem;
+    margin: 0 0 0.6rem;
     padding: 0;
     border: 0;
   }
 
   .admin-facility-floor-selector legend {
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.4rem;
+    font-size: 12px;
     font-weight: 600;
   }
 
   .admin-facility-floor-options {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.35rem;
   }
 
   .admin-floor-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.45rem 0.85rem;
+    padding: 0.25rem 0.65rem;
     border: 1px solid var(--admin-border, #d1d5db);
     border-radius: 999px;
     background: var(--admin-muted-bg, #f3f4f6);
     color: var(--admin-text, #374151);
     font: inherit;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     cursor: pointer;
   }
 

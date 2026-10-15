@@ -90,28 +90,35 @@
 }
 
 .admin-operator-form-card {
-  padding: 26px;
+  padding: 18px;
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: 16px;
+  border-radius: 12px;
 }
 
 .admin-operator-form-header {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
+}
+
+/* Later section headers inside the same form sit closer to the fields above */
+.admin-form .admin-operator-form-header {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--admin-border);
 }
 
 .admin-operator-form-header h2 {
   margin: 0;
   color: var(--admin-text);
-  font-size: 19px;
+  font-size: 15px;
   font-weight: 650;
 }
 
 .admin-operator-form-header p {
-  margin: 7px 0 0;
+  margin: 3px 0 0;
   color: var(--admin-muted);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 
@@ -127,7 +134,7 @@
 
 
 @media (max-width: 760px) {.admin-operator-form-card {
-    padding: 20px;
+    padding: 14px;
   }
 }
 
