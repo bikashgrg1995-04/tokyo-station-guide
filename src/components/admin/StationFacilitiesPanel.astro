@@ -40,6 +40,7 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
 
     <PagedTable
       id="station-facilities-paged"
+      pageSize={10}
       rowSelector="[data-facility-row]"
       noun="facility entries"
       searchLabel="Search assigned facilities"

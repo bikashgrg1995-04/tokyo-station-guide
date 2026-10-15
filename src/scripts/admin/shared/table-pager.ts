@@ -96,8 +96,12 @@ export function createTablePager(options: TablePagerOptions): TablePager {
   } = options;
 
   let page = 1;
-  let lastTotal = body.querySelectorAll(rowSelector).length;
   let scheduled = false;
+
+  // Rows already seen by the pager, so rows added later can be told apart.
+  let knownRows = new Set<HTMLElement>(
+    Array.from(body.querySelectorAll<HTMLElement>(rowSelector)),
+  );
 
   const readRows = (): HTMLElement[] =>
     Array.from(body.querySelectorAll<HTMLElement>(rowSelector));
@@ -175,12 +179,16 @@ export function createTablePager(options: TablePagerOptions): TablePager {
 
     const pageCount = Math.max(1, Math.ceil(matches.length / size));
 
-    // New rows are appended, so jump to the page that shows them.
-    if (!query && rows.length > lastTotal) {
-      page = pageCount;
+    // Rows added by the Add dialogs are appended. Jump to the page where the
+    // first new row is, so the start of the added batch is always visible
+    // (not just whatever is left on the last page).
+    const addedRows = rows.filter((row) => !knownRows.has(row));
+
+    if (!query && addedRows.length > 0) {
+      page = Math.floor(rows.indexOf(addedRows[0]) / size) + 1;
     }
 
-    lastTotal = rows.length;
+    knownRows = new Set(rows);
     page = Math.min(Math.max(page, 1), pageCount);
 
     const start = (page - 1) * size;
