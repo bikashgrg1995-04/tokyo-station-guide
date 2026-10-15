@@ -157,8 +157,8 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
                     type="text"
                     name="facility_entry_note"
                     value={facility.note ?? ""}
-                    placeholder="Optional note (max 200 characters)"
-                    maxlength="200"
+                    placeholder="Optional note (max 15 characters)"
+                    maxlength="150"
                     aria-label={`Note for ${facility.name}`}
                   />
                 </td>

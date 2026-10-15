@@ -435,9 +435,14 @@ function facilityDetailHtml(group) {
       floorDetails.push(detail);
     }
 
-    if (f.note && String(f.note).trim()) {
-      facilityNotes.push(esc(String(f.note).trim()));
-    }
+    if (detail) {
+  floorDetails.push(
+    detail +
+      (f.note && String(f.note).trim()
+        ? " · " + esc(String(f.note).trim())
+        : "")
+  );
+}
   });
 
   var exits = exitChips(allExits);
@@ -453,11 +458,7 @@ function facilityDetailHtml(group) {
         "</div>"
       : "") +
     (floorDetails.length ? "<div>" + floorDetails.join(", ") + "</div>" : "") +
-    (facilityNotes.length
-      ? '<div class="facility-extra-note">' +
-        facilityNotes.join(", ") +
-        "</div>"
-      : "") +
+   
     "</div>"
   );
 }
