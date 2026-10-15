@@ -1,10 +1,5 @@
-
-import {
-  getStationById,
-} from "../db/stations";
-import {
-  createStationSuggestion,
-} from "../db/station-suggestions";
+import { getStationById } from "../db/stations";
+import { createStationSuggestion } from "../db/station-suggestions";
 import {
   emptyStationSuggestionErrors,
   validateStationSuggestion,
@@ -19,38 +14,18 @@ function readValues(formData: FormData): StationSuggestionValues {
 
   return {
     stationId: read("stationId"),
-    name: read("name"),
-    nameJapanese: read("nameJapanese"),
-    description: read("description"),
-    about: read("about"),
-    latitude: read("latitude"),
-    longitude: read("longitude"),
-    reason: read("reason"),
-    submitterName: read("submitterName"),
-    submitterEmail: read("submitterEmail"),
+    lineId: read("lineId"),
+    message: read("message"),
   };
 }
 
-function changedText(
-  proposed: string,
-  current: string | null,
-): string | null {
-  if (!proposed) return null;
-
-  return proposed !== (current ?? "").trim() ? proposed : null;
-}
-
-function changedNumber(
-  proposed: string,
-  current: number | null,
-): number | null {
-  if (!proposed) return null;
-
-  const value = Number(proposed);
-
-  return current !== null && value === current ? null : value;
-}
-
+/**
+ * Public endpoint behind "Suggest an Edit".
+ *
+ * It only stores the message together with the station and line it was
+ * written for. Nothing on the live station is changed: an admin reads the
+ * suggestion and updates the station by hand.
+ */
 export async function handleStationSuggestion(
   request: Request,
   db: D1Database,
@@ -81,13 +56,14 @@ export async function handleStationSuggestion(
       status: 400,
       body: {
         ok: false,
-        message: "Please check the submitted fields.",
+        message: errors.message || "Please check your suggestion.",
         errors,
       },
     };
   }
 
   const stationId = Number(values.stationId);
+  const lineId = values.lineId ? Number(values.lineId) : null;
 
   let station;
 
@@ -119,63 +95,18 @@ export async function handleStationSuggestion(
     };
   }
 
-  const suggestedName = changedText(values.name, station.name);
-  const suggestedNameJapanese = changedText(
-    values.nameJapanese,
-    station.name_japanese,
-  );
-  const suggestedDescription = changedText(
-    values.description,
-    station.description,
-  );
-  const suggestedAbout = changedText(values.about, station.about);
-  const suggestedLatitude = changedNumber(
-    values.latitude,
-    station.latitude,
-  );
-  const suggestedLongitude = changedNumber(
-    values.longitude,
-    station.longitude,
-  );
-
-  const hasChanges = [
-    suggestedName,
-    suggestedNameJapanese,
-    suggestedDescription,
-    suggestedAbout,
-    suggestedLatitude,
-    suggestedLongitude,
-  ].some((value) => value !== null);
-
-  if (!hasChanges) {
-    return {
-      status: 400,
-      body: {
-        ok: false,
-        message: "Please make at least one change before submitting.",
-      },
-    };
-  }
-
   try {
     const suggestionId = await createStationSuggestion(db, {
       stationId,
-      suggestedName,
-      suggestedNameJapanese,
-      suggestedDescription,
-      suggestedAbout,
-      suggestedLatitude,
-      suggestedLongitude,
-      reason: values.reason || null,
-      submitterName: values.submitterName || null,
-      submitterEmail: values.submitterEmail || null,
+      lineId,
+      message: values.message,
     });
 
     return {
       status: 201,
       body: {
         ok: true,
-        message: "Your suggestion has been submitted for review.",
+        message: "Thank you! Your suggestion has been sent for review.",
         suggestionId,
       },
     };

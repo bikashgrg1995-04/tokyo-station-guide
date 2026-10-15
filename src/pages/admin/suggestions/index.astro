@@ -1,0 +1,568 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import "../../../styles/admin/dashboard.css";
+import "../../../styles/admin/suggestions.css";
+
+import Pagination from "../../../components/common/Pagination.astro";
+
+import {
+  SUGGESTION_STATUS_LABELS,
+  countStationSuggestions,
+  listStationSuggestions,
+  type StationSuggestionStatus,
+} from "../../../lib/db/station-suggestions";
+
+export const prerender = false;
+
+const PER_PAGE = 10;
+
+type Filter = StationSuggestionStatus | "all";
+
+const FILTERS: Array<{ value: Filter; label: string }> = [
+  { value: "pending", label: "New" },
+  { value: "approved", label: "Resolved" },
+  { value: "rejected", label: "Dismissed" },
+  { value: "all", label: "All" },
+];
+
+const { env } = await import("cloudflare:workers");
+const db = env.DB;
+
+const statusParam = Astro.url.searchParams.get("status");
+const filter: Filter = FILTERS.some((item) => item.value === statusParam)
+  ? (statusParam as Filter)
+  : "pending";
+
+const counts = await countStationSuggestions(db);
+
+const totalItems = filter === "all" ? counts.total : counts[filter];
+const totalPages = Math.max(1, Math.ceil(totalItems / PER_PAGE));
+
+const pageParam = Number(Astro.url.searchParams.get("page"));
+const currentPage = Math.min(
+  Math.max(Number.isInteger(pageParam) ? pageParam : 1, 1),
+  totalPages,
+);
+
+const suggestions = await listStationSuggestions(db, {
+  status: filter === "all" ? undefined : filter,
+  limit: PER_PAGE,
+  offset: (currentPage - 1) * PER_PAGE,
+});
+
+const filterCount = (value: Filter) =>
+  value === "all" ? counts.total : counts[value];
+
+const filterUrl = (value: Filter) =>
+  value === "pending"
+    ? "/admin/suggestions"
+    : `/admin/suggestions?status=${value}`;
+
+const paginationBase = `/admin/suggestions${
+  filter === "pending" ? "" : `?status=${filter}`
+}`;
+
+function formatDate(value: string): string {
+  // SQLite stores UTC as "YYYY-MM-DD HH:MM:SS".
+  const date = new Date(value.replace(" ", "T") + "Z");
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleString("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function snippet(value: string | null, max = 110): string {
+  const text = (value ?? "").replace(/\s+/g, " ").trim();
+
+  return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
+}
+
+/** Older suggestions were field-by-field edits with no message. */
+function legacySummary(suggestion: (typeof suggestions)[number]): string {
+  const changed = [
+    suggestion.suggested_name && "name",
+    suggestion.suggested_name_japanese && "Japanese name",
+    suggestion.suggested_description && "description",
+    suggestion.suggested_about && "about",
+    suggestion.suggested_latitude !== null && "latitude",
+    suggestion.suggested_longitude !== null && "longitude",
+  ].filter(Boolean);
+
+  return changed.length > 0 ? `Field changes: ${changed.join(", ")}` : "";
+}
+
+// Data for the detail dialog. Embedded as JSON so it opens instantly.
+const dialogData = suggestions.map((suggestion) => ({
+  id: suggestion.id,
+  status: suggestion.status,
+  statusLabel: SUGGESTION_STATUS_LABELS[suggestion.status],
+  stationId: suggestion.station_id,
+  stationName: suggestion.station_name,
+  lineName: suggestion.line_name,
+  lineColor: suggestion.line_color,
+  message: suggestion.message,
+  submittedAt: formatDate(suggestion.created_at),
+  reviewedAt: suggestion.reviewed_at ? formatDate(suggestion.reviewed_at) : null,
+  submitterName: suggestion.submitter_name,
+  submitterEmail: suggestion.submitter_email,
+  reason: suggestion.reason,
+  legacy: [
+    ["Station name", suggestion.suggested_name],
+    ["Japanese name", suggestion.suggested_name_japanese],
+    ["Description", suggestion.suggested_description],
+    ["About", suggestion.suggested_about],
+    ["Latitude", suggestion.suggested_latitude],
+    ["Longitude", suggestion.suggested_longitude],
+  ].filter(([, value]) => value !== null && value !== ""),
+}));
+
+const dialogJson = JSON.stringify(dialogData).replace(/</g, "\\u003c");
+---
+
+<AdminLayout title="Suggestions" activePath="/admin/suggestions">
+  <div class="admin-content">
+    <div class="admin-page-header">
+      <div>
+        <h2>Suggestions</h2>
+        <p>
+          Messages from visitors about a station. Read the suggestion, update
+          the station yourself, then mark it as resolved.
+        </p>
+      </div>
+    </div>
+
+    <nav class="admin-suggestion-filters" aria-label="Suggestion status">
+      {
+        FILTERS.map((item) => (
+          <a
+            href={filterUrl(item.value)}
+            class:list={[{ "is-active": item.value === filter }]}
+            aria-current={item.value === filter ? "page" : undefined}
+          >
+            {item.label}
+            <span class="admin-suggestion-filter-count">
+              {filterCount(item.value)}
+            </span>
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="admin-panel">
+      {
+        suggestions.length > 0 ? (
+          <>
+            <div class="admin-suggestions-table-wrap">
+              <table class="admin-suggestions-table">
+                <thead>
+                  <tr>
+                    <th>Station</th>
+                    <th>Line</th>
+                    <th>Suggestion</th>
+                    <th>Submitted</th>
+                    <th>Status</th>
+                    <th>
+                      <span class="admin-visually-hidden">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {suggestions.map((suggestion) => (
+                    <tr data-suggestion-row={suggestion.id}>
+                      <td>
+                        <span class="admin-suggestion-station">
+                          {suggestion.station_name}
+                        </span>
+                      </td>
+                      <td>
+                        {suggestion.line_name ? (
+                          <span class="admin-suggestion-line">
+                            <span
+                              class="admin-suggestion-line-dot"
+                              style={
+                                suggestion.line_color
+                                  ? `--c: ${suggestion.line_color}`
+                                  : undefined
+                              }
+                            />
+                            {suggestion.line_name}
+                          </span>
+                        ) : (
+                          <span class="admin-suggestion-meta">—</span>
+                        )}
+                      </td>
+                      <td class="admin-suggestion-text">
+                        {snippet(suggestion.message) ||
+                          legacySummary(suggestion) ||
+                          "—"}
+                      </td>
+                      <td class="admin-suggestion-date">
+                        {formatDate(suggestion.created_at)}
+                      </td>
+                      <td>
+                        <span
+                          class={`admin-suggestion-status is-${suggestion.status}`}
+                        >
+                          {SUGGESTION_STATUS_LABELS[suggestion.status]}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="admin-suggestion-actions">
+                          <button
+                            type="button"
+                            data-suggestion-open={suggestion.id}
+                          >
+                            View
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              baseUrl={paginationBase}
+              totalItems={totalItems}
+              perPage={PER_PAGE}
+            />
+          </>
+        ) : (
+          <div class="admin-empty">
+            <div class="admin-empty-icon">✓</div>
+            <h3>
+              {filter === "pending"
+                ? "No new suggestions"
+                : "Nothing here yet"}
+            </h3>
+            <p>Suggestions from visitors will appear here.</p>
+          </div>
+        )
+      }
+    </div>
+  </div>
+
+  <dialog id="suggestion-modal" class="suggestion-modal">
+    <div class="suggestion-modal-header">
+      <div>
+        <p class="suggestion-eyebrow">SUGGESTION</p>
+        <h2 id="suggestion-modal-title"></h2>
+        <p id="suggestion-modal-subtitle" class="suggestion-subtitle"></p>
+      </div>
+      <button
+        type="button"
+        id="suggestion-close"
+        class="suggestion-close"
+        aria-label="Close dialog"
+      >
+        &times;
+      </button>
+    </div>
+
+    <div id="suggestion-modal-body" class="suggestion-modal-body"></div>
+
+    <p id="suggestion-feedback" class="suggestion-feedback" role="status"></p>
+
+    <div class="suggestion-modal-footer">
+      <button
+        type="button"
+        id="suggestion-delete"
+        class="suggestion-btn suggestion-btn-danger"
+      >
+        Delete
+      </button>
+
+      <div class="suggestion-review-actions">
+        <a
+          id="suggestion-edit-station"
+          class="suggestion-btn suggestion-btn-secondary"
+          href="/admin/stations"
+        >
+          Edit station
+        </a>
+        <button
+          type="button"
+          id="suggestion-dismiss"
+          class="suggestion-btn suggestion-btn-secondary"
+        >
+          Dismiss
+        </button>
+        <button
+          type="button"
+          id="suggestion-resolve"
+          class="suggestion-btn suggestion-btn-primary"
+        >
+          Mark as resolved
+        </button>
+        <button
+          type="button"
+          id="suggestion-reopen"
+          class="suggestion-btn suggestion-btn-secondary"
+          hidden
+        >
+          Reopen
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <script type="application/json" id="suggestions-data" set:html={dialogJson} />
+
+  <script>
+    type LegacyRow = [string, string | number];
+
+    type SuggestionRow = {
+      id: number;
+      status: "pending" | "approved" | "rejected";
+      statusLabel: string;
+      stationId: number;
+      stationName: string;
+      lineName: string | null;
+      lineColor: string | null;
+      message: string | null;
+      submittedAt: string;
+      reviewedAt: string | null;
+      submitterName: string | null;
+      submitterEmail: string | null;
+      reason: string | null;
+      legacy: LegacyRow[];
+    };
+
+    const rows: SuggestionRow[] = JSON.parse(
+      document.getElementById("suggestions-data")?.textContent || "[]",
+    );
+
+    const byId = new Map(rows.map((row) => [row.id, row]));
+
+    const modal = document.querySelector<HTMLDialogElement>("#suggestion-modal")!;
+    const title = document.querySelector<HTMLElement>("#suggestion-modal-title")!;
+    const subtitle = document.querySelector<HTMLElement>(
+      "#suggestion-modal-subtitle",
+    )!;
+    const body = document.querySelector<HTMLElement>("#suggestion-modal-body")!;
+    const feedback = document.querySelector<HTMLElement>("#suggestion-feedback")!;
+
+    const editLink = document.querySelector<HTMLAnchorElement>(
+      "#suggestion-edit-station",
+    )!;
+    const resolveButton = document.querySelector<HTMLButtonElement>(
+      "#suggestion-resolve",
+    )!;
+    const dismissButton = document.querySelector<HTMLButtonElement>(
+      "#suggestion-dismiss",
+    )!;
+    const reopenButton = document.querySelector<HTMLButtonElement>(
+      "#suggestion-reopen",
+    )!;
+    const deleteButton = document.querySelector<HTMLButtonElement>(
+      "#suggestion-delete",
+    )!;
+
+    let active: SuggestionRow | null = null;
+    let busy = false;
+
+    function el<K extends keyof HTMLElementTagNameMap>(
+      tag: K,
+      className?: string,
+      text?: string,
+    ): HTMLElementTagNameMap[K] {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function detail(label: string, value: string | Node): HTMLElement {
+      const box = el("div", "suggestion-detail");
+      box.append(el("span", "suggestion-detail-label", label));
+
+      const content = el("div", "suggestion-detail-value");
+      content.append(value);
+      box.append(content);
+
+      return box;
+    }
+
+    function render(row: SuggestionRow) {
+      title.textContent = row.stationName;
+
+      const line = row.lineName;
+      subtitle.textContent = line
+        ? `${line} · ${row.statusLabel}`
+        : row.statusLabel;
+
+      body.replaceChildren();
+
+      // Which station and line, and when
+      const grid = el("div", "suggestion-details");
+
+      grid.append(detail("Station", row.stationName));
+
+      if (row.lineName) {
+        const lineValue = el("span", "admin-suggestion-line");
+        const dot = el("span", "admin-suggestion-line-dot");
+        if (row.lineColor) dot.style.setProperty("--c", row.lineColor);
+        lineValue.append(dot, row.lineName);
+        grid.append(detail("Line", lineValue));
+      } else {
+        grid.append(detail("Line", "Not specified"));
+      }
+
+      grid.append(detail("Submitted", row.submittedAt));
+
+      if (row.reviewedAt && row.status !== "pending") {
+        grid.append(
+          detail(
+            row.status === "approved" ? "Resolved" : "Dismissed",
+            row.reviewedAt,
+          ),
+        );
+      }
+
+      body.append(grid);
+
+      // The suggestion itself
+      const message = el("section", "suggestion-message-block");
+      message.append(el("h3", undefined, "Suggestion"));
+      message.append(
+        el(
+          "p",
+          "suggestion-message-text",
+          row.message || row.reason || "No message was written.",
+        ),
+      );
+      body.append(message);
+
+      // Older suggestions: the fields the visitor changed (read-only)
+      if (row.legacy.length > 0) {
+        const legacy = el("section", "suggestion-message-block");
+        legacy.append(el("h3", undefined, "Fields changed (older suggestion)"));
+
+        const list = el("dl", "suggestion-legacy");
+        for (const [label, value] of row.legacy) {
+          list.append(el("dt", undefined, label), el("dd", undefined, String(value)));
+        }
+        legacy.append(list);
+        body.append(legacy);
+      }
+
+      if (row.submitterName || row.submitterEmail) {
+        body.append(
+          el(
+            "p",
+            "suggestion-review-note",
+            `From ${[row.submitterName, row.submitterEmail].filter(Boolean).join(" · ")}`,
+          ),
+        );
+      }
+
+      const pending = row.status === "pending";
+      resolveButton.hidden = !pending;
+      dismissButton.hidden = !pending;
+      reopenButton.hidden = pending;
+
+      editLink.href = `/admin/stations/${row.stationId}/edit`;
+    }
+
+    function open(id: number) {
+      const row = byId.get(id);
+      if (!row) return;
+
+      active = row;
+      feedback.textContent = "";
+      render(row);
+
+      if (!modal.open) modal.showModal();
+    }
+
+    function setBusy(value: boolean) {
+      busy = value;
+      for (const button of [resolveButton, dismissButton, reopenButton, deleteButton]) {
+        button.disabled = value;
+      }
+    }
+
+    async function send(
+      method: "PATCH" | "DELETE",
+      payload?: { action: "resolve" | "dismiss" | "reopen" },
+    ) {
+      if (!active || busy) return;
+
+      setBusy(true);
+      feedback.textContent = "Saving…";
+
+      try {
+        const response = await fetch(
+          `/api/admin/station-suggestions/${active.id}`,
+          {
+            method,
+            headers: {
+              Accept: "application/json",
+              ...(payload ? { "Content-Type": "application/json" } : {}),
+            },
+            body: payload ? JSON.stringify(payload) : undefined,
+          },
+        );
+
+        const result = (await response.json()) as {
+          ok: boolean;
+          message?: string;
+        };
+
+        if (!response.ok || !result.ok) {
+          throw new Error(result.message || "The action failed.");
+        }
+
+        window.location.reload();
+      } catch (error) {
+        feedback.textContent =
+          error instanceof Error ? error.message : "Unexpected error.";
+        setBusy(false);
+      }
+    }
+
+    document
+      .querySelectorAll<HTMLButtonElement>("[data-suggestion-open]")
+      .forEach((button) => {
+        button.addEventListener("click", () =>
+          open(Number(button.dataset.suggestionOpen)),
+        );
+      });
+
+    resolveButton.addEventListener("click", () =>
+      void send("PATCH", { action: "resolve" }),
+    );
+    dismissButton.addEventListener("click", () =>
+      void send("PATCH", { action: "dismiss" }),
+    );
+    reopenButton.addEventListener("click", () =>
+      void send("PATCH", { action: "reopen" }),
+    );
+    deleteButton.addEventListener("click", () => {
+      if (window.confirm("Permanently delete this suggestion? This cannot be undone.")) {
+        void send("DELETE");
+      }
+    });
+
+    document
+      .querySelector("#suggestion-close")
+      ?.addEventListener("click", () => modal.close());
+
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) modal.close();
+    });
+
+    // Links from the dashboard open a suggestion directly: ?open=12
+    const wanted = Number(new URLSearchParams(location.search).get("open"));
+    if (Number.isInteger(wanted) && wanted > 0) open(wanted);
+  </script>
+</AdminLayout>

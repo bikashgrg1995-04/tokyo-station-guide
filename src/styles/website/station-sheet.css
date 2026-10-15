@@ -599,7 +599,7 @@ html[data-theme="dark"] .station-sheet {
   }
 }
 
-/* While "Suggest an Edit" is open, keep only the name row. */
+/* While "Suggest an Edit" is open, the form shows the station + line itself. */
 .sheet-panel:has(#sheet-edit-form:not([hidden])) .sheet-lines,
 .sheet-panel:has(#sheet-edit-form:not([hidden])) .sheet-desc,
 .sheet-panel:has(#sheet-edit-form:not([hidden])) .sheet-meta,
@@ -609,8 +609,7 @@ html[data-theme="dark"] .station-sheet {
 }
 
 .sheet-panel:has(#sheet-edit-form:not([hidden])) .sheet-head {
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--sheet-border);
+  display: none;
 }
 
 /* =========================================
@@ -618,7 +617,7 @@ html[data-theme="dark"] .station-sheet {
 ========================================= */
 
 .sheet-panel:has(#sheet-edit-form:not([hidden])) {
-  height: min(680px, calc(100dvh - 24px));
+  height: auto;
   max-height: calc(100dvh - 24px);
 }
 
@@ -654,17 +653,33 @@ html[data-theme="dark"] .station-sheet {
   letter-spacing: -0.025em;
 }
 
-.sheet-edit-head p {
+.sheet-edit-head .sheet-edit-sub {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   margin: 0;
-  max-width: 42ch;
+  max-width: none;
   color: var(--sheet-muted);
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.sheet-edit-head .sheet-edit-sub[hidden] {
+  display: none;
+}
+
+.suggestion-line-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c, var(--sheet-muted));
 }
 
 #station-suggestion-form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -673,14 +688,6 @@ html[data-theme="dark"] .station-sheet {
   flex-direction: column;
   gap: 5px;
   min-width: 0;
-}
-
-#station-suggestion-form .form-field:has(textarea),
-#station-suggestion-form .form-field:has(#suggestion-name),
-#station-suggestion-form .form-field:has(#suggestion-name-japanese),
-#station-suggestion-form .suggestion-message,
-#station-suggestion-form .suggestion-actions {
-  grid-column: 1 / -1;
 }
 
 #station-suggestion-form .form-field label {
@@ -715,7 +722,7 @@ html[data-theme="dark"] .station-sheet {
 }
 
 #station-suggestion-form textarea {
-  min-height: 76px;
+  min-height: 140px;
   resize: vertical;
 }
 
@@ -745,6 +752,16 @@ html[data-theme="dark"] .station-sheet {
 
 #station-suggestion-form .suggestion-message[hidden] {
   display: none;
+}
+
+#station-suggestion-form .suggestion-message.is-success {
+  border-color: color-mix(in srgb, #16a34a 45%, var(--sheet-border));
+  background: color-mix(in srgb, #16a34a 12%, var(--sheet-chip-bg));
+}
+
+#station-suggestion-form .suggestion-message.is-error {
+  border-color: color-mix(in srgb, #dc2626 45%, var(--sheet-border));
+  background: color-mix(in srgb, #dc2626 10%, var(--sheet-chip-bg));
 }
 
 #station-suggestion-form .suggestion-actions {
@@ -798,14 +815,9 @@ html[data-theme="dark"] .station-sheet {
 
 @media (max-width: 600px) {
   .sheet-panel:has(#sheet-edit-form:not([hidden])) {
-    height: min(86dvh, 760px);
+    height: auto;
     max-height: 90dvh;
     border-radius: 18px 18px 0 0;
-  }
-
-  .sheet-panel:has(#sheet-edit-form:not([hidden])) .sheet-head {
-    flex: 0 0 auto;
-    padding-top: 18px;
   }
 
   .sheet-edit-form {
@@ -838,14 +850,6 @@ html[data-theme="dark"] .station-sheet {
 }
 
 @media (max-width: 360px) {
-  #station-suggestion-form {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  #station-suggestion-form .form-field {
-    grid-column: 1 / -1;
-  }
-
   #station-suggestion-form .suggestion-actions button {
     flex: 1;
     padding-right: 8px;

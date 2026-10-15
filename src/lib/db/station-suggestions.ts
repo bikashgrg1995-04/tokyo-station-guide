@@ -1,8 +1,29 @@
+/**
+ * Visitor suggestions for a station.
+ *
+ * A suggestion is a plain message written for one station (and the line the
+ * visitor was looking at). The admin reads it and edits the station by hand;
+ * nothing is applied automatically.
+ *
+ * The database keeps its original status names:
+ *   pending  -> shown as "New"
+ *   approved -> shown as "Resolved" (the admin dealt with it)
+ *   rejected -> shown as "Dismissed" (no change needed)
+ */
 
 export type StationSuggestionStatus =
   | "pending"
   | "approved"
   | "rejected";
+
+export const SUGGESTION_STATUS_LABELS: Record<
+  StationSuggestionStatus,
+  string
+> = {
+  pending: "New",
+  approved: "Resolved",
+  rejected: "Dismissed",
+};
 
 export interface StationSuggestion {
   id: number;
@@ -10,19 +31,22 @@ export interface StationSuggestion {
   station_name: string;
   station_slug: string;
 
+  line_id: number | null;
+  line_name: string | null;
+  line_color: string | null;
+
+  /** What the visitor wants to suggest. */
+  message: string | null;
+
+  /** Older suggestions were field-by-field edits; kept for reference. */
   suggested_name: string | null;
   suggested_name_japanese: string | null;
   suggested_description: string | null;
   suggested_about: string | null;
   suggested_latitude: number | null;
   suggested_longitude: number | null;
-
-  suggested_lines: string | null;
-  suggested_platforms: string | null;
-  suggested_facilities: string | null;
-  suggested_top_picks: string | null;
-
   reason: string | null;
+
   submitter_name: string | null;
   submitter_email: string | null;
 
@@ -34,81 +58,106 @@ export interface StationSuggestion {
 
 export interface CreateStationSuggestionInput {
   stationId: number;
-
-  suggestedName?: string | null;
-  suggestedNameJapanese?: string | null;
-  suggestedDescription?: string | null;
-  suggestedAbout?: string | null;
-  suggestedLatitude?: number | null;
-  suggestedLongitude?: number | null;
-
-  suggestedLines?: string | null;
-  suggestedPlatforms?: string | null;
-  suggestedFacilities?: string | null;
-  suggestedTopPicks?: string | null;
-
-  reason?: string | null;
-  submitterName?: string | null;
-  submitterEmail?: string | null;
+  /** Line the visitor was viewing. Ignored if the station is not on it. */
+  lineId?: number | null;
+  message: string;
 }
 
-/**
- * Get a suggestion by ID.
- */
+export interface StationSuggestionCounts {
+  pending: number;
+  approved: number;
+  rejected: number;
+  total: number;
+}
+
+const SELECT_SUGGESTION = `
+  SELECT
+    ss.*,
+    s.name AS station_name,
+    s.slug AS station_slug,
+    l.name AS line_name,
+    l.color AS line_color
+  FROM station_suggestions ss
+  INNER JOIN stations s
+    ON s.id = ss.station_id
+  LEFT JOIN lines l
+    ON l.id = ss.line_id
+`;
+
 export async function getStationSuggestionById(
   db: D1Database,
   id: number,
 ): Promise<StationSuggestion | null> {
   return db
-    .prepare(
-      `
-        SELECT
-          ss.*,
-          s.name AS station_name,
-          s.slug AS station_slug
-        FROM station_suggestions ss
-        INNER JOIN stations s
-          ON s.id = ss.station_id
-        WHERE ss.id = ?
-        LIMIT 1
-      `,
-    )
+    .prepare(`${SELECT_SUGGESTION} WHERE ss.id = ? LIMIT 1`)
     .bind(id)
     .first<StationSuggestion>();
 }
 
 /**
- * List station suggestions, newest first.
- * Optionally filter by review status.
+ * One page of suggestions, newest first.
+ * Pass a status to filter, or leave it out for every suggestion.
  */
-export async function getStationSuggestions(
+export async function listStationSuggestions(
   db: D1Database,
-  status?: StationSuggestionStatus,
+  options: {
+    status?: StationSuggestionStatus;
+    limit: number;
+    offset: number;
+  },
 ): Promise<StationSuggestion[]> {
+  const { status, limit, offset } = options;
+
   const query = `
-    SELECT
-      ss.*,
-      s.name AS station_name,
-      s.slug AS station_slug
-    FROM station_suggestions ss
-    INNER JOIN stations s
-      ON s.id = ss.station_id
+    ${SELECT_SUGGESTION}
     ${status ? "WHERE ss.status = ?" : ""}
     ORDER BY ss.created_at DESC, ss.id DESC
+    LIMIT ? OFFSET ?
   `;
 
   const statement = db.prepare(query);
 
   const result = status
-    ? await statement.bind(status).all<StationSuggestion>()
-    : await statement.all<StationSuggestion>();
+    ? await statement.bind(status, limit, offset).all<StationSuggestion>()
+    : await statement.bind(limit, offset).all<StationSuggestion>();
 
   return result.results;
 }
 
+export async function countStationSuggestions(
+  db: D1Database,
+): Promise<StationSuggestionCounts> {
+  const result = await db
+    .prepare(
+      `
+        SELECT status, COUNT(*) AS count
+        FROM station_suggestions
+        GROUP BY status
+      `,
+    )
+    .all<{ status: StationSuggestionStatus; count: number }>();
+
+  const counts: StationSuggestionCounts = {
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    total: 0,
+  };
+
+  for (const row of result.results) {
+    if (row.status in counts) {
+      counts[row.status] = row.count;
+    }
+
+    counts.total += row.count;
+  }
+
+  return counts;
+}
+
 /**
- * Save a proposed station edit.
- * This function does not modify the live station or its relations.
+ * Save a visitor's suggestion.
+ * This never modifies the live station or its relations.
  */
 export async function createStationSuggestion(
   db: D1Database,
@@ -119,43 +168,24 @@ export async function createStationSuggestion(
       `
         INSERT INTO station_suggestions (
           station_id,
-          suggested_name,
-          suggested_name_japanese,
-          suggested_description,
-          suggested_about,
-          suggested_latitude,
-          suggested_longitude,
-          suggested_lines,
-          suggested_platforms,
-          suggested_facilities,
-          suggested_top_picks,
-          reason,
-          submitter_name,
-          submitter_email
+          line_id,
+          message
         )
         SELECT
-          id,
-          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-        FROM stations
-        WHERE id = ?
+          s.id,
+          (
+            SELECT ls.line_id
+            FROM line_stations ls
+            WHERE ls.station_id = s.id
+              AND ls.line_id = ?
+            LIMIT 1
+          ),
+          ?
+        FROM stations s
+        WHERE s.id = ?
       `,
     )
-    .bind(
-      input.suggestedName?.trim() || null,
-      input.suggestedNameJapanese?.trim() || null,
-      input.suggestedDescription?.trim() || null,
-      input.suggestedAbout?.trim() || null,
-      input.suggestedLatitude ?? null,
-      input.suggestedLongitude ?? null,
-      input.suggestedLines ?? null,
-      input.suggestedPlatforms ?? null,
-      input.suggestedFacilities ?? null,
-      input.suggestedTopPicks ?? null,
-      input.reason?.trim() || null,
-      input.submitterName?.trim() || null,
-      input.submitterEmail?.trim() || null,
-      input.stationId,
-    )
+    .bind(input.lineId ?? null, input.message.trim(), input.stationId)
     .run();
 
   if (result.meta.changes !== 1) {
@@ -163,4 +193,39 @@ export async function createStationSuggestion(
   }
 
   return Number(result.meta.last_row_id);
+}
+
+/** Move a suggestion to another status. False when it does not exist. */
+export async function setStationSuggestionStatus(
+  db: D1Database,
+  id: number,
+  status: StationSuggestionStatus,
+): Promise<boolean> {
+  const result = await db
+    .prepare(
+      `
+        UPDATE station_suggestions
+        SET
+          status = ?,
+          reviewed_at = CASE WHEN ? = 'pending' THEN NULL ELSE CURRENT_TIMESTAMP END,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `,
+    )
+    .bind(status, status, id)
+    .run();
+
+  return result.meta.changes === 1;
+}
+
+export async function deleteStationSuggestion(
+  db: D1Database,
+  id: number,
+): Promise<boolean> {
+  const result = await db
+    .prepare("DELETE FROM station_suggestions WHERE id = ?")
+    .bind(id)
+    .run();
+
+  return result.meta.changes === 1;
 }

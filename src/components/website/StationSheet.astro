@@ -95,121 +95,29 @@ import StationSheetIcons from "./StationSheetIcons.astro";
     <section
       class="sheet-edit-form"
       id="sheet-edit-form"
-      aria-label="Suggest station edits"
+      aria-labelledby="suggestion-title"
       hidden
     >
       <header class="sheet-edit-head">
-        <h3>Suggest an Edit</h3>
-        <p>
-          Help us keep station information accurate.
-          Your suggestion will be reviewed before any changes are published.
-        </p>
+        <h3 id="suggestion-title"></h3>
+        <p class="sheet-edit-sub" id="suggestion-subtitle"></p>
       </header>
 
       <form id="station-suggestion-form">
-        <input
-          type="hidden"
-          id="suggestion-station-id"
-          name="stationId"
-        />
+        <input type="hidden" id="suggestion-station-id" name="stationId" />
+        <input type="hidden" id="suggestion-line-id" name="lineId" />
 
         <div class="form-field">
-          <label for="suggestion-name">Station name (English)</label>
-          <input
-            id="suggestion-name"
-            name="name"
-            type="text"
-            maxlength="150"
-            autocomplete="off"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="suggestion-name-japanese">Station name (Japanese)</label>
-          <input
-            id="suggestion-name-japanese"
-            name="nameJapanese"
-            type="text"
-            maxlength="150"
-            autocomplete="off"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="suggestion-description">Description</label>
+          <label for="suggestion-text">What would you like to suggest?</label>
           <textarea
-            id="suggestion-description"
-            name="description"
+            id="suggestion-text"
+            name="message"
+            rows="6"
+            minlength="3"
             maxlength="1000"
-            rows="3"
+            required
+            placeholder="Tell us what is wrong or missing, e.g. the coin lockers moved to the 2nd floor."
           ></textarea>
-        </div>
-
-        <div class="form-field">
-          <label for="suggestion-about">About this station</label>
-          <textarea
-            id="suggestion-about"
-            name="about"
-            maxlength="1000"
-            rows="3"
-          ></textarea>
-        </div>
-
-        <div class="form-field">
-          <label for="suggestion-latitude">Latitude</label>
-          <input
-            id="suggestion-latitude"
-            name="latitude"
-            type="number"
-            min="-90"
-            max="90"
-            step="any"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="suggestion-longitude">Longitude</label>
-          <input
-            id="suggestion-longitude"
-            name="longitude"
-            type="number"
-            min="-180"
-            max="180"
-            step="any"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="suggestion-reason">What should be changed?</label>
-          <textarea
-            id="suggestion-reason"
-            name="reason"
-            maxlength="1000"
-            rows="3"
-            placeholder="Explain your suggested changes..."
-          ></textarea>
-        </div>
-
-        <div class="form-field">
-          <label for="suggestion-submitter-name">Your name (optional)</label>
-          <input
-            id="suggestion-submitter-name"
-            name="submitterName"
-            type="text"
-            maxlength="100"
-            autocomplete="name"
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="suggestion-submitter-email">Your email (optional)</label>
-          <input
-            id="suggestion-submitter-email"
-            name="submitterEmail"
-            type="email"
-            maxlength="254"
-            autocomplete="email"
-          />
         </div>
 
         <div
@@ -221,9 +129,7 @@ import StationSheetIcons from "./StationSheetIcons.astro";
         ></div>
 
         <div class="suggestion-actions">
-          <button type="button" id="sheet-cancel-edit">
-            Cancel
-          </button>
+          <button type="button" id="sheet-cancel-edit">Cancel</button>
           <button type="submit" id="sheet-submit-edit">
             Submit Suggestion
           </button>

@@ -118,6 +118,18 @@ const isActive = (path: string) => {
 
       <span> Featured Stations </span>
     </a>
+
+    <a
+      href="/admin/suggestions"
+      class:list={{
+        active: isActive("/admin/suggestions"),
+      }}
+      aria-current={isActive("/admin/suggestions") ? "page" : undefined}
+    >
+      <span class="admin-nav-icon" aria-hidden="true"> ✎ </span>
+
+      <span> Suggestions </span>
+    </a>
   </nav>
 
   <!-- System -->

@@ -1,6 +1,6 @@
 // The station details sheet.
 
-import { list } from "./current-line.js";
+import { line as currentLine, list } from "./current-line.js";
 import { data, searchable } from "./data.js";
 import { sheet } from "./dom.js";
 import { state } from "./state.js";
@@ -814,25 +814,42 @@ function prepareSuggestionForm(stn) {
 
   $("#suggestion-station-id").value = stn.id != null ? String(stn.id) : "";
 
-  $("#suggestion-name").value = stn.name || "";
-  $("#suggestion-name-japanese").value = stn.jp || "";
+  var line = currentLine();
 
-  $("#suggestion-description").value =
-    stationField(stn, ["description", "summary"]) || "";
-
-  $("#suggestion-about").value = stationField(stn, ["about"]) || "";
-
-  var latitude = stationField(stn, ["latitude"]);
-  var longitude = stationField(stn, ["longitude"]);
-
-  $("#suggestion-latitude").value = latitude != null ? String(latitude) : "";
-  $("#suggestion-longitude").value = longitude != null ? String(longitude) : "";
+  $("#suggestion-line-id").value = line && line.id != null ? String(line.id) : "";
 
   section.hidden = true;
   button.setAttribute("aria-expanded", "false");
 
+  $("#sheet-cancel-edit").textContent = "Cancel";
+
   message.textContent = "";
   message.hidden = true;
+  message.classList.remove("is-success", "is-error");
+}
+
+/*
+ * Title = station name, subtitle = the line the visitor was looking at.
+ * Both are plain text: the visitor only writes the suggestion itself.
+ */
+function fillSuggestionHead() {
+  var line = currentLine();
+
+  $("#suggestion-title").textContent = $("#sheet-main").textContent;
+
+  var sub = $("#suggestion-subtitle");
+
+  if (line && line.name) {
+    sub.innerHTML =
+      '<span class="suggestion-line-dot"' +
+      (line.color ? ' style="--c:' + esc(line.color) + '"' : "") +
+      "></span>" +
+      esc(line.name);
+    sub.hidden = false;
+  } else {
+    sub.textContent = "";
+    sub.hidden = true;
+  }
 }
 
 function openSheet() {
@@ -1000,12 +1017,16 @@ export function initStationSheet() {
     button.setAttribute("aria-expanded", String(opening));
 
     if (opening) {
+      fillSuggestionHead();
+
+      $("#sheet-cancel-edit").textContent = "Cancel";
+
       section.scrollIntoView({
         behavior: "smooth",
         block: "nearest",
       });
 
-      $("#suggestion-name").focus();
+      $("#suggestion-text").focus();
     }
   });
 
@@ -1016,6 +1037,7 @@ export function initStationSheet() {
     var message = $("#suggestion-message");
     message.hidden = true;
     message.textContent = "";
+    message.classList.remove("is-success", "is-error");
   });
 
   $("#station-suggestion-form").addEventListener(
@@ -1033,6 +1055,7 @@ export function initStationSheet() {
 
       message.hidden = true;
       message.textContent = "";
+      message.classList.remove("is-success", "is-error");
 
       submitButton.disabled = true;
       submitButton.textContent = "Submitting...";
@@ -1055,26 +1078,23 @@ export function initStationSheet() {
           );
         }
 
-        var successMessage =
-          result.message || "Your suggestion has been submitted for review.";
-
-        var stationId = $("#suggestion-station-id").value;
-        var stn = list()[state.idx];
-
-        if (stn && String(stn.id) === stationId) {
-          prepareSuggestionForm(stn);
-        } else {
-          form.reset();
-        }
-
-        message.textContent = successMessage;
+        message.textContent =
+          result.message || "Thank you! Your suggestion has been sent for review.";
+        message.classList.remove("is-error");
+        message.classList.add("is-success");
         message.hidden = false;
+
+        // Ready for another suggestion; the button now just closes the form.
+        $("#suggestion-text").value = "";
+        $("#sheet-cancel-edit").textContent = "Close";
       } catch (error) {
         message.textContent =
           error instanceof Error
             ? error.message
             : "A network error occurred. Please try again.";
 
+        message.classList.remove("is-success");
+        message.classList.add("is-error");
         message.hidden = false;
       } finally {
         submitButton.disabled = false;

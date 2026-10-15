@@ -1,14 +1,8 @@
+/** What a visitor sends: which station, which line, and one message. */
 export interface StationSuggestionValues {
   stationId: string;
-  name: string;
-  nameJapanese: string;
-  description: string;
-  about: string;
-  latitude: string;
-  longitude: string;
-  reason: string;
-  submitterName: string;
-  submitterEmail: string;
+  lineId: string;
+  message: string;
 }
 
 export type StationSuggestionErrors = Record<
@@ -16,18 +10,14 @@ export type StationSuggestionErrors = Record<
   string
 >;
 
+export const SUGGESTION_MESSAGE_MIN = 3;
+export const SUGGESTION_MESSAGE_MAX = 1000;
+
 export function emptyStationSuggestionErrors(): StationSuggestionErrors {
   return {
     stationId: "",
-    name: "",
-    nameJapanese: "",
-    description: "",
-    about: "",
-    latitude: "",
-    longitude: "",
-    reason: "",
-    submitterName: "",
-    submitterEmail: "",
+    lineId: "",
+    message: "",
   };
 }
 
@@ -37,10 +27,6 @@ export function validateStationSuggestion(
   const errors = emptyStationSuggestionErrors();
 
   const stationId = Number(values.stationId);
-  const latitude =
-    values.latitude.trim() === "" ? null : Number(values.latitude);
-  const longitude =
-    values.longitude.trim() === "" ? null : Number(values.longitude);
 
   if (
     !values.stationId.trim() ||
@@ -50,49 +36,19 @@ export function validateStationSuggestion(
     errors.stationId = "A valid station is required.";
   }
 
-  if (values.name.length > 150) {
-    errors.name = "Station name must be 150 characters or less.";
+  // The line is optional, but when it is sent it must be a valid id.
+  if (values.lineId.trim() !== "") {
+    const lineId = Number(values.lineId);
+
+    if (!Number.isSafeInteger(lineId) || lineId <= 0) {
+      errors.lineId = "The selected line is not valid.";
+    }
   }
 
-  if (values.nameJapanese.length > 150) {
-    errors.nameJapanese = "Japanese name must be 150 characters or less.";
-  }
-
-  if (values.description.length > 1000) {
-    errors.description = "Description must be 1000 characters or less.";
-  }
-
-  if (values.about.length > 1000) {
-    errors.about = "About must be 1000 characters or less.";
-  }
-
-  if (latitude !== null && !Number.isFinite(latitude)) {
-    errors.latitude = "Latitude must be a valid number.";
-  } else if (latitude !== null && (latitude < -90 || latitude > 90)) {
-    errors.latitude = "Latitude must be between -90 and 90.";
-  }
-
-  if (longitude !== null && !Number.isFinite(longitude)) {
-    errors.longitude = "Longitude must be a valid number.";
-  } else if (longitude !== null && (longitude < -180 || longitude > 180)) {
-    errors.longitude = "Longitude must be between -180 and 180.";
-  }
-
-  if (values.reason.length > 1000) {
-    errors.reason = "Reason must be 1000 characters or less.";
-  }
-
-  if (values.submitterName.length > 100) {
-    errors.submitterName = "Name must be 100 characters or less.";
-  }
-
-  if (values.submitterEmail.length > 254) {
-    errors.submitterEmail = "Email must be 254 characters or less.";
-  } else if (
-    values.submitterEmail &&
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.submitterEmail.trim())
-  ) {
-    errors.submitterEmail = "Enter a valid email address.";
+  if (values.message.length < SUGGESTION_MESSAGE_MIN) {
+    errors.message = "Please tell us what you would like to suggest.";
+  } else if (values.message.length > SUGGESTION_MESSAGE_MAX) {
+    errors.message = `Your suggestion must be ${SUGGESTION_MESSAGE_MAX} characters or less.`;
   }
 
   return errors;
