@@ -93,17 +93,8 @@ export function validateTopPickForm(
     errors.notes = "Notes must be 150 characters or less.";
   }
 
-  if (values.imageUrl.trim()) {
-    try {
-      const url = new URL(values.imageUrl.trim());
-
-      if (url.protocol !== "http:" && url.protocol !== "https:") {
-        errors.imageUrl = "Image URL must use HTTP or HTTPS.";
-      }
-    } catch {
-      errors.imageUrl = "Enter a valid image URL.";
-    }
-  }
+  // The photo is never typed in: it is an uploaded R2 key (or an older
+  // URL) and is checked when the file is uploaded, so it is not validated here.
 
   if (values.openingHours.length > 7) {
     errors.openingHours = "Opening hours cannot contain more than 7 days.";
