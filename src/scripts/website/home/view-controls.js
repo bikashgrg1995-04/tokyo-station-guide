@@ -2,7 +2,6 @@
 
 import { list, pointAt } from "./current-line.js";
 import { svg } from "./dom.js";
-import { go } from "./navigation.js";
 import { state } from "./state.js";
 import { $ } from "./utils.js";
 
@@ -101,16 +100,6 @@ function touchDistance(t) {
 }
 
 export function initViewControls() {
-  $("#zoom-in").addEventListener("click", function () {
-    state.zoom = Math.min(state.zoom * 1.5, MAX_ZOOM);
-
-    refreshView();
-  });
-  $("#zoom-out").addEventListener("click", function () {
-    state.zoom = Math.max(state.zoom / 1.5, 1);
-
-    refreshView();
-  });
   /*
    * Mouse wheel zoom.
    */
@@ -325,9 +314,4 @@ export function initViewControls() {
       passive: true,
     },
   );
-  $("#zoom-reset").addEventListener("click", function () {
-    state.zoom = 1;
-
-    go(0);
-  });
 }

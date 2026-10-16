@@ -13,8 +13,6 @@ body {
 }
 
 body {
-  display: grid;
-  grid-template-rows: 1fr auto; /* map on top, board sheet below */
   background: var(--bg);
   color: var(--ink);
   font-family:

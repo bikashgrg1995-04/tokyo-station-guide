@@ -26,6 +26,14 @@ const { title, description } = Astro.props;
   robots="index, follow"
   viewport="width=device-width, initial-scale=1, viewport-fit=cover"
 >
-  <slot name="head" slot="head" />
+  <Fragment slot="head">
+    <link rel="icon" type="image/png" sizes="48x48" href="/assets/icons/icon-light-48.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/icon-light-192.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/icon-dark-192.png" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/icon-light-180.png" />
+    <meta name="theme-color" content="#ececf1" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c1017" media="(prefers-color-scheme: dark)" />
+    <slot name="head" />
+  </Fragment>
   <slot />
 </BaseLayout>

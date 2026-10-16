@@ -2,28 +2,21 @@
    Responsive tweaks (keep last in the import order)
    ========================================================================== */
 @media (max-width: 560px) {
+  :root {
+    --map-bottom: 190px;
+  }
   .topbar {
-    inset: calc(10px + env(safe-area-inset-top, 0px))
-      calc(12px + env(safe-area-inset-right, 0px)) auto
-      calc(12px + env(safe-area-inset-left, 0px));
-  }
-  .rail-tools.left {
-    left: 10px;
-  }
-  .rail-tools.right {
-    right: 10px;
+    inset: calc(6px + env(safe-area-inset-top, 0px))
+      calc(10px + env(safe-area-inset-right, 0px)) auto
+      calc(10px + env(safe-area-inset-left, 0px));
   }
   .board {
-    padding: 8px 10px calc(12px + env(safe-area-inset-bottom, 0px));
-  }
-  .board-card {
-    border-radius: 22px;
-    padding: 9px 10px 8px;
+    padding: 0 10px calc(12px + env(safe-area-inset-bottom, 0px));
   }
   .current strong {
-    font-size: 22px;
+    font-size: 26px;
   }
   .side-text b {
-    font-size: 11px;
+    font-size: 10.5px;
   }
 }

@@ -1,29 +1,41 @@
 /* ==========================================================================
    Transit map — world-space grid, rail track, stations, train, tools
    ========================================================================== */
+/* The map fills the screen; the SVG itself sits between the top bar and the
+   board card, and overflows visibly so a zoomed map runs behind both. */
+:root {
+  --map-top: 44px;
+  --map-bottom: 184px;
+}
 .stage {
   touch-action: none; /* we handle pinch zoom ourselves */
-  position: relative;
-  min-height: 0;
+  position: fixed;
+  inset: 0;
   overflow: hidden;
-  background: radial-gradient(110% 80% at 50% 25%, var(--bg-hi), var(--bg));
+  background: var(--bg);
 }
 #map {
+  position: absolute;
+  left: 0;
+  top: var(--map-top);
   width: 100%;
-  height: 100%;
+  height: calc(100% - var(--map-top) - var(--map-bottom));
   display: block;
+  overflow: visible;
 }
 
-/* Grid lives inside the SVG, so it zooms and pans with the map */
-.grid-hi {
-  fill: none;
-  stroke: var(--grid-hi);
-  stroke-width: 1.4;
+/* Soft map scenery — parks and water, drawn in world space */
+.sc-park {
+  fill: var(--park);
 }
-.grid-lo {
+.sc-river {
   fill: none;
-  stroke: var(--grid-lo);
-  stroke-width: 1.4;
+  stroke: var(--water);
+  stroke-width: 80;
+  stroke-linecap: round;
+}
+.sc-bay {
+  fill: var(--water);
 }
 
 /* Track: grey bed with the line colour running through it */
@@ -62,9 +74,18 @@
   transform-origin: center;
   transition: transform 0.18s ease;
 }
+/* Selected station: radar — a soft disc plus two rings that expand and fade */
 .halo {
-  fill: rgba(255, 16, 16, 0.18);
+  fill: rgba(255, 16, 16, 0.22);
   display: none;
+  pointer-events: none;
+}
+.pulse {
+  fill: rgba(255, 16, 16, 0.32);
+  display: none;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .pill {
@@ -107,6 +128,32 @@
 .stn.current .halo {
   display: block;
 }
+.stn.current .pulse {
+  display: block;
+  animation: radar 2.4s ease-out infinite;
+}
+.stn.current .pulse-2 {
+  animation-delay: 1.2s;
+}
+@keyframes radar {
+  0% {
+    opacity: 0.75;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(3);
+  }
+}
+@keyframes dot-blink {
+  0%,
+  100% {
+    fill: #ff2d1f;
+  }
+  50% {
+    fill: #ff9a90;
+  }
+}
 .stn.current .pill {
   fill: var(--accent-red);
   stroke: none;
@@ -116,7 +163,18 @@
   fill: #fff;
 }
 .stn.current .stop {
-  fill: #ff5a4a;
+  fill: #ff2d1f;
+  animation: dot-blink 1.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stn.current .pulse,
+  .stn.current .stop {
+    animation: none;
+  }
+  .stn.current .pulse {
+    opacity: 0.25;
+    transform: scale(1.6);
+  }
 }
 
 /* Train ----------------------------------------------------------------- */
@@ -179,44 +237,4 @@
 }
 :root[data-theme="dark"] .tail {
   filter: drop-shadow(0 0 2px #ff3b30);
-}
-
-/* Floating tools (zoom, info) */
-.rail-tools {
-  position: absolute;
-  bottom: 14px;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 3px;
-  background: var(--tool-bg);
-  border: 1px solid var(--tool-border);
-  border-radius: 13px;
-  box-shadow: var(--shadow);
-}
-.rail-tools.left {
-  left: 14px;
-}
-.rail-tools.right {
-  right: 14px;
-}
-
-.tool {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  font-size: 16px;
-  transition: background 0.15s ease;
-  color: var(--tool-ink);
-  text-decoration: none;
-}
-.tool svg {
-  width: 14px;
-  height: 14px;
-}
-.tool:hover {
-  background: var(--tool-hover);
 }

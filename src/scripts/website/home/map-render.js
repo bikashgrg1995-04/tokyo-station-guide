@@ -226,6 +226,10 @@ export function drawMap() {
       g,
     );
 
+    ["pulse pulse-1", "pulse pulse-2"].forEach(function (cls) {
+      el("circle", { cx: p.x, cy: p.y, r: 9, class: cls }, g);
+    });
+
     el(
       "circle",
       {
@@ -298,7 +302,7 @@ export function drawMap() {
    * fit whole line.
    */
 
-  var pad = 100;
+  var pad = 36;
 
   var vx = box.x0 - pad;
 
@@ -308,9 +312,9 @@ export function drawMap() {
 
   var vh = box.y1 - box.y0 + pad * 2;
 
-  var mw = Math.max(vw, 600);
+  var mw = vw;
 
-  var mh = Math.max(vh, 760);
+  var mh = vh;
 
   state.VB = {
     x: vx - (mw - vw) / 2,

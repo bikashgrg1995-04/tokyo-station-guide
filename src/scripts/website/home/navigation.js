@@ -74,21 +74,6 @@ function updateBoard() {
   side("prev", prev);
 
   side("next", next);
-
-  /*
-   * Station information page.
-   *
-   * This is now the ONLY normal route to
-   * station detail from the map UI.
-   */
-
-  var info = $("#info-link");
-
-  if (cur && cur.slug) {
-    info.href = "/stations/" + encodeURIComponent(cur.slug);
-  } else {
-    info.href = "#";
-  }
 }
 
 export function go(i) {

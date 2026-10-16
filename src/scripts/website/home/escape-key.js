@@ -1,7 +1,7 @@
 // Escape key closes whatever is open.
 
 import { dlg, overlay, sheet } from "./dom.js";
-import { closeLines } from "./lines-dialog.js";
+import { closeLines, closeSoon, isSoonOpen } from "./lines-dialog.js";
 import { closeSearch } from "./search.js";
 import { closeSheet } from "./station-sheet.js";
 
@@ -11,7 +11,9 @@ export function initEscapeKey() {
       return;
     }
 
-    if (!sheet.hidden) {
+    if (isSoonOpen()) {
+      closeSoon();
+    } else if (!sheet.hidden) {
       closeSheet();
     } else if (!dlg.hidden) {
       closeLines();

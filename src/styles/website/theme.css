@@ -3,8 +3,10 @@
    ========================================================================== */
 :root {
   --line: #9caf31; /* overwritten at runtime by the active line color */
-  --bg: #e6e8ec;
-  --bg-hi: #eff1f4;
+  --bg: #ececf1;
+  --bg-hi: #ececf1;
+  --park: #e1eae1;
+  --water: #e1e8f3;
   --grid-hi: rgba(255, 255, 255, 0.75);
   --grid-lo: rgba(20, 30, 50, 0.07);
   --surface: #ffffff;
@@ -30,7 +32,9 @@
 
 :root[data-theme="dark"] {
   --bg: #0c1017;
-  --bg-hi: #121823;
+  --bg-hi: #0c1017;
+  --park: #101d19;
+  --water: #111b2b;
   --grid-hi: rgba(255, 255, 255, 0.025);
   --grid-lo: rgba(0, 0, 0, 0.22);
   --surface: #141922;
