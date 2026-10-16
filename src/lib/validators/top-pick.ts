@@ -9,6 +9,7 @@ export interface TopPickFormValues {
   description: string;
   imageUrl: string;
   entryFee: string;
+  mapUrl: string;
   notes: string;
   openingHours: TopPickOpeningHour[];
 }
@@ -40,6 +41,7 @@ export function emptyTopPickErrors(): TopPickFormErrors {
     description: "",
     imageUrl: "",
     entryFee: "",
+    mapUrl: "",
     notes: "",
     openingHours: "",
   };
@@ -87,6 +89,23 @@ export function validateTopPickForm(
 
   if (values.entryFee.trim().length > 150) {
     errors.entryFee = "Entry fee must be 150 characters or less.";
+  }
+
+  if (values.mapUrl.trim()) {
+    let validUrl = false;
+
+    try {
+      const url = new URL(values.mapUrl.trim());
+      validUrl = url.protocol === "https:" || url.protocol === "http:";
+    } catch {
+      validUrl = false;
+    }
+
+    if (!validUrl) {
+      errors.mapUrl = "Enter a valid http(s) Google Maps link.";
+    } else if (values.mapUrl.trim().length > 500) {
+      errors.mapUrl = "Maps link must be 500 characters or less.";
+    }
   }
 
   if (values.notes.length > 150) {

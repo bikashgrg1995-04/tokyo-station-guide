@@ -72,6 +72,7 @@ function readTopPickForm(formData: FormData): TopPickFormValues {
     description: readText(formData, "description"),
     imageUrl: "",
     entryFee: readText(formData, "entry_fee"),
+    mapUrl: readText(formData, "map_url"),
     notes: readText(formData, "notes"),
     openingHours,
   };
@@ -177,6 +178,7 @@ export async function handleTopPickCreate(
       description: "",
       imageUrl: "",
       entryFee: "",
+      mapUrl: "",
       notes: "",
       openingHours: Array.from({ length: 7 }, (_, day) => ({
         day_of_week: day,
@@ -209,6 +211,7 @@ export async function handleTopPickCreate(
         description: values.description || null,
         imageUrl,
         entryFee: values.entryFee || null,
+        mapUrl: values.mapUrl || null,
         notes: values.notes || null,
         openingHours: values.openingHours,
       });
@@ -233,6 +236,7 @@ export async function handleTopPickUpdate(
       description: topPick?.description ?? "",
       imageUrl: topPick?.image_url ?? "",
       entryFee: topPick?.entry_fee ?? "",
+      mapUrl: topPick?.map_url ?? "",
       notes: topPick?.notes ?? "",
       openingHours: Array.from({ length: 7 }, (_, day) => {
         const existing = topPick?.opening_hours?.find(
@@ -273,6 +277,7 @@ export async function handleTopPickUpdate(
         description: values.description || null,
         imageUrl,
         entryFee: values.entryFee || null,
+        mapUrl: values.mapUrl || null,
         notes: values.notes || null,
         openingHours: values.openingHours,
       });

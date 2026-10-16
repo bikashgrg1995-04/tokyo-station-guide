@@ -34,6 +34,7 @@ export interface TopPick {
   description: string | null;
   image_url: string | null;
   entry_fee: string | null;
+  map_url: string | null;
   notes: string | null;
   opening_hours?: TopPickOpeningHour[];
 }
@@ -47,6 +48,7 @@ export interface StationTopPick {
   description: string | null;
   image_url: string | null;
   entry_fee: string | null;
+  map_url: string | null;
   notes: string | null;
   sort_order: number;
   walking_minutes: number | null;
@@ -67,6 +69,7 @@ export interface TopPickInput {
   description?: string | null;
   imageUrl?: string | null;
   entryFee?: string | null;
+  mapUrl?: string | null;
   notes?: string | null;
   openingHours?: TopPickOpeningHour[];
 }
@@ -207,6 +210,7 @@ export async function getTopPicks(
           description,
           image_url,
           entry_fee,
+          map_url,
           notes
         FROM top_picks
         ORDER BY name ASC
@@ -279,6 +283,7 @@ export async function getTopPicksPaginated(
           description,
           image_url,
           entry_fee,
+          map_url,
           notes
         FROM top_picks
         WHERE
@@ -337,6 +342,7 @@ export async function getTopPickById(
           description,
           image_url,
           entry_fee,
+          map_url,
           notes
         FROM top_picks
         WHERE id = ?
@@ -377,9 +383,10 @@ export async function createTopPick(
           description,
           image_url,
           entry_fee,
+          map_url,
           notes
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
     )
     .bind(
@@ -390,6 +397,7 @@ export async function createTopPick(
       input.description?.trim() || null,
       input.imageUrl?.trim() || null,
       input.entryFee?.trim() || null,
+      input.mapUrl?.trim() || null,
       input.notes?.trim() || null,
     )
     .run();
@@ -428,6 +436,7 @@ export async function updateTopPick(
           description = ?,
           image_url = ?,
           entry_fee = ?,
+          map_url = ?,
           notes = ?
         WHERE id = ?
       `,
@@ -440,6 +449,7 @@ export async function updateTopPick(
       input.description?.trim() || null,
       input.imageUrl?.trim() || null,
       input.entryFee?.trim() || null,
+      input.mapUrl?.trim() || null,
       input.notes?.trim() || null,
       id,
     )
@@ -524,6 +534,7 @@ export async function getStationTopPicks(
           tp.description,
           tp.image_url,
           tp.entry_fee,
+          tp.map_url,
           tp.notes,
           stp.sort_order,
           stp.walking_minutes,
@@ -571,6 +582,7 @@ export async function getAvailableTopPicksForStation(
           tp.description,
           tp.image_url,
           tp.entry_fee,
+          tp.map_url,
           tp.notes
         FROM top_picks tp
         WHERE NOT EXISTS (

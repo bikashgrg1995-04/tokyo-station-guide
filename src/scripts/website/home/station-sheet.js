@@ -664,9 +664,23 @@ function picksHtml(stn) {
             "</span>"
           : "";
 
+      /* Google Maps button: only for a real http(s) link set in the admin. */
+      var mapUrl = String(t.map_url || "").trim();
+
+      var mapLink = /^https?:\/\//i.test(mapUrl)
+        ? '<a class="pk-map" href="' +
+          esc(mapUrl) +
+          '" target="_blank" rel="noopener noreferrer">' +
+          '<svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">' +
+          '<path d="M8 .5A5.5 5.5 0 0 0 2.5 6c0 3.9 4.6 8.9 5.1 9.4a.6.6 0 0 0 .8 0c.5-.5 5.1-5.5 5.1-9.4A5.5 5.5 0 0 0 8 .5zm0 7.6a2.1 2.1 0 1 1 0-4.2 2.1 2.1 0 0 1 0 4.2z"/>' +
+          "</svg>" +
+          esc(isJp() ? "Googleマップで見る" : "View on Google Maps") +
+          "</a>"
+        : "";
+
       var travelRow =
-        exit || minutes
-          ? '<div class="pk-travel">' + exit + minutes + "</div>"
+        exit || minutes || mapLink
+          ? '<div class="pk-travel">' + exit + minutes + mapLink + "</div>"
           : "";
 
       /* Build the information row in the required order. */

@@ -32,6 +32,7 @@ const {
   description,
   imageUrl,
   entryFee,
+  mapUrl,
   notes,
   openingHours,
 } = form.values;
@@ -191,6 +192,25 @@ const { errors, formError } = form;
                 <small id="entry-fee-error" class="admin-form-error">{errors.entryFee}</small>
               ) : (
                 <small>Optional. Include currency and different ticket prices if needed.</small>
+              )}
+            </div>
+
+            <div class="admin-form-group full-width">
+              <label for="map_url">Google Maps Link</label>
+              <input
+                id="map_url"
+                name="map_url"
+                type="url"
+                maxlength="500"
+                value={mapUrl}
+                placeholder="https://maps.app.goo.gl/..."
+                aria-invalid={errors.mapUrl ? "true" : "false"}
+                aria-describedby={errors.mapUrl ? "map-url-error" : undefined}
+              />
+              {errors.mapUrl ? (
+                <small id="map-url-error" class="admin-form-error">{errors.mapUrl}</small>
+              ) : (
+                <small>Optional. Opens this place in Google Maps from the website.</small>
               )}
             </div>
 
