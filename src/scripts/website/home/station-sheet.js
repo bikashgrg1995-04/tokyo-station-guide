@@ -452,41 +452,44 @@ function facilityDetailHtml(group) {
 
   var exits = exitChips(allExits);
 
+  var locationPills = locations
+    .map(function (type) {
+      var label =
+        type === "inside"
+          ? isJp()
+            ? "駅構内"
+            : "Inside"
+          : isJp()
+            ? "駅の外"
+            : "Outside";
+
+      return (
+        '<span class="io pk-status pk-status-' +
+        type +
+        '">' +
+        esc(label) +
+        "</span>"
+      );
+    })
+    .join("");
+
+  /* The pill sits beside the nearby exits; alone when there are no exits. */
+  var topRow = exits
+    ? '<div class="facility-nearby-row">' +
+      '<span class="near">Nearby Exit</span>' +
+      '<div class="facility-nearby-exits">' +
+      exits +
+      locationPills +
+      "</div>" +
+      "</div>"
+    : locationPills
+      ? '<div class="facility-location-row">' + locationPills + "</div>"
+      : "";
+
   return (
     '<div class="facility-floor-details">' +
-    (exits
-      ? '<div class="facility-nearby-row">' +
-        '<span class="near">Nearby Exit</span>' +
-        '<div class="facility-nearby-exits">' +
-        exits +
-        "</div>" +
-        "</div>"
-      : "") +
+    topRow +
     (floorDetails.length ? "<div>" + floorDetails.join(", ") + "</div>" : "") +
-    (locations.length
-      ? '<div class="facility-location-row">' +
-        locations
-          .map(function (type) {
-            var label =
-              type === "inside"
-                ? isJp()
-                  ? "駅構内"
-                  : "Inside the station"
-                : isJp()
-                  ? "駅の外"
-                  : "Outside the station";
-
-            return (
-              '<span class="io pk-status pk-status-' +
-              type +
-              '">' +
-              esc(label) +
-              "</span>"
-            );
-          })
-          .join("") +
-        "</div>"
-      : "") +
     "</div>"
   );
 }
