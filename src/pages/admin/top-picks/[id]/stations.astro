@@ -42,6 +42,7 @@ if (formResult.redirectTo) {
 }
 
 const stations = topPick ? await getStations(db) : [];
+
 const assignments = topPick
   ? await getTopPickStationAssignments(db, id)
   : [];
@@ -84,7 +85,6 @@ const locationTypes = [
       parentLabel="Top Picks"
       current="Station Assignments"
     />
-
   </header>
 
   <div class="admin-content">
@@ -97,14 +97,15 @@ const locationTypes = [
               Manage the stations associated with this Top Pick.
             </p>
           </div>
-
-          
         </div>
 
         <section class="admin-panel">
           <div class="admin-panel-body">
             <h2>{topPick.name}</h2>
-            {topPick.name_japanese && <p>{topPick.name_japanese}</p>}
+
+            {topPick.name_japanese && (
+              <p>{topPick.name_japanese}</p>
+            )}
 
             {successMessage && <Alert>{successMessage}</Alert>}
             {formResult.error && <Alert>{formResult.error}</Alert>}
@@ -169,17 +170,20 @@ const locationTypes = [
                       >
                         <td>
                           <strong>{assignment.station_name}</strong>
+
                           {assignment.station_name_japanese && (
                             <div class="station-secondary">
                               {assignment.station_name_japanese}
                             </div>
                           )}
+
                           <div class="station-secondary">
                             {assignment.station_slug}
                           </div>
                         </td>
 
                         <td>{assignment.floor_name ?? "—"}</td>
+
                         <td>
                           {assignment.exit_name ?? "—"}
                           {assignment.exit_code
@@ -227,6 +231,7 @@ const locationTypes = [
                                 name="action"
                                 value="remove"
                               />
+
                               <input
                                 type="hidden"
                                 name="station_id"
@@ -273,6 +278,7 @@ const locationTypes = [
             <header class="station-modal-header">
               <div>
                 <h2 id="station-modal-title">Add Station</h2>
+
                 <p id="station-modal-description">
                   Assign this Top Pick to a station.
                 </p>
@@ -299,6 +305,7 @@ const locationTypes = [
                 value="save"
               />
 
+              <!-- Used only when editing an existing assignment -->
               <input
                 type="hidden"
                 id="modal-station-id-hidden"
@@ -307,20 +314,68 @@ const locationTypes = [
                 disabled
               />
 
+              <!-- Searchable station picker -->
               <div class="admin-form-group">
-                <label for="modal-station">Station</label>
-                <select
-                  id="modal-station"
-                  name="station_id"
-                  required
+                <label for="station-picker-search">Station</label>
+
+                <input
+                  id="station-picker-search"
+                  type="search"
+                  placeholder="Search English or Japanese station name..."
+                  autocomplete="off"
+                  aria-label="Search stations"
+                />
+
+                <div
+                  id="station-picker-list"
+                  class="station-picker-list"
+                  role="list"
+                  aria-label="Available stations"
                 >
+                  {stations.map((station) => (
+                    <button
+                      type="button"
+                      class="station-picker-option"
+                      data-station-id={station.id}
+                      data-station-name={station.name}
+                      data-station-japanese={station.name_japanese ?? ""}
+                      data-assigned={
+                        assignedStationIds.has(station.id)
+                          ? "true"
+                          : "false"
+                      }
+                    >
+                      <strong>{station.name}</strong>
+
+                      {station.name_japanese && (
+                        <span>{station.name_japanese}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                <p id="station-picker-empty" hidden>
+                  No available matching stations found.
+                </p>
+
+                <p
+                  id="station-picker-selected"
+                  aria-live="polite"
+                >
+                  No station selected.
+                </p>
+
+                <!-- This select supplies station_id to the existing POST handler -->
+                <select id="modal-station" name="station_id" hidden>
                   <option value="">Select a station</option>
 
                   {stations.map((station) => (
                     <option
                       value={station.id}
                       data-assigned={
-                        assignedStationIds.has(station.id) ? "true" : "false"
+                        assignedStationIds.has(station.id)
+                          ? "true"
+                          : "false"
                       }
                     >
                       {station.name}
@@ -334,10 +389,8 @@ const locationTypes = [
 
               <div class="admin-form-group">
                 <label for="modal-floor">Floor</label>
-                <select
-                  id="modal-floor"
-                  name="floor_id"
-                >
+
+                <select id="modal-floor" name="floor_id">
                   <option value="">No floor selected</option>
 
                   {stationDetails.flatMap(({ station, floors }) =>
@@ -358,10 +411,8 @@ const locationTypes = [
 
               <div class="admin-form-group">
                 <label for="modal-exit">Exit</label>
-                <select
-                  id="modal-exit"
-                  name="exit_id"
-                >
+
+                <select id="modal-exit" name="exit_id">
                   <option value="">No exit selected</option>
 
                   {stationDetails.flatMap(({ station, exits }) =>
@@ -381,6 +432,7 @@ const locationTypes = [
 
               <div class="admin-form-group">
                 <label for="modal-location">Location Type</label>
+
                 <select
                   id="modal-location"
                   name="location_type"
@@ -398,7 +450,10 @@ const locationTypes = [
               </div>
 
               <div class="admin-form-group">
-                <label for="modal-walking">Walking Time (minutes)</label>
+                <label for="modal-walking">
+                  Walking Time (minutes)
+                </label>
+
                 <input
                   id="modal-walking"
                   name="walking_minutes"
@@ -411,6 +466,7 @@ const locationTypes = [
 
               <div class="admin-form-group">
                 <label for="modal-order">Sort Order</label>
+
                 <input
                   id="modal-order"
                   name="sort_order"
@@ -622,6 +678,60 @@ const locationTypes = [
         min-height: 42px;
       }
 
+      .station-picker-list {
+        display: grid;
+        gap: 6px;
+        max-height: 220px;
+        overflow-y: auto;
+        margin-top: 8px;
+        padding: 6px;
+        border: 1px solid var(--admin-border, #d1d5db);
+        border-radius: 8px;
+      }
+
+      .station-picker-option {
+        display: grid;
+        gap: 4px;
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid transparent;
+        border-radius: 7px;
+        background: transparent;
+        color: inherit;
+        text-align: left;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .station-picker-option span {
+        color: var(--admin-muted, #6b7280);
+        font-size: 0.85rem;
+      }
+
+      .station-picker-option:hover,
+      .station-picker-option.is-selected {
+        border-color: var(--admin-primary, #2563eb);
+        background: var(--admin-muted-bg, #f3f4f6);
+      }
+
+      .station-picker-option[hidden],
+      .station-picker-list[hidden],
+      #modal-station[hidden] {
+        display: none !important;
+      }
+
+      #station-picker-empty {
+        margin: 8px 0;
+        color: var(--admin-muted, #6b7280);
+        font-size: 0.875rem;
+      }
+
+      #station-picker-selected {
+        margin: 8px 0 0;
+        color: var(--admin-muted, #6b7280);
+        font-size: 0.875rem;
+      }
+
       .station-modal-actions {
         display: flex;
         justify-content: flex-end;
@@ -671,37 +781,68 @@ const locationTypes = [
     </style>
 
     <script>
-      const modal = document.querySelector("#station-modal") as HTMLElement | null;
-      const openAddButton = document.querySelector("#open-add-modal") as HTMLButtonElement | null;
+      const modal =
+        document.querySelector("#station-modal") as HTMLElement | null;
+
+      const openAddButton =
+        document.querySelector("#open-add-modal") as HTMLButtonElement | null;
+
       const closeButtons = document.querySelectorAll("[data-close-modal]");
-      const assignmentForm = document.querySelector("#station-assignment-form") as HTMLFormElement | null;
 
-      const stationSelect = document.querySelector("#modal-station") as HTMLSelectElement | null;
-      const hiddenStationId = document.querySelector("#modal-station-id-hidden") as HTMLInputElement | null;
-      const floorSelect = document.querySelector("#modal-floor") as HTMLSelectElement | null;
-      const exitSelect = document.querySelector("#modal-exit") as HTMLSelectElement | null;
-      const locationSelect = document.querySelector("#modal-location") as HTMLSelectElement | null;
-      const walkingInput = document.querySelector("#modal-walking") as HTMLInputElement | null;
-      const orderInput = document.querySelector("#modal-order") as HTMLInputElement | null;
-      const modalTitle = document.querySelector("#station-modal-title") as HTMLElement | null;
-      const modalDescription = document.querySelector("#station-modal-description") as HTMLElement | null;
-      const modalSubmit = document.querySelector("#station-modal-submit") as HTMLButtonElement | null;
-      const searchInput = document.querySelector("#station-search") as HTMLInputElement | null;
-      const searchEmpty = document.querySelector("#station-search-empty") as HTMLElement | null;
+      const assignmentForm =
+        document.querySelector("#station-assignment-form") as HTMLFormElement | null;
 
-      const openModal = () => {
-        if (!modal) return;
-        modal.hidden = false;
-        modal.setAttribute("aria-hidden", "false");
-        document.body.style.overflow = "hidden";
-      };
+      const stationSelect =
+        document.querySelector("#modal-station") as HTMLSelectElement | null;
 
-      const closeModal = () => {
-        if (!modal) return;
-        modal.hidden = true;
-        modal.setAttribute("aria-hidden", "true");
-        document.body.style.overflow = "";
-      };
+      const hiddenStationId =
+        document.querySelector("#modal-station-id-hidden") as HTMLInputElement | null;
+
+      const floorSelect =
+        document.querySelector("#modal-floor") as HTMLSelectElement | null;
+
+      const exitSelect =
+        document.querySelector("#modal-exit") as HTMLSelectElement | null;
+
+      const locationSelect =
+        document.querySelector("#modal-location") as HTMLSelectElement | null;
+
+      const walkingInput =
+        document.querySelector("#modal-walking") as HTMLInputElement | null;
+
+      const orderInput =
+        document.querySelector("#modal-order") as HTMLInputElement | null;
+
+      const modalTitle =
+        document.querySelector("#station-modal-title") as HTMLElement | null;
+
+      const modalDescription =
+        document.querySelector("#station-modal-description") as HTMLElement | null;
+
+      const modalSubmit =
+        document.querySelector("#station-modal-submit") as HTMLButtonElement | null;
+
+      const searchInput =
+        document.querySelector("#station-search") as HTMLInputElement | null;
+
+      const searchEmpty =
+        document.querySelector("#station-search-empty") as HTMLElement | null;
+
+      const stationPickerSearch =
+        document.querySelector("#station-picker-search") as HTMLInputElement | null;
+
+      const stationPickerList =
+        document.querySelector("#station-picker-list") as HTMLElement | null;
+
+      const stationPickerEmpty =
+        document.querySelector("#station-picker-empty") as HTMLElement | null;
+
+      const stationPickerSelected =
+        document.querySelector("#station-picker-selected") as HTMLElement | null;
+
+      const stationPickerOptions = Array.from(
+        document.querySelectorAll(".station-picker-option"),
+      ) as HTMLButtonElement[];
 
       const filterFloorsAndExits = (resetFloor: boolean) => {
         if (!stationSelect || !floorSelect || !exitSelect) return;
@@ -742,6 +883,77 @@ const locationTypes = [
         }
       };
 
+      const filterStationPicker = () => {
+        if (!stationPickerSearch || !stationSelect) return;
+
+        const query = stationPickerSearch.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        stationPickerOptions.forEach((option) => {
+          const stationId = option.dataset.stationId ?? "";
+
+          const searchableText =
+            `${option.dataset.stationName ?? ""} ${option.dataset.stationJapanese ?? ""}`
+              .toLowerCase();
+
+          const isSelected = stationSelect.value === stationId;
+
+          const isAssigned =
+            option.dataset.assigned === "true" &&
+            !stationSelect.disabled &&
+            !isSelected;
+
+          const matches = searchableText.includes(query);
+
+          option.hidden = !matches || isAssigned;
+
+          option.classList.toggle("is-selected", isSelected);
+          option.setAttribute("aria-pressed", String(isSelected));
+
+          if (!option.hidden) {
+            visibleCount++;
+          }
+        });
+
+        if (stationPickerEmpty) {
+          stationPickerEmpty.hidden = visibleCount > 0;
+        }
+
+        if (stationPickerList) {
+          stationPickerList.hidden = false;
+        }
+      };
+
+      const syncStationPicker = () => {
+        if (!stationSelect) return;
+
+        const selectedOption = stationSelect.selectedOptions[0];
+
+        if (stationPickerSelected) {
+          stationPickerSelected.textContent = selectedOption?.value
+            ? `Selected: ${selectedOption.textContent?.trim() ?? ""}`
+            : "No station selected.";
+        }
+
+        filterStationPicker();
+      };
+
+      const openModal = () => {
+        if (!modal) return;
+
+        modal.hidden = false;
+        modal.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+      };
+
+      const closeModal = () => {
+        if (!modal) return;
+
+        modal.hidden = true;
+        modal.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+      };
+
       const resetModalForAdd = () => {
         if (
           !assignmentForm ||
@@ -752,12 +964,15 @@ const locationTypes = [
           !locationSelect ||
           !walkingInput ||
           !orderInput
-        ) return;
+        ) {
+          return;
+        }
 
         assignmentForm.reset();
 
         stationSelect.disabled = false;
         stationSelect.name = "station_id";
+
         hiddenStationId.disabled = true;
         hiddenStationId.value = "";
 
@@ -767,22 +982,86 @@ const locationTypes = [
         });
 
         stationSelect.value = "";
+
+        if (stationPickerSearch) {
+          stationPickerSearch.value = "";
+        }
+
         floorSelect.value = "";
         exitSelect.value = "";
         locationSelect.value = "outside";
         walkingInput.value = "";
         orderInput.value = "0";
 
-        if (modalTitle) modalTitle.textContent = "Add Station";
-        if (modalDescription) modalDescription.textContent = "Assign this Top Pick to a station.";
-        if (modalSubmit) modalSubmit.textContent = "Add Station";
+        if (modalTitle) {
+          modalTitle.textContent = "Add Station";
+        }
+
+        if (modalDescription) {
+          modalDescription.textContent =
+            "Assign this Top Pick to a station.";
+        }
+
+        if (modalSubmit) {
+          modalSubmit.textContent = "Add Station";
+        }
 
         filterFloorsAndExits(false);
+        syncStationPicker();
       };
+
+      // Search station names in English or Japanese.
+      stationPickerSearch?.addEventListener(
+        "input",
+        filterStationPicker,
+      );
+
+      // Select a station by clicking its result.
+      stationPickerOptions.forEach((option) => {
+        option.addEventListener("click", () => {
+          if (!stationSelect || stationSelect.disabled) return;
+
+          const stationId = option.dataset.stationId ?? "";
+
+          if (!stationId) return;
+
+          const matchingOption = Array.from(stationSelect.options).find(
+            (selectOption) => selectOption.value === stationId,
+          );
+
+          if (!matchingOption || matchingOption.disabled) return;
+
+          stationSelect.value = stationId;
+
+          syncStationPicker();
+          filterFloorsAndExits(true);
+        });
+      });
+
+      // Prevent submitting without a selected station.
+      assignmentForm?.addEventListener("submit", (event) => {
+        if (!stationSelect) return;
+
+        const stationId = stationSelect.disabled
+          ? hiddenStationId?.value
+          : stationSelect.value;
+
+        if (!stationId) {
+          event.preventDefault();
+
+          if (stationPickerSelected) {
+            stationPickerSelected.textContent =
+              "Please select a station before saving.";
+          }
+
+          stationPickerSearch?.focus();
+        }
+      });
 
       openAddButton?.addEventListener("click", () => {
         resetModalForAdd();
         openModal();
+        stationPickerSearch?.focus();
       });
 
       closeButtons.forEach((button) => {
@@ -797,12 +1076,14 @@ const locationTypes = [
 
       stationSelect?.addEventListener("change", () => {
         filterFloorsAndExits(true);
+        syncStationPicker();
       });
 
       floorSelect?.addEventListener("change", () => {
         filterFloorsAndExits(false);
       });
 
+      // Edit an existing assignment without changing its station.
       document.querySelectorAll(".js-edit-assignment").forEach((element) => {
         const button = element as HTMLButtonElement;
 
@@ -815,7 +1096,9 @@ const locationTypes = [
             !locationSelect ||
             !walkingInput ||
             !orderInput
-          ) return;
+          ) {
+            return;
+          }
 
           resetModalForAdd();
 
@@ -828,10 +1111,16 @@ const locationTypes = [
           hiddenStationId.value = stationId;
           hiddenStationId.disabled = false;
 
+          // Editing an existing assignment must allow its current station.
           Array.from(stationSelect.options).forEach((option) => {
             option.disabled = false;
           });
 
+          if (stationPickerSearch) {
+            stationPickerSearch.value = "";
+          }
+
+          syncStationPicker();
           filterFloorsAndExits(false);
 
           floorSelect.value = button.dataset.floorId ?? "";
@@ -842,19 +1131,27 @@ const locationTypes = [
           walkingInput.value = button.dataset.walkingMinutes ?? "";
           orderInput.value = button.dataset.sortOrder ?? "0";
 
-          if (modalTitle) modalTitle.textContent = "Edit Station Assignment";
+          if (modalTitle) {
+            modalTitle.textContent = "Edit Station Assignment";
+          }
+
           if (modalDescription) {
             modalDescription.textContent =
               `Update the assignment for ${button.dataset.stationName ?? "this station"}.`;
           }
-          if (modalSubmit) modalSubmit.textContent = "Save Changes";
+
+          if (modalSubmit) {
+            modalSubmit.textContent = "Save Changes";
+          }
 
           openModal();
         });
       });
 
+      // Existing assigned-stations table search remains unchanged.
       searchInput?.addEventListener("input", () => {
         const query = searchInput.value.trim().toLowerCase();
+
         const rows = Array.from(
           document.querySelectorAll(".station-table-row"),
         ) as HTMLElement[];
@@ -863,12 +1160,17 @@ const locationTypes = [
 
         rows.forEach((row) => {
           const matches = (row.dataset.search ?? "").includes(query);
+
           row.hidden = !matches;
-          if (matches) visibleCount++;
+
+          if (matches) {
+            visibleCount++;
+          }
         });
 
         if (searchEmpty) {
-          searchEmpty.hidden = rows.length === 0 || visibleCount > 0;
+          searchEmpty.hidden =
+            rows.length === 0 || visibleCount > 0;
         }
       });
     </script>

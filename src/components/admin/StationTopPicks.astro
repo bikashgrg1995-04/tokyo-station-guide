@@ -1,3 +1,4 @@
+
 ---
 import Button from "../common/Button.astro";
 import ConfirmDialog from "../common/ConfirmDialog.astro";
@@ -56,7 +57,7 @@ const {
       }
     </div>
 
-    <!-- Hidden inputs: the submitted top pick IDs, in display order. -->
+    <!-- Hidden inputs: submitted Top Pick IDs, in display order. -->
     <div id="station-top-pick-inputs">
       {
         assignedTopPicks.map((topPick) => (
@@ -132,9 +133,7 @@ const {
                 <td colspan="4">
                   <div class="admin-empty">
                     <div class="admin-empty-icon">◦</div>
-
                     <h3>No Top Picks Assigned</h3>
-
                     <p>
                       There are currently no top picks assigned to this
                       station.
@@ -148,13 +147,11 @@ const {
       </table>
     </PagedTable>
 
-    <!-- Shown by the script when every top pick is already assigned. -->
     <p id="all-top-picks-message" class="admin-feature-message" hidden>
       All available top picks are already assigned to this station.
     </p>
   </div>
 </section>
-
 
 <!-- ========================================
      Add Top Picks Modal
@@ -166,12 +163,10 @@ const {
   hidden
   aria-hidden="true"
 >
-
   <div
     class="admin-line-station-modal-backdrop"
     data-close-add-top-pick-modal
   ></div>
-
 
   <div
     class="admin-line-station-modal-dialog"
@@ -180,24 +175,16 @@ const {
     aria-labelledby="add-top-pick-modal-title"
     aria-describedby="add-top-pick-modal-description"
   >
-
     <!-- Modal Header -->
 
     <div class="admin-line-station-modal-header">
-
       <div>
-
-        <h2 id="add-top-pick-modal-title">
-          Add Top Picks
-        </h2>
+        <h2 id="add-top-pick-modal-title">Add Top Picks</h2>
 
         <p id="add-top-pick-modal-description">
-          Select one or more top picks to add to
-          {stationName}.
+          Select one or more top picks to add to {stationName}.
         </p>
-
       </div>
-
 
       <button
         type="button"
@@ -207,89 +194,87 @@ const {
       >
         ×
       </button>
-
     </div>
 
-
-    <!-- ========================================
-         Available Top Picks
-    ======================================== -->
+    <!-- Available Top Picks -->
 
     {
       availableTopPicks.length > 0 ? (
+        <div class="admin-form" id="add-top-picks-form">
+          <!-- Search -->
 
-        <div
-          class="admin-form"
-          id="add-top-picks-form"
-        >
+          <div class="admin-form-group" style="margin-bottom: 16px;">
+            <label for="search-available-top-picks">
+              Search Top Picks
+            </label>
 
-          <div class="admin-facility-checkbox-grid">
+            <input
+              id="search-available-top-picks"
+              type="search"
+              placeholder="Search name, Japanese name, slug or category..."
+              autocomplete="off"
+            />
 
-            {
-              availableTopPicks.map(
-                (topPick) => (
-
-                  <label
-                    class="admin-facility-checkbox-item"
-                    data-top-pick-option
-                    data-top-pick-option-id={topPick.id}
-                  >
-
-                    <input
-                      type="checkbox"
-                      value={topPick.id}
-                      class="add-top-pick-checkbox"
-                      data-top-pick-id={topPick.id}
-                      data-top-pick-name={topPick.name}
-                      data-top-pick-slug={topPick.slug}
-                      data-top-pick-category={topPick.category}
-                    />
-
-                    <span>
-
-                      <strong>
-                        {topPick.name}
-                      </strong>
-
-                      <small
-                        style="
-                          display:block;
-                          margin-top:3px;
-                          opacity:0.65;
-                        "
-                      >
-                        {topPick.category}
-                      </small>
-
-                    </span>
-
-                  </label>
-
-                ),
-              )
-            }
-
+            <small id="available-top-picks-search-count">
+              {availableTopPicks.length} top picks available
+            </small>
           </div>
 
+          <!-- Available options -->
+
+          <div class="admin-facility-checkbox-grid">
+            {
+              availableTopPicks.map((topPick) => (
+                <label
+                  class="admin-facility-checkbox-item"
+                  data-top-pick-option
+                  data-top-pick-option-id={topPick.id}
+                >
+                  <input
+                    type="checkbox"
+                    value={topPick.id}
+                    class="add-top-pick-checkbox"
+                    data-top-pick-id={topPick.id}
+                    data-top-pick-name={topPick.name}
+                    data-top-pick-name-japanese={topPick.name_japanese ?? ""}
+                    data-top-pick-slug={topPick.slug}
+                    data-top-pick-category={topPick.category}
+                  />
+
+                  <span>
+                    <strong>{topPick.name}</strong>
+
+                    {topPick.name_japanese && (
+                      <small
+                        style="display:block; margin-top:3px; opacity:0.65;"
+                      >
+                        {topPick.name_japanese}
+                      </small>
+                    )}
+
+                    <small
+                      style="display:block; margin-top:3px; opacity:0.65;"
+                    >
+                      {topPick.category}
+                    </small>
+                  </span>
+                </label>
+              ))
+            }
+          </div>
 
           <!-- Selected Count -->
 
           <p
             id="selected-top-pick-count"
-            style="
-              margin-top:8px;
-              font-size:12px;
-              opacity:0.7;
-            "
+            style="margin-top:8px; font-size:12px; opacity:0.7;"
           >
             0 top picks selected
           </p>
 
-
           <!-- Modal Actions -->
 
           <div class="admin-form-actions">
-
             <Button
               type="button"
               variant="secondary"
@@ -306,33 +291,20 @@ const {
             >
               Add Selected
             </Button>
-
           </div>
-
         </div>
-
       ) : (
-
         <div class="admin-empty">
-
-          <h3>
-            No Top Picks Available
-          </h3>
-
+          <h3>No Top Picks Available</h3>
           <p>
-            All top picks from the master list are already
-            assigned to this station.
+            All top picks from the master list are already assigned to this
+            station.
           </p>
-
         </div>
-
       )
     }
-
   </div>
-
 </div>
-
 
 <!-- ========================================
      Remove Top Pick Confirmation
@@ -346,7 +318,6 @@ const {
   cancelText="Cancel"
   variant="danger"
 />
-
 
 <script>
   import "../../scripts/admin/shared/station-top-picks.ts";
