@@ -45,6 +45,26 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
       searchLabel="Search assigned facilities"
       searchPlaceholder="Search facility, floor, exit or note..."
     >
+
+    
+<div slot="toolbar-end" class="admin-facility-floor-filter">
+  <label for="station-facility-floor-filter">Floor</label>
+
+  <select id="station-facility-floor-filter">
+    <option value="all">All Floors</option>
+    {
+      [...new Map(
+        assigned.map((facility) => [
+          String(facility.floor_id),
+          facility.floor_name,
+        ]),
+      )].map(([floorId, floorName]) => (
+        <option value={floorId}>{floorName}</option>
+      ))
+    }
+  </select>
+</div>
+
       <table
         class="admin-table admin-compact-table"
         id="station-facilities-table"

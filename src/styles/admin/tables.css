@@ -333,3 +333,45 @@
   object-fit: cover;
   background: rgba(20, 30, 50, 0.06);
 }
+
+
+.admin-paged-toolbar-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-paged-toolbar-main > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-facility-floor-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.admin-facility-floor-filter label {
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.admin-facility-floor-filter select {
+  width: auto;
+  min-width: 100px;
+  max-width: 140px;
+}
+
+@media (max-width: 480px) {
+  .admin-paged-toolbar-main {
+    flex-wrap: wrap;
+  }
+
+  .admin-facility-floor-filter {
+    max-width: 100%;
+  }
+}

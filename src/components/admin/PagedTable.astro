@@ -38,12 +38,9 @@ const {
   data-page-size={pageSize}
   data-noun={noun}
 >
-  <div class="admin-paged-toolbar" data-paged-toolbar>
-    <!--
-      The station form is one big <form>. This search box points at a form
-      that does not exist, so it is not part of it: it is never submitted
-      and pressing Enter in it cannot save the station.
-    -->
+  
+<div class="admin-paged-toolbar" data-paged-toolbar>
+  <div class="admin-paged-toolbar-main">
     <SearchInput
       id={`${id}-search`}
       name=""
@@ -52,8 +49,16 @@ const {
       ariaLabel={searchLabel}
     />
 
-    <span class="admin-paged-count" data-paged-count aria-live="polite"></span>
+    <slot name="toolbar-end" />
   </div>
+
+  <span
+    class="admin-paged-count"
+    data-paged-count
+    aria-live="polite"
+  ></span>
+</div>
+
 
   <div class="admin-table-wrapper admin-paged-wrapper">
     <slot />
