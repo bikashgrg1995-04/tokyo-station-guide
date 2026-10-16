@@ -121,6 +121,7 @@ function readStationFacilities(formData: FormData): ParsedStationFacilities {
   const floorIds = formData.getAll("facility_entry_floor_id");
   const counts = formData.getAll("facility_entry_count");
   const notes = formData.getAll("facility_entry_note");
+  const locations = formData.getAll("facility_entry_location");
   const exitIdsJson = formData.getAll("facility_entry_exit_ids_json");
 
   const entries: StationFacilityInput[] = [];
@@ -139,6 +140,8 @@ function readStationFacilities(formData: FormData): ParsedStationFacilities {
     const rawFloorId = String(floorIds[index] ?? "").trim();
     const rawCount = String(counts[index] ?? "").trim();
     const note = String(notes[index] ?? "").trim();
+    const locationType =
+      String(locations[index] ?? "").trim() === "outside" ? "outside" : "inside";
 
     if (note.length > 150) {
       errors.push(
@@ -184,6 +187,7 @@ function readStationFacilities(formData: FormData): ParsedStationFacilities {
       facilityId,
       floorId,
       facilityCount,
+      locationType,
       note: note || null,
       exitIds,
     });
@@ -493,6 +497,7 @@ export async function handleStationUpdate(
       sort_order: facility?.sort_order ?? 0,
       facility_count: entry.facilityCount,
       note: entry.note ?? null,
+      location_type: entry.locationType === "outside" ? "outside" : "inside",
       exits: selectedExits,
     };
   });

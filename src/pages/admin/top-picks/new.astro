@@ -9,6 +9,8 @@ import Breadcrumbs from "../../../components/common/Breadcrumbs.astro";
 import TopPickHoursTable from "../../../components/admin/TopPickHoursTable.astro";
 import Button from "../../../components/common/Button.astro";
 
+import { iconBucket } from "../../../lib/storage/facility-icons";
+import TopPickImageField from "../../../components/admin/TopPickImageField.astro";
 import { handleTopPickCreate } from "../../../lib/services/top-picks";
 import { TOP_PICK_CATEGORIES } from "../../../lib/db/top-picks";
 
@@ -16,7 +18,7 @@ export const prerender = false;
 
 const { env } = await import("cloudflare:workers");
 
-const form = await handleTopPickCreate(Astro.request, env.DB);
+const form = await handleTopPickCreate(Astro.request, env.DB, iconBucket(env));
 
 if (form.redirectTo) {
   return Astro.redirect(form.redirectTo);
@@ -68,7 +70,7 @@ const { errors, formError } = form;
 
           {formError && <Alert>{formError}</Alert>}
 
-          <form method="POST" class="admin-form">
+          <form method="POST" class="admin-form" enctype="multipart/form-data">
             <div class="admin-form-group">
               <label for="name">Name</label>
               <input
@@ -164,24 +166,7 @@ const { errors, formError } = form;
               )}
             </div>
 
-            <div class="admin-form-group full-width">
-              <label for="image_url">Image URL</label>
-              <input
-                id="image_url"
-                name="image_url"
-                type="url"
-                maxlength="2048"
-                value={imageUrl}
-                placeholder="https://example.com/tokyo-tower.jpg"
-                aria-invalid={errors.imageUrl ? "true" : "false"}
-                aria-describedby={errors.imageUrl ? "image-url-error" : undefined}
-              />
-              {errors.imageUrl ? (
-                <small id="image-url-error" class="admin-form-error">{errors.imageUrl}</small>
-              ) : (
-                <small>Optional. Provide an HTTP or HTTPS image URL.</small>
-              )}
-            </div>
+            <TopPickImageField saved={imageUrl} error={errors.imageUrl} />
 
             <hr />
 

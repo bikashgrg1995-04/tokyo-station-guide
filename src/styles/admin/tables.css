@@ -319,3 +319,17 @@
   justify-content: space-between;
   gap: 16px;
 }
+
+/* Top pick photo thumbnail (list) */
+.admin-photo-thumb-link {
+  display: inline-block;
+  line-height: 0;
+}
+
+.admin-photo-thumb {
+  width: 56px;
+  height: 38px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: rgba(20, 30, 50, 0.06);
+}

@@ -346,6 +346,26 @@ export function initializeFacilityPicker(): void {
     floorCell.appendChild(floorPill);
     floorCell.appendChild(floorIdInput);
 
+    /* Location: inside or outside the station */
+
+    const locationCell = document.createElement("td");
+
+    const locationSelect = document.createElement("select");
+    locationSelect.name = "facility_entry_location";
+    locationSelect.setAttribute("aria-label", `Location of ${facilityName}`);
+
+    for (const [value, label] of [
+      ["inside", "Inside"],
+      ["outside", "Outside"],
+    ]) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      locationSelect.appendChild(option);
+    }
+
+    locationCell.appendChild(locationSelect);
+
     /* Quantity */
 
     const countCell = document.createElement("td");
@@ -424,6 +444,7 @@ export function initializeFacilityPicker(): void {
 
     row.appendChild(nameCell);
     row.appendChild(floorCell);
+    row.appendChild(locationCell);
     row.appendChild(countCell);
     row.appendChild(exitsCell);
     row.appendChild(noteCell);

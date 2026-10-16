@@ -997,6 +997,18 @@
   font-size: 13px;
 }
 
+.admin-compact-table select {
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--admin-border);
+  border-radius: 7px;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  font: inherit;
+  font-size: 13px;
+}
+
 .admin-compact-table input[type="number"] {
   width: 76px;
 }

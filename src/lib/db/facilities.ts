@@ -27,8 +27,12 @@ export interface StationFacility {
   sort_order: number;
   facility_count: number | null;
   note: string | null;
+  location_type: StationFacilityLocation;
   exits: StationFacilityExit[];
 }
+
+/** Where a facility is: inside the station or outside it. */
+export type StationFacilityLocation = "inside" | "outside";
 
 export interface StationFacilityExit {
   id: number;
@@ -307,6 +311,7 @@ export async function getStationFacilities(
           f.sort_order,
           sff.facility_count,
           sff.note,
+          sff.location_type,
           sf.id AS floor_id,
           sf.name AS floor_name,
           sf.name_japanese AS floor_name_japanese

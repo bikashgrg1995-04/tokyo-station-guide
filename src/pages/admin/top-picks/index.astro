@@ -1,5 +1,6 @@
 
 ---
+import { topPickImageSrc } from "../../../lib/storage/top-pick-images";
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/admin/tables.css";
 import "../../../styles/admin/operators.css";
@@ -141,11 +142,17 @@ const deleteError = Astro.url.searchParams.get("error");
                         <td>
                           {topPick.image_url ? (
                             <a
-                              href={topPick.image_url}
+                              href={topPickImageSrc(topPick.image_url)}
                               target="_blank"
                               rel="noopener noreferrer"
+                              class="admin-photo-thumb-link"
                             >
-                              View image
+                              <img
+                                class="admin-photo-thumb"
+                                src={topPickImageSrc(topPick.image_url)}
+                                alt={`Photo of ${topPick.name}`}
+                                loading="lazy"
+                              />
                             </a>
                           ) : (
                             <span class="admin-table-muted">—</span>

@@ -405,6 +405,7 @@ function facilityDetailHtml(group) {
   var allExits = [];
   var floorDetails = [];
   var facilityNotes = [];
+  var locations = [];
 
   group.floors.forEach(function (f) {
     parseExits(f.exits).forEach(function (exit) {
@@ -429,11 +430,15 @@ function facilityDetailHtml(group) {
       bits.push(count);
     }
 
-    var detail = bits.join(" · ");
+    var where = String(f.location_type || "").toLowerCase();
 
-    if (detail) {
-      floorDetails.push(detail);
+    if (where === "inside" || where === "outside") {
+      if (locations.indexOf(where) === -1) {
+        locations.push(where);
+      }
     }
+
+    var detail = bits.join(" · ");
 
     if (detail) {
       floorDetails.push(
@@ -458,6 +463,30 @@ function facilityDetailHtml(group) {
         "</div>"
       : "") +
     (floorDetails.length ? "<div>" + floorDetails.join(", ") + "</div>" : "") +
+    (locations.length
+      ? '<div class="facility-location-row">' +
+        locations
+          .map(function (type) {
+            var label =
+              type === "inside"
+                ? isJp()
+                  ? "駅構内"
+                  : "Inside the station"
+                : isJp()
+                  ? "駅の外"
+                  : "Outside the station";
+
+            return (
+              '<span class="io pk-status pk-status-' +
+              type +
+              '">' +
+              esc(label) +
+              "</span>"
+            );
+          })
+          .join("") +
+        "</div>"
+      : "") +
     "</div>"
   );
 }
@@ -566,6 +595,17 @@ function pickOpeningHours(raw) {
 
 /* ---------- Top Picks ---------- */
 
+/* Uploaded photos are R2 keys; older rows may hold a plain http(s) URL. */
+function pickPhotoSrc(value) {
+  var v = value == null ? "" : String(value).trim();
+
+  if (v.indexOf("top-pick-images/") === 0) {
+    return "/media/" + v;
+  }
+
+  return /^https?:\/\//i.test(v) ? v : "";
+}
+
 function picksHtml(stn) {
   var items = parseList(stationField(stn, ["top_picks", "topPicks"]));
 
@@ -656,8 +696,20 @@ function picksHtml(stn) {
         ? '<div class="pk-info">' + info.map(esc).join(" | ") + "</div>"
         : "";
 
+      var photo = pickPhotoSrc(t.image_url);
+
       return (
-        '<div class="pk">' +
+        '<div class="pk' +
+        (photo ? " has-photo" : "") +
+        '">' +
+        (photo
+          ? '<img class="pk-photo" src="' +
+            esc(photo) +
+            '" alt="' +
+            esc(isJp() && t.name_jp ? t.name_jp : t.name) +
+            '" loading="lazy" decoding="async">'
+          : "") +
+        '<div class="pk-body">' +
         '<div class="pk-heading">' +
         '<b class="pk-name">' +
         esc(isJp() && t.name_jp ? t.name_jp : t.name) +
@@ -666,6 +718,7 @@ function picksHtml(stn) {
         "</div>" +
         travelRow +
         infoHtml +
+        "</div>" +
         "</div>"
       );
     })

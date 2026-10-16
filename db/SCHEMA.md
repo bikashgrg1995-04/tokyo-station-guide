@@ -13,7 +13,7 @@ The SQL itself lives in `db/migrations/` (applied in numeric order).
 | `line_stations` | Which station is on which line, in order, with station code | `db/line-stations.ts` |
 | `facilities` | Shared list of facility types (icon + dark icon in R2) | `db/facilities.ts` |
 | `station_floors` | Floors of a station | `db/station-floors.ts` |
-| `station_floor_facilities` | Facility on a floor (count, note, order) | write: `db/stations/write.ts`, read: `db/stations/relations.ts`, `db/transit-map.ts` |
+| `station_floor_facilities` | Facility on a floor (count, note, order, inside/outside location) | write: `db/stations/write.ts`, read: `db/stations/relations.ts`, `db/transit-map.ts` |
 | `station_exits` | Exits of a station, tied to a floor | `db/station-exits.ts` |
 | `station_floor_facility_exits` | Which exits a floor facility is reached from | `db/stations/write.ts` |
 | `station_platforms` | Platforms (optional line + floor, destinations) | `db/station-platforms.ts` |
@@ -47,7 +47,7 @@ deleting a line sets `station_platforms.line_id` to NULL.
 
 - Timestamps are `TEXT` (`CURRENT_TIMESTAMP`, UTC). Booleans are `INTEGER` 0/1.
 - Every FK has an index that starts with the FK column (a UNIQUE that starts with it counts).
-- Facility icons are R2 object keys (`facilities.icon`, `icon_dark`). `top_picks.image_url` and
+- Facility icons are R2 object keys (`facilities.icon`, `icon_dark`). `top_picks.image_url` (an R2 key `top-pick-images/...` when uploaded, or an older URL) and
   `featured_stations.image_url` hold a URL or a `public/` path.
 - SQL belongs in `src/lib/db/`. Four files still run it directly (see open items).
 

@@ -1,0 +1,50 @@
+---
+import { topPickImageSrc } from "../../lib/storage/top-pick-images";
+
+export interface Props {
+  /** Image currently saved for this top pick (R2 key or old URL), if any. */
+  saved?: string | null;
+  error?: string;
+}
+
+const { saved = null, error = "" } = Astro.props;
+
+const src = topPickImageSrc(saved);
+---
+
+<div class="admin-form-group full-width">
+  <label for="image_file">Photo</label>
+
+  {
+    src && (
+      <div class="admin-photo-current">
+        <img src={src} alt="Current photo" loading="lazy" />
+
+        <label class="admin-icon-remove">
+          <input type="checkbox" name="remove_image" />
+          Remove this photo
+        </label>
+      </div>
+    )
+  }
+
+  <input
+    id="image_file"
+    name="image_file"
+    type="file"
+    accept="image/png,image/webp,image/jpeg"
+    aria-invalid={error ? "true" : "false"}
+    aria-describedby={error ? "image-file-error" : undefined}
+  />
+
+  {
+    error ? (
+      <small id="image-file-error" class="admin-form-error">{error}</small>
+    ) : (
+      <small>
+        Optional. PNG, WebP or JPEG, up to 2 MB. Shown beside this place on the
+        website. {src ? "Choosing a new file replaces the current photo." : ""}
+      </small>
+    )
+  }
+</div>

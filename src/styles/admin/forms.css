@@ -427,3 +427,19 @@
 .admin-form-group small.admin-field-error {
   color: var(--admin-danger, #dc2626);
 }
+
+/* Top pick photo (admin) */
+.admin-photo-current {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.admin-photo-current img {
+  width: 96px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: rgba(20, 30, 50, 0.06);
+}

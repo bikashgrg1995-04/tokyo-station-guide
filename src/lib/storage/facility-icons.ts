@@ -45,9 +45,13 @@ function startsWith(bytes: Uint8Array, signature: number[], offset = 0): boolean
  * The type is decided from the file's own bytes,
  * never from the name or the browser's content type.
  */
-export async function checkIconFile(file: File): Promise<IconCheck> {
-  if (file.size > MAX_ICON_BYTES) {
-    return { ok: false, error: "Icon must be 512 KB or smaller." };
+export async function checkIconFile(
+  file: File,
+  maxBytes: number = MAX_ICON_BYTES,
+  sizeError: string = "Icon must be 512 KB or smaller.",
+): Promise<IconCheck> {
+  if (file.size > maxBytes) {
+    return { ok: false, error: sizeError };
   }
 
   const bytes = await file.arrayBuffer();

@@ -880,6 +880,13 @@ html[data-theme="dark"] .station-sheet {
   gap: 6px;
 }
 
+.facility-location-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+
 .facility-nearby-exits {
   display: flex;
   align-items: center;
@@ -903,6 +910,27 @@ html[data-theme="dark"] .station-sheet {
 
 .pk:last-child {
   border-bottom: 0;
+}
+
+/* Photo beside the details (only when the top pick has one) */
+.pk.has-photo {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.pk-photo {
+  flex: 0 0 auto;
+  width: 76px;
+  height: 76px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--sheet-chip-bg);
+}
+
+.pk-body {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* Row 1: name + location status */

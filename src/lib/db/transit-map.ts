@@ -131,6 +131,7 @@ export async function getTransitMapData(
                   'floor_japanese', facility.floor_japanese,
                   'count', facility.facility_count,
                   'note', facility.note,
+                  'location_type', facility.location_type,
                   'exits', json(facility.exits)
                 )
               )
@@ -146,6 +147,7 @@ export async function getTransitMapData(
                 sf.name_japanese AS floor_japanese,
                 sff.facility_count,
                 sff.note,
+                sff.location_type,
                 sf.floor_order,
                 (
                   SELECT json_group_array(

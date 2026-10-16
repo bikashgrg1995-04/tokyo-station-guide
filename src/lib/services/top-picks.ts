@@ -2,6 +2,7 @@
 import {
   createTopPick,
   deleteTopPick,
+  getTopPickById,
   getTopPicksPaginated,
   hasTopPickAssignments,
   updateTopPick,
@@ -9,6 +10,13 @@ import {
   type TopPickCategory,
   type TopPickOpeningHour,
 } from "../db/top-picks";
+
+import {
+  checkTopPickImage,
+  deleteTopPickImage,
+  readTopPickImageFile,
+  saveTopPickImage,
+} from "../storage/top-pick-images";
 
 import {
   errorMessage,
@@ -62,7 +70,7 @@ function readTopPickForm(formData: FormData): TopPickFormValues {
     slug: readText(formData, "slug"),
     category: readText(formData, "category"),
     description: readText(formData, "description"),
-    imageUrl: readText(formData, "image_url"),
+    imageUrl: "",
     entryFee: readText(formData, "entry_fee"),
     notes: readText(formData, "notes"),
     openingHours,
@@ -95,21 +103,59 @@ async function submitTopPickForm(
   request: Request,
   result: TopPickFormResult,
   action: "create" | "update",
-  save: (values: TopPickFormValues) => Promise<void>,
+  bucket: R2Bucket | undefined,
+  currentImage: string | null,
+  save: (values: TopPickFormValues, imageUrl: string | null) => Promise<void>,
 ): Promise<TopPickFormResult> {
-  const values = readTopPickForm(await request.formData());
+  const formData = await request.formData();
+  const values = readTopPickForm(formData);
+
+  // The stored image is never typed in; it only changes by upload or removal.
+  values.imageUrl = currentImage ?? "";
 
   result.values = values;
   result.errors = validateTopPickForm(values);
+
+  const file = readTopPickImageFile(formData);
+  let check: Awaited<ReturnType<typeof checkTopPickImage>> | null = null;
+
+  if (file) {
+    if (!bucket) {
+      result.errors.imageUrl =
+        "Image storage (R2) is not configured. Bind the ASSETS_BUCKET R2 bucket.";
+    } else {
+      check = await checkTopPickImage(file);
+
+      if (!check.ok) {
+        result.errors.imageUrl = check.error;
+      }
+    }
+  }
 
   if (hasErrors(result.errors)) {
     return result;
   }
 
+  let uploadedKey: string | null = null;
+
   try {
-    await save(values);
+    if (bucket && check?.ok) {
+      uploadedKey = await saveTopPickImage(bucket, values.slug, check);
+    }
+
+    const imageUrl =
+      uploadedKey ??
+      (formData.get("remove_image") === "on" ? null : currentImage);
+
+    await save(values, imageUrl);
+
+    if (imageUrl !== currentImage) {
+      await deleteTopPickImage(bucket, currentImage);
+    }
+
     result.redirectTo = LIST_PATH;
   } catch (err) {
+    await deleteTopPickImage(bucket, uploadedKey);
     result.formError = describeSaveError(err, action, result.errors);
   }
 
@@ -119,6 +165,7 @@ async function submitTopPickForm(
 export async function handleTopPickCreate(
   request: Request,
   db: D1Database,
+  bucket?: R2Bucket,
 ): Promise<TopPickFormResult> {
   const result: TopPickFormResult = {
     redirectTo: null,
@@ -151,14 +198,16 @@ export async function handleTopPickCreate(
     request,
     result,
     "create",
-    async (values) => {
+    bucket,
+    null,
+    async (values, imageUrl) => {
       await createTopPick(db, {
         name: values.name,
         nameJapanese: values.nameJapanese || null,
         slug: values.slug,
         category: values.category as TopPickCategory,
         description: values.description || null,
-        imageUrl: values.imageUrl || null,
+        imageUrl,
         entryFee: values.entryFee || null,
         notes: values.notes || null,
         openingHours: values.openingHours,
@@ -172,6 +221,7 @@ export async function handleTopPickUpdate(
   db: D1Database,
   id: number,
   topPick: TopPick | null,
+  bucket?: R2Bucket,
 ): Promise<TopPickFormResult> {
   const result: TopPickFormResult = {
     redirectTo: null,
@@ -212,14 +262,16 @@ export async function handleTopPickUpdate(
     request,
     result,
     "update",
-    async (values) => {
+    bucket,
+    topPick.image_url,
+    async (values, imageUrl) => {
       await updateTopPick(db, id, {
         name: values.name,
         nameJapanese: values.nameJapanese || null,
         slug: values.slug,
         category: values.category as TopPickCategory,
         description: values.description || null,
-        imageUrl: values.imageUrl || null,
+        imageUrl,
         entryFee: values.entryFee || null,
         notes: values.notes || null,
         openingHours: values.openingHours,
@@ -232,6 +284,7 @@ export async function handleTopPickDelete(
   request: Request,
   db: D1Database,
   rawId: string | undefined,
+  bucket?: R2Bucket,
 ): Promise<string> {
   const id = Number(rawId);
 
@@ -248,7 +301,10 @@ export async function handleTopPickDelete(
       return `${LIST_PATH}?error=assigned`;
     }
 
+    const existing = await getTopPickById(db, id);
+
     await deleteTopPick(db, id);
+    await deleteTopPickImage(bucket, existing?.image_url);
     return LIST_PATH;
   } catch (err) {
     console.error("Failed to delete top pick:", err);

@@ -53,6 +53,7 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
           <tr>
             <th>Facility</th>
             <th>Floor</th>
+            <th>Location</th>
             <th>Quantity</th>
             <th>Nearby Exits</th>
             <th>Note (optional)</th>
@@ -97,6 +98,26 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
                     name="facility_entry_floor_id"
                     value={facility.floor_id}
                   />
+                </td>
+
+                <td>
+                  <select
+                    name="facility_entry_location"
+                    aria-label={`Location of ${facility.name}`}
+                  >
+                    <option
+                      value="inside"
+                      selected={facility.location_type !== "outside"}
+                    >
+                      Inside
+                    </option>
+                    <option
+                      value="outside"
+                      selected={facility.location_type === "outside"}
+                    >
+                      Outside
+                    </option>
+                  </select>
                 </td>
 
                 <td>
@@ -181,7 +202,7 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
           }
 
           <tr id="station-facilities-empty-row" hidden={assigned.length > 0}>
-            <td colspan="6">
+            <td colspan="7">
               <div class="admin-feature-empty">No facilities assigned.</div>
             </td>
           </tr>

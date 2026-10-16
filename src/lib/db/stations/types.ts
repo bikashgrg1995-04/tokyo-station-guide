@@ -79,6 +79,8 @@ export interface StationFacilityInput {
   facilityId: number;
   floorId: number;
   facilityCount: number;
+  /** Inside or outside the station. Defaults to inside. */
+  locationType?: "inside" | "outside";
   note?: string | null;
   exitIds?: number[];
 }

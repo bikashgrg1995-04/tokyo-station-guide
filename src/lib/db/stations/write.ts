@@ -161,9 +161,10 @@ export async function updateStation(
                 facility_id,
                 note,
                 facility_count,
+                location_type,
                 sort_order
               )
-              SELECT ?, ?, ?, ?, ?
+              SELECT ?, ?, ?, ?, ?, ?
               WHERE EXISTS (
                 SELECT 1
                 FROM station_floors
@@ -177,6 +178,7 @@ export async function updateStation(
             facility.facilityId,
             facility.note?.trim() || null,
             facility.facilityCount,
+            facility.locationType === "outside" ? "outside" : "inside",
             index,
             facility.floorId,
             id,
