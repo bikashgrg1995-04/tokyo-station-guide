@@ -1,10 +1,17 @@
 import {
   createFeaturedStation,
   deleteFeaturedStation,
+  getFeaturedStationById,
   updateFeaturedStation,
   type FeaturedStation,
 } from "../db/featured-stations";
 import { hasErrors, readText } from "./common";
+import {
+  checkFeaturedImage,
+  deleteFeaturedImage,
+  readFeaturedImageFile,
+  saveFeaturedImage,
+} from "../storage/featured-station-images";
 
 import {
   type FeaturedStationFormValues,
@@ -28,7 +35,7 @@ export interface FeaturedStationFormResult {
 function readFeaturedStationForm(formData: FormData): FeaturedStationFormValues {
   return {
     stationId: readText(formData, "station_id"),
-    imageUrl: readText(formData, "image_url"),
+    imageUrl: "",
     description: readText(formData, "description"),
     sortOrder: formData.has("sort_order") ? readText(formData, "sort_order") : "0",
     isActive: formData.get("is_active") === "on",
@@ -40,23 +47,65 @@ async function submitFeaturedStationForm(
   request: Request,
   result: FeaturedStationFormResult,
   action: "create" | "update",
-  save: (values: FeaturedStationFormValues) => Promise<void>,
+  bucket: R2Bucket | undefined,
+  currentImage: string | null,
+  save: (values: FeaturedStationFormValues, imageUrl: string) => Promise<void>,
 ): Promise<FeaturedStationFormResult> {
-  const values = readFeaturedStationForm(await request.formData());
+  const formData = await request.formData();
+  const values = readFeaturedStationForm(formData);
+
+  // The stored photo is never typed in; it only changes by uploading a file.
+  values.imageUrl = currentImage ?? "";
 
   result.values = values;
   result.errors = validateFeaturedStationForm(values);
+
+  const file = readFeaturedImageFile(formData);
+  let check: Awaited<ReturnType<typeof checkFeaturedImage>> | null = null;
+
+  if (!file && !currentImage) {
+    result.errors.imageUrl = "Please upload a photo.";
+  } else if (file) {
+    if (!bucket) {
+      result.errors.imageUrl =
+        "Image storage (R2) is not configured. Bind the ASSETS_BUCKET R2 bucket.";
+    } else {
+      check = await checkFeaturedImage(file);
+
+      if (!check.ok) {
+        result.errors.imageUrl = check.error;
+      }
+    }
+  }
 
   if (hasErrors(result.errors)) {
     return result;
   }
 
+  let uploadedKey: string | null = null;
+
   try {
-    await save(values);
+    if (bucket && check?.ok) {
+      uploadedKey = await saveFeaturedImage(
+        bucket,
+        `station-${values.stationId}`,
+        check,
+      );
+    }
+
+    const imageUrl = uploadedKey ?? currentImage ?? "";
+
+    await save(values, imageUrl);
+
+    if (uploadedKey && currentImage) {
+      await deleteFeaturedImage(bucket, currentImage);
+    }
 
     result.redirectTo = LIST_PATH;
   } catch (err) {
     console.error(err);
+
+    await deleteFeaturedImage(bucket, uploadedKey);
 
     result.formError = `Unable to ${action} featured station. The station may already be featured.`;
   }
@@ -64,10 +113,10 @@ async function submitFeaturedStationForm(
   return result;
 }
 
-function toInput(values: FeaturedStationFormValues) {
+function toInput(values: FeaturedStationFormValues, imageUrl: string) {
   return {
     stationId: Number(values.stationId),
-    imageUrl: values.imageUrl,
+    imageUrl,
     description: values.description,
     sortOrder: Number(values.sortOrder),
     isActive: values.isActive,
@@ -78,6 +127,7 @@ function toInput(values: FeaturedStationFormValues) {
 export async function handleFeaturedStationCreate(
   request: Request,
   db: D1Database,
+  bucket?: R2Bucket,
 ): Promise<FeaturedStationFormResult> {
   const result: FeaturedStationFormResult = {
     redirectTo: null,
@@ -96,9 +146,16 @@ export async function handleFeaturedStationCreate(
     return result;
   }
 
-  return submitFeaturedStationForm(request, result, "create", async (values) => {
-    await createFeaturedStation(db, toInput(values));
-  });
+  return submitFeaturedStationForm(
+    request,
+    result,
+    "create",
+    bucket,
+    null,
+    async (values, imageUrl) => {
+      await createFeaturedStation(db, toInput(values, imageUrl));
+    },
+  );
 }
 
 /** "Edit featured station" page: starts from the stored row, saves on POST. */
@@ -107,6 +164,7 @@ export async function handleFeaturedStationUpdate(
   db: D1Database,
   id: number,
   featuredStation: FeaturedStation,
+  bucket?: R2Bucket,
 ): Promise<FeaturedStationFormResult> {
   const result: FeaturedStationFormResult = {
     redirectTo: null,
@@ -125,9 +183,16 @@ export async function handleFeaturedStationUpdate(
     return result;
   }
 
-  return submitFeaturedStationForm(request, result, "update", async (values) => {
-    await updateFeaturedStation(db, id, toInput(values));
-  });
+  return submitFeaturedStationForm(
+    request,
+    result,
+    "update",
+    bucket,
+    featuredStation.image_url,
+    async (values, imageUrl) => {
+      await updateFeaturedStation(db, id, toInput(values, imageUrl));
+    },
+  );
 }
 
 /* ========================================
@@ -139,6 +204,7 @@ export async function handleFeaturedStationDelete(
   request: Request,
   db: D1Database,
   rawId: string | undefined,
+  bucket?: R2Bucket,
 ): Promise<string> {
   const id = Number(rawId);
 
@@ -147,7 +213,10 @@ export async function handleFeaturedStationDelete(
   }
 
   try {
+    const existing = await getFeaturedStationById(db, id);
+
     await deleteFeaturedStation(db, id);
+    await deleteFeaturedImage(bucket, existing?.image_url);
   } catch (err) {
     console.error("Failed to delete featured station:", err);
   }

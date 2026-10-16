@@ -1,4 +1,5 @@
 ---
+import { featuredImageSrc } from "../../../lib/storage/featured-station-images";
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/admin/tables.css";
 import "../../../styles/admin/stations.css";
@@ -134,7 +135,7 @@ const featuredStations = await getFeaturedStations(
                                     "
                                   >
                                     <img
-                                      src={station.image_url}
+                                      src={featuredImageSrc(station.image_url)}
                                       alt={station.station_name}
                                       loading="lazy"
                                       style="

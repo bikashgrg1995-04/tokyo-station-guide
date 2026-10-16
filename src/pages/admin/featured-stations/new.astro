@@ -7,6 +7,8 @@ import Alert from "../../../components/common/Alert.astro";
 import Button from "../../../components/common/Button.astro";
 
 import { getStations } from "../../../lib/db/stations";
+import { iconBucket } from "../../../lib/storage/facility-icons";
+import FeaturedImageField from "../../../components/admin/FeaturedImageField.astro";
 import { handleFeaturedStationCreate } from "../../../lib/services/featured-stations";
 
 export const prerender = false;
@@ -15,7 +17,7 @@ const { env } = await import("cloudflare:workers");
 
 const db = env.DB;
 
-const form = await handleFeaturedStationCreate(Astro.request, db);
+const form = await handleFeaturedStationCreate(Astro.request, db, iconBucket(env));
 
 if (form.redirectTo) {
   return Astro.redirect(form.redirectTo);
@@ -117,6 +119,7 @@ const error = form.formError;
 
               <form
                 method="POST"
+                enctype="multipart/form-data"
                 class="admin-form admin-station-form"
               >
 
@@ -192,47 +195,7 @@ const error = form.formError;
                   </div>
 
                   <!-- Image URL -->
-                  <div class="admin-form-group full-width">
-
-                    <label for="image_url">
-                      Image URL
-                    </label>
-
-                    <input
-                      id="image_url"
-                      name="image_url"
-                      type="url"
-                      placeholder="https://example.com/shibuya.jpg"
-                      value={imageUrl}
-                      required
-                      aria-invalid={
-                        errors.imageUrl
-                          ? "true"
-                          : undefined
-                      }
-                      aria-describedby={
-                        errors.imageUrl
-                          ? "image-url-error"
-                          : undefined
-                      }
-                    />
-
-                    {
-                      errors.imageUrl ? (
-                        <small
-                          id="image-url-error"
-                          class="admin-form-error"
-                        >
-                          {errors.imageUrl}
-                        </small>
-                      ) : (
-                        <small>
-                          Use a publicly accessible image URL.
-                        </small>
-                      )
-                    }
-
-                  </div>
+              <FeaturedImageField saved={imageUrl} error={errors.imageUrl} />
 
                   <!-- Description -->
                   <div class="admin-form-group full-width">

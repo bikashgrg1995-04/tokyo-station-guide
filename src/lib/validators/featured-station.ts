@@ -20,7 +20,7 @@ export function emptyFeaturedStationErrors(): FeaturedStationFormErrors {
 export function validateFeaturedStationForm(
   values: FeaturedStationFormValues,
 ): FeaturedStationFormErrors {
-  const { stationId, imageUrl, description, sortOrder } = values;
+  const { stationId, description, sortOrder } = values;
   const errors = emptyFeaturedStationErrors();
 
   const stationNumber = stationId === "" ? null : Number(stationId);
@@ -33,21 +33,7 @@ export function validateFeaturedStationForm(
     errors.stationId = "Please select a station.";
   }
 
-  if (!imageUrl) {
-    errors.imageUrl = "Image URL is required.";
-  } else if (imageUrl.length > 2000) {
-    errors.imageUrl = "Image URL must be 2000 characters or less.";
-  } else {
-    try {
-      const parsedUrl = new URL(imageUrl);
-
-      if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-        errors.imageUrl = "Image URL must use http or https.";
-      }
-    } catch {
-      errors.imageUrl = "Please enter a valid image URL.";
-    }
-  }
+  // The photo is an uploaded file; the service checks that one is present.
 
   if (description.length > 200) {
     errors.description = "Description must be 200 characters or less.";

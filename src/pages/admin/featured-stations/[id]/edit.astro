@@ -10,6 +10,8 @@ import ConfirmDialog from "../../../../components/common/ConfirmDialog.astro";
 
 import { getStations } from "../../../../lib/db/stations";
 import { getFeaturedStationById } from "../../../../lib/db/featured-stations";
+import { iconBucket } from "../../../../lib/storage/facility-icons";
+import FeaturedImageField from "../../../../components/admin/FeaturedImageField.astro";
 import { handleFeaturedStationUpdate } from "../../../../lib/services/featured-stations";
 
 export const prerender = false;
@@ -34,6 +36,7 @@ const form = await handleFeaturedStationUpdate(
   db,
   id,
   featuredStation,
+  iconBucket(env),
 );
 
 if (form.redirectTo) {
@@ -86,6 +89,7 @@ const { errors, formError } = form;
 
           <form
             method="POST"
+                enctype="multipart/form-data"
             class="admin-form"
             id="edit-featured-station-form"
           >
@@ -126,34 +130,7 @@ const { errors, formError } = form;
                 }
               </div>
 
-              <div class="admin-form-group full-width">
-                <label for="image_url"> Image URL </label>
-
-                <input
-                  id="image_url"
-                  name="image_url"
-                  type="url"
-                  required
-                  placeholder="https://example.com/shibuya.jpg"
-                  value={imageUrl}
-                  aria-invalid={errors.imageUrl ? "true" : "false"}
-                  aria-describedby={errors.imageUrl
-                    ? "image-url-error"
-                    : "image-url-help"}
-                />
-
-                {
-                  errors.imageUrl ? (
-                    <small id="image-url-error" class="admin-form-error">
-                      {errors.imageUrl}
-                    </small>
-                  ) : (
-                    <small id="image-url-help">
-                      Use a publicly accessible image URL.
-                    </small>
-                  )
-                }
-              </div>
+              <FeaturedImageField saved={imageUrl} error={errors.imageUrl} />
 
               <div class="admin-form-group full-width">
                 <label for="description"> Featured Description </label>

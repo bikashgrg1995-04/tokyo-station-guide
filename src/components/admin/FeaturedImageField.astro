@@ -1,0 +1,47 @@
+---
+import { featuredImageSrc } from "../../lib/storage/featured-station-images";
+
+export interface Props {
+  /** Photo currently saved for this featured station (R2 key or old URL). */
+  saved?: string | null;
+  error?: string;
+}
+
+const { saved = null, error = "" } = Astro.props;
+
+const src = featuredImageSrc(saved);
+---
+
+<div class="admin-form-group full-width">
+  <label for="image_file">Photo</label>
+
+  {
+    src && (
+      <div class="admin-photo-current">
+        <img src={src} alt="Current photo" loading="lazy" />
+      </div>
+    )
+  }
+
+  <input
+    id="image_file"
+    name="image_file"
+    type="file"
+    accept="image/png,image/webp,image/jpeg"
+    required={!src}
+    aria-invalid={error ? "true" : "false"}
+    aria-describedby={error ? "image-file-error" : undefined}
+  />
+
+  {
+    error ? (
+      <small id="image-file-error" class="admin-form-error">{error}</small>
+    ) : (
+      <small>
+        {src
+          ? "Choose a new PNG, WebP or JPEG (up to 2 MB) to replace the current photo."
+          : "Required. PNG, WebP or JPEG, up to 2 MB. Saved in the site's R2 bucket."}
+      </small>
+    )
+  }
+</div>

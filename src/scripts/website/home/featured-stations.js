@@ -44,6 +44,13 @@ export function renderFeaturedStations() {
 
   featuredSection.hidden = false;
 
+  /* Uploaded photos are R2 keys served through /media; older rows hold a URL. */
+  function featuredImageSrc(value) {
+    var v = value == null ? "" : String(value);
+
+    return v.indexOf("featured-station-images/") === 0 ? "/media/" + v : v;
+  }
+
   featuredStations.forEach(function (station) {
     var a = document.createElement("a");
 
@@ -54,7 +61,7 @@ export function renderFeaturedStations() {
     a.innerHTML =
       '<span class="featured-image-wrap">' +
       '<img src="' +
-      esc(station.image_url) +
+      esc(featuredImageSrc(station.image_url)) +
       '" alt="" loading="lazy">' +
       "</span>" +
       '<span class="featured-info">' +
