@@ -190,10 +190,16 @@
 .car-stripe {
   fill: var(--line);
 }
-.car-stripe-l {
-  fill: #bcd3e6;
+.car-window {
+  fill: #7fa9c9;
+}
+.car-door {
+  fill: #dbe6ef;
+  stroke: #7fa9c9;
+  stroke-width: 0.5;
 }
 .ac {
+  transform: translateX(-0.6px);
   fill: url(#ac-grad);
   stroke: #98a2af;
   stroke-width: 0.5;

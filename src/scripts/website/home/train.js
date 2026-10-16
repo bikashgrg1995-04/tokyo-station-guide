@@ -5,7 +5,7 @@ import { state } from "./state.js";
 import { $, el } from "./utils.js";
 import { setView } from "./view-controls.js";
 
-const LANE_OFFSET = 7.5;
+const LANE_OFFSET = 8.7;
 
 const LIGHT_REACH = 40;
 
@@ -35,9 +35,9 @@ function buildCar(k, len) {
   el(
     "rect",
     {
-      x: -6.5,
+      x: -7.5,
       y: -h,
-      width: 13,
+      width: 15,
       height: len,
       rx: 3.4,
       class: "car-body",
@@ -45,29 +45,48 @@ function buildCar(k, len) {
     g,
   );
 
-  el(
-    "rect",
-    {
-      x: -5.9,
-      y: -h + 5,
-      width: 0.8,
-      height: len - 10,
-      class: "car-stripe-l",
-    },
-    g,
-  );
+  /*
+   * Left side: solid line-colour band.
+   */
 
   el(
     "rect",
     {
-      x: 5.1,
-      y: -h + 5,
-      width: 0.8,
-      height: len - 10,
+      x: -6.9,
+      y: -h + 6,
+      width: 1.5,
+      height: len - 12,
+      rx: 0.7,
       class: "car-stripe",
     },
     g,
   );
+
+  /*
+   * Right side: doors and windows.
+   */
+
+  var wy0 = -h + 6;
+  var wl = len - 12;
+  var slots = 4;
+  var slot = wl / slots;
+
+  for (var w = 0; w < slots; w++) {
+    var isDoor = w === 1 || w === 2;
+
+    el(
+      "rect",
+      {
+        x: 4.5,
+        y: wy0 + slot * w + (isDoor ? 0.8 : 1.4),
+        width: 2.2,
+        height: slot - (isDoor ? 1.6 : 2.8),
+        rx: 0.6,
+        class: isDoor ? "car-door" : "car-window",
+      },
+      g,
+    );
+  }
 
   /*
    * Roof air-conditioning panels.
@@ -151,21 +170,21 @@ function buildCar(k, len) {
       "path",
       {
         d:
-          "M-6.5," +
+          "M-7.5," +
           (-h + 7.5) +
-          " L-6.5," +
+          " L-7.5," +
           (-h + 3.4) +
-          " Q-6.5," +
+          " Q-7.5," +
           -h +
           " -3.1," +
           -h +
           " L3.1," +
           -h +
-          " Q6.5," +
+          " Q7.5," +
           -h +
-          " 6.5," +
+          " 7.5," +
           (-h + 3.4) +
-          " L6.5," +
+          " L7.5," +
           (-h + 7.5) +
           " Z",
         class: "cab",
@@ -176,9 +195,9 @@ function buildCar(k, len) {
     el(
       "rect",
       {
-        x: -4.8,
+        x: -5.6,
         y: -h + 1.9,
-        width: 9.6,
+        width: 11.2,
         height: 3.6,
         rx: 1.6,
         class: "glass",
@@ -202,7 +221,7 @@ function buildCar(k, len) {
     el(
       "circle",
       {
-        cx: -5,
+        cx: -5.8,
         cy: -h + 1.1,
         r: 1.15,
         class: "lamp",
@@ -213,7 +232,7 @@ function buildCar(k, len) {
     el(
       "circle",
       {
-        cx: 5,
+        cx: 5.8,
         cy: -h + 1.1,
         r: 1.15,
         class: "lamp",
@@ -231,21 +250,21 @@ function buildCar(k, len) {
       "path",
       {
         d:
-          "M-6.5," +
+          "M-7.5," +
           (h - 7.5) +
-          " L-6.5," +
+          " L-7.5," +
           (h - 3.4) +
-          " Q-6.5," +
+          " Q-7.5," +
           h +
           " -3.1," +
           h +
           " L3.1," +
           h +
-          " Q6.5," +
+          " Q7.5," +
           h +
-          " 6.5," +
+          " 7.5," +
           (h - 3.4) +
-          " L6.5," +
+          " L7.5," +
           (h - 7.5) +
           " Z",
         class: "cab",
@@ -256,9 +275,9 @@ function buildCar(k, len) {
     el(
       "rect",
       {
-        x: -4.8,
+        x: -5.6,
         y: h - 5.5,
-        width: 9.6,
+        width: 11.2,
         height: 3.6,
         rx: 1.6,
         class: "glass",
@@ -269,7 +288,7 @@ function buildCar(k, len) {
     el(
       "circle",
       {
-        cx: -5,
+        cx: -5.8,
         cy: h - 1.1,
         r: 1.15,
         class: "tail",
@@ -280,7 +299,7 @@ function buildCar(k, len) {
     el(
       "circle",
       {
-        cx: 5,
+        cx: 5.8,
         cy: h - 1.1,
         r: 1.15,
         class: "tail",
