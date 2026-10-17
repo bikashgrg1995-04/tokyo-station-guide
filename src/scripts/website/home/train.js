@@ -14,113 +14,188 @@ const reduceMotion =
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /*
- * One car, drawn top-down.
+ * One car, drawn top-down. Every measurement is a fraction of the car
+ * width (w) or length (len), so the design scales with the map.
  *
  * k:
- * 0 = leading car
+ * 0 = leading car (dark domed cab, headlamps)
  * 1 = middle
- * 2 = last
+ * 2 = last car (dark cab, tail lamps)
  */
-function buildCar(k, len) {
-  var g = el(
-    "g",
-    {
-      class: "train-car",
-    },
-    $("#train"),
-  );
 
+/* Rounded-rectangle outline with a separate radius for each end. */
+function shellPath(x0, y0, x1, y1, rt, rb) {
+  return (
+    "M" + x0 + "," + (y0 + rt) +
+    " Q" + x0 + "," + y0 + " " + (x0 + rt) + "," + y0 +
+    " L" + (x1 - rt) + "," + y0 +
+    " Q" + x1 + "," + y0 + " " + x1 + "," + (y0 + rt) +
+    " L" + x1 + "," + (y1 - rb) +
+    " Q" + x1 + "," + y1 + " " + (x1 - rb) + "," + y1 +
+    " L" + (x0 + rb) + "," + y1 +
+    " Q" + x0 + "," + y1 + " " + x0 + "," + (y1 - rb) +
+    " Z"
+  );
+}
+
+function buildCar(k, len, w, gap) {
+  var g = el("g", { class: "train-car" }, $("#train"));
+
+  var hw = w / 2;
   var h = len / 2;
 
+  var rEnd = w * 0.17; // corner radius where cars meet
+  var rCap = w * 0.3; // corner radius of the cab ends
+  var rt = k === 0 ? rCap : rEnd;
+  var rb = k === 2 ? rCap : rEnd;
+  var capH = len * 0.17; // height of the dark cab cap
+
   /*
-   * Body: white shell with a soft grey rim and generously rounded ends.
+   * Coupling: a slim dark bridge sitting in the gap behind the next car.
+   */
+
+  if (k < 2) {
+    el(
+      "rect",
+      {
+        x: -w * 0.31,
+        y: h - 0.4,
+        width: w * 0.62,
+        height: gap + 0.8,
+        rx: 0.4,
+        class: "joint",
+      },
+      g,
+    );
+  }
+
+  /*
+   * Body shell.
    */
 
   el(
-    "rect",
-    {
-      x: -7.5,
-      y: -h,
-      width: 15,
-      height: len,
-      rx: 4.2,
-      class: "car-body",
-    },
+    "path",
+    { d: shellPath(-hw, -h, hw, h, rt, rb), class: "car-body" },
     g,
   );
 
   /*
-   * Left side: solid line-colour band, running the full car.
+   * Usable run of the roof/side, between the cabs and the car ends.
    */
 
-  el(
-    "rect",
-    {
-      x: -6.7,
-      y: -h + 4.5,
-      width: 2.4,
-      height: len - 9,
-      rx: 1.1,
-      class: "car-stripe",
-    },
-    g,
-  );
+  var st0 = k === 0 ? -h + capH : -h + len * 0.036;
+  var st1 = k === 2 ? h - capH : h - len * 0.036;
 
   /*
-   * Right side: one thin glazed strip, broken into door / window runs.
+   * Faint vertical panel grooves either side of the AC units.
    */
 
-  var wy0 = -h + 5;
-  var wl = len - 10;
-  var slots = 4;
-  var slot = wl / slots;
+  [-0.3, -0.255, 0.255, 0.3].forEach(function (f) {
+    el(
+      "line",
+      {
+        x1: f * w,
+        x2: f * w,
+        y1: st0 + len * 0.05,
+        y2: st1 - len * 0.05,
+        "stroke-width": 0.25,
+        class: "car-groove",
+      },
+      g,
+    );
+  });
+
+  /*
+   * Two line-colour stripes, one down each side.
+   */
+
+  var sw = w * 0.062;
+
+  [-0.385, 0.385].forEach(function (f) {
+    el(
+      "rect",
+      {
+        x: f * w - sw / 2,
+        y: st0,
+        width: sw,
+        height: st1 - st0,
+        rx: sw / 2,
+        class: "car-stripe",
+      },
+      g,
+    );
+  });
+
+  /*
+   * Glazing: a dashed light-blue run hugging the right edge.
+   */
 
   el(
     "line",
     {
-      x1: 5.9,
-      x2: 5.9,
-      y1: wy0,
-      y2: wy0 + wl,
-      "stroke-dasharray": slot - 1.3 + " 1.3",
+      x1: w * 0.468,
+      x2: w * 0.468,
+      y1: st0 + len * 0.045,
+      y2: st1 - len * 0.04,
+      "stroke-width": w * 0.058,
+      "stroke-linecap": "round",
+      "stroke-dasharray": len * 0.05 + " " + len * 0.075,
       class: "car-glaze",
     },
     g,
   );
 
   /*
-   * Roof air-conditioning units: two big rounded panels per car.
+   * Roof air-conditioning: two rounded housings, each with a
+   * louvred (vertical-slat) grille.
    */
 
-  var spots = k === 0 ? [0.3, 0.6] : k === 1 ? [0.16, 0.56] : [0.14, 0.44];
-
-  spots.forEach(function (f) {
-    var y = -h + len * f;
-
-    var ph = len * 0.25;
+  [0.225, 0.518].forEach(function (f) {
+    var oy = -h + len * f;
+    var oh = len * 0.27;
+    var ow = w * 0.43;
 
     el(
       "rect",
       {
-        x: -4.2,
-        y: y,
-        width: 8.4,
-        height: ph,
-        rx: 1.8,
+        x: -ow / 2,
+        y: oy,
+        width: ow,
+        height: oh,
+        rx: ow * 0.2,
         class: "ac",
       },
       g,
     );
 
-    for (var i = 1; i <= 3; i++) {
+    var iw = w * 0.28;
+    var ih = oh * 0.64;
+    var iy = oy + oh * 0.19;
+
+    el(
+      "rect",
+      {
+        x: -iw / 2,
+        y: iy,
+        width: iw,
+        height: ih,
+        rx: w * 0.04,
+        class: "ac-in",
+      },
+      g,
+    );
+
+    for (var i = 1; i <= 5; i++) {
+      var lx = -iw / 2 + (iw * i) / 6;
+
       el(
-        "rect",
+        "line",
         {
-          x: -3.2,
-          y: y + (ph * i) / 4 - 0.25,
-          width: 6.4,
-          height: 0.5,
-          rx: 0.25,
+          x1: lx,
+          x2: lx,
+          y1: iy + 0.5,
+          y2: iy + ih - 0.5,
+          "stroke-width": 0.28,
           class: "ac-line",
         },
         g,
@@ -129,41 +204,7 @@ function buildCar(k, len) {
   });
 
   /*
-   * Joints.
-   */
-
-  if (k > 0) {
-    el(
-      "rect",
-      {
-        x: -4.5,
-        y: -h - 1.8,
-        width: 9,
-        height: 3.6,
-        rx: 1.2,
-        class: "joint",
-      },
-      g,
-    );
-  }
-
-  if (k < 2) {
-    el(
-      "rect",
-      {
-        x: -4.5,
-        y: h - 1.8,
-        width: 9,
-        height: 3.6,
-        rx: 1.2,
-        class: "joint",
-      },
-      g,
-    );
-  }
-
-  /*
-   * Front cab.
+   * Front cab: dark dome with two headlamps.
    */
 
   if (k === 0) {
@@ -171,79 +212,34 @@ function buildCar(k, len) {
       "path",
       {
         d:
-          "M-7.5," +
-          (-h + 8.5) +
-          " L-7.5," +
-          (-h + 4.2) +
-          " Q-7.5," +
-          -h +
-          " -3.3," +
-          -h +
-          " L3.3," +
-          -h +
-          " Q7.5," +
-          -h +
-          " 7.5," +
-          (-h + 4.2) +
-          " L7.5," +
-          (-h + 8.5) +
+          "M" + -hw + "," + (-h + capH) +
+          " L" + -hw + "," + (-h + rCap) +
+          " Q" + -hw + "," + -h + " " + (-hw + rCap) + "," + -h +
+          " L" + (hw - rCap) + "," + -h +
+          " Q" + hw + "," + -h + " " + hw + "," + (-h + rCap) +
+          " L" + hw + "," + (-h + capH) +
           " Z",
         class: "cab",
       },
       g,
     );
 
-    el(
-      "rect",
-      {
-        x: -4.6,
-        y: -h + 3.6,
-        width: 9.2,
-        height: 3.2,
-        rx: 1.4,
-        class: "glass",
-      },
-      g,
-    );
-
-    el(
-      "rect",
-      {
-        x: -3.2,
-        y: -h + 4.2,
-        width: 2.8,
-        height: 0.6,
-        rx: 0.3,
-        class: "glint",
-      },
-      g,
-    );
-
-    el(
-      "circle",
-      {
-        cx: -5.4,
-        cy: -h + 1.7,
-        r: 1.3,
-        class: "lamp",
-      },
-      g,
-    );
-
-    el(
-      "circle",
-      {
-        cx: 5.4,
-        cy: -h + 1.7,
-        r: 1.3,
-        class: "lamp",
-      },
-      g,
-    );
+    [-1, 1].forEach(function (sx) {
+      el(
+        "circle",
+        {
+          cx: sx * w * 0.28,
+          cy: -h + capH * 0.22,
+          r: w * 0.07,
+          class: "lamp",
+        },
+        g,
+      );
+    });
   }
 
   /*
-   * Rear cab.
+   * Rear cab: dark cap with two tail lamps.
    */
 
   if (k === 2) {
@@ -251,62 +247,30 @@ function buildCar(k, len) {
       "path",
       {
         d:
-          "M-7.5," +
-          (h - 8.5) +
-          " L-7.5," +
-          (h - 4.2) +
-          " Q-7.5," +
-          h +
-          " -3.3," +
-          h +
-          " L3.3," +
-          h +
-          " Q7.5," +
-          h +
-          " 7.5," +
-          (h - 4.2) +
-          " L7.5," +
-          (h - 8.5) +
+          "M" + -hw + "," + (h - capH) +
+          " L" + -hw + "," + (h - rCap) +
+          " Q" + -hw + "," + h + " " + (-hw + rCap) + "," + h +
+          " L" + (hw - rCap) + "," + h +
+          " Q" + hw + "," + h + " " + hw + "," + (h - rCap) +
+          " L" + hw + "," + (h - capH) +
           " Z",
         class: "cab",
       },
       g,
     );
 
-    el(
-      "rect",
-      {
-        x: -4.6,
-        y: h - 6.8,
-        width: 9.2,
-        height: 3.2,
-        rx: 1.4,
-        class: "glass",
-      },
-      g,
-    );
-
-    el(
-      "circle",
-      {
-        cx: -5.4,
-        cy: h - 1.7,
-        r: 1.3,
-        class: "tail",
-      },
-      g,
-    );
-
-    el(
-      "circle",
-      {
-        cx: 5.4,
-        cy: h - 1.7,
-        r: 1.3,
-        class: "tail",
-      },
-      g,
-    );
+    [-1, 1].forEach(function (sx) {
+      el(
+        "circle",
+        {
+          cx: sx * w * 0.28,
+          cy: h - capH * 0.27,
+          r: w * 0.075,
+          class: "tail",
+        },
+        g,
+      );
+    });
   }
 
   return g;
@@ -324,16 +288,22 @@ export function initTrain() {
 
   var total = Math.max(50, Math.min(spacing * 1.68, 150));
 
-  var gap = 3;
+  var gap = 1.4;
 
   var carLen = (total - gap * 2) / 3;
+
+  /*
+   * Cars are ~2.6x longer than wide, capped so two lanes never touch.
+   */
+
+  var carW = Math.max(11, Math.min(16, carLen / 2.6));
 
   state.carPitch = carLen + gap;
 
   state.carEls = [
-    buildCar(0, carLen),
-    buildCar(1, carLen),
-    buildCar(2, carLen),
+    buildCar(0, carLen, carW, gap),
+    buildCar(1, carLen, carW, gap),
+    buildCar(2, carLen, carW, gap),
   ];
 
   /*
@@ -350,24 +320,26 @@ export function initTrain() {
 
   var y0 = -carLen / 2;
 
+  var lamp = carW * 0.28;
+
   [-1, 1].forEach(function (sx) {
     el(
       "polygon",
       {
         points:
-          sx * 5.8 +
+          sx * (lamp + 0.9) +
           "," +
           y0 +
           " " +
-          sx * 3.6 +
+          sx * (lamp - 1.3) +
           "," +
           y0 +
           " " +
-          sx * 9 +
+          sx * (lamp + 3.2) +
           "," +
           (y0 - LIGHT_REACH) +
           " " +
-          sx * 18 +
+          sx * (lamp + 12.2) +
           "," +
           (y0 - LIGHT_REACH),
 

@@ -184,41 +184,40 @@
 }
 .car-body {
   fill: url(#car-grad);
-  stroke: #9aa3ae;
-  stroke-width: 1;
+  stroke: #cdd3da;
+  stroke-width: 0.5;
+}
+.car-groove {
+  stroke: #dfe3e9;
+  opacity: 0.85;
 }
 .car-stripe {
   fill: var(--line);
 }
 .car-glaze {
-  stroke: #9cc9de;
-  stroke-width: 1;
-  stroke-linecap: round;
+  stroke: #9fc6db;
   fill: none;
 }
 .ac {
   fill: url(#ac-grad);
-  stroke: #8e98a5;
-  stroke-width: 0.6;
+  stroke: #cfd5dc;
+  stroke-width: 0.4;
+}
+.ac-in {
+  fill: url(#ac-in-grad);
 }
 .ac-line {
-  fill: #7d8794;
-  opacity: 0.75;
+  stroke: #8b919a;
+  opacity: 0.8;
 }
 .joint {
-  fill: #3c4350;
+  fill: #8a929d;
 }
 .cab {
-  fill: #15181e;
-}
-.glass {
-  fill: url(#glass-grad);
-}
-.glint {
-  fill: rgba(255, 255, 255, 0.45);
+  fill: url(#cab-grad);
 }
 .lamp {
-  fill: #f2d36b;
+  fill: #ffefa8;
 }
 .tail {
   fill: #ff3b30;
