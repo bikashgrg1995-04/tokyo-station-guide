@@ -1,0 +1,72 @@
+# Deploy to the CLIENT's Cloudflare account.
+#
+# Trigger : push to `dev` (git push client dev), or run it by hand from the Actions tab.
+# Steps   : install -> build -> apply D1 migrations (remote) -> wrangler deploy.
+#
+# This workflow lives in every copy of the repo but only runs where the repository
+# variable DEPLOY_CLIENT is "true", so it stays idle in the developer's own repo.
+#
+# One-time setup in the CLIENT's GitHub repo (Settings -> Secrets and variables -> Actions):
+#   Variable  DEPLOY_CLIENT           = true
+#   Secret    CLOUDFLARE_API_TOKEN    = token with Workers Scripts:Edit + D1:Edit (and any
+#                                       other resource the Worker binds to, e.g. KV)
+#   Secret    CLOUDFLARE_ACCOUNT_ID   = the client's Cloudflare account id
+#   Secret    WRANGLER_CLIENT_CONFIG  = full contents of wrangler.client.jsonc
+#                                       (that file is gitignored on purpose, so CI recreates it)
+
+name: Deploy (client)
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+# Never run two deploys at once, and never cancel one halfway through a migration.
+concurrency:
+  group: deploy-client
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: ${{ vars.DEPLOY_CLIENT == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Write client wrangler config
+        env:
+          WRANGLER_CLIENT_CONFIG: ${{ secrets.WRANGLER_CLIENT_CONFIG }}
+        run: |
+          if [ -z "$WRANGLER_CLIENT_CONFIG" ]; then
+            echo "::error::Secret WRANGLER_CLIENT_CONFIG is missing or empty"
+            exit 1
+          fi
+          printf '%s' "$WRANGLER_CLIENT_CONFIG" > wrangler.client.jsonc
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Build first so a broken build fails before the production database is touched.
+      - name: Build
+        run: npm run build
+
+      - name: Apply D1 migrations (remote)
+        run: npx wrangler d1 migrations apply tokyo-guide-jp-db --remote -c wrangler.client.jsonc
+
+      - name: Deploy
+        run: npx wrangler deploy -c wrangler.client.jsonc
