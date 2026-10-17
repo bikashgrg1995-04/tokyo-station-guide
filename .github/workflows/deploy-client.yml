@@ -1,6 +1,7 @@
 # Deploy to the CLIENT's Cloudflare account.
 #
-# Trigger : push to `dev` (git push client dev), or run it by hand from the Actions tab.
+# Trigger : push to `main` (git push client main), or run it by hand from the Actions tab.
+#           Only `main` is treated as final; pushes to `dev` never deploy.
 # Steps   : install -> build -> apply D1 migrations (remote) -> wrangler deploy.
 #
 # This workflow lives in every copy of the repo but only runs where the repository
@@ -18,7 +19,7 @@ name: Deploy (client)
 
 on:
   push:
-    branches: [dev]
+    branches: [main]
   workflow_dispatch:
 
 # Never run two deploys at once, and never cancel one halfway through a migration.
