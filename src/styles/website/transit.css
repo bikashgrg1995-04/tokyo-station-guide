@@ -184,29 +184,26 @@
 }
 .car-body {
   fill: url(#car-grad);
-  stroke: #c3cad3;
-  stroke-width: 0.8;
+  stroke: #9aa3ae;
+  stroke-width: 1;
 }
 .car-stripe {
   fill: var(--line);
 }
-.car-window {
-  fill: #7fa9c9;
-}
-.car-door {
-  fill: #dbe6ef;
-  stroke: #7fa9c9;
-  stroke-width: 0.5;
+.car-glaze {
+  stroke: #9cc9de;
+  stroke-width: 1;
+  stroke-linecap: round;
+  fill: none;
 }
 .ac {
-  transform: translateX(-0.6px);
   fill: url(#ac-grad);
-  stroke: #98a2af;
-  stroke-width: 0.5;
+  stroke: #8e98a5;
+  stroke-width: 0.6;
 }
 .ac-line {
-  fill: #8f99a6;
-  opacity: 0.7;
+  fill: #7d8794;
+  opacity: 0.75;
 }
 .joint {
   fill: #3c4350;

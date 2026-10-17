@@ -32,6 +32,10 @@ function buildCar(k, len) {
 
   var h = len / 2;
 
+  /*
+   * Body: white shell with a soft grey rim and generously rounded ends.
+   */
+
   el(
     "rect",
     {
@@ -39,60 +43,56 @@ function buildCar(k, len) {
       y: -h,
       width: 15,
       height: len,
-      rx: 3.4,
+      rx: 4.2,
       class: "car-body",
     },
     g,
   );
 
   /*
-   * Left side: solid line-colour band.
+   * Left side: solid line-colour band, running the full car.
    */
 
   el(
     "rect",
     {
-      x: -6.9,
-      y: -h + 6,
-      width: 1.5,
-      height: len - 12,
-      rx: 0.7,
+      x: -6.7,
+      y: -h + 4.5,
+      width: 2.4,
+      height: len - 9,
+      rx: 1.1,
       class: "car-stripe",
     },
     g,
   );
 
   /*
-   * Right side: doors and windows.
+   * Right side: one thin glazed strip, broken into door / window runs.
    */
 
-  var wy0 = -h + 6;
-  var wl = len - 12;
+  var wy0 = -h + 5;
+  var wl = len - 10;
   var slots = 4;
   var slot = wl / slots;
 
-  for (var w = 0; w < slots; w++) {
-    var isDoor = w === 1 || w === 2;
-
-    el(
-      "rect",
-      {
-        x: 4.5,
-        y: wy0 + slot * w + (isDoor ? 0.8 : 1.4),
-        width: 2.2,
-        height: slot - (isDoor ? 1.6 : 2.8),
-        rx: 0.6,
-        class: isDoor ? "car-door" : "car-window",
-      },
-      g,
-    );
-  }
+  el(
+    "line",
+    {
+      x1: 5.9,
+      x2: 5.9,
+      y1: wy0,
+      y2: wy0 + wl,
+      "stroke-dasharray": slot - 1.3 + " 1.3",
+      class: "car-glaze",
+    },
+    g,
+  );
 
   /*
-   * Roof air-conditioning panels.
+   * Roof air-conditioning units: two big rounded panels per car.
    */
 
-  var spots = k === 0 ? [0.27, 0.58] : k === 1 ? [0.14, 0.54] : [0.12, 0.46];
+  var spots = k === 0 ? [0.3, 0.6] : k === 1 ? [0.16, 0.56] : [0.14, 0.44];
 
   spots.forEach(function (f) {
     var y = -h + len * f;
@@ -102,11 +102,11 @@ function buildCar(k, len) {
     el(
       "rect",
       {
-        x: -3.7,
+        x: -4.2,
         y: y,
-        width: 7.4,
+        width: 8.4,
         height: ph,
-        rx: 1.4,
+        rx: 1.8,
         class: "ac",
       },
       g,
@@ -116,10 +116,11 @@ function buildCar(k, len) {
       el(
         "rect",
         {
-          x: -3,
+          x: -3.2,
           y: y + (ph * i) / 4 - 0.25,
-          width: 6,
+          width: 6.4,
           height: 0.5,
+          rx: 0.25,
           class: "ac-line",
         },
         g,
@@ -171,21 +172,21 @@ function buildCar(k, len) {
       {
         d:
           "M-7.5," +
-          (-h + 7.5) +
+          (-h + 8.5) +
           " L-7.5," +
-          (-h + 3.4) +
+          (-h + 4.2) +
           " Q-7.5," +
           -h +
-          " -3.1," +
+          " -3.3," +
           -h +
-          " L3.1," +
+          " L3.3," +
           -h +
           " Q7.5," +
           -h +
           " 7.5," +
-          (-h + 3.4) +
+          (-h + 4.2) +
           " L7.5," +
-          (-h + 7.5) +
+          (-h + 8.5) +
           " Z",
         class: "cab",
       },
@@ -195,11 +196,11 @@ function buildCar(k, len) {
     el(
       "rect",
       {
-        x: -5.6,
-        y: -h + 1.9,
-        width: 11.2,
-        height: 3.6,
-        rx: 1.6,
+        x: -4.6,
+        y: -h + 3.6,
+        width: 9.2,
+        height: 3.2,
+        rx: 1.4,
         class: "glass",
       },
       g,
@@ -208,11 +209,11 @@ function buildCar(k, len) {
     el(
       "rect",
       {
-        x: -3.8,
-        y: -h + 2.5,
-        width: 3.2,
-        height: 0.7,
-        rx: 0.35,
+        x: -3.2,
+        y: -h + 4.2,
+        width: 2.8,
+        height: 0.6,
+        rx: 0.3,
         class: "glint",
       },
       g,
@@ -221,9 +222,9 @@ function buildCar(k, len) {
     el(
       "circle",
       {
-        cx: -5.8,
-        cy: -h + 1.1,
-        r: 1.15,
+        cx: -5.4,
+        cy: -h + 1.7,
+        r: 1.3,
         class: "lamp",
       },
       g,
@@ -232,9 +233,9 @@ function buildCar(k, len) {
     el(
       "circle",
       {
-        cx: 5.8,
-        cy: -h + 1.1,
-        r: 1.15,
+        cx: 5.4,
+        cy: -h + 1.7,
+        r: 1.3,
         class: "lamp",
       },
       g,
@@ -251,21 +252,21 @@ function buildCar(k, len) {
       {
         d:
           "M-7.5," +
-          (h - 7.5) +
+          (h - 8.5) +
           " L-7.5," +
-          (h - 3.4) +
+          (h - 4.2) +
           " Q-7.5," +
           h +
-          " -3.1," +
+          " -3.3," +
           h +
-          " L3.1," +
+          " L3.3," +
           h +
           " Q7.5," +
           h +
           " 7.5," +
-          (h - 3.4) +
+          (h - 4.2) +
           " L7.5," +
-          (h - 7.5) +
+          (h - 8.5) +
           " Z",
         class: "cab",
       },
@@ -275,11 +276,11 @@ function buildCar(k, len) {
     el(
       "rect",
       {
-        x: -5.6,
-        y: h - 5.5,
-        width: 11.2,
-        height: 3.6,
-        rx: 1.6,
+        x: -4.6,
+        y: h - 6.8,
+        width: 9.2,
+        height: 3.2,
+        rx: 1.4,
         class: "glass",
       },
       g,
@@ -288,9 +289,9 @@ function buildCar(k, len) {
     el(
       "circle",
       {
-        cx: -5.8,
-        cy: h - 1.1,
-        r: 1.15,
+        cx: -5.4,
+        cy: h - 1.7,
+        r: 1.3,
         class: "tail",
       },
       g,
@@ -299,9 +300,9 @@ function buildCar(k, len) {
     el(
       "circle",
       {
-        cx: 5.8,
-        cy: h - 1.1,
-        r: 1.15,
+        cx: 5.4,
+        cy: h - 1.7,
+        r: 1.3,
         class: "tail",
       },
       g,
