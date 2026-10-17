@@ -618,8 +618,8 @@ function picksHtml(stn) {
 
   var locationLabels = {
     inside: isJp() ? "駅構内" : "Inside",
-    connected: isJp() ? "駅直結" : "Connected",
     outside: isJp() ? "駅の外" : "Outside",
+    inside_outside: isJp() ? "駅構内・駅外" : "Inside & outside",
   };
 
   return items
@@ -652,9 +652,11 @@ function picksHtml(stn) {
           "</span>"
         : "";
 
-      /* Walking time is shown only for outside locations. */
+      /* Walking time applies whenever part of the trip is outside. */
       var minutes =
-        locationType === "outside" && t.minutes != null && t.minutes !== ""
+        (locationType === "outside" || locationType === "inside_outside") &&
+        t.minutes != null &&
+        t.minutes !== ""
           ? '<span class="pk-walk">' +
             esc(
               isJp()

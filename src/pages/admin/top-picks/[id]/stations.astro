@@ -73,8 +73,8 @@ const successMessage =
 
 const locationTypes = [
   { value: "inside", label: "Inside station" },
-  { value: "connected", label: "Connected to station" },
   { value: "outside", label: "Outside station" },
+  { value: "inside_outside", label: "Inside and outside station" },
 ];
 ---
 
@@ -315,55 +315,94 @@ const locationTypes = [
               />
 
               <!-- Searchable station picker -->
-              <div class="admin-form-group">
-                <label for="station-picker-search">Station</label>
-
-                <input
-                  id="station-picker-search"
-                  type="search"
-                  placeholder="Search English or Japanese station name..."
-                  autocomplete="off"
-                  aria-label="Search stations"
-                />
-
-                <div
-                  id="station-picker-list"
-                  class="station-picker-list"
-                  role="list"
-                  aria-label="Available stations"
-                >
-                  {stations.map((station) => (
-                    <button
-                      type="button"
-                      class="station-picker-option"
-                      data-station-id={station.id}
-                      data-station-name={station.name}
-                      data-station-japanese={station.name_japanese ?? ""}
-                      data-assigned={
-                        assignedStationIds.has(station.id)
-                          ? "true"
-                          : "false"
-                      }
-                    >
-                      <strong>{station.name}</strong>
-
-                      {station.name_japanese && (
-                        <span>{station.name_japanese}</span>
-                      )}
-                    </button>
-                  ))}
+              <div class="admin-form-group station-field">
+                <div class="station-field-head">
+                  <label for="station-picker-search">Station</label>
+                  <span
+                    id="station-picker-count"
+                    class="station-picker-count"
+                    aria-live="polite"
+                  ></span>
                 </div>
 
-                <p id="station-picker-empty" hidden>
-                  No available matching stations found.
-                </p>
+                <!-- Shown once a station is chosen -->
+                <div id="station-chip" class="station-chip" hidden>
+                  <span class="station-chip-text">
+                    <strong id="station-chip-name"></strong>
+                    <span id="station-chip-jp"></span>
+                  </span>
+
+                  <button
+                    type="button"
+                    id="station-chip-clear"
+                    class="station-chip-clear"
+                  >
+                    Change
+                  </button>
+                </div>
+
+                <!-- Search and results, hidden once a station is chosen -->
+                <div id="station-picker-body" class="station-picker-body">
+                  <div class="station-picker-input">
+                    <svg
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      aria-hidden="true"
+                    >
+                      <circle cx="7" cy="7" r="4.6"></circle>
+                      <path d="M10.5 10.5 14 14"></path>
+                    </svg>
+
+                    <input
+                      id="station-picker-search"
+                      type="search"
+                      placeholder="Search English or Japanese name"
+                      autocomplete="off"
+                      aria-label="Search stations"
+                    />
+                  </div>
+
+                  <div
+                    id="station-picker-list"
+                    class="station-picker-list"
+                    role="list"
+                    aria-label="Available stations"
+                  >
+                    {stations.map((station) => (
+                      <button
+                        type="button"
+                        class="station-picker-option"
+                        data-station-id={station.id}
+                        data-station-name={station.name}
+                        data-station-japanese={station.name_japanese ?? ""}
+                        data-assigned={
+                          assignedStationIds.has(station.id)
+                            ? "true"
+                            : "false"
+                        }
+                      >
+                        <strong>{station.name}</strong>
+
+                        {station.name_japanese && (
+                          <span>{station.name_japanese}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  <p id="station-picker-empty" hidden>
+                    No available matching stations found.
+                  </p>
+                </div>
 
                 <p
                   id="station-picker-selected"
+                  class="station-picker-hint"
                   aria-live="polite"
-                >
-                  No station selected.
-                </p>
+                ></p>
 
                 <!-- This select supplies station_id to the existing POST handler -->
                 <select id="modal-station" name="station_id" hidden>
@@ -678,40 +717,85 @@ const locationTypes = [
         min-height: 42px;
       }
 
+      .station-field-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .station-picker-count {
+        color: var(--admin-muted, #6b7280);
+        font-size: 0.75rem;
+      }
+
+      .station-picker-input {
+        position: relative;
+      }
+
+      .station-picker-input svg {
+        position: absolute;
+        top: 50%;
+        left: 11px;
+        width: 15px;
+        height: 15px;
+        transform: translateY(-50%);
+        color: var(--admin-muted, #6b7280);
+        pointer-events: none;
+      }
+
+      .station-modal-dialog .admin-form-group .station-picker-input input {
+        min-height: 36px;
+        padding: 7px 10px 7px 34px;
+        font-size: 0.9rem;
+      }
+
       .station-picker-list {
-        display: grid;
-        gap: 6px;
-        max-height: 220px;
+        max-height: 176px;
         overflow-y: auto;
-        margin-top: 8px;
-        padding: 6px;
+        margin-top: 6px;
+        padding: 3px;
         border: 1px solid var(--admin-border, #d1d5db);
         border-radius: 8px;
+        background: var(--admin-surface, #fff);
       }
 
       .station-picker-option {
-        display: grid;
-        gap: 4px;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
         width: 100%;
-        padding: 10px 12px;
-        border: 1px solid transparent;
-        border-radius: 7px;
+        padding: 6px 9px;
+        border: 0;
+        border-radius: 6px;
         background: transparent;
         color: inherit;
         text-align: left;
         font: inherit;
+        font-size: 0.875rem;
+        line-height: 1.3;
         cursor: pointer;
+      }
+
+      .station-picker-option strong {
+        font-weight: 600;
       }
 
       .station-picker-option span {
         color: var(--admin-muted, #6b7280);
-        font-size: 0.85rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
       }
 
-      .station-picker-option:hover,
-      .station-picker-option.is-selected {
-        border-color: var(--admin-primary, #2563eb);
+      .station-picker-option:hover {
         background: var(--admin-muted-bg, #f3f4f6);
+      }
+
+      .station-picker-option:focus-visible {
+        outline: none;
+        background: var(--admin-muted-bg, #f3f4f6);
+        box-shadow: inset 0 0 0 2px var(--admin-primary, #2563eb);
       }
 
       .station-picker-option[hidden],
@@ -721,15 +805,74 @@ const locationTypes = [
       }
 
       #station-picker-empty {
-        margin: 8px 0;
+        margin: 6px 0 0;
         color: var(--admin-muted, #6b7280);
-        font-size: 0.875rem;
+        font-size: 0.85rem;
       }
 
-      #station-picker-selected {
-        margin: 8px 0 0;
+      .station-chip {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 36px;
+        padding: 4px 5px 4px 11px;
+        border: 1px solid var(--admin-primary, #2563eb);
+        border-radius: 8px;
+        background: color-mix(
+          in srgb,
+          var(--admin-primary, #2563eb) 8%,
+          var(--admin-surface, #fff)
+        );
+      }
+
+      .station-chip-text {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        min-width: 0;
+        font-size: 0.9rem;
+      }
+
+      .station-chip-text span {
         color: var(--admin-muted, #6b7280);
-        font-size: 0.875rem;
+        font-size: 0.8rem;
+      }
+
+      .station-chip-clear {
+        padding: 4px 10px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--admin-primary, #2563eb);
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .station-chip-clear:hover {
+        background: color-mix(
+          in srgb,
+          var(--admin-primary, #2563eb) 12%,
+          transparent
+        );
+      }
+
+      .station-chip[hidden],
+      .station-chip-clear[hidden],
+      .station-picker-body[hidden] {
+        display: none !important;
+      }
+
+      .station-picker-hint {
+        margin: 6px 0 0;
+        color: var(--admin-danger, #b91c1c);
+        font-size: 0.8rem;
+      }
+
+      .station-picker-hint:empty {
+        display: none;
       }
 
       .station-modal-actions {
@@ -840,6 +983,24 @@ const locationTypes = [
       const stationPickerSelected =
         document.querySelector("#station-picker-selected") as HTMLElement | null;
 
+      const stationPickerBody =
+        document.querySelector("#station-picker-body") as HTMLElement | null;
+
+      const stationPickerCount =
+        document.querySelector("#station-picker-count") as HTMLElement | null;
+
+      const stationChip =
+        document.querySelector("#station-chip") as HTMLElement | null;
+
+      const stationChipName =
+        document.querySelector("#station-chip-name") as HTMLElement | null;
+
+      const stationChipJp =
+        document.querySelector("#station-chip-jp") as HTMLElement | null;
+
+      const stationChipClear =
+        document.querySelector("#station-chip-clear") as HTMLButtonElement | null;
+
       const stationPickerOptions = Array.from(
         document.querySelectorAll(".station-picker-option"),
       ) as HTMLButtonElement[];
@@ -883,6 +1044,9 @@ const locationTypes = [
         }
       };
 
+      const visiblePickerOptions = () =>
+        stationPickerOptions.filter((option) => !option.hidden);
+
       const filterStationPicker = () => {
         if (!stationPickerSearch || !stationSelect) return;
 
@@ -906,8 +1070,6 @@ const locationTypes = [
           const matches = searchableText.includes(query);
 
           option.hidden = !matches || isAssigned;
-
-          option.classList.toggle("is-selected", isSelected);
           option.setAttribute("aria-pressed", String(isSelected));
 
           if (!option.hidden) {
@@ -920,19 +1082,52 @@ const locationTypes = [
         }
 
         if (stationPickerList) {
-          stationPickerList.hidden = false;
+          stationPickerList.hidden = visibleCount === 0;
+        }
+
+        if (stationPickerCount) {
+          stationPickerCount.textContent = stationSelect.value
+            ? ""
+            : `${visibleCount} ${query ? "found" : "available"}`;
         }
       };
 
+      // Show either the search box + results, or the chosen station.
       const syncStationPicker = () => {
         if (!stationSelect) return;
 
-        const selectedOption = stationSelect.selectedOptions[0];
+        const selectedId = stationSelect.value;
+
+        const selectedOption = stationPickerOptions.find(
+          (option) => option.dataset.stationId === selectedId,
+        );
+
+        const hasSelection = Boolean(selectedId && selectedOption);
+
+        if (stationChip) {
+          stationChip.hidden = !hasSelection;
+        }
+
+        if (stationPickerBody) {
+          stationPickerBody.hidden = hasSelection;
+        }
+
+        if (stationChipName) {
+          stationChipName.textContent = selectedOption?.dataset.stationName ?? "";
+        }
+
+        if (stationChipJp) {
+          stationChipJp.textContent =
+            selectedOption?.dataset.stationJapanese ?? "";
+        }
+
+        // A station being edited is locked; it cannot be swapped.
+        if (stationChipClear) {
+          stationChipClear.hidden = stationSelect.disabled;
+        }
 
         if (stationPickerSelected) {
-          stationPickerSelected.textContent = selectedOption?.value
-            ? `Selected: ${selectedOption.textContent?.trim() ?? ""}`
-            : "No station selected.";
+          stationPickerSelected.textContent = "";
         }
 
         filterStationPicker();
@@ -1033,9 +1228,60 @@ const locationTypes = [
 
           stationSelect.value = stationId;
 
+          if (stationPickerSearch) {
+            stationPickerSearch.value = "";
+          }
+
           syncStationPicker();
           filterFloorsAndExits(true);
+
+          floorSelect?.focus();
         });
+      });
+
+      // Enter picks the first match; arrow keys walk through the results.
+      stationPickerSearch?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          visiblePickerOptions()[0]?.click();
+        } else if (event.key === "ArrowDown") {
+          event.preventDefault();
+          visiblePickerOptions()[0]?.focus();
+        }
+      });
+
+      stationPickerList?.addEventListener("keydown", (event) => {
+        const options = visiblePickerOptions();
+        const index = options.indexOf(
+          document.activeElement as HTMLButtonElement,
+        );
+
+        if (index === -1) return;
+
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          options[Math.min(index + 1, options.length - 1)]?.focus();
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault();
+
+          if (index === 0) {
+            stationPickerSearch?.focus();
+          } else {
+            options[index - 1]?.focus();
+          }
+        }
+      });
+
+      // Go back to searching after choosing a station by mistake.
+      stationChipClear?.addEventListener("click", () => {
+        if (!stationSelect || stationSelect.disabled) return;
+
+        stationSelect.value = "";
+
+        filterFloorsAndExits(true);
+        syncStationPicker();
+
+        stationPickerSearch?.focus();
       });
 
       // Prevent submitting without a selected station.

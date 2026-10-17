@@ -14,7 +14,7 @@ export const TOP_PICK_CATEGORIES = [
 
 export type TopPickCategory = (typeof TOP_PICK_CATEGORIES)[number];
 
-export type TopPickLocationType = "inside" | "connected" | "outside";
+export type TopPickLocationType = "inside" | "outside" | "inside_outside";
 
 export interface TopPickOpeningHour {
   id?: number;

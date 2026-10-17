@@ -95,7 +95,7 @@ export async function saveTopPickStationAssignment(
     sortOrder = 0,
   } = input;
 
-  if (!["inside", "connected", "outside"].includes(locationType)) {
+  if (!["inside", "outside", "inside_outside"].includes(locationType)) {
     throw new Error("Invalid location type.");
   }
 

@@ -979,7 +979,7 @@ html[data-theme="dark"] .station-sheet {
   color: var(--sheet-muted);
 }
 
-.pk-status-connected {
+.pk-status-inside_outside {
   background: rgba(0, 122, 255, 0.12);
   color: #007aff;
 }
@@ -988,7 +988,7 @@ html[data-theme="dark"] .pk-status-inside {
   color: #65d982;
 }
 
-html[data-theme="dark"] .pk-status-connected {
+html[data-theme="dark"] .pk-status-inside_outside {
   color: #64aaff;
 }
 

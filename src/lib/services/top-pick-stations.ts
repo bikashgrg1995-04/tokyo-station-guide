@@ -74,8 +74,8 @@ export async function handleTopPickStationAssignment(
 
       if (
         locationType !== "inside" &&
-        locationType !== "connected" &&
-        locationType !== "outside"
+        locationType !== "outside" &&
+        locationType !== "inside_outside"
       ) {
         result.error = "Please select a valid location type.";
         return result;
