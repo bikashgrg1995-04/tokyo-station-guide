@@ -158,8 +158,8 @@
   white-space: nowrap;
   font-family: "Noto Sans JP", "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic",
     system-ui, sans-serif;
-  font-size: 24px;
-  line-height: 32px;
+  font-size: 19px;
+  line-height: 26px;
   font-weight: 800;
   letter-spacing: 0.05em;
   text-indent: 0.05em;
@@ -170,11 +170,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 10.5px;
-  line-height: 15px;
+  font-size: 9.5px;
+  line-height: 13px;
   font-weight: 600;
-  letter-spacing: 0.18em;
-  text-indent: 0.18em;
+  letter-spacing: 0.16em;
+  text-indent: 0.16em;
   color: var(--muted);
   text-transform: uppercase;
 }
