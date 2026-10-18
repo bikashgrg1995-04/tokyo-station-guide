@@ -1,9 +1,10 @@
 // The line picker popover (opens above the board card) and the
 // "Coming soon" dialog behind the Page button.
 
+import { list } from "./current-line.js";
 import { data } from "./data.js";
 import { dlg, toggle } from "./dom.js";
-import { pick, t } from "./i18n.js";
+import { applyStatic, pick, t } from "./i18n.js";
 import { setLine } from "./navigation.js";
 import { state } from "./state.js";
 import { $ } from "./utils.js";
@@ -80,6 +81,21 @@ export function refreshLinesDialog() {
 var soon = $("#soon-dialog");
 
 export function openSoon() {
+  /*
+   * A station that is not verified yet says so. A verified one gets the
+   * usual "station pages are coming soon" message.
+   */
+  var cur = list()[state.idx];
+
+  var verified = cur && Number(cur.is_verified) === 1;
+
+  $("#soon-title").dataset.i18n = verified ? "soon.title" : "soon.unverifiedTitle";
+  soon.querySelector("p").dataset.i18n = verified
+    ? "soon.body"
+    : "soon.unverifiedBody";
+
+  applyStatic(soon);
+
   soon.hidden = false;
   $("#soon-close").focus();
 }

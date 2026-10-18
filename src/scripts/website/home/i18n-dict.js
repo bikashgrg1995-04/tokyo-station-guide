@@ -28,6 +28,9 @@ export const DICT = {
     "soon.title": "Station page",
     "soon.body": "Coming soon. Dedicated station pages are on the way.",
     "soon.ok": "Got it",
+    "soon.unverifiedTitle": "Not verified yet",
+    "soon.unverifiedBody":
+      "This station has not been verified yet. Its page will open once it has been verified.",
 
     /* Search */
     "search.title": "Where are you going?",
@@ -107,6 +110,9 @@ export const DICT = {
     "soon.title": "駅ページ",
     "soon.body": "近日公開予定です。駅ごとの専用ページを準備中です。",
     "soon.ok": "OK",
+    "soon.unverifiedTitle": "未確認の駅",
+    "soon.unverifiedBody":
+      "この駅はまだ確認されていません。確認が完了すると駅ページが公開されます。",
 
     /* Search */
     "search.title": "どこへ行きますか？",
