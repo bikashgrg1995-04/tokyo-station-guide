@@ -22,7 +22,7 @@ const description =
    Transit Map Data
 ======================================== */
 
-const all = await getTransitMapData(db);
+const all = await getTransitMapData(db, { publishedOnly: true });
 
 /* Published lines are browsable; the rest show as "Coming soon"
    (switched per line in Admin > Lines). */

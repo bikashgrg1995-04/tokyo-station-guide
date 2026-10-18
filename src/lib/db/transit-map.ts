@@ -114,6 +114,7 @@ interface TransitStationRow extends LineStationItem {
 
 export async function getTransitMapData(
   db: D1Database,
+  options: { publishedOnly?: boolean } = {},
 ): Promise<TransitMapData> {
   const lines = await getLines(db);
 
@@ -366,9 +367,20 @@ export async function getTransitMapData(
           ls.station_order,
           ls.station_code
 
-        FROM stations s
+        ${
+          options.publishedOnly
+            ? /* Home page: only published lines are browsable, so skip the
+                 (expensive) per-station details of every other line. */
+              `FROM line_stations ls
+        INNER JOIN lines pub
+          ON pub.id = ls.line_id
+         AND pub.is_published = 1
+        INNER JOIN stations s
+          ON s.id = ls.station_id`
+            : `FROM stations s
         LEFT JOIN line_stations ls
-          ON ls.station_id = s.id
+          ON ls.station_id = s.id`
+        }
 
         ORDER BY
           s.name ASC,

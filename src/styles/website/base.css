@@ -69,3 +69,33 @@ a:focus-visible {
 #stage.is-panning {
   cursor: grabbing;
 }
+
+/* ==========================================================================
+   html.lite — slower phones (set in WebsiteLayout before the first paint)
+   Same design, but without the effects that cost the most to paint:
+   blur behind glass, endless animations and big soft shadows.
+   ========================================================================== */
+html.lite * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html.lite .stn.current .pulse,
+html.lite .stn.current .stop {
+  animation: none !important;
+}
+
+html.lite .stn.current .pulse {
+  opacity: 0.22;
+  transform: scale(1.8);
+}
+
+html.lite .stn.current .pulse-2 {
+  display: none;
+}
+
+html.lite .board-card,
+html.lite .lang-switch,
+html.lite .round {
+  box-shadow: 0 2px 10px rgba(20, 30, 50, 0.18);
+}

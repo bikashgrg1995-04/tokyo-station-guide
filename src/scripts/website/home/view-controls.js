@@ -4,6 +4,36 @@ import { svg } from "./dom.js";
 import { state } from "./state.js";
 import { $ } from "./utils.js";
 
+/*
+ * Every viewBox change goes through here: it is written once per frame (touch
+ * events can fire faster than the screen refreshes) and never when unchanged.
+ */
+var pendingBox = null;
+var lastBox = "";
+var flushing = false;
+
+function writeBox(value) {
+  pendingBox = value;
+
+  if (flushing) {
+    return;
+  }
+
+  flushing = true;
+
+  requestAnimationFrame(function () {
+    flushing = false;
+
+    if (pendingBox !== null && pendingBox !== lastBox) {
+      lastBox = pendingBox;
+
+      svg.setAttribute("viewBox", pendingBox);
+    }
+
+    pendingBox = null;
+  });
+}
+
 export function setView(p) {
   var vw = state.VB.w / state.zoom;
 
@@ -26,7 +56,7 @@ export function setView(p) {
 
   var y = Math.min(Math.max(fy - vh / 2, state.VB.y), state.VB.y + state.VB.h - vh);
 
-  svg.setAttribute("viewBox", x + " " + y + " " + vw + " " + vh);
+  writeBox(x + " " + y + " " + vw + " " + vh);
 }
 
 const MAX_ZOOM = 6;
@@ -52,7 +82,10 @@ function worldAt(clientX, clientY, vb) {
 }
 
 function currentViewBox() {
-  return svg.getAttribute("viewBox").split(" ").map(Number);
+  /* Include a change that is queued for the next frame. */
+  return (pendingBox !== null ? pendingBox : svg.getAttribute("viewBox"))
+    .split(" ")
+    .map(Number);
 }
 
 /*
@@ -83,7 +116,7 @@ function zoomAround(zoom, anchor, clientX, clientY) {
 
   y = Math.min(Math.max(y, state.VB.y), state.VB.y + state.VB.h - vh);
 
-  svg.setAttribute("viewBox", x + " " + y + " " + vw + " " + vh);
+  writeBox(x + " " + y + " " + vw + " " + vh);
 }
 
 const pan = {
@@ -124,7 +157,7 @@ function panBy(dx, dy) {
 
   y = Math.min(Math.max(y, state.VB.y), state.VB.y + state.VB.h - vh);
 
-  svg.setAttribute("viewBox", x + " " + y + " " + vw + " " + vh);
+  writeBox(x + " " + y + " " + vw + " " + vh);
 }
 
 const touches = {
@@ -209,7 +242,7 @@ export function initViewControls() {
 
     pan.startY = e.clientY;
 
-    var viewBox = svg.getAttribute("viewBox").split(" ").map(Number);
+    var viewBox = currentViewBox();
 
     pan.startVBX = viewBox[0];
 
@@ -255,7 +288,7 @@ export function initViewControls() {
 
         touches.startY = e.touches[0].clientY;
 
-        var viewBox = svg.getAttribute("viewBox").split(" ").map(Number);
+        var viewBox = currentViewBox();
 
         touches.startVBX = viewBox[0];
 
@@ -366,7 +399,7 @@ export function initViewControls() {
 
         touches.startY = e.touches[0].clientY;
 
-        var viewBox = svg.getAttribute("viewBox").split(" ").map(Number);
+        var viewBox = currentViewBox();
 
         touches.startVBX = viewBox[0];
 

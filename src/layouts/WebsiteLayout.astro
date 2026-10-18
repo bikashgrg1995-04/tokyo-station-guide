@@ -32,12 +32,33 @@ const { title, description } = Astro.props;
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/icon-light-180.png" />
     <meta name="theme-color" content="#ececf1" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0c1017" media="(prefers-color-scheme: dark)" />
+    <!-- Light mode for slower phones: set before first paint (see "html.lite" in base.css). -->
+    <script is:inline>
+      (function () {
+        try {
+          var cores = navigator.hardwareConcurrency || 8;
+          var mem = navigator.deviceMemory || 8;
+          if (cores <= 4 || mem <= 2) {
+            document.documentElement.classList.add("lite");
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Web fonts load without blocking the first paint (system font until they arrive). -->
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Noto+Sans+JP:wght@500;700;800&display=swap"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Noto+Sans+JP:wght@500;700;800&display=swap"
+      />
+    </noscript>
     <slot name="head" />
   </Fragment>
   <slot />
