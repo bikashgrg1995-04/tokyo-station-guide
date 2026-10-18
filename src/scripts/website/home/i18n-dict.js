@@ -33,6 +33,8 @@ export const DICT = {
     "search.title": "Where are you going?",
     "search.placeholder": "Search stations or codes",
     "search.close": "Close search",
+    "search.cancel": "Cancel",
+    "search.tip": "Tip: search by station code — “G19”, “JY01”, “KS42”",
     "search.featured": "Popular Station Hubs",
     "search.recent": "Recent",
     "search.empty": "No stations found. Try the English or Japanese name.",
@@ -110,6 +112,8 @@ export const DICT = {
     "search.title": "どこへ行きますか？",
     "search.placeholder": "駅名・駅番号で検索",
     "search.close": "検索を閉じる",
+    "search.cancel": "キャンセル",
+    "search.tip": "ヒント：駅番号でも検索できます — 「G19」「JY01」「KS42」",
     "search.featured": "人気のターミナル駅",
     "search.recent": "最近見た駅",
     "search.empty":

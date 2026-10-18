@@ -2,29 +2,32 @@
   <div class="search-backdrop" id="search-backdrop"></div>
 
   <div class="search-panel">
-    <div class="search-head">
-      <h2 data-i18n="search.title">Where are you going?</h2>
+    <div class="search-bar">
+      <form id="search-form" autocomplete="off">
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"
+          ><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"
+          ></path></svg
+        >
+        <input
+          type="search"
+          id="search-input"
+          placeholder="Search stations or codes"
+          aria-label="Search stations or codes"
+          data-i18n-attr="placeholder:search.placeholder;aria-label:search.placeholder"
+        />
+      </form>
 
       <button
-        class="round"
+        class="search-cancel"
         id="close-search"
-        aria-label="Close search"
-        data-i18n-attr="aria-label:search.close"
         type="button"
+        data-i18n="search.cancel"
+        data-i18n-attr="aria-label:search.close"
+        aria-label="Close search"
       >
-        ×
+        Cancel
       </button>
     </div>
-
-    <form id="search-form" autocomplete="off">
-      <input
-        type="search"
-        id="search-input"
-        placeholder="Search stations or codes"
-        aria-label="Search stations or codes"
-        data-i18n-attr="placeholder:search.placeholder;aria-label:search.placeholder"
-      />
-    </form>
 
     <div id="search-home">
       <section
@@ -40,6 +43,10 @@
 
         <div id="featured-stations" class="featured-stations"></div>
       </section>
+
+      <p class="search-tip" id="search-tip" data-i18n="search.tip">
+      Tip: search by station code — “G19”, “JY01”, “KS42”
+      </p>
 
       <section
         class="search-section"

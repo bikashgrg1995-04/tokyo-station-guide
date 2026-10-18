@@ -75,7 +75,7 @@ export function renderFeaturedStations() {
       '<span class="featured-info">' +
       "<b>" +
       esc(pair[0]) +
-      (pair[1] ? " " + esc(pair[1]) : "") +
+      (pair[1] ? " <em>" + esc(pair[1]) + "</em>" : "") +
       "</b>" +
       (description ? "<small>" + esc(description) + "</small>" : "") +
       "</span>";
