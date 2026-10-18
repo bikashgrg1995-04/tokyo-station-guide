@@ -36,9 +36,14 @@ function updateBoard() {
 
   var cur = l[state.idx];
 
-  var prev = l[state.idx - 1];
+  /* A loop line has no end: after the last station comes the first. */
+  var around = l.length > 1 && line().shape === "loop";
 
-  var next = l[state.idx + 1];
+  var prev = around
+    ? l[(state.idx - 1 + l.length) % l.length]
+    : l[state.idx - 1];
+
+  var next = around ? l[(state.idx + 1) % l.length] : l[state.idx + 1];
 
   $("#line-name").textContent = pick(line().name, line().jp);
 
@@ -131,7 +136,12 @@ export function go(i) {
     return;
   }
 
-  state.idx = Math.max(0, Math.min(i, n - 1));
+  if (n > 1 && line().shape === "loop") {
+    /* Loop line: wrap around instead of stopping at the ends. */
+    state.idx = ((i % n) + n) % n;
+  } else {
+    state.idx = Math.max(0, Math.min(i, n - 1));
+  }
 
   updateBoard();
   updateMap();

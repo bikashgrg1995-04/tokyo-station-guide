@@ -418,6 +418,19 @@ export async function getTransitMapData(
     });
   }
 
+  /* The query sorts by station name; each line must follow its own stop order
+     (this order drives the map, the train and the previous / next buttons). */
+  for (const stations of Object.values(stationsByLine)) {
+    stations.sort(
+      (a, b) =>
+        (a.order ?? Number.MAX_SAFE_INTEGER) -
+          (b.order ?? Number.MAX_SAFE_INTEGER) ||
+        String(a.code ?? "").localeCompare(String(b.code ?? ""), undefined, {
+          numeric: true,
+        }),
+    );
+  }
+
   /* ======================================
      Build Searchable Stations
   ====================================== */

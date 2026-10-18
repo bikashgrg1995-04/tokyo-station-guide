@@ -408,6 +408,23 @@ export function moveTrain() {
 
   var from = state.trainS;
 
+  /*
+   * Loop line: the train keeps driving the same way round. Take the copy of
+   * the target that is the shortest ride from here (so last -> first goes
+   * across the seam instead of all the way back).
+   */
+  if (state.track.closed) {
+    var L = state.track.length;
+
+    var delta = (((target - from) % L) + L) % L;
+
+    if (delta > L / 2) {
+      delta -= L;
+    }
+
+    target = from + delta;
+  }
+
   if (state.anim) {
     cancelAnimationFrame(state.anim);
 
