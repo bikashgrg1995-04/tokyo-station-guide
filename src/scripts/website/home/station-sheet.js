@@ -447,15 +447,15 @@ function facilityDetailHtml(group) {
     }
 
     var detail = bits.join(" · ");
-    var note = pick(f.note, f.note_jp);
+    var note = String(pick(f.note, f.note_jp) || "").trim();
 
     if (detail) {
-      floorDetails.push(
-        detail +
-          (note && String(note).trim()
-            ? " · " + esc(String(note).trim())
-            : ""),
-      );
+      floorDetails.push(detail);
+    }
+
+    /* Notes are not tied to a floor in the line: they follow the floors. */
+    if (note && facilityNotes.indexOf(note) === -1) {
+      facilityNotes.push(note);
     }
   });
 
@@ -493,7 +493,14 @@ function facilityDetailHtml(group) {
   return (
     '<div class="facility-floor-details">' +
     topRow +
-    (floorDetails.length ? "<div>" + floorDetails.join(", ") + "</div>" : "") +
+    (floorDetails.length || facilityNotes.length
+      ? "<div>" +
+        [floorDetails.join(", ")]
+          .concat(facilityNotes.map(esc))
+          .filter(Boolean)
+          .join(" · ") +
+        "</div>"
+      : "") +
     "</div>"
   );
 }
