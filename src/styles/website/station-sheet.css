@@ -203,6 +203,8 @@ html[data-theme="dark"] .station-sheet {
 
 .sheet-verified {
   font-size: 12px;
+  /* Fixed, so a CJK fallback font cannot make the line taller than in English */
+  line-height: 15px;
   color: var(--sheet-muted);
 }
 
@@ -212,7 +214,11 @@ html[data-theme="dark"] .station-sheet {
 
 .sheet-btn {
   flex: none;
-  padding: 6px 14px;
+  box-sizing: border-box;
+  height: 28px;
+  padding: 0 14px;
+  line-height: 28px;
+  white-space: nowrap;
   border: 0;
   border-radius: 15px;
   background: var(--sheet-blue);
@@ -244,7 +250,15 @@ html[data-theme="dark"] .station-sheet {
 }
 
 .sheet-tabs button {
-  padding: 5px 2px;
+  box-sizing: border-box;
+  /* A fixed height, so the bar is the same size in English and Japanese
+     (fallback CJK fonts would otherwise make the line box taller). */
+  height: 26px;
+  padding: 0 2px;
+  line-height: 26px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   border: 0;
   border-radius: 8px;
   background: none;
@@ -332,6 +346,7 @@ html[data-theme="dark"] .station-sheet {
   margin: auto 0 0;
   padding-top: 10px;
   font-size: 10.5px;
+  line-height: 13px;
   color: var(--sheet-muted);
 }
 

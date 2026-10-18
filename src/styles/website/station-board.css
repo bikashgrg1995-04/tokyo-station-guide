@@ -39,6 +39,7 @@
   color: var(--ink);
   font-weight: 600;
   font-size: 9.5px;
+  line-height: 1.2;
   transition: background 0.15s ease;
 }
 .line-pill:hover {
@@ -75,6 +76,7 @@
   background: color-mix(in srgb, var(--line) 10%, var(--surface));
   color: var(--ink);
   font-size: 10px;
+  line-height: 1.2;
   font-weight: 600;
   transition: background 0.15s ease;
 }
@@ -144,6 +146,7 @@
 }
 .cur-en {
   font-size: 8px;
+  line-height: 1.35;
   letter-spacing: 0.26em;
   text-indent: 0.26em;
   color: var(--muted);

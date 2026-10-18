@@ -36,6 +36,7 @@
   margin: 0;
   padding: 6px 10px 7px;
   font-size: 9.5px;
+  line-height: 1.2;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -54,6 +55,7 @@
   padding: 9px 0 4px;
   text-align: center;
   font-size: 10.5px;
+  line-height: 1.25;
   color: var(--muted);
 }
 
@@ -67,6 +69,7 @@
   border-radius: 12px;
   text-align: left;
   font-size: 13px;
+  line-height: 1.25;
   transition: background 0.15s ease;
 }
 button.line-row:hover {

@@ -122,7 +122,7 @@ export const DICT = {
     "sheet.details": "駅の詳細",
     "sheet.tab.facilities": "駅の設備",
     "sheet.tab.platforms": "ホーム",
-    "sheet.tab.picks": "おすすめスポット",
+    "sheet.tab.picks": "おすすめ",
     "sheet.noFacilities": "設備情報はまだありません。",
     "sheet.tapIcon": "アイコンをタップすると詳細が表示されます。",
     "sheet.scrollMore": "さらに表示",
