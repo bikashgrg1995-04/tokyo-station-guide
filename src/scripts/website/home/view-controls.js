@@ -1,15 +1,8 @@
 // Zoom, pan and touch gestures.
 
-import { list, pointAt } from "./current-line.js";
 import { svg } from "./dom.js";
 import { state } from "./state.js";
 import { $ } from "./utils.js";
-
-function refreshView() {
-  if (list().length) {
-    setView(pointAt(state.trainS));
-  }
-}
 
 export function setView(p) {
   var vw = state.VB.w / state.zoom;
@@ -38,6 +31,61 @@ export function setView(p) {
 
 const MAX_ZOOM = 6;
 
+/*
+ * The map is drawn with "meet": it keeps its shape and may leave empty
+ * margins. These two helpers convert between screen pixels and map
+ * coordinates for a given viewBox (x, y, w, h).
+ */
+function screenScale(rect, vw, vh) {
+  return Math.min(rect.width / vw, rect.height / vh);
+}
+
+function worldAt(clientX, clientY, vb) {
+  var rect = svg.getBoundingClientRect();
+
+  var k = screenScale(rect, vb[2], vb[3]);
+
+  return {
+    x: vb[0] + (clientX - rect.left - (rect.width - vb[2] * k) / 2) / k,
+    y: vb[1] + (clientY - rect.top - (rect.height - vb[3] * k) / 2) / k,
+  };
+}
+
+function currentViewBox() {
+  return svg.getAttribute("viewBox").split(" ").map(Number);
+}
+
+/*
+ * Zoom so that the map point `anchor` stays exactly under the screen
+ * position (clientX, clientY): the pointer on a computer, the fingers on
+ * a phone.
+ */
+function zoomAround(zoom, anchor, clientX, clientY) {
+  var rect = svg.getBoundingClientRect();
+
+  if (!rect.width || !rect.height) {
+    return;
+  }
+
+  state.zoom = Math.min(MAX_ZOOM, Math.max(1, zoom));
+
+  var vw = state.VB.w / state.zoom;
+
+  var vh = state.VB.h / state.zoom;
+
+  var k = screenScale(rect, vw, vh);
+
+  var x = anchor.x - (clientX - rect.left - (rect.width - vw * k) / 2) / k;
+
+  var y = anchor.y - (clientY - rect.top - (rect.height - vh * k) / 2) / k;
+
+  x = Math.min(Math.max(x, state.VB.x), state.VB.x + state.VB.w - vw);
+
+  y = Math.min(Math.max(y, state.VB.y), state.VB.y + state.VB.h - vh);
+
+  svg.setAttribute("viewBox", x + " " + y + " " + vw + " " + vh);
+}
+
 const pan = {
   active: false,
 
@@ -62,9 +110,11 @@ function panBy(dx, dy) {
 
   var vh = state.VB.h / state.zoom;
 
-  var worldDX = (dx / rect.width) * vw;
+  var k = screenScale(rect, vw, vh);
 
-  var worldDY = (dy / rect.height) * vh;
+  var worldDX = dx / k;
+
+  var worldDY = dy / k;
 
   var x = pan.startVBX - worldDX;
 
@@ -89,6 +139,8 @@ const touches = {
   distance: 0,
 
   zoomStart: 1,
+
+  anchor: { x: 0, y: 0 },
 };
 
 function touchDistance(t) {
@@ -122,14 +174,17 @@ export function initViewControls() {
     function (e) {
       e.preventDefault();
 
-      var step = e.deltaMode === 1 ? 0.05 : 0.0015;
+      /* A trackpad pinch arrives as a ctrl + wheel with small steps. */
+      var step = e.deltaMode === 1 ? 0.05 : e.ctrlKey ? 0.01 : 0.0015;
 
-      state.zoom = Math.min(
-        MAX_ZOOM,
-        Math.max(1, state.zoom * Math.exp(-e.deltaY * step)),
+      var anchor = worldAt(e.clientX, e.clientY, currentViewBox());
+
+      zoomAround(
+        state.zoom * Math.exp(-e.deltaY * step),
+        anchor,
+        e.clientX,
+        e.clientY,
       );
-
-      refreshView();
     },
     {
       passive: false,
@@ -216,6 +271,13 @@ export function initViewControls() {
 
         touches.zoomStart = state.zoom;
 
+        /* The map point between the fingers stays between the fingers. */
+        touches.anchor = worldAt(
+          (e.touches[0].clientX + e.touches[1].clientX) / 2,
+          (e.touches[0].clientY + e.touches[1].clientY) / 2,
+          currentViewBox(),
+        );
+
         $("#stage").classList.remove("is-panning");
       }
     },
@@ -239,12 +301,12 @@ export function initViewControls() {
           return;
         }
 
-        state.zoom = Math.min(
-          MAX_ZOOM,
-          Math.max(1, touches.zoomStart * (distance / touches.distance)),
+        zoomAround(
+          touches.zoomStart * (distance / touches.distance),
+          touches.anchor,
+          (e.touches[0].clientX + e.touches[1].clientX) / 2,
+          (e.touches[0].clientY + e.touches[1].clientY) / 2,
         );
-
-        refreshView();
 
         return;
       }
