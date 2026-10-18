@@ -19,4 +19,15 @@ initializeAutoSearch({
   onContentUpdated: initializeDeleteButtons,
 });
 
+/* Website switch: flipping it saves straight away (works after the list
+   is refreshed by the search too, because it listens on the document). */
+document.addEventListener("change", (event) => {
+  const target = event.target;
+
+  if (target instanceof HTMLInputElement && target.matches(".js-line-visibility")) {
+    target.disabled = true;
+    target.form?.requestSubmit();
+  }
+});
+
 export {};

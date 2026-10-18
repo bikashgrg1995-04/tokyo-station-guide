@@ -14,6 +14,8 @@ export interface Line {
   description: string | null;
   description_japanese: string | null;
   color: string | null;
+  /** 1 = browsable on the website, 0 = listed as "Coming soon". */
+  is_published: number;
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +29,7 @@ export interface CreateLineInput {
   color?: string | null;
   nameJapanese?: string | null;
   descriptionJapanese?: string | null;
+  isPublished?: boolean;
 }
 
 export interface UpdateLineInput {
@@ -38,6 +41,7 @@ export interface UpdateLineInput {
   color?: string | null;
   nameJapanese?: string | null;
   descriptionJapanese?: string | null;
+  isPublished?: boolean;
 }
 
 export interface PaginatedLines {
@@ -71,6 +75,7 @@ export async function getLines(
           l.description,
           l.description_japanese,
           l.color,
+          l.is_published,
           l.created_at,
           l.updated_at
         FROM lines l
@@ -179,6 +184,7 @@ export async function getLinesPaginated(
           l.description,
           l.description_japanese,
           l.color,
+          l.is_published,
           l.created_at,
           l.updated_at
         FROM lines l
@@ -240,6 +246,7 @@ export async function getLineById(
           l.description,
           l.description_japanese,
           l.color,
+          l.is_published,
           l.created_at,
           l.updated_at
         FROM lines l
@@ -274,9 +281,10 @@ export async function createLine(
           description,
           color,
           name_japanese,
-          description_japanese
+          description_japanese,
+          is_published
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
     )
     .bind(
@@ -288,6 +296,7 @@ export async function createLine(
       input.color?.trim() || null,
       input.nameJapanese?.trim() || null,
       input.descriptionJapanese?.trim() || null,
+      input.isPublished ? 1 : 0,
     )
     .run();
 
@@ -317,6 +326,7 @@ export async function updateLine(
           color = ?,
           name_japanese = ?,
           description_japanese = ?,
+          is_published = ?,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `,
@@ -330,6 +340,7 @@ export async function updateLine(
       input.color?.trim() || null,
       input.nameJapanese?.trim() || null,
       input.descriptionJapanese?.trim() || null,
+      input.isPublished ? 1 : 0,
       id,
     )
     .run();
@@ -352,5 +363,29 @@ export async function deleteLine(
       `,
     )
     .bind(id)
+    .run();
+}
+
+
+/* ========================================
+   Set Published (website visibility)
+======================================== */
+
+export async function setLinePublished(
+  db: D1Database,
+  id: number,
+  published: boolean,
+): Promise<void> {
+  await db
+    .prepare(
+      `
+        UPDATE lines
+        SET
+          is_published = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `,
+    )
+    .bind(published ? 1 : 0, id)
     .run();
 }

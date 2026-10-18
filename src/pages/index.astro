@@ -9,7 +9,6 @@ import SearchOverlay from "../components/website/SearchOverlay.astro";
 import HomeData from "../components/website/HomeData.astro";
 import { getTransitMapData } from "../lib/db/transit-map.ts";
 import { getFeaturedStations } from "../lib/db/featured-stations";
-import { READY_LINE_NAMES } from "../lib/website/ready-lines";
 
 export const prerender = false;
 
@@ -25,13 +24,12 @@ const description =
 
 const all = await getTransitMapData(db);
 
-/* Only lines with ready data are browsable; the rest show as "Coming soon". */
-const readyLines = all.lines.filter((line) =>
-  READY_LINE_NAMES.includes(line.name),
+/* Published lines are browsable; the rest show as "Coming soon"
+   (switched per line in Admin > Lines). */
+const lines = all.lines.filter(
+  (line) =>
+    line.published && (all.stationsByLine[String(line.id)]?.length ?? 0) > 0,
 );
-
-/* Nothing marked ready (e.g. a fresh database): fall back to every line. */
-const lines = readyLines.length > 0 ? readyLines : all.lines;
 const readyIds = new Set(lines.map((line) => String(line.id)));
 const readyNames = new Set(lines.map((line) => line.name));
 

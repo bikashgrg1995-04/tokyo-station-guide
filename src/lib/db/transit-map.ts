@@ -23,6 +23,8 @@ export interface TransitMapLine {
   operatorJp: string | null;
   descriptionJp: string | null;
   shape: "loop" | "u" | "line" | null;
+  /** true = browsable; false = "Coming soon". */
+  published: boolean;
 }
 
 export interface TransitMapStation {
@@ -487,6 +489,7 @@ export async function getTransitMapData(
     jp: line.name_japanese,
     operatorJp: line.operator_name_japanese,
     descriptionJp: line.description_japanese,
+    published: line.is_published === 1,
     shape: line.code === "JY" || /yamanote/i.test(line.name) ? "loop" : null,
   }));
 

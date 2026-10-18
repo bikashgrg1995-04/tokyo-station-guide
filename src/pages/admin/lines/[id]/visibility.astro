@@ -1,0 +1,11 @@
+---
+import { handleLineVisibility } from "../../../../lib/services/lines";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+return Astro.redirect(
+  await handleLineVisibility(Astro.request, env.DB, Astro.params.id),
+);
+---

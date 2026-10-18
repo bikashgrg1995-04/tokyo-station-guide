@@ -2,6 +2,7 @@ import {
   createLine,
   deleteLine,
   getLinesPaginated,
+  setLinePublished,
   updateLine,
   type Line,
 } from "../db/lines";
@@ -52,6 +53,7 @@ function readLineForm(formData: FormData): LineFormValues {
     description: readText(formData, "description"),
     nameJapanese: readText(formData, "name_japanese"),
     descriptionJapanese: readText(formData, "description_japanese"),
+    isPublished: formData.has("is_published") ? "1" : "",
   };
 }
 
@@ -123,6 +125,7 @@ export async function handleLineCreate(
       description: "",
       nameJapanese: "",
       descriptionJapanese: "",
+      isPublished: "",
     },
     errors: emptyLineErrors(),
     formError: "",
@@ -147,6 +150,7 @@ export async function handleLineCreate(
         color: values.color || null,
         nameJapanese: values.nameJapanese || null,
         descriptionJapanese: values.descriptionJapanese || null,
+        isPublished: values.isPublished === "1",
       });
     },
   );
@@ -171,6 +175,7 @@ export async function handleLineUpdate(
       description: line?.description ?? "",
       nameJapanese: line?.name_japanese ?? "",
       descriptionJapanese: line?.description_japanese ?? "",
+      isPublished: line?.is_published ? "1" : "",
     },
     errors: emptyLineErrors(),
     formError: "",
@@ -195,6 +200,7 @@ export async function handleLineUpdate(
         description: values.description || null,
         nameJapanese: values.nameJapanese || null,
         descriptionJapanese: values.descriptionJapanese || null,
+        isPublished: values.isPublished === "1",
       });
     },
   );
@@ -229,6 +235,40 @@ export async function handleLineDelete(
 
     return `${LIST_PATH}?error=delete`;
   }
+}
+
+/* ========================================
+   Website visibility (live / coming soon)
+======================================== */
+
+/**
+ * Switches a line between "browsable on the website" and "Coming soon" on
+ * POST. Returns the URL to go back to (the list the switch was used on).
+ */
+export async function handleLineVisibility(
+  request: Request,
+  db: D1Database,
+  rawId: string | undefined,
+): Promise<string> {
+  const id = Number(rawId);
+
+  if (!Number.isInteger(id) || id <= 0 || request.method !== "POST") {
+    return LIST_PATH;
+  }
+
+  const formData = await request.formData();
+
+  /* Only ever go back to the lines list (never an outside address). */
+  const back = String(formData.get("redirect") ?? "");
+  const backTo = back.startsWith(LIST_PATH) ? back : LIST_PATH;
+
+  try {
+    await setLinePublished(db, id, formData.get("published") === "1");
+  } catch (err) {
+    console.error("Failed to change line visibility:", err);
+  }
+
+  return backTo;
 }
 
 /* ========================================

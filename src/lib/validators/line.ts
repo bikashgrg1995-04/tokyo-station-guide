@@ -9,6 +9,8 @@ export interface LineFormValues {
   description: string;
   nameJapanese: string;
   descriptionJapanese: string;
+  /** "1" = browsable on the website, "" = "Coming soon". */
+  isPublished: string;
 }
 
 export type LineFormErrors = Record<keyof LineFormValues, string>;
@@ -23,6 +25,7 @@ export function emptyLineErrors(): LineFormErrors {
     description: "",
     nameJapanese: "",
     descriptionJapanese: "",
+    isPublished: "",
   };
 }
 

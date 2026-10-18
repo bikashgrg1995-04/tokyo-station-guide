@@ -191,3 +191,7 @@ UPDATE lines SET name_japanese = '山手線'   WHERE slug = 'yamanote-line'    A
 UPDATE lines SET name_japanese = '銀座線'   WHERE slug = 'ginza-line'       AND name_japanese IS NULL;
 UPDATE lines SET name_japanese = '副都心線' WHERE slug = 'fukutoshin-line'  AND name_japanese IS NULL;
 UPDATE lines SET name_japanese = '京急本線' WHERE slug = 'keikyu-main-line' AND name_japanese IS NULL;
+
+-- Lines that are browsable on the website (the others show as "Coming soon").
+-- Admins change this from Admin > Lines; this only sets the starting point.
+UPDATE lines SET is_published = 1 WHERE slug = 'yamanote-line';

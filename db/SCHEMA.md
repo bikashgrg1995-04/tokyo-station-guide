@@ -83,6 +83,7 @@ labelled in the website's UI dictionary) and visitor suggestions.
 
 ## Known open items
 
+- `lines.is_published` (0023): 1 = the line is browsable on the website, 0 = only listed as "Coming soon" in the line picker. Switched per line in Admin > Lines.
 - `lines.show_on_map` exists and is seeded, but no code reads or writes it. The 0001 comment
   says it controls map/dialog visibility. Either wire it up or drop the column.
 - `station_exits.station_id` duplicates what `floor_id` already implies. Nothing prevents an

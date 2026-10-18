@@ -48,6 +48,7 @@ const {
   description,
   nameJapanese,
   descriptionJapanese,
+  isPublished,
 } = form.values;
 const { errors, formError } = form;
 
@@ -480,6 +481,30 @@ const admin = await Astro.session?.get<{
                               </small>
                             )
                           }
+                        </div>
+
+                        <!-- Website visibility -->
+                        <div class="admin-form-group">
+                          <div class="admin-line-visibility">
+                            <div class="admin-line-visibility-copy">
+                              <span class="admin-line-visibility-title">Show on website</span>
+                              <small>
+                                On: visitors can open this line and its stations.
+                                Off: it is listed in the line picker as “Coming soon”.
+                              </small>
+                            </div>
+
+                            <label class="admin-switch" for="is_published">
+                              <input
+                                id="is_published"
+                                name="is_published"
+                                type="checkbox"
+                                checked={isPublished === "1"}
+                                aria-label="Show this line on the website"
+                              />
+                              <span class="admin-switch-slider"></span>
+                            </label>
+                          </div>
                         </div>
 
                         <!-- Actions -->
