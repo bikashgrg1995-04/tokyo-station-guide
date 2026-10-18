@@ -101,6 +101,20 @@ function touchDistance(t) {
 
 export function initViewControls() {
   /*
+   * iOS Safari zooms the whole page on pinch (gesture events) even with
+   * touch-action set. Block it everywhere so only the map zoom applies.
+   */
+  ["gesturestart", "gesturechange", "gestureend"].forEach(function (name) {
+    document.addEventListener(
+      name,
+      function (e) {
+        e.preventDefault();
+      },
+      { passive: false },
+    );
+  });
+
+  /*
    * Mouse wheel zoom.
    */
   $("#stage").addEventListener(

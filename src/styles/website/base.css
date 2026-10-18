@@ -7,6 +7,16 @@ body {
   height: 100%;
 }
 
+/* iOS Safari: no double-tap page zoom, no rubber-band, no grey tap flash.
+   (Android / desktop already behave this way.) */
+html,
+body {
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* phones: follow the visible area as the browser toolbar shows/hides */
 body {
   height: 100dvh;
@@ -51,6 +61,9 @@ a:focus-visible {
 #stage {
   cursor: default;
   touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 #stage.is-panning {

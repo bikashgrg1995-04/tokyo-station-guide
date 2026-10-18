@@ -448,9 +448,15 @@ export function moveTrain() {
     return;
   }
 
-  var t0 = performance.now();
+  /* Start the clock on the first animation frame: Safari's frame timestamp
+     is not always on the same clock as performance.now(). */
+  var t0 = null;
 
   function step(now) {
+    if (t0 === null) {
+      t0 = now;
+    }
+
     var k = Math.min(1, (now - t0) / dur);
 
     var e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
