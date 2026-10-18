@@ -26,10 +26,7 @@ const all = await getTransitMapData(db);
 
 /* Published lines are browsable; the rest show as "Coming soon"
    (switched per line in Admin > Lines). */
-const lines = all.lines.filter(
-  (line) =>
-    line.published && (all.stationsByLine[String(line.id)]?.length ?? 0) > 0,
-);
+const lines = all.lines.filter((line) => line.published);
 const readyIds = new Set(lines.map((line) => String(line.id)));
 const readyNames = new Set(lines.map((line) => line.name));
 
