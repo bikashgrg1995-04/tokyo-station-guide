@@ -19,10 +19,10 @@
   justify-items: center;
   gap: 0;
   width: min(430px, 100%);
-  padding: 10px 10px 11px;
+  padding: 9px 9px 10px;
   background: var(--surface);
   border: 1px solid var(--edge);
-  border-radius: 26px;
+  border-radius: 22px;
   box-shadow:
     0 1px 2px rgba(20, 30, 50, 0.05),
     0 16px 36px -10px rgba(20, 30, 50, 0.32);
@@ -33,14 +33,14 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 30px;
-  padding: 0 11px 0 12px;
+  height: 26px;
+  padding: 0 10px 0 11px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--line) 12%, var(--surface));
   color: var(--ink);
   font-weight: 500;
-  font-size: 12px;
-  line-height: 30px;
+  font-size: 11px;
+  line-height: 26px;
   white-space: nowrap;
   transition: background 0.15s ease;
 }
@@ -48,14 +48,14 @@
   background: color-mix(in srgb, var(--line) 22%, var(--surface));
 }
 .line-pill svg {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   color: var(--muted);
   stroke-width: 2.4;
 }
 .dot {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--line);
   display: inline-block;
@@ -74,14 +74,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  height: 38px;
-  padding: 0 12px;
+  gap: 6px;
+  height: 33px;
+  padding: 0 11px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--line) 10%, var(--surface));
   color: var(--ink);
-  font-size: 12px;
-  line-height: 38px;
+  font-size: 11px;
+  line-height: 33px;
   font-weight: 500;
   white-space: nowrap;
   transition: background 0.15s ease;
@@ -94,14 +94,14 @@
 }
 .board-action svg {
   flex: none;
-  width: 21px;
-  height: 21px;
+  width: 18px;
+  height: 18px;
   color: var(--line);
   stroke-width: 1.9;
 }
 .board-action svg.chev {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   color: var(--ink);
   stroke-width: 2.6;
 }
@@ -136,13 +136,13 @@
 }
 /* Station number: outlined capsule */
 .code {
-  height: 22px;
-  padding: 0 11px;
+  height: 19px;
+  padding: 0 9px;
   border-radius: 999px;
   border: 1px solid var(--line);
   color: var(--line);
-  font-size: 12px;
-  line-height: 20px;
+  font-size: 10.5px;
+  line-height: 17px;
   font-weight: 700;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -152,14 +152,14 @@
 }
 /* Station name: big, heavy, airy sans (like the reference sign) */
 .current strong {
-  max-width: 190px;
+  max-width: 170px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: "Noto Sans JP", "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic",
     system-ui, sans-serif;
-  font-size: 19px;
-  line-height: 26px;
+  font-size: 16px;
+  line-height: 22px;
   font-weight: 800;
   letter-spacing: 0.05em;
   text-indent: 0.05em;
@@ -170,8 +170,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 9.5px;
-  line-height: 13px;
+  font-size: 8.5px;
+  line-height: 12px;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-indent: 0.16em;
@@ -185,26 +185,26 @@
   grid-template-columns: 1fr 1px 1fr;
   align-items: center;
   width: 100%;
-  height: 56px;
-  margin-top: 6px;
+  height: 50px;
+  margin-top: 5px;
   padding: 0 4px;
-  border-radius: 20px;
+  border-radius: 18px;
   background: var(--line);
   color: #fff;
 }
 .board-divider {
   width: 1px;
-  height: 40px;
+  height: 34px;
   background: rgba(255, 255, 255, 0.5);
 }
 .side {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 48px;
+  gap: 7px;
+  height: 42px;
   padding: 0 6px;
-  border-radius: 14px;
+  border-radius: 13px;
   color: #fff;
   transition: background 0.15s ease;
 }
@@ -226,8 +226,8 @@
 }
 .side .arrow {
   flex: none;
-  width: 16px;
-  height: 22px;
+  width: 14px;
+  height: 20px;
   stroke-width: 2;
 }
 .side-text {
@@ -243,14 +243,14 @@
 .side-text b {
   font-family: "Noto Sans JP", "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic",
     system-ui, sans-serif;
-  font-size: 15px;
-  line-height: 20px;
+  font-size: 13px;
+  line-height: 18px;
   font-weight: 700;
   letter-spacing: 0.03em;
 }
 .side-text small {
-  font-size: 9.5px;
-  line-height: 13px;
+  font-size: 8.5px;
+  line-height: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: rgba(255, 255, 255, 0.85);
@@ -260,9 +260,9 @@
 /* Station number sign: line letters over the number */
 .badge {
   flex: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -273,8 +273,8 @@
 .badge small,
 .badge b {
   display: block;
-  font-size: 12.5px;
-  line-height: 14px;
+  font-size: 11px;
+  line-height: 12.5px;
   font-weight: 800;
   letter-spacing: 0.02em;
 }

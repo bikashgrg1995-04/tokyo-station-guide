@@ -3,7 +3,7 @@
    ========================================================================== */
 @media (max-width: 560px) {
   :root {
-    --map-bottom: 202px;
+    --map-bottom: 180px;
   }
   .topbar {
     inset: calc(6px + env(safe-area-inset-top, 0px))
