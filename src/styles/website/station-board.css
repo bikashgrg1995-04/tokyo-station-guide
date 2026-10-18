@@ -158,11 +158,11 @@
   white-space: nowrap;
   font-family: "Noto Sans JP", "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic",
     system-ui, sans-serif;
-  font-size: 32px;
-  line-height: 40px;
+  font-size: 24px;
+  line-height: 32px;
   font-weight: 800;
-  letter-spacing: 0.06em;
-  text-indent: 0.06em;
+  letter-spacing: 0.05em;
+  text-indent: 0.05em;
   color: var(--ink);
 }
 .cur-en {
@@ -170,11 +170,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11.5px;
-  line-height: 16px;
+  font-size: 10.5px;
+  line-height: 15px;
   font-weight: 600;
-  letter-spacing: 0.2em;
-  text-indent: 0.2em;
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
   color: var(--muted);
   text-transform: uppercase;
 }
