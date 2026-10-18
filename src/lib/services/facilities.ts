@@ -46,6 +46,7 @@ export interface FacilityFormResult {
 function readFacilityForm(formData: FormData): FacilityFormValues {
   return {
     name: readText(formData, "name"),
+    nameJapanese: readText(formData, "name_japanese"),
     slug: readText(formData, "slug"),
     icon: readText(formData, "icon"),
     sortOrder: readText(formData, "sort_order"),
@@ -241,6 +242,7 @@ export async function handleFacilityCreate(
     redirectTo: null,
     values: {
       name: "",
+      nameJapanese: "",
       slug: "",
       icon: "",
       sortOrder: "0",
@@ -262,6 +264,7 @@ export async function handleFacilityCreate(
     async (values, icon, iconDark) => {
       await createFacility(db, {
         name: values.name,
+        nameJapanese: values.nameJapanese || null,
         slug: values.slug,
         icon,
         iconDark,
@@ -282,6 +285,7 @@ export async function handleFacilityUpdate(
     redirectTo: null,
     values: {
       name: facility?.name ?? "",
+      nameJapanese: facility?.name_japanese ?? "",
       slug: facility?.slug ?? "",
       icon: facility?.icon ?? "",
       sortOrder: String(facility?.sort_order ?? 0),
@@ -303,6 +307,7 @@ export async function handleFacilityUpdate(
     async (values, icon, iconDark) => {
       await updateFacility(db, id, {
         name: values.name,
+        nameJapanese: values.nameJapanese || null,
         slug: values.slug,
         icon,
         iconDark,

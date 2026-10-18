@@ -58,9 +58,17 @@ function openModal(edit = false, button?: HTMLButtonElement): void {
   // form.reset() restores the server-rendered values, so set them explicitly.
   setField("floor_id", edit ? (button?.dataset.floorId ?? "") : "");
   setField("name", edit ? (button?.dataset.name ?? "") : "");
+  setField(
+    "name_japanese",
+    edit ? (button?.dataset.nameJapanese ?? "") : "",
+  );
   setField("code", edit ? (button?.dataset.code ?? "") : "");
   setField("color_code", edit ? (button?.dataset.colorCode ?? "") : "");
   setField("description", edit ? (button?.dataset.description ?? "") : "");
+  setField(
+    "description_japanese",
+    edit ? (button?.dataset.descriptionJapanese ?? "") : "",
+  );
   setField(
     "sort_order",
     edit

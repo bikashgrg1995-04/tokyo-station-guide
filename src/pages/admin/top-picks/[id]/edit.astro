@@ -45,10 +45,13 @@ const {
   slug,
   category,
   description,
+  descriptionJapanese,
   imageUrl,
   entryFee,
+  entryFeeJapanese,
   mapUrl,
   notes,
+  notesJapanese,
   openingHours,
 } = form.values;
 
@@ -214,6 +217,25 @@ const admin = await Astro.session?.get<{
                     )}
                   </div>
 
+                  <div class="admin-form-group">
+                    <label for="description_japanese">Japanese Description</label>
+                    <textarea
+                      id="description_japanese"
+                      name="description_japanese"
+                      lang="ja"
+                      rows="5"
+                      maxlength="1000"
+                      placeholder="東京の有名なランドマーク..."
+                      aria-invalid={errors.descriptionJapanese ? "true" : "false"}
+                      aria-describedby={errors.descriptionJapanese ? "description-japanese-error" : undefined}
+                    >{descriptionJapanese}</textarea>
+                    {errors.descriptionJapanese ? (
+                      <small id="description-japanese-error" class="admin-form-error">{errors.descriptionJapanese}</small>
+                    ) : (
+                      <small>Optional. Shown on the website in Japanese mode. Maximum 1000 characters.</small>
+                    )}
+                  </div>
+
                   <TopPickImageField saved={imageUrl} error={errors.imageUrl} />
 
                   <hr />
@@ -239,6 +261,26 @@ const admin = await Astro.session?.get<{
                       <small id="entry-fee-error" class="admin-form-error">{errors.entryFee}</small>
                     ) : (
                       <small>Optional. Include currency and different ticket prices if needed.</small>
+                    )}
+                  </div>
+
+                  <div class="admin-form-group full-width">
+                    <label for="entry_fee_japanese">Japanese Entry Fee</label>
+                    <input
+                      id="entry_fee_japanese"
+                      name="entry_fee_japanese"
+                      type="text"
+                      lang="ja"
+                      maxlength="150"
+                      value={entryFeeJapanese}
+                      placeholder="無料 / 大人 ¥1,200"
+                      aria-invalid={errors.entryFeeJapanese ? "true" : "false"}
+                      aria-describedby={errors.entryFeeJapanese ? "entry-fee-japanese-error" : undefined}
+                    />
+                    {errors.entryFeeJapanese ? (
+                      <small id="entry-fee-japanese-error" class="admin-form-error">{errors.entryFeeJapanese}</small>
+                    ) : (
+                      <small>Optional. Maximum 150 characters.</small>
                     )}
                   </div>
 
@@ -274,6 +316,25 @@ const admin = await Astro.session?.get<{
                     >{notes}</textarea>
                     {errors.notes ? (
                       <small id="notes-error" class="admin-form-error">{errors.notes}</small>
+                    ) : (
+                      <small>Optional. Maximum 150 characters.</small>
+                    )}
+                  </div>
+
+                  <div class="admin-form-group">
+                    <label for="notes_japanese">Japanese Notes</label>
+                    <textarea
+                      id="notes_japanese"
+                      name="notes_japanese"
+                      lang="ja"
+                      rows="4"
+                      maxlength="150"
+                      placeholder="来訪者向けの情報、チケットのヒント、アクセスの注意点など..."
+                      aria-invalid={errors.notesJapanese ? "true" : "false"}
+                      aria-describedby={errors.notesJapanese ? "notes-japanese-error" : undefined}
+                    >{notesJapanese}</textarea>
+                    {errors.notesJapanese ? (
+                      <small id="notes-japanese-error" class="admin-form-error">{errors.notesJapanese}</small>
                     ) : (
                       <small>Optional. Maximum 150 characters.</small>
                     )}

@@ -33,7 +33,9 @@ function emptyValues(): StationPlatformFormValues {
     lineId: "",
     platformNumber: "",
     destinations: "",
+    destinationsJapanese: "",
     notes: "",
+    notesJapanese: "",
     sortOrder: "0",
   };
 }
@@ -43,7 +45,9 @@ function readPlatformForm(formData: FormData): StationPlatformFormValues {
     lineId: readText(formData, "line_id"),
     platformNumber: readText(formData, "platform_number"),
     destinations: readText(formData, "destinations"),
+    destinationsJapanese: readText(formData, "destinations_japanese"),
     notes: readText(formData, "notes"),
+    notesJapanese: readText(formData, "notes_japanese"),
     sortOrder: readText(formData, "sort_order"),
   };
 }
@@ -55,7 +59,9 @@ function toPlatformInput(
     lineId: values.lineId ? Number(values.lineId) : null,
     platformNumber: values.platformNumber,
     destinations: values.destinations || null,
+    destinationsJapanese: values.destinationsJapanese || null,
     notes: values.notes || null,
+    notesJapanese: values.notesJapanese || null,
     sortOrder: Number(values.sortOrder),
   };
 }
@@ -93,7 +99,9 @@ export async function handleStationPlatforms(
         lineId: platform.line_id === null ? "" : String(platform.line_id),
         platformNumber: platform.platform_number,
         destinations: platform.destinations ?? "",
+        destinationsJapanese: platform.destinations_japanese ?? "",
         notes: platform.notes ?? "",
+        notesJapanese: platform.notes_japanese ?? "",
         sortOrder: String(platform.sort_order),
       };
     } else {

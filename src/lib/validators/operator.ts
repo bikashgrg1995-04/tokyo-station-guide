@@ -3,18 +3,34 @@ export interface OperatorFormValues {
   slug: string;
   description: string;
   websiteUrl: string;
+  nameJapanese: string;
+  descriptionJapanese: string;
 }
 
 export type OperatorFormErrors = Record<keyof OperatorFormValues, string>;
 
 export function emptyOperatorErrors(): OperatorFormErrors {
-  return { name: "", slug: "", description: "", websiteUrl: "" };
+  return {
+    name: "",
+    slug: "",
+    description: "",
+    websiteUrl: "",
+    nameJapanese: "",
+    descriptionJapanese: "",
+  };
 }
 
 export function validateOperatorForm(
   values: OperatorFormValues,
 ): OperatorFormErrors {
-  const { name, slug, description, websiteUrl } = values;
+  const {
+    name,
+    slug,
+    description,
+    websiteUrl,
+    nameJapanese,
+    descriptionJapanese,
+  } = values;
   const errors = emptyOperatorErrors();
 
   if (!name) {
@@ -34,6 +50,15 @@ export function validateOperatorForm(
 
   if (description.length > 1000) {
     errors.description = "Description must be 1000 characters or less.";
+  }
+
+  if (nameJapanese.length > 150) {
+    errors.nameJapanese = "Japanese name must be 150 characters or less.";
+  }
+
+  if (descriptionJapanese.length > 1000) {
+    errors.descriptionJapanese =
+      "Japanese description must be 1000 characters or less.";
   }
 
   if (websiteUrl) {

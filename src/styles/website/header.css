@@ -22,6 +22,43 @@
   justify-self: end;
 }
 
+/* Right corner: language switch + search button */
+.top-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* EN / 日本語 — the one language switch for the whole site */
+.lang-switch {
+  display: flex;
+  padding: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow);
+}
+.lang-switch button {
+  min-width: 34px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.lang-switch button:hover {
+  color: var(--ink);
+}
+.lang-switch button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--surface);
+}
+
 /* Centered logo — no pill, just the mark */
 .brand {
   display: grid;

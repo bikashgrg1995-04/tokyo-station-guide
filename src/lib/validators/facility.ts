@@ -1,6 +1,7 @@
 
 export interface FacilityFormValues {
   name: string;
+  nameJapanese: string;
   slug: string;
   icon: string;
   sortOrder: string;
@@ -14,6 +15,7 @@ export type FacilityFormErrors = Record<
 export function emptyFacilityErrors(): FacilityFormErrors {
   return {
     name: "",
+    nameJapanese: "",
     slug: "",
     icon: "",
     iconFile: "",
@@ -25,13 +27,17 @@ export function emptyFacilityErrors(): FacilityFormErrors {
 export function validateFacilityForm(
   values: FacilityFormValues,
 ): FacilityFormErrors {
-  const { name, slug, icon, sortOrder } = values;
+  const { name, nameJapanese, slug, icon, sortOrder } = values;
   const errors = emptyFacilityErrors();
 
   if (!name) {
     errors.name = "Name is required.";
   } else if (name.length > 150) {
     errors.name = "Name must be 150 characters or less.";
+  }
+
+  if (nameJapanese.length > 150) {
+    errors.nameJapanese = "Japanese name must be 150 characters or less.";
   }
 
   if (!slug) {

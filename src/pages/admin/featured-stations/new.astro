@@ -29,6 +29,7 @@ const {
   stationId: stationIdValue,
   imageUrl,
   description,
+  descriptionJapanese,
   sortOrder: sortOrderValue,
   isActive,
 } = form.values;
@@ -240,6 +241,30 @@ const error = form.formError;
                       )
                     }
 
+                  </div>
+
+                  <!-- Japanese Description -->
+                  <div class="admin-form-group full-width">
+                    <label for="description_japanese">Japanese Description</label>
+
+                    <textarea
+                      id="description_japanese"
+                      name="description_japanese"
+                      lang="ja"
+                      rows="4"
+                      maxlength="200"
+                      placeholder="例：スクランブル交差点"
+                      aria-invalid={errors.descriptionJapanese ? "true" : "false"}
+                      aria-describedby={errors.descriptionJapanese ? "description_japanese-error" : undefined}>{descriptionJapanese}</textarea
+                    >
+
+                    {
+                      errors.descriptionJapanese && (
+                        <small id="description_japanese-error" class="admin-form-error">
+                          {errors.descriptionJapanese}
+                        </small>
+                      )
+                    }
                   </div>
 
                   <!-- Sort Order -->

@@ -32,10 +32,13 @@ export interface TopPick {
   slug: string;
   category: string;
   description: string | null;
+  description_japanese: string | null;
   image_url: string | null;
   entry_fee: string | null;
+  entry_fee_japanese: string | null;
   map_url: string | null;
   notes: string | null;
+  notes_japanese: string | null;
   opening_hours?: TopPickOpeningHour[];
 }
 
@@ -46,10 +49,13 @@ export interface StationTopPick {
   slug: string;
   category: string;
   description: string | null;
+  description_japanese: string | null;
   image_url: string | null;
   entry_fee: string | null;
+  entry_fee_japanese: string | null;
   map_url: string | null;
   notes: string | null;
+  notes_japanese: string | null;
   sort_order: number;
   walking_minutes: number | null;
   floor_id: number | null;
@@ -67,10 +73,13 @@ export interface TopPickInput {
   slug: string;
   category: TopPickCategory;
   description?: string | null;
+  descriptionJapanese?: string | null;
   imageUrl?: string | null;
   entryFee?: string | null;
+  entryFeeJapanese?: string | null;
   mapUrl?: string | null;
   notes?: string | null;
+  notesJapanese?: string | null;
   openingHours?: TopPickOpeningHour[];
 }
 
@@ -208,10 +217,13 @@ export async function getTopPicks(
           slug,
           category,
           description,
+          description_japanese,
           image_url,
           entry_fee,
+          entry_fee_japanese,
           map_url,
-          notes
+          notes,
+          notes_japanese
         FROM top_picks
         ORDER BY name ASC
       `,
@@ -281,10 +293,13 @@ export async function getTopPicksPaginated(
           slug,
           category,
           description,
+          description_japanese,
           image_url,
           entry_fee,
+          entry_fee_japanese,
           map_url,
-          notes
+          notes,
+          notes_japanese
         FROM top_picks
         WHERE
           ? = ''
@@ -340,10 +355,13 @@ export async function getTopPickById(
           slug,
           category,
           description,
+          description_japanese,
           image_url,
           entry_fee,
+          entry_fee_japanese,
           map_url,
-          notes
+          notes,
+          notes_japanese
         FROM top_picks
         WHERE id = ?
         LIMIT 1
@@ -381,12 +399,15 @@ export async function createTopPick(
           slug,
           category,
           description,
+          description_japanese,
           image_url,
           entry_fee,
+          entry_fee_japanese,
           map_url,
-          notes
+          notes,
+          notes_japanese
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
     )
     .bind(
@@ -395,10 +416,13 @@ export async function createTopPick(
       input.slug.trim(),
       input.category,
       input.description?.trim() || null,
+      input.descriptionJapanese?.trim() || null,
       input.imageUrl?.trim() || null,
       input.entryFee?.trim() || null,
+      input.entryFeeJapanese?.trim() || null,
       input.mapUrl?.trim() || null,
       input.notes?.trim() || null,
+      input.notesJapanese?.trim() || null,
     )
     .run();
 
@@ -434,10 +458,13 @@ export async function updateTopPick(
           slug = ?,
           category = ?,
           description = ?,
+          description_japanese = ?,
           image_url = ?,
           entry_fee = ?,
+          entry_fee_japanese = ?,
           map_url = ?,
-          notes = ?
+          notes = ?,
+          notes_japanese = ?
         WHERE id = ?
       `,
     )
@@ -447,10 +474,13 @@ export async function updateTopPick(
       input.slug.trim(),
       input.category,
       input.description?.trim() || null,
+      input.descriptionJapanese?.trim() || null,
       input.imageUrl?.trim() || null,
       input.entryFee?.trim() || null,
+      input.entryFeeJapanese?.trim() || null,
       input.mapUrl?.trim() || null,
       input.notes?.trim() || null,
+      input.notesJapanese?.trim() || null,
       id,
     )
     .run();
@@ -532,10 +562,13 @@ export async function getStationTopPicks(
           tp.slug,
           tp.category,
           tp.description,
+          tp.description_japanese,
           tp.image_url,
           tp.entry_fee,
+          tp.entry_fee_japanese,
           tp.map_url,
           tp.notes,
+          tp.notes_japanese,
           stp.sort_order,
           stp.walking_minutes,
           stp.floor_id,
@@ -580,10 +613,13 @@ export async function getAvailableTopPicksForStation(
           tp.slug,
           tp.category,
           tp.description,
+          tp.description_japanese,
           tp.image_url,
           tp.entry_fee,
+          tp.entry_fee_japanese,
           tp.map_url,
-          tp.notes
+          tp.notes,
+          tp.notes_japanese
         FROM top_picks tp
         WHERE NOT EXISTS (
           SELECT 1

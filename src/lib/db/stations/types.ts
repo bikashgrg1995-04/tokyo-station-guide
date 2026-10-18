@@ -17,7 +17,9 @@ export interface Station {
   slug: string;
   location_url: string | null;
   description: string | null;
+  description_japanese: string | null;
   about: string | null;
+  about_japanese: string | null;
 
   /*
    * Compatibility fields.
@@ -68,7 +70,9 @@ export interface StationAdminListItem {
  * Used by the admin edit page.
  */
 export interface StationEditItem extends StationAdminListItem {
+  description_japanese: string | null;
   about: string | null;
+  about_japanese: string | null;
   facilities: string | null;
   top_picks: string | null;
   connections: string | null;
@@ -82,6 +86,7 @@ export interface StationFacilityInput {
   /** Inside or outside the station. Defaults to inside. */
   locationType?: "inside" | "outside";
   note?: string | null;
+  noteJapanese?: string | null;
   exitIds?: number[];
 }
 
@@ -91,7 +96,9 @@ export interface CreateStationInput {
   slug: string;
   locationUrl?: string | null;
   description?: string | null;
+  descriptionJapanese?: string | null;
   about?: string | null;
+  aboutJapanese?: string | null;
   facilities?: string | null;
   /** Floor-wise facility entries to save. */
   stationFacilities?: StationFacilityInput[];
@@ -111,7 +118,9 @@ export interface UpdateStationInput {
   slug: string;
   locationUrl?: string | null;
   description?: string | null;
+  descriptionJapanese?: string | null;
   about?: string | null;
+  aboutJapanese?: string | null;
   facilities?: string | null;
   /** Floor-wise facility entries to save. */
   stationFacilities?: StationFacilityInput[];

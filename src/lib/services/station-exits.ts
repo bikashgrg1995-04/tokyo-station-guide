@@ -38,9 +38,11 @@ function emptyValues(nextSortOrder: number): StationExitFormValues {
   return {
     floorId: "",
     name: "",
+    nameJapanese: "",
     code: "",
     colorCode: "",
     description: "",
+    descriptionJapanese: "",
     sortOrder: String(nextSortOrder),
   };
 }
@@ -49,9 +51,11 @@ function readExitForm(formData: FormData): StationExitFormValues {
   return {
     floorId: readText(formData, "floor_id"),
     name: readText(formData, "name"),
+    nameJapanese: readText(formData, "name_japanese"),
     code: readText(formData, "code"),
     colorCode: readText(formData, "color_code").toUpperCase(),
     description: readText(formData, "description"),
+    descriptionJapanese: readText(formData, "description_japanese"),
     sortOrder: readText(formData, "sort_order"),
   };
 }
@@ -60,8 +64,10 @@ function toExitInput(values: StationExitFormValues): StationExitInput {
   return {
     floorId: Number(values.floorId),
     name: values.name.trim(),
+    nameJapanese: values.nameJapanese.trim() || null,
     code: values.code.trim() || null,
     description: values.description.trim() || null,
+    descriptionJapanese: values.descriptionJapanese.trim() || null,
     colorCode: values.colorCode.trim() || null,
     sortOrder: Number(values.sortOrder),
   };
@@ -110,9 +116,11 @@ export async function handleStationExits(
       result.values = {
         floorId: String(exit.floor_id),
         name: exit.name,
+        nameJapanese: exit.name_japanese ?? "",
         code: exit.code ?? "",
         colorCode: exit.color_code ?? "",
         description: exit.description ?? "",
+        descriptionJapanese: exit.description_japanese ?? "",
         sortOrder: String(exit.sort_order),
       };
     } else {

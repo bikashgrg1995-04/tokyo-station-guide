@@ -7,10 +7,13 @@ export interface TopPickFormValues {
   slug: string;
   category: string;
   description: string;
+  descriptionJapanese: string;
   imageUrl: string;
   entryFee: string;
+  entryFeeJapanese: string;
   mapUrl: string;
   notes: string;
+  notesJapanese: string;
   openingHours: TopPickOpeningHour[];
 }
 
@@ -39,10 +42,13 @@ export function emptyTopPickErrors(): TopPickFormErrors {
     slug: "",
     category: "",
     description: "",
+    descriptionJapanese: "",
     imageUrl: "",
     entryFee: "",
+    entryFeeJapanese: "",
     mapUrl: "",
     notes: "",
+    notesJapanese: "",
     openingHours: "",
   };
 }
@@ -87,8 +93,18 @@ export function validateTopPickForm(
     "Description must be 1000 characters or less.";
 }
 
+  if (values.descriptionJapanese.length > 1000) {
+    errors.descriptionJapanese =
+      "Japanese description must be 1000 characters or less.";
+  }
+
   if (values.entryFee.trim().length > 150) {
     errors.entryFee = "Entry fee must be 150 characters or less.";
+  }
+
+  if (values.entryFeeJapanese.trim().length > 150) {
+    errors.entryFeeJapanese =
+      "Japanese entry fee must be 150 characters or less.";
   }
 
   if (values.mapUrl.trim()) {
@@ -110,6 +126,10 @@ export function validateTopPickForm(
 
   if (values.notes.length > 150) {
     errors.notes = "Notes must be 150 characters or less.";
+  }
+
+  if (values.notesJapanese.length > 150) {
+    errors.notesJapanese = "Japanese notes must be 150 characters or less.";
   }
 
   // The photo is never typed in: it is an uploaded R2 key (or an older

@@ -1,6 +1,7 @@
 // Draws the map (track, stations, labels) into the SVG.
 
 import { line, list } from "./current-line.js";
+import { pick } from "./i18n.js";
 import { go } from "./navigation.js";
 import { state } from "./state.js";
 import { buildTrack } from "./track-geometry.js";
@@ -128,7 +129,7 @@ export function drawMap() {
   st.forEach(function (stn, i) {
     var p = state.track.pointAt(state.track.sOf(i));
 
-    probe.textContent = stn.name;
+    probe.textContent = pick(stn.name, stn.jp);
 
     var bb = probe.getBBox();
 
@@ -198,7 +199,7 @@ export function drawMap() {
         "data-i": i,
         tabindex: 0,
         role: "button",
-        "aria-label": stn.name,
+        "aria-label": pick(stn.name, stn.jp),
       },
       labels,
     );
@@ -277,7 +278,7 @@ export function drawMap() {
       g,
     );
 
-    text.textContent = stn.name;
+    text.textContent = pick(stn.name, stn.jp);
 
     /*
      * Existing map station click.

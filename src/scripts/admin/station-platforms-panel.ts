@@ -41,8 +41,10 @@ function openModal(edit = false, button?: HTMLButtonElement) {
     const values: Record<string, string | undefined> = {
       platform_number: button.dataset.number,
       destinations: button.dataset.destinations,
+      destinations_japanese: button.dataset.destinationsJapanese,
       line_id: button.dataset.lineId,
       notes: button.dataset.notes,
+      notes_japanese: button.dataset.notesJapanese,
       sort_order: button.dataset.sortOrder,
     };
 

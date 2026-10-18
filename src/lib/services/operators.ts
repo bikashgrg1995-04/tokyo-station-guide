@@ -40,6 +40,8 @@ function readOperatorForm(formData: FormData): OperatorFormValues {
     slug: readText(formData, "slug"),
     description: readText(formData, "description"),
     websiteUrl: readText(formData, "website_url"),
+    nameJapanese: readText(formData, "name_japanese"),
+    descriptionJapanese: readText(formData, "description_japanese"),
   };
 }
 
@@ -100,7 +102,14 @@ export async function handleOperatorCreate(
 ): Promise<OperatorFormResult> {
   const result: OperatorFormResult = {
     redirectTo: null,
-    values: { name: "", slug: "", description: "", websiteUrl: "" },
+    values: {
+      name: "",
+      slug: "",
+      description: "",
+      websiteUrl: "",
+      nameJapanese: "",
+      descriptionJapanese: "",
+    },
     errors: emptyOperatorErrors(),
     formError: "",
   };
@@ -115,6 +124,8 @@ export async function handleOperatorCreate(
       slug: values.slug,
       description: values.description || null,
       websiteUrl: values.websiteUrl || null,
+      nameJapanese: values.nameJapanese || null,
+      descriptionJapanese: values.descriptionJapanese || null,
     });
   });
 }
@@ -133,6 +144,8 @@ export async function handleOperatorUpdate(
       slug: operator?.slug ?? "",
       description: operator?.description ?? "",
       websiteUrl: operator?.website_url ?? "",
+      nameJapanese: operator?.name_japanese ?? "",
+      descriptionJapanese: operator?.description_japanese ?? "",
     },
     errors: emptyOperatorErrors(),
     formError: "",
@@ -148,6 +161,8 @@ export async function handleOperatorUpdate(
       slug: values.slug,
       description: values.description || null,
       websiteUrl: values.websiteUrl || null,
+      nameJapanese: values.nameJapanese || null,
+      descriptionJapanese: values.descriptionJapanese || null,
     });
   });
 }

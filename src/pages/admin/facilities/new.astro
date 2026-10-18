@@ -21,7 +21,7 @@ if (form.redirectTo) {
   return Astro.redirect(form.redirectTo);
 }
 
-const { name, slug, icon, sortOrder } = form.values;
+const { name, nameJapanese, slug, icon, sortOrder } = form.values;
 const { errors, formError } = form;
 ---
 
@@ -90,6 +90,31 @@ const { errors, formError } = form;
                   {errors.name}
                 </small>
               )}
+            </div>
+
+            <!-- Japanese Name -->
+            <div class="admin-form-group">
+              <label for="name_japanese">Japanese Name</label>
+
+              <input
+                id="name_japanese"
+                name="name_japanese"
+                type="text"
+                lang="ja"
+                maxlength="150"
+                value={nameJapanese}
+                placeholder="トイレ"
+                aria-invalid={errors.nameJapanese ? "true" : "false"}
+                aria-describedby={errors.nameJapanese ? "name_japanese-error" : undefined}
+              />
+
+              {
+                errors.nameJapanese && (
+                  <small id="name_japanese-error" class="admin-form-error">
+                    {errors.nameJapanese}
+                  </small>
+                )
+              }
             </div>
 
             <!-- Slug -->

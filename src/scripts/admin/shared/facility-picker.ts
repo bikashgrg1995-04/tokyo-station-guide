@@ -423,6 +423,17 @@ export function initializeFacilityPicker(): void {
 
     noteCell.appendChild(noteInput);
 
+    const noteJapaneseInput = createInput("facility_entry_note_japanese", "", {
+      placeholder: "Japanese note (optional)",
+      maxLength: 150,
+      ariaLabel: `Japanese note for ${facilityName}`,
+    });
+
+    noteJapaneseInput.lang = "ja";
+    noteJapaneseInput.style.marginTop = "6px";
+
+    noteCell.appendChild(noteJapaneseInput);
+
     /* Actions */
 
     const actionsCell = document.createElement("td");

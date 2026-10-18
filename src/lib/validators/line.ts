@@ -7,6 +7,8 @@ export interface LineFormValues {
   code: string;
   color: string;
   description: string;
+  nameJapanese: string;
+  descriptionJapanese: string;
 }
 
 export type LineFormErrors = Record<keyof LineFormValues, string>;
@@ -19,6 +21,8 @@ export function emptyLineErrors(): LineFormErrors {
     code: "",
     color: "",
     description: "",
+    nameJapanese: "",
+    descriptionJapanese: "",
   };
 }
 
@@ -26,7 +30,16 @@ export function validateLineForm(
   values: LineFormValues,
   operators: Operator[],
 ): LineFormErrors {
-  const { operatorId, name, slug, code, color, description } = values;
+  const {
+    operatorId,
+    name,
+    slug,
+    code,
+    color,
+    description,
+    nameJapanese,
+    descriptionJapanese,
+  } = values;
   const errors = emptyLineErrors();
 
   const parsedOperatorId = Number(operatorId);
@@ -66,6 +79,15 @@ export function validateLineForm(
 
   if (description.length > 1000) {
     errors.description = "Description must be 1000 characters or less.";
+  }
+
+  if (nameJapanese.length > 150) {
+    errors.nameJapanese = "Japanese name must be 150 characters or less.";
+  }
+
+  if (descriptionJapanese.length > 1000) {
+    errors.descriptionJapanese =
+      "Japanese description must be 1000 characters or less.";
   }
 
   return errors;

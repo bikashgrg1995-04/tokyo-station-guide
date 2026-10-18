@@ -43,6 +43,27 @@ Delete rules: deleting a station cascades to all its rows in the tables above;
 deleting an operator is blocked while it has lines (`RESTRICT`);
 deleting a line sets `station_platforms.line_id` to NULL.
 
+## Japanese content (EN / 日本語 switch)
+
+The website has one language switch. Every visitor-facing text column has a nullable
+`*_japanese` twin; when the switch is on 日本語 the site shows it and **falls back to the
+English text when the Japanese one is empty**. Added in 0022 (and `name_japanese` earlier):
+
+| Table | Japanese columns |
+|---|---|
+| `operators`, `lines` | `name_japanese`, `description_japanese` |
+| `stations` | `name_japanese`, `description_japanese`, `about_japanese` |
+| `station_floors` | `name_japanese` |
+| `station_exits` | `name_japanese`, `description_japanese` |
+| `facilities` | `name_japanese` |
+| `station_floor_facilities` | `note_japanese` |
+| `station_platforms` | `destinations_japanese`, `notes_japanese` |
+| `top_picks` | `name_japanese`, `description_japanese`, `notes_japanese`, `entry_fee_japanese` |
+| `featured_stations` | `description_japanese` |
+
+Not translated on purpose: codes, colours, URLs, times, `top_picks.category` (fixed list,
+labelled in the website's UI dictionary) and visitor suggestions.
+
 ## Conventions
 
 - Timestamps are `TEXT` (`CURRENT_TIMESTAMP`, UTC). Booleans are `INTEGER` 0/1.

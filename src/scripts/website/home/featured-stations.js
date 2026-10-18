@@ -2,6 +2,7 @@
 
 import { featuredStations, searchable } from "./data.js";
 import { featuredHost, featuredSection } from "./dom.js";
+import { names, pick } from "./i18n.js";
 import { selectStationOnMap } from "./station-lookup.js";
 import { esc } from "./utils.js";
 
@@ -54,6 +55,13 @@ export function renderFeaturedStations() {
   featuredStations.forEach(function (station) {
     var a = document.createElement("a");
 
+    var pair = names(station.station_name, station.station_name_japanese);
+
+    var description = pick(
+      station.description,
+      station.description_japanese,
+    );
+
     a.className = "featured-station";
     a.href = "#";
     a.dataset.slug = station.station_slug || "";
@@ -66,14 +74,10 @@ export function renderFeaturedStations() {
       "</span>" +
       '<span class="featured-info">' +
       "<b>" +
-      esc(station.station_name) +
-      (station.station_name_japanese
-        ? " " + esc(station.station_name_japanese)
-        : "") +
+      esc(pair[0]) +
+      (pair[1] ? " " + esc(pair[1]) : "") +
       "</b>" +
-      (station.description
-        ? "<small>" + esc(station.description) + "</small>"
-        : "") +
+      (description ? "<small>" + esc(description) + "</small>" : "") +
       "</span>";
 
     a.addEventListener("click", function (e) {

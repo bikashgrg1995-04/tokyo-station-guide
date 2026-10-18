@@ -22,9 +22,17 @@ import StationSheetIcons from "./StationSheetIcons.astro";
           <span id="sheet-sub"></span>
         </div>
 
-        <div class="sheet-lang" role="group" aria-label="Station name language">
-          <button type="button" data-lang="en" aria-pressed="true">EN</button>
-          <button type="button" data-lang="jp" aria-pressed="false">日本語</button>
+        <!-- Same shared switch as the top bar: one language for the whole site. -->
+        <div
+          class="sheet-lang"
+          role="group"
+          aria-label="Language"
+          data-i18n-attr="aria-label:sheet.lang"
+        >
+          <button type="button" data-set-lang="en" aria-pressed="true">EN</button>
+          <button type="button" data-set-lang="jp" aria-pressed="false" lang="ja">
+            日本語
+          </button>
         </div>
 
         <button
@@ -32,6 +40,7 @@ import StationSheetIcons from "./StationSheetIcons.astro";
           id="sheet-close"
           type="button"
           aria-label="Close"
+          data-i18n-attr="aria-label:sheet.close"
         >
           ×
         </button>
@@ -49,12 +58,18 @@ import StationSheetIcons from "./StationSheetIcons.astro";
           type="button"
           aria-expanded="false"
           aria-controls="sheet-edit-form"
+          data-i18n="sheet.suggest"
         >
           Suggest an Edit
         </button>
       </div>
 
-      <div class="sheet-tabs" role="tablist" aria-label="Station details">
+      <div
+        class="sheet-tabs"
+        role="tablist"
+        aria-label="Station details"
+        data-i18n-attr="aria-label:sheet.details"
+      >
         <button
           type="button"
           role="tab"
@@ -62,6 +77,7 @@ import StationSheetIcons from "./StationSheetIcons.astro";
           data-tab="facilities"
           aria-selected="true"
           aria-controls="sheet-body"
+          data-i18n="sheet.tab.facilities"
         >
           At the station
         </button>
@@ -72,6 +88,7 @@ import StationSheetIcons from "./StationSheetIcons.astro";
           data-tab="platforms"
           aria-selected="false"
           aria-controls="sheet-body"
+          data-i18n="sheet.tab.platforms"
         >
           Platforms
         </button>
@@ -82,6 +99,7 @@ import StationSheetIcons from "./StationSheetIcons.astro";
           data-tab="picks"
           aria-selected="false"
           aria-controls="sheet-body"
+          data-i18n="sheet.tab.picks"
         >
           Top picks
         </button>
@@ -108,7 +126,9 @@ import StationSheetIcons from "./StationSheetIcons.astro";
         <input type="hidden" id="suggestion-line-id" name="lineId" />
 
         <div class="form-field">
-          <label for="suggestion-text">What would you like to suggest?</label>
+          <label for="suggestion-text" data-i18n="sug.label">
+            What would you like to suggest?
+          </label>
           <textarea
             id="suggestion-text"
             name="message"
@@ -117,6 +137,7 @@ import StationSheetIcons from "./StationSheetIcons.astro";
             maxlength="1000"
             required
             placeholder="Tell us what is wrong or missing, e.g. the coin lockers moved to the 2nd floor."
+            data-i18n-attr="placeholder:sug.placeholder"
           ></textarea>
         </div>
 

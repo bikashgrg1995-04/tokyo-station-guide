@@ -6,10 +6,13 @@ export interface Line {
   id: number;
   operator_id: number;
   operator_name: string;
+  operator_name_japanese: string | null;
   name: string;
+  name_japanese: string | null;
   slug: string;
   code: string | null;
   description: string | null;
+  description_japanese: string | null;
   color: string | null;
   created_at: string;
   updated_at: string;
@@ -22,6 +25,8 @@ export interface CreateLineInput {
   code?: string | null;
   description?: string | null;
   color?: string | null;
+  nameJapanese?: string | null;
+  descriptionJapanese?: string | null;
 }
 
 export interface UpdateLineInput {
@@ -31,6 +36,8 @@ export interface UpdateLineInput {
   code?: string | null;
   description?: string | null;
   color?: string | null;
+  nameJapanese?: string | null;
+  descriptionJapanese?: string | null;
 }
 
 export interface PaginatedLines {
@@ -56,10 +63,13 @@ export async function getLines(
           l.id,
           l.operator_id,
           o.name AS operator_name,
+          o.name_japanese AS operator_name_japanese,
           l.name,
+          l.name_japanese,
           l.slug,
           l.code,
           l.description,
+          l.description_japanese,
           l.color,
           l.created_at,
           l.updated_at
@@ -120,10 +130,12 @@ export async function getLinesPaginated(
           OR l.slug LIKE ?
           OR l.code LIKE ?
           OR o.name LIKE ?
+          OR l.name_japanese LIKE ?
       `,
     )
     .bind(
       search,
+      searchValue,
       searchValue,
       searchValue,
       searchValue,
@@ -159,10 +171,13 @@ export async function getLinesPaginated(
           l.id,
           l.operator_id,
           o.name AS operator_name,
+          o.name_japanese AS operator_name_japanese,
           l.name,
+          l.name_japanese,
           l.slug,
           l.code,
           l.description,
+          l.description_japanese,
           l.color,
           l.created_at,
           l.updated_at
@@ -175,12 +190,14 @@ export async function getLinesPaginated(
           OR l.slug LIKE ?
           OR l.code LIKE ?
           OR o.name LIKE ?
+          OR l.name_japanese LIKE ?
         ORDER BY l.name ASC
         LIMIT ? OFFSET ?
       `,
     )
     .bind(
       search,
+      searchValue,
       searchValue,
       searchValue,
       searchValue,
@@ -215,10 +232,13 @@ export async function getLineById(
           l.id,
           l.operator_id,
           o.name AS operator_name,
+          o.name_japanese AS operator_name_japanese,
           l.name,
+          l.name_japanese,
           l.slug,
           l.code,
           l.description,
+          l.description_japanese,
           l.color,
           l.created_at,
           l.updated_at
@@ -252,9 +272,11 @@ export async function createLine(
           slug,
           code,
           description,
-          color
+          color,
+          name_japanese,
+          description_japanese
         )
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
     )
     .bind(
@@ -264,6 +286,8 @@ export async function createLine(
       input.code?.trim() || null,
       input.description?.trim() || null,
       input.color?.trim() || null,
+      input.nameJapanese?.trim() || null,
+      input.descriptionJapanese?.trim() || null,
     )
     .run();
 
@@ -291,6 +315,8 @@ export async function updateLine(
           code = ?,
           description = ?,
           color = ?,
+          name_japanese = ?,
+          description_japanese = ?,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `,
@@ -302,6 +328,8 @@ export async function updateLine(
       input.code?.trim() || null,
       input.description?.trim() || null,
       input.color?.trim() || null,
+      input.nameJapanese?.trim() || null,
+      input.descriptionJapanese?.trim() || null,
       id,
     )
     .run();

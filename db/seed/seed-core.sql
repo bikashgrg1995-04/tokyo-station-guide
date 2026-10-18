@@ -181,3 +181,13 @@ WHERE NOT EXISTS (
   SELECT 1 FROM line_stations x
   WHERE x.line_id = l.id AND x.station_id = s.id
 );
+-- Japanese names for the seeded operators and lines (same values migration 0022
+-- backfills on an existing database). Only fills empty ones, so it is safe to re-run.
+UPDATE operators SET name_japanese = 'JR東日本'   WHERE slug = 'jr-east'     AND name_japanese IS NULL;
+UPDATE operators SET name_japanese = '東京メトロ' WHERE slug = 'tokyo-metro' AND name_japanese IS NULL;
+UPDATE operators SET name_japanese = '京急電鉄'   WHERE slug = 'keikyu'      AND name_japanese IS NULL;
+
+UPDATE lines SET name_japanese = '山手線'   WHERE slug = 'yamanote-line'    AND name_japanese IS NULL;
+UPDATE lines SET name_japanese = '銀座線'   WHERE slug = 'ginza-line'       AND name_japanese IS NULL;
+UPDATE lines SET name_japanese = '副都心線' WHERE slug = 'fukutoshin-line'  AND name_japanese IS NULL;
+UPDATE lines SET name_japanese = '京急本線' WHERE slug = 'keikyu-main-line' AND name_japanese IS NULL;

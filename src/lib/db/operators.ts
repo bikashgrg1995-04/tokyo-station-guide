@@ -4,6 +4,8 @@ export interface Operator {
   slug: string;
   description: string | null;
   website_url: string | null;
+  name_japanese: string | null;
+  description_japanese: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -13,6 +15,8 @@ export interface CreateOperatorInput {
   slug: string;
   description?: string | null;
   websiteUrl?: string | null;
+  nameJapanese?: string | null;
+  descriptionJapanese?: string | null;
 }
 
 export interface UpdateOperatorInput {
@@ -20,6 +24,8 @@ export interface UpdateOperatorInput {
   slug: string;
   description?: string | null;
   websiteUrl?: string | null;
+  nameJapanese?: string | null;
+  descriptionJapanese?: string | null;
 }
 
 export interface PaginatedOperators {
@@ -47,6 +53,8 @@ export async function getOperators(
           slug,
           description,
           website_url,
+          name_japanese,
+          description_japanese,
           created_at,
           updated_at
         FROM operators
@@ -101,10 +109,12 @@ export async function getOperatorsPaginated(
           OR name LIKE ?
           OR slug LIKE ?
           OR website_url LIKE ?
+          OR name_japanese LIKE ?
       `,
     )
     .bind(
       search,
+      searchValue,
       searchValue,
       searchValue,
       searchValue,
@@ -147,6 +157,8 @@ export async function getOperatorsPaginated(
           slug,
           description,
           website_url,
+          name_japanese,
+          description_japanese,
           created_at,
           updated_at
         FROM operators
@@ -155,12 +167,14 @@ export async function getOperatorsPaginated(
           OR name LIKE ?
           OR slug LIKE ?
           OR website_url LIKE ?
+          OR name_japanese LIKE ?
         ORDER BY id ASC
         LIMIT ? OFFSET ?
       `,
     )
     .bind(
       search,
+      searchValue,
       searchValue,
       searchValue,
       searchValue,
@@ -196,6 +210,8 @@ export async function getOperatorById(
           slug,
           description,
           website_url,
+          name_japanese,
+          description_japanese,
           created_at,
           updated_at
         FROM operators
@@ -224,9 +240,11 @@ export async function createOperator(
           name,
           slug,
           description,
-          website_url
+          website_url,
+          name_japanese,
+          description_japanese
         )
-        VALUES (?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?)
       `,
     )
     .bind(
@@ -234,6 +252,8 @@ export async function createOperator(
       input.slug.trim(),
       input.description?.trim() || null,
       input.websiteUrl?.trim() || null,
+      input.nameJapanese?.trim() || null,
+      input.descriptionJapanese?.trim() || null,
     )
     .run();
 
@@ -259,6 +279,8 @@ export async function updateOperator(
           slug = ?,
           description = ?,
           website_url = ?,
+          name_japanese = ?,
+          description_japanese = ?,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `,
@@ -268,6 +290,8 @@ export async function updateOperator(
       input.slug.trim(),
       input.description?.trim() || null,
       input.websiteUrl?.trim() || null,
+      input.nameJapanese?.trim() || null,
+      input.descriptionJapanese?.trim() || null,
       id,
     )
     .run();

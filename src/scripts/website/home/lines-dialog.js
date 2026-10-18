@@ -3,6 +3,7 @@
 
 import { data } from "./data.js";
 import { dlg, toggle } from "./dom.js";
+import { pick, t } from "./i18n.js";
 import { setLine } from "./navigation.js";
 import { state } from "./state.js";
 import { $ } from "./utils.js";
@@ -45,7 +46,7 @@ function buildLinesDialog() {
     row.innerHTML =
       '<i class="line-dot"></i><b></b>' +
       '<svg class="line-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>';
-    row.querySelector("b").textContent = l.name;
+    row.querySelector("b").textContent = pick(l.name, l.jp);
 
     row.addEventListener("click", function () {
       setLine(i);
@@ -60,13 +61,19 @@ function buildLinesDialog() {
 
     row.className = "line-row is-soon";
     row.style.setProperty("--c", l.color);
-    row.innerHTML = '<i class="line-dot"></i><b></b><em>Coming soon</em>';
-    row.querySelector("b").textContent = l.name;
+    row.innerHTML = '<i class="line-dot"></i><b></b><em></em>';
+    row.querySelector("b").textContent = pick(l.name, l.jp);
+    row.querySelector("em").textContent = t("lines.soon");
 
     host.appendChild(row);
   });
 
   markActiveRow();
+}
+
+/* The language changed: write the line names again. */
+export function refreshLinesDialog() {
+  buildLinesDialog();
 }
 
 /* "Coming soon" dialog */

@@ -144,7 +144,9 @@ export async function getStationById(
           slug,
           location_url,
           description,
+          description_japanese,
           about,
+          about_japanese,
           is_verified,
           verified_at,
           created_at,
@@ -157,7 +159,9 @@ export async function getStationById(
     .bind(id)
     .first<
       StationAdminListItem & {
+        description_japanese: string | null;
         about: string | null;
+        about_japanese: string | null;
       }
     >();
 

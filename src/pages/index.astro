@@ -37,7 +37,12 @@ const readyNames = new Set(lines.map((line) => line.name));
 
 const comingSoon = all.lines
   .filter((line) => !readyIds.has(String(line.id)))
-  .map((line) => ({ id: line.id, name: line.name, color: line.color }));
+  .map((line) => ({
+    id: line.id,
+    name: line.name,
+    jp: line.jp,
+    color: line.color,
+  }));
 
 const stationsByLine = Object.fromEntries(
   Object.entries(all.stationsByLine).filter(([lineId]) => readyIds.has(lineId)),

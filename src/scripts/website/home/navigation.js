@@ -2,6 +2,7 @@
 
 import { line, list } from "./current-line.js";
 import { data } from "./data.js";
+import { names, pick, t } from "./i18n.js";
 import { markActiveRow } from "./lines-dialog.js";
 import { drawMap } from "./map-render.js";
 import { state } from "./state.js";
@@ -39,7 +40,7 @@ function updateBoard() {
 
   var next = l[state.idx + 1];
 
-  $("#line-name").textContent = line().name;
+  $("#line-name").textContent = pick(line().name, line().jp);
 
   var cw = document.querySelector(".current");
 
@@ -49,9 +50,17 @@ function updateBoard() {
 
   cw.classList.add("swap");
 
-  $("#cur-jp").textContent = cur ? cur.jp || cur.name : "—";
+  /*
+   * The board is bilingual like a station sign: the visitor's language is
+   * the big name and the other one sits underneath. (The element ids still
+   * say jp / en; they just hold "main" and "sub".)
+   */
 
-  $("#cur-en").textContent = cur ? cur.name : "";
+  var curNames = cur ? names(cur.name, cur.jp) : ["—", ""];
+
+  $("#cur-jp").textContent = curNames[0];
+
+  $("#cur-en").textContent = curNames[1];
 
   $("#cur-code").textContent = cur ? cur.code || "" : "";
 
@@ -62,9 +71,11 @@ function updateBoard() {
 
     btn.disabled = !s;
 
-    $("#" + prefix + "-jp").textContent = s ? s.jp || s.name : "";
+    var pair = s ? names(s.name, s.jp) : ["", ""];
 
-    $("#" + prefix + "-en").textContent = s ? s.name : "";
+    $("#" + prefix + "-jp").textContent = pair[0];
+
+    $("#" + prefix + "-en").textContent = pair[1];
 
     $("#" + prefix + "-num").textContent = s ? num(s.code) : "";
 
@@ -74,6 +85,26 @@ function updateBoard() {
   side("prev", prev);
 
   side("next", next);
+}
+
+/*
+ * The language changed: redraw the labels and the board in place.
+ * The line, the station, the zoom and the train all stay where they are.
+ */
+export function refreshLanguage() {
+  if (!data.lines.length) {
+    $("#line-name").textContent = t("board.noLines");
+
+    return;
+  }
+
+  drawMap();
+
+  updateBoard();
+
+  updateMap();
+
+  markActiveRow();
 }
 
 export function go(i) {
@@ -188,6 +219,6 @@ export function selectInitialLine() {
 
     setLine(start);
   } else {
-    $("#line-name").textContent = "No lines available";
+    $("#line-name").textContent = t("board.noLines");
   }
 }

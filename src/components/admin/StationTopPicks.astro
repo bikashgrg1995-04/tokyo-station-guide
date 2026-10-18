@@ -59,6 +59,8 @@ const {
 
     <!-- Hidden inputs: submitted Top Pick IDs, in display order. -->
     <div id="station-top-pick-inputs">
+      <!-- Tells the server this form owns the list, even when it is empty. -->
+      <input type="hidden" name="top_pick_ids_managed" value="1" />
       {
         assignedTopPicks.map((topPick) => (
           <input

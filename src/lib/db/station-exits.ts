@@ -4,8 +4,10 @@ export interface StationExit {
   station_id: number;
   floor_id: number;
   name: string;
+  name_japanese: string | null;
   code: string | null;
   description: string | null;
+  description_japanese: string | null;
   color_code: string | null;
   sort_order: number;
   created_at: string;
@@ -15,8 +17,10 @@ export interface StationExit {
 export interface StationExitInput {
   floorId: number;
   name: string;
+  nameJapanese?: string | null;
   code?: string | null;
   description?: string | null;
+  descriptionJapanese?: string | null;
   colorCode?: string | null;
   sortOrder?: number;
 }
@@ -37,8 +41,10 @@ export async function getStationExits(
           station_id,
           floor_id,
           name,
+          name_japanese,
           code,
           description,
+          description_japanese,
           color_code,
           sort_order,
           created_at,
@@ -69,12 +75,14 @@ export async function createStationExit(
           station_id,
           floor_id,
           name,
+          name_japanese,
           code,
           description,
+          description_japanese,
           color_code,
           sort_order
         )
-        SELECT ?, id, ?, ?, ?, ?, ?
+        SELECT ?, id, ?, ?, ?, ?, ?, ?, ?
         FROM station_floors
         WHERE id = ? AND station_id = ?
       `,
@@ -82,8 +90,10 @@ export async function createStationExit(
     .bind(
       stationId,
       input.name.trim(),
+      input.nameJapanese?.trim() || null,
       input.code?.trim() || null,
       input.description?.trim() || null,
+      input.descriptionJapanese?.trim() || null,
       input.colorCode?.trim() || null,
       input.sortOrder ?? 0,
       input.floorId,
@@ -114,8 +124,10 @@ export async function updateStationExit(
         SET
           floor_id = ?,
           name = ?,
+          name_japanese = ?,
           code = ?,
           description = ?,
+          description_japanese = ?,
           color_code = ?,
           sort_order = ?,
           updated_at = CURRENT_TIMESTAMP
@@ -131,8 +143,10 @@ export async function updateStationExit(
     .bind(
       input.floorId,
       input.name.trim(),
+      input.nameJapanese?.trim() || null,
       input.code?.trim() || null,
       input.description?.trim() || null,
+      input.descriptionJapanese?.trim() || null,
       input.colorCode?.trim() || null,
       input.sortOrder ?? 0,
       exitId,

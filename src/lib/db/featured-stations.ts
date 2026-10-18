@@ -10,6 +10,7 @@ export interface FeaturedStation {
   station_slug: string;
   image_url: string;
   description: string;
+  description_japanese: string | null;
   sort_order: number;
   is_active: number;
   created_at: string;
@@ -23,6 +24,7 @@ export interface FeaturedStationListItem {
   station_name_japanese: string | null;
   image_url: string;
   description: string;
+  description_japanese: string | null;
   sort_order: number;
   is_active: number;
 }
@@ -31,6 +33,7 @@ export interface CreateFeaturedStationInput {
   stationId: number;
   imageUrl: string;
   description?: string;
+  descriptionJapanese?: string | null;
   sortOrder?: number;
   isActive?: boolean;
 }
@@ -39,6 +42,7 @@ export interface UpdateFeaturedStationInput {
   stationId: number;
   imageUrl: string;
   description?: string;
+  descriptionJapanese?: string | null;
   sortOrder?: number;
   isActive?: boolean;
 }
@@ -61,6 +65,7 @@ export async function getFeaturedStations(
           s.name_japanese AS station_name_japanese,
           fs.image_url,
           fs.description,
+          fs.description_japanese,
           fs.sort_order,
           fs.is_active
         FROM featured_stations fs
@@ -99,6 +104,7 @@ export async function getFeaturedStationById(
           s.slug AS station_slug,
           fs.image_url,
           fs.description,
+          fs.description_japanese,
           fs.sort_order,
           fs.is_active,
           fs.created_at,
@@ -131,16 +137,18 @@ export async function createFeaturedStation(
           station_id,
           image_url,
           description,
+          description_japanese,
           sort_order,
           is_active
         )
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?)
       `,
     )
     .bind(
       input.stationId,
       input.imageUrl.trim(),
       input.description?.trim() || "",
+      input.descriptionJapanese?.trim() || null,
       input.sortOrder ?? 0,
       input.isActive === false ? 0 : 1,
     )
@@ -166,6 +174,7 @@ export async function updateFeaturedStation(
           station_id = ?,
           image_url = ?,
           description = ?,
+          description_japanese = ?,
           sort_order = ?,
           is_active = ?,
           updated_at = CURRENT_TIMESTAMP
@@ -176,6 +185,7 @@ export async function updateFeaturedStation(
       input.stationId,
       input.imageUrl.trim(),
       input.description?.trim() || "",
+      input.descriptionJapanese?.trim() || null,
       input.sortOrder ?? 0,
       input.isActive === false ? 0 : 1,
       id,

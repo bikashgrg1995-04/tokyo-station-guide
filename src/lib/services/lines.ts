@@ -50,6 +50,8 @@ function readLineForm(formData: FormData): LineFormValues {
     code: readText(formData, "code"),
     color: readText(formData, "color"),
     description: readText(formData, "description"),
+    nameJapanese: readText(formData, "name_japanese"),
+    descriptionJapanese: readText(formData, "description_japanese"),
   };
 }
 
@@ -119,6 +121,8 @@ export async function handleLineCreate(
       code: "",
       color: "",
       description: "",
+      nameJapanese: "",
+      descriptionJapanese: "",
     },
     errors: emptyLineErrors(),
     formError: "",
@@ -141,6 +145,8 @@ export async function handleLineCreate(
         code: values.code || null,
         description: values.description || null,
         color: values.color || null,
+        nameJapanese: values.nameJapanese || null,
+        descriptionJapanese: values.descriptionJapanese || null,
       });
     },
   );
@@ -163,6 +169,8 @@ export async function handleLineUpdate(
       code: line?.code ?? "",
       color: line?.color ?? "",
       description: line?.description ?? "",
+      nameJapanese: line?.name_japanese ?? "",
+      descriptionJapanese: line?.description_japanese ?? "",
     },
     errors: emptyLineErrors(),
     formError: "",
@@ -185,6 +193,8 @@ export async function handleLineUpdate(
         code: values.code || null,
         color: values.color || null,
         description: values.description || null,
+        nameJapanese: values.nameJapanese || null,
+        descriptionJapanese: values.descriptionJapanese || null,
       });
     },
   );

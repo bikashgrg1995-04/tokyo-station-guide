@@ -2,7 +2,9 @@ export interface StationPlatformFormValues {
   lineId: string;
   platformNumber: string;
   destinations: string;
+  destinationsJapanese: string;
   notes: string;
+  notesJapanese: string;
   sortOrder: string;
 }
 
@@ -16,7 +18,9 @@ export function emptyStationPlatformErrors(): StationPlatformFormErrors {
     lineId: "",
     platformNumber: "",
     destinations: "",
+    destinationsJapanese: "",
     notes: "",
+    notesJapanese: "",
     sortOrder: "",
   };
 }
@@ -39,12 +43,22 @@ export function validateStationPlatformForm(
     errors.destinations = "Destinations must be 500 characters or less.";
   }
 
+  if (values.destinationsJapanese.length > 500) {
+    errors.destinationsJapanese =
+      "Japanese destinations must be 500 characters or less.";
+  }
+
   if (values.lineId && (!Number.isInteger(Number(values.lineId)) || Number(values.lineId) <= 0)) {
     errors.lineId = "Select a valid railway line.";
   }
 
   if (values.notes.length > 2000) {
     errors.notes = "Walking guidance must be 2000 characters or less.";
+  }
+
+  if (values.notesJapanese.length > 2000) {
+    errors.notesJapanese =
+      "Japanese walking guidance must be 2000 characters or less.";
   }
 
   if (values.sortOrder.trim() === "" || !Number.isInteger(sortOrder) || sortOrder < 0) {

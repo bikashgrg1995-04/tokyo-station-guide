@@ -25,7 +25,7 @@ import ComingSoonDialog from "./ComingSoonDialog.astro";
           ><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5M12 7.8v.1"
           ></path></svg
         >
-        <span>Info</span>
+        <span data-i18n="board.info">Info</span>
       </button>
 
       <div class="current">
@@ -44,13 +44,18 @@ import ComingSoonDialog from "./ComingSoonDialog.astro";
           ><path d="M7 3h7l5 5v13H7z"></path><path
             d="M14 3v5h5M10 13h6M10 17h6"></path></svg
         >
-        <span>Page</span>
+        <span data-i18n="board.page">Page</span>
         <svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>
       </button>
     </div>
 
     <div class="board-nav">
-      <button class="side prev" id="prev-btn" aria-label="Previous station">
+      <button
+        class="side prev"
+        id="prev-btn"
+        aria-label="Previous station"
+        data-i18n-attr="aria-label:board.prev"
+      >
         <svg class="arrow" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></svg>
         <span class="badge" id="prev-num"></span>
         <span class="side-text">
@@ -61,7 +66,12 @@ import ComingSoonDialog from "./ComingSoonDialog.astro";
 
       <i class="board-divider" aria-hidden="true"></i>
 
-      <button class="side next" id="next-btn" aria-label="Next station">
+      <button
+        class="side next"
+        id="next-btn"
+        aria-label="Next station"
+        data-i18n-attr="aria-label:board.next"
+      >
         <span class="side-text">
           <b id="next-jp"></b>
           <small id="next-en"></small>

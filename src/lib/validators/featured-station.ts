@@ -3,24 +3,31 @@ export interface FeaturedStationFormValues {
   stationId: string;
   imageUrl: string;
   description: string;
+  descriptionJapanese: string;
   /** Sort order, as typed in the form. */
   sortOrder: string;
   isActive: boolean;
 }
 
 export type FeaturedStationFormErrors = Record<
-  "stationId" | "imageUrl" | "description" | "sortOrder",
+  "stationId" | "imageUrl" | "description" | "descriptionJapanese" | "sortOrder",
   string
 >;
 
 export function emptyFeaturedStationErrors(): FeaturedStationFormErrors {
-  return { stationId: "", imageUrl: "", description: "", sortOrder: "" };
+  return {
+    stationId: "",
+    imageUrl: "",
+    description: "",
+    descriptionJapanese: "",
+    sortOrder: "",
+  };
 }
 
 export function validateFeaturedStationForm(
   values: FeaturedStationFormValues,
 ): FeaturedStationFormErrors {
-  const { stationId, description, sortOrder } = values;
+  const { stationId, description, descriptionJapanese, sortOrder } = values;
   const errors = emptyFeaturedStationErrors();
 
   const stationNumber = stationId === "" ? null : Number(stationId);
@@ -37,6 +44,11 @@ export function validateFeaturedStationForm(
 
   if (description.length > 200) {
     errors.description = "Description must be 200 characters or less.";
+  }
+
+  if (descriptionJapanese.length > 200) {
+    errors.descriptionJapanese =
+      "Japanese description must be 200 characters or less.";
   }
 
   const sortNumber = sortOrder === "" ? null : Number(sortOrder);

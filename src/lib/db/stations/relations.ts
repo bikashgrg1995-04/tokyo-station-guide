@@ -33,6 +33,7 @@ export async function getStationFacilitiesJson(
         sf.name_japanese AS floor_japanese,
         sff.facility_count AS count,
         sff.note,
+        sff.note_japanese,
         sff.location_type,
         COALESCE(
           (
@@ -76,6 +77,7 @@ export async function getStationFacilitiesJson(
       floor_japanese: string | null;
       count: number | null;
       note: string | null;
+      note_japanese: string | null;
       location_type: string;
       exits: string | null;
     }>();

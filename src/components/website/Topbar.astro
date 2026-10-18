@@ -7,7 +7,12 @@ const { siteName } = Astro.props;
 ---
 
 <header class="topbar">
-  <button class="top-icon" id="theme-toggle" aria-label="Toggle theme">
+  <button
+    class="top-icon"
+    id="theme-toggle"
+    aria-label="Toggle theme"
+    data-i18n-attr="aria-label:top.theme"
+  >
     <svg class="icon-sun" viewBox="0 0 24 24"
       ><circle cx="12" cy="12" r="4"></circle><path
         d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"
@@ -24,10 +29,30 @@ const { siteName } = Astro.props;
     <span class="brand-en">TOKYO</span>
   </a>
 
-  <button class="top-icon" id="open-search" aria-label="Search stations">
-    <svg viewBox="0 0 24 24"
-      ><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"
-      ></path></svg
+  <div class="top-right">
+    <!-- The one language switch for the whole website (EN / 日本語). -->
+    <div
+      class="lang-switch"
+      role="group"
+      aria-label="Language"
+      data-i18n-attr="aria-label:top.lang"
     >
-  </button>
+      <button type="button" data-set-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-set-lang="jp" aria-pressed="false" lang="ja">
+        日本語
+      </button>
+    </div>
+
+    <button
+      class="top-icon"
+      id="open-search"
+      aria-label="Search stations"
+      data-i18n-attr="aria-label:top.search"
+    >
+      <svg viewBox="0 0 24 24"
+        ><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"
+        ></path></svg
+      >
+    </button>
+  </div>
 </header>

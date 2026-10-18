@@ -37,6 +37,7 @@ function readFeaturedStationForm(formData: FormData): FeaturedStationFormValues 
     stationId: readText(formData, "station_id"),
     imageUrl: "",
     description: readText(formData, "description"),
+    descriptionJapanese: readText(formData, "description_japanese"),
     sortOrder: formData.has("sort_order") ? readText(formData, "sort_order") : "0",
     isActive: formData.get("is_active") === "on",
   };
@@ -118,6 +119,7 @@ function toInput(values: FeaturedStationFormValues, imageUrl: string) {
     stationId: Number(values.stationId),
     imageUrl,
     description: values.description,
+    descriptionJapanese: values.descriptionJapanese || null,
     sortOrder: Number(values.sortOrder),
     isActive: values.isActive,
   };
@@ -135,6 +137,7 @@ export async function handleFeaturedStationCreate(
       stationId: "",
       imageUrl: "",
       description: "",
+      descriptionJapanese: "",
       sortOrder: "0",
       isActive: true,
     },
@@ -172,6 +175,7 @@ export async function handleFeaturedStationUpdate(
       stationId: String(featuredStation.station_id),
       imageUrl: featuredStation.image_url,
       description: featuredStation.description,
+      descriptionJapanese: featuredStation.description_japanese ?? "",
       sortOrder: String(featuredStation.sort_order),
       isActive: featuredStation.is_active === 1,
     },

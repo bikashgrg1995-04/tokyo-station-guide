@@ -49,9 +49,11 @@ const formValues =
     ? {
         floorId: String(editExit.floor_id),
         name: editExit.name,
+        nameJapanese: editExit.name_japanese ?? "",
         code: editExit.code ?? "",
         colorCode: editExit.color_code ?? "",
         description: editExit.description ?? "",
+        descriptionJapanese: editExit.description_japanese ?? "",
         sortOrder: String(editExit.sort_order),
       }
     : values;
@@ -132,9 +134,16 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
               {exits.map((exit) => (
                 <tr
                   data-exit-row
-                  data-search={`${exit.name} ${exit.code ?? ""} ${floorName(exit.floor_id)} ${exit.description ?? ""}`.toLowerCase()}
+                  data-search={`${exit.name} ${exit.name_japanese ?? ""} ${exit.code ?? ""} ${floorName(exit.floor_id)} ${exit.description ?? ""} ${exit.description_japanese ?? ""}`.toLowerCase()}
                 >
-                  <td><strong>{exit.name}</strong></td>
+                  <td>
+                    <strong>{exit.name}</strong>
+                    {exit.name_japanese && (
+                      <div class="admin-table-muted" lang="ja">
+                        {exit.name_japanese}
+                      </div>
+                    )}
+                  </td>
                   <td>
                     <span class="admin-floor-pill">
                       {floorName(exit.floor_id)}
@@ -170,9 +179,11 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
                         data-id={exit.id}
                         data-floor-id={exit.floor_id}
                         data-name={exit.name}
+                        data-name-japanese={exit.name_japanese ?? ""}
                         data-code={exit.code ?? ""}
                         data-color-code={exit.color_code ?? ""}
                         data-description={exit.description ?? ""}
+                        data-description-japanese={exit.description_japanese ?? ""}
                         data-sort-order={exit.sort_order}
                       >
                         Edit
@@ -341,6 +352,21 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
           </div>
         </div>
 
+        <div class="admin-form-group">
+          <label for="exit-name-japanese">Japanese Name (optional)</label>
+          <input
+            id="exit-name-japanese"
+            name="name_japanese"
+            lang="ja"
+            maxlength="150"
+            placeholder="例: 北口"
+            value={formValues.nameJapanese}
+          />
+          {errors.nameJapanese && (
+            <small class="admin-field-error">{errors.nameJapanese}</small>
+          )}
+        </div>
+
         <div class="exit-form-row">
           <div class="admin-form-group">
             <label for="exit-color-code">Color (optional)</label>
@@ -401,6 +427,23 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
           >{formValues.description}</textarea>
           {errors.description && (
             <small class="admin-field-error">{errors.description}</small>
+          )}
+        </div>
+
+        <div class="admin-form-group">
+          <label for="exit-description-japanese">
+            Japanese Description (optional)
+          </label>
+          <textarea
+            id="exit-description-japanese"
+            name="description_japanese"
+            lang="ja"
+            rows="3"
+            maxlength="500"
+            placeholder="道順や詳細(任意)"
+          >{formValues.descriptionJapanese}</textarea>
+          {errors.descriptionJapanese && (
+            <small class="admin-field-error">{errors.descriptionJapanese}</small>
           )}
         </div>
 

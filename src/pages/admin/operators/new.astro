@@ -19,7 +19,14 @@ if (form.redirectTo) {
   return Astro.redirect(form.redirectTo);
 }
 
-const { name, slug, description, websiteUrl } = form.values;
+const {
+  name,
+  slug,
+  description,
+  websiteUrl,
+  nameJapanese,
+  descriptionJapanese,
+} = form.values;
 const { errors, formError } = form;
 
 ---
@@ -89,6 +96,31 @@ const { errors, formError } = form;
                     }
                   </div>
 
+                  <!-- Japanese Name -->
+                  <div class="admin-form-group">
+                    <label for="name_japanese">Japanese Name</label>
+
+                    <input
+                      id="name_japanese"
+                      name="name_japanese"
+                      type="text"
+                      lang="ja"
+                      maxlength="150"
+                      value={nameJapanese}
+                      placeholder="JR東日本"
+                      aria-invalid={errors.nameJapanese ? "true" : "false"}
+                      aria-describedby={errors.nameJapanese ? "name_japanese-error" : undefined}
+                    />
+
+                    {
+                      errors.nameJapanese && (
+                        <small id="name_japanese-error" class="admin-form-error">
+                          {errors.nameJapanese}
+                        </small>
+                      )
+                    }
+                  </div>
+
                   <!-- Slug -->
                   <div class="admin-form-group">
                     <label for="slug"> Slug </label>
@@ -138,6 +170,30 @@ const { errors, formError } = form;
                       errors.description && (
                         <small id="description-error" class="admin-form-error">
                           {errors.description}
+                        </small>
+                      )
+                    }
+                  </div>
+
+                  <!-- Japanese Description -->
+                  <div class="admin-form-group">
+                    <label for="description_japanese">Japanese Description</label>
+
+                    <textarea
+                      id="description_japanese"
+                      name="description_japanese"
+                      lang="ja"
+                      rows="5"
+                      maxlength="1000"
+                      placeholder="事業者の簡単な説明…"
+                      aria-invalid={errors.descriptionJapanese ? "true" : "false"}
+                      aria-describedby={errors.descriptionJapanese ? "description_japanese-error" : undefined}>{descriptionJapanese}</textarea
+                    >
+
+                    {
+                      errors.descriptionJapanese && (
+                        <small id="description_japanese-error" class="admin-form-error">
+                          {errors.descriptionJapanese}
                         </small>
                       )
                     }

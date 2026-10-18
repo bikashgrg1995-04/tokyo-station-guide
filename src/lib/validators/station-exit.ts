@@ -1,9 +1,11 @@
 export interface StationExitFormValues {
   floorId: string;
   name: string;
+  nameJapanese: string;
   code: string;
   colorCode: string;
   description: string;
+  descriptionJapanese: string;
   sortOrder: string;
 }
 
@@ -18,9 +20,11 @@ export function emptyStationExitErrors(): StationExitFormErrors {
   return {
     floorId: "",
     name: "",
+    nameJapanese: "",
     code: "",
     colorCode: "",
     description: "",
+    descriptionJapanese: "",
     sortOrder: "",
   };
 }
@@ -43,6 +47,10 @@ export function validateStationExitForm(
     errors.name = "Exit name must be 150 characters or less.";
   }
 
+  if (values.nameJapanese.trim().length > 150) {
+    errors.nameJapanese = "Japanese name must be 150 characters or less.";
+  }
+
   if (values.code.trim().length > 50) {
     errors.code = "Exit code must be 50 characters or less.";
   }
@@ -56,6 +64,11 @@ export function validateStationExitForm(
 
   if (values.description.trim().length > 500) {
     errors.description = "Description must be 500 characters or less.";
+  }
+
+  if (values.descriptionJapanese.trim().length > 500) {
+    errors.descriptionJapanese =
+      "Japanese description must be 500 characters or less.";
   }
 
   if (

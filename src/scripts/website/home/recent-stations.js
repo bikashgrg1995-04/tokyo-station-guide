@@ -2,6 +2,7 @@
 
 import { searchable } from "./data.js";
 import { recentHost, recentSection } from "./dom.js";
+import { names, pick } from "./i18n.js";
 import { selectStationOnMap } from "./station-lookup.js";
 import { esc } from "./utils.js";
 
@@ -101,17 +102,23 @@ export function renderRecentStations() {
 
     var code = getStationCode(station);
 
-    var lineText = (station.lines || []).join(" · ");
+    var pair = names(station.name, station.jp);
+
+    var lineText = (station.lines || [])
+      .map(function (name, i) {
+        return pick(name, (station.linesJp || [])[i]);
+      })
+      .join(" · ");
 
     a.innerHTML =
       '<span class="recent-station-name">' +
       "<b>" +
-      esc(station.name) +
+      esc(pair[0]) +
       "</b>" +
       "<span>" +
       esc(
-        station.jp
-          ? station.jp + (lineText ? " · " + lineText : "")
+        pair[1]
+          ? pair[1] + (lineText ? " · " + lineText : "")
           : lineText,
       ) +
       "</span>" +

@@ -3,12 +3,13 @@
 
   <div class="search-panel">
     <div class="search-head">
-      <h2>Where are you going?</h2>
+      <h2 data-i18n="search.title">Where are you going?</h2>
 
       <button
         class="round"
         id="close-search"
         aria-label="Close search"
+        data-i18n-attr="aria-label:search.close"
         type="button"
       >
         ×
@@ -21,6 +22,7 @@
         id="search-input"
         placeholder="Search stations or codes"
         aria-label="Search stations or codes"
+        data-i18n-attr="placeholder:search.placeholder;aria-label:search.placeholder"
       />
     </form>
 
@@ -31,7 +33,9 @@
         aria-labelledby="featured-title"
       >
         <div class="search-section-head">
-          <h3 id="featured-title">Popular Station Hubs</h3>
+          <h3 id="featured-title" data-i18n="search.featured">
+            Popular Station Hubs
+          </h3>
         </div>
 
         <div id="featured-stations" class="featured-stations"></div>
@@ -44,7 +48,7 @@
         hidden
       >
         <div class="search-section-head">
-          <h3 id="recent-title">Recent</h3>
+          <h3 id="recent-title" data-i18n="search.recent">Recent</h3>
         </div>
 
         <div id="recent-stations" class="recent-stations"></div>

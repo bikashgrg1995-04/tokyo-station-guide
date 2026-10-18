@@ -4,7 +4,9 @@ export interface StationPlatform {
   line_id: number | null;
   platform_number: string;
   destinations: string | null;
+  destinations_japanese: string | null;
   notes: string | null;
+  notes_japanese: string | null;
   sort_order: number;
   line_name: string | null;
   line_code: string | null;
@@ -14,7 +16,9 @@ export interface StationPlatformInput {
   lineId: number | null;
   platformNumber: string;
   destinations: string | null;
+  destinationsJapanese?: string | null;
   notes: string | null;
+  notesJapanese?: string | null;
   sortOrder: number;
 }
 
@@ -32,9 +36,11 @@ export async function getStationPlatforms(
           sp.id,
           sp.station_id,
           sp.destinations,
+          sp.destinations_japanese,
           sp.line_id,
           sp.platform_number,
           sp.notes,
+          sp.notes_japanese,
           sp.sort_order,
           l.name AS line_name,
           l.code AS line_code
@@ -70,9 +76,11 @@ export async function getStationPlatformsJson(
     platforms.map((platform) => ({
       number: platform.platform_number,
       destinations: platform.destinations,
+      destinations_japanese: platform.destinations_japanese,
       line: platform.line_name,
       lineCode: platform.line_code,
       notes: platform.notes,
+      notes_japanese: platform.notes_japanese,
     })),
   );
 }
@@ -94,10 +102,12 @@ export async function createStationPlatform(
       line_id,
       platform_number,
       destinations,
+      destinations_japanese,
       notes,
+      notes_japanese,
       sort_order
     )
-    VALUES (?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `,
     )
     .bind(
@@ -105,7 +115,9 @@ export async function createStationPlatform(
       input.lineId,
       input.platformNumber.trim(),
       input.destinations,
+      input.destinationsJapanese?.trim() || null,
       input.notes,
+      input.notesJapanese?.trim() || null,
       input.sortOrder,
     )
     .run();
@@ -129,7 +141,9 @@ export async function updateStationPlatform(
       line_id = ?,
       platform_number = ?,
       destinations = ?,
+      destinations_japanese = ?,
       notes = ?,
+      notes_japanese = ?,
       sort_order = ?,
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
@@ -140,7 +154,9 @@ export async function updateStationPlatform(
       input.lineId,
       input.platformNumber.trim(),
       input.destinations,
+      input.destinationsJapanese?.trim() || null,
       input.notes,
+      input.notesJapanese?.trim() || null,
       input.sortOrder,
       platformId,
       stationId,

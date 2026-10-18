@@ -5,7 +5,9 @@ export interface StationFormValues {
   /** Link to the station on a map (http/https). */
   locationUrl: string;
   description: string;
+  descriptionJapanese: string;
   about: string;
+  aboutJapanese: string;
   isVerified: boolean;
   /** Date the station was verified, as YYYY-MM-DD. */
   verifiedAt: string;
@@ -23,7 +25,9 @@ export function emptyStationErrors(): StationFormErrors {
     slug: "",
     locationUrl: "",
     description: "",
+    descriptionJapanese: "",
     about: "",
+    aboutJapanese: "",
     facilities: "",
     topPicks: "",
     isVerified: "",
@@ -38,7 +42,15 @@ export function toNumberOrNull(value: string): number | null {
 export function validateStationForm(
   values: StationFormValues,
 ): StationFormErrors {
-  const { name, nameJapanese, slug, description, about } = values;
+  const {
+    name,
+    nameJapanese,
+    slug,
+    description,
+    descriptionJapanese,
+    about,
+    aboutJapanese,
+  } = values;
   const errors = emptyStationErrors();
 
   if (!name) {
@@ -93,8 +105,17 @@ export function validateStationForm(
     errors.description = "Description must be 1000 characters or less.";
   }
 
+  if (descriptionJapanese.length > 1000) {
+    errors.descriptionJapanese =
+      "Japanese description must be 1000 characters or less.";
+  }
+
   if (about.length > 150) {
     errors.about = "About must be 150 characters or less.";
+  }
+
+  if (aboutJapanese.length > 150) {
+    errors.aboutJapanese = "Japanese about must be 150 characters or less.";
   }
 
   return errors;

@@ -18,6 +18,10 @@ export interface TransitMapLine {
   operatorId: number;
   operator: string;
   description: string | null;
+  /** Japanese versions; null/empty falls back to the English text. */
+  jp: string | null;
+  operatorJp: string | null;
+  descriptionJp: string | null;
   shape: "loop" | "u" | "line" | null;
 }
 
@@ -30,27 +34,40 @@ export interface TransitMapStation {
   order: number;
 
   description: string | null;
+  description_jp: string | null;
   about: string | null;
+  about_jp: string | null;
   is_verified: number;
   verified_at: string | null;
 
-  /** JSON: [{ name, slug, icon, icon_dark, floor, count, note }] */
+  /**
+   * JSON: [{
+   *   name, name_jp, slug, icon, icon_dark, floor, floor_japanese,
+   *   count, note, note_jp, location_type, exits: [{ name, name_jp, ... }]
+   * }]
+   */
   facilities: string | null;
 
   /**
    * JSON: [{
-   *   name, name_jp, category, description, image_url,
-   *   entry_fee, notes, minutes, floor_id, floor_name,
-   *   floor_name_japanese, exit_id, exit_name, exit_code,
-   *   exit_color, location_type, opening_hours, sort_order
+   *   name, name_jp, category, description, description_jp, image_url,
+   *   entry_fee, entry_fee_jp, notes, notes_jp, minutes, floor_id,
+   *   floor_name, floor_name_japanese, exit_id, exit_name,
+   *   exit_name_japanese, exit_code, exit_color, location_type,
+   *   opening_hours, sort_order
    * }]
    */
   top_picks: string | null;
 
-  /** JSON: [{ name, code, color, type, operator }] */
+  /** JSON: [{ name, name_jp, code, color, type, operator, operator_jp }] */
   connections: string | null;
 
-  /** JSON: [{ number, destinations, notes, line, lineCode, color }] */
+  /**
+   * JSON: [{
+   *   number, destinations, destinations_jp, notes, notes_jp,
+   *   line, line_jp, lineCode, color
+   * }]
+   */
   platforms: string | null;
 }
 
@@ -61,6 +78,8 @@ export interface TransitSearchStation {
   slug: string;
   codes: string[];
   lines: string[];
+  /** Japanese line names, same order as `lines` ("" when not set). */
+  linesJp: string[];
 }
 
 export interface TransitMapData {
@@ -76,7 +95,9 @@ export interface TransitMapData {
 interface TransitStationRow extends LineStationItem {
   line_id: number | null;
   station_description: string | null;
+  station_description_japanese: string | null;
   station_about: string | null;
+  station_about_japanese: string | null;
   station_is_verified: number;
   station_verified_at: string | null;
   station_facilities: string | null;
@@ -111,7 +132,9 @@ export async function getTransitMapData(
           s.name_japanese AS station_name_japanese,
           s.slug AS station_slug,
           s.description AS station_description,
+          s.description_japanese AS station_description_japanese,
           s.about AS station_about,
+          s.about_japanese AS station_about_japanese,
           s.is_verified AS station_is_verified,
           s.verified_at AS station_verified_at,
 
@@ -123,6 +146,7 @@ export async function getTransitMapData(
                 json_object(
                   'facility_id', facility.facility_id,
                   'name', facility.name,
+                  'name_jp', facility.name_japanese,
                   'slug', facility.slug,
                   'icon', facility.icon,
                   'icon_dark', facility.icon_dark,
@@ -131,6 +155,7 @@ export async function getTransitMapData(
                   'floor_japanese', facility.floor_japanese,
                   'count', facility.facility_count,
                   'note', facility.note,
+                  'note_jp', facility.note_japanese,
                   'location_type', facility.location_type,
                   'exits', json(facility.exits)
                 )
@@ -139,6 +164,7 @@ export async function getTransitMapData(
               SELECT
                 f.id AS facility_id,
                 f.name,
+                f.name_japanese,
                 f.slug,
                 f.icon,
                 f.icon_dark,
@@ -147,6 +173,7 @@ export async function getTransitMapData(
                 sf.name_japanese AS floor_japanese,
                 sff.facility_count,
                 sff.note,
+                sff.note_japanese,
                 sff.location_type,
                 sf.floor_order,
                 (
@@ -154,7 +181,7 @@ export async function getTransitMapData(
                     json_object(
                       'id', se.id,
                       'name', se.name,
-                      'name_jp', se.name,
+                      'name_jp', se.name_japanese,
                       'code', se.code,
                       'color', se.color_code
                     )
@@ -187,16 +214,20 @@ export async function getTransitMapData(
                   'name_jp', top_pick.name_japanese,
                   'category', top_pick.category,
                   'description', top_pick.description,
+                  'description_jp', top_pick.description_japanese,
                   'image_url', top_pick.image_url,
                   'entry_fee', top_pick.entry_fee,
+                  'entry_fee_jp', top_pick.entry_fee_japanese,
                   'map_url', top_pick.map_url,
                   'notes', top_pick.notes,
+                  'notes_jp', top_pick.notes_japanese,
                   'minutes', top_pick.walking_minutes,
                   'floor_id', top_pick.floor_id,
                   'floor_name', top_pick.floor_name,
                   'floor_name_japanese', top_pick.floor_name_japanese,
                   'exit_id', top_pick.exit_id,
                   'exit_name', top_pick.exit_name,
+                  'exit_name_japanese', top_pick.exit_name_japanese,
                   'exit_code', top_pick.exit_code,
                   'exit_color', top_pick.exit_color,
                   'location_type', top_pick.location_type,
@@ -210,16 +241,20 @@ export async function getTransitMapData(
                 tp.name_japanese,
                 tp.category,
                 tp.description,
+                tp.description_japanese,
                 tp.image_url,
                 tp.entry_fee,
+                tp.entry_fee_japanese,
                 tp.map_url,
                 tp.notes,
+                tp.notes_japanese,
                 stp.walking_minutes,
                 stp.floor_id,
                 sf.name AS floor_name,
                 sf.name_japanese AS floor_name_japanese,
                 stp.exit_id,
                 se.name AS exit_name,
+                se.name_japanese AS exit_name_japanese,
                 se.code AS exit_code,
                 se.color_code AS exit_color,
                 stp.location_type,
@@ -259,19 +294,23 @@ export async function getTransitMapData(
               json_group_array(
                 json_object(
                   'name', connection.name,
+                  'name_jp', connection.name_japanese,
                   'code', connection.code,
                   'color', connection.color,
                   'type', connection.line_type,
-                  'operator', connection.operator_name
+                  'operator', connection.operator_name,
+                  'operator_jp', connection.operator_name_japanese
                 )
               )
             FROM (
               SELECT
                 l.name,
+                l.name_japanese,
                 l.code,
                 l.color,
                 l.line_type,
-                o.name AS operator_name
+                o.name AS operator_name,
+                o.name_japanese AS operator_name_japanese
               FROM line_stations connection_ls
               INNER JOIN lines l
                 ON l.id = connection_ls.line_id
@@ -292,8 +331,11 @@ export async function getTransitMapData(
                 json_object(
                   'number', platform.platform_number,
                   'destinations', platform.destinations,
+                  'destinations_jp', platform.destinations_japanese,
                   'notes', platform.notes,
+                  'notes_jp', platform.notes_japanese,
                   'line', platform.line_name,
+                  'line_jp', platform.line_name_japanese,
                   'lineCode', platform.line_code,
                   'color', platform.line_color
                 )
@@ -302,8 +344,11 @@ export async function getTransitMapData(
               SELECT
                 sp.platform_number,
                 sp.destinations,
+                sp.destinations_japanese,
                 sp.notes,
+                sp.notes_japanese,
                 pl.name AS line_name,
+                pl.name_japanese AS line_name_japanese,
                 pl.code AS line_code,
                 pl.color AS line_color
               FROM station_platforms sp
@@ -361,7 +406,9 @@ export async function getTransitMapData(
       code: row.station_code,
       order: row.station_order,
       description: row.station_description,
+      description_jp: row.station_description_japanese,
       about: row.station_about,
+      about_jp: row.station_about_japanese,
       is_verified: row.station_is_verified,
       verified_at: row.station_verified_at,
       facilities: row.station_facilities,
@@ -388,6 +435,7 @@ export async function getTransitMapData(
         slug: row.station_slug,
         codes: [],
         lines: [],
+        linesJp: [],
       };
 
       searchableMap.set(row.station_id, station);
@@ -404,6 +452,7 @@ export async function getTransitMapData(
 
       if (line && !station.lines.includes(line.name)) {
         station.lines.push(line.name);
+        station.linesJp.push(line.name_japanese ?? "");
       }
     }
   }
@@ -422,6 +471,9 @@ export async function getTransitMapData(
     operatorId: line.operator_id,
     operator: line.operator_name,
     description: line.description,
+    jp: line.name_japanese,
+    operatorJp: line.operator_name_japanese,
+    descriptionJp: line.description_japanese,
     shape: line.code === "JY" || /yamanote/i.test(line.name) ? "loop" : null,
   }));
 

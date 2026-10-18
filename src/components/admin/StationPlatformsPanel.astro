@@ -43,7 +43,9 @@ const formValues =
         lineId: editPlatform.line_id == null ? "" : String(editPlatform.line_id),
         platformNumber: editPlatform.platform_number,
         destinations: editPlatform.destinations ?? "",
+        destinationsJapanese: editPlatform.destinations_japanese ?? "",
         notes: editPlatform.notes ?? "",
+        notesJapanese: editPlatform.notes_japanese ?? "",
         sortOrder: String(editPlatform.sort_order),
       }
     : values;
@@ -105,7 +107,7 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
               {platforms.map((platform) => (
                 <tr
                   data-platform-row
-                  data-search={`${platform.id} ${platform.platform_number} ${platform.destinations ?? ""} ${platform.line_name ?? ""} ${platform.notes ?? ""}`.toLowerCase()}
+                  data-search={`${platform.id} ${platform.platform_number} ${platform.destinations ?? ""} ${platform.destinations_japanese ?? ""} ${platform.line_name ?? ""} ${platform.notes ?? ""} ${platform.notes_japanese ?? ""}`.toLowerCase()}
                 >
                   <td class="admin-table-id">{platform.id}</td>
 
@@ -144,8 +146,10 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
                         data-id={platform.id}
                         data-number={platform.platform_number}
                         data-destinations={platform.destinations ?? ""}
+                        data-destinations-japanese={platform.destinations_japanese ?? ""}
                         data-line-id={platform.line_id ?? ""}
                         data-notes={platform.notes ?? ""}
+                        data-notes-japanese={platform.notes_japanese ?? ""}
                         data-sort-order={platform.sort_order}
                       >
                         Edit
@@ -304,6 +308,21 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
       </div>
 
       <div class="admin-form-group">
+        <label for="destinations_japanese">Japanese Destinations (optional)</label>
+        <input
+          id="destinations_japanese"
+          name="destinations_japanese"
+          lang="ja"
+          maxlength="500"
+          placeholder="例: 新宿、立川"
+          value={formValues.destinationsJapanese}
+        />
+        {errors.destinationsJapanese && (
+          <small class="admin-field-error">{errors.destinationsJapanese}</small>
+        )}
+      </div>
+
+      <div class="admin-form-group">
         <label for="line_id">Railway Line (optional)</label>
         <select id="line_id" name="line_id">
           <option value="">No line selected</option>
@@ -332,6 +351,21 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
         >{formValues.notes}</textarea>
         {errors.notes && (
           <small class="admin-field-error">{errors.notes}</small>
+        )}
+      </div>
+
+      <div class="admin-form-group">
+        <label for="notes_japanese">Japanese Walking Guidance (optional)</label>
+        <textarea
+          id="notes_japanese"
+          name="notes_japanese"
+          lang="ja"
+          rows="4"
+          maxlength="2000"
+          placeholder="このホームへの行き方を説明してください..."
+        >{formValues.notesJapanese}</textarea>
+        {errors.notesJapanese && (
+          <small class="admin-field-error">{errors.notesJapanese}</small>
         )}
       </div>
 

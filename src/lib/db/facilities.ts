@@ -6,6 +6,7 @@
 export interface Facility {
   id: number;
   name: string;
+  name_japanese: string | null;
   slug: string;
   icon: string | null;
   icon_dark: string | null;
@@ -27,6 +28,7 @@ export interface StationFacility {
   sort_order: number;
   facility_count: number | null;
   note: string | null;
+  note_japanese: string | null;
   location_type: StationFacilityLocation;
   exits: StationFacilityExit[];
 }
@@ -46,6 +48,7 @@ export interface StationFacilityExit {
 
 export interface FacilityInput {
   name: string;
+  nameJapanese?: string | null;
   slug: string;
   icon?: string | null;
   iconDark?: string | null;
@@ -70,7 +73,7 @@ export async function getFacilities(
   const result = await db
     .prepare(
       `
-        SELECT id, name, slug, icon, icon_dark, sort_order
+        SELECT id, name, name_japanese, slug, icon, icon_dark, sort_order
         FROM facilities
         ORDER BY sort_order ASC, name ASC
       `,
@@ -105,11 +108,12 @@ export async function getFacilitiesPaginated(
         WHERE
           ? = ''
           OR name LIKE ?
+          OR name_japanese LIKE ?
           OR slug LIKE ?
           OR icon LIKE ?
       `,
     )
-    .bind(search, searchValue, searchValue, searchValue)
+    .bind(search, searchValue, searchValue, searchValue, searchValue)
     .first<{ total: number }>();
 
   const totalItems = Number(countResult?.total ?? 0);
@@ -120,11 +124,12 @@ export async function getFacilitiesPaginated(
   const result = await db
     .prepare(
       `
-        SELECT id, name, slug, icon, icon_dark, sort_order
+        SELECT id, name, name_japanese, slug, icon, icon_dark, sort_order
         FROM facilities
         WHERE
           ? = ''
           OR name LIKE ?
+          OR name_japanese LIKE ?
           OR slug LIKE ?
           OR icon LIKE ?
         ORDER BY sort_order ASC, name ASC
@@ -133,6 +138,7 @@ export async function getFacilitiesPaginated(
     )
     .bind(
       search,
+      searchValue,
       searchValue,
       searchValue,
       searchValue,
@@ -161,7 +167,7 @@ export async function getFacilityById(
   const result = await db
     .prepare(
       `
-        SELECT id, name, slug, icon, icon_dark, sort_order
+        SELECT id, name, name_japanese, slug, icon, icon_dark, sort_order
         FROM facilities
         WHERE id = ?
         LIMIT 1
@@ -185,13 +191,14 @@ export async function createFacility(
     .prepare(
       `
         INSERT INTO facilities (
-          name, slug, icon, icon_dark, sort_order
+          name, name_japanese, slug, icon, icon_dark, sort_order
         )
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?)
       `,
     )
     .bind(
       input.name.trim(),
+      input.nameJapanese?.trim() || null,
       input.slug.trim(),
       input.icon?.trim() || null,
       input.iconDark?.trim() || null,
@@ -217,6 +224,7 @@ export async function updateFacility(
         UPDATE facilities
         SET
           name = ?,
+          name_japanese = ?,
           slug = ?,
           icon = ?,
           icon_dark = ?,
@@ -226,6 +234,7 @@ export async function updateFacility(
     )
     .bind(
       input.name.trim(),
+      input.nameJapanese?.trim() || null,
       input.slug.trim(),
       input.icon?.trim() || null,
       input.iconDark?.trim() || null,
@@ -311,6 +320,7 @@ export async function getStationFacilities(
           f.sort_order,
           sff.facility_count,
           sff.note,
+          sff.note_japanese,
           sff.location_type,
           sf.id AS floor_id,
           sf.name AS floor_name,

@@ -26,11 +26,13 @@ export async function createStation(
           slug,
           location_url,
           description,
+          description_japanese,
           about,
+          about_japanese,
           is_verified,
           verified_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, CASE
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CASE
           WHEN ? = 1 THEN COALESCE(?, date('now'))
           ELSE NULL
         END)
@@ -42,7 +44,9 @@ export async function createStation(
       input.slug.trim(),
       input.locationUrl?.trim() || null,
       input.description?.trim() || null,
+      input.descriptionJapanese?.trim() || null,
       input.about?.trim() || null,
+      input.aboutJapanese?.trim() || null,
       input.isVerified ? 1 : 0,
       input.isVerified ? 1 : 0,
       input.verifiedAt || null,
@@ -87,8 +91,17 @@ export async function updateStation(
   id: number,
   input: UpdateStationInput,
 ): Promise<void> {
-  const topPickIds =
-    input.topPickIds ?? (await resolveTopPickIds(db, input.topPicks));
+  /*
+   * Top picks are only changed when the caller sends a list. The station edit
+   * form does not manage them (they are assigned from the Top Pick pages), so
+   * an edit that leaves them out must keep every assignment as it is.
+   */
+  const syncTopPicks =
+    input.topPickIds !== undefined || input.topPicks !== undefined;
+
+  const topPickIds = syncTopPicks
+    ? (input.topPickIds ?? (await resolveTopPickIds(db, input.topPicks)))
+    : [];
 
   await db
     .prepare(
@@ -100,7 +113,9 @@ export async function updateStation(
           slug = ?,
           location_url = ?,
           description = ?,
+          description_japanese = ?,
           about = ?,
+          about_japanese = ?,
           is_verified = COALESCE(?, is_verified),
           verified_at = CASE
             WHEN ? = 0 THEN NULL
@@ -117,7 +132,9 @@ export async function updateStation(
       input.slug.trim(),
       input.locationUrl?.trim() || null,
       input.description?.trim() || null,
+      input.descriptionJapanese?.trim() || null,
       input.about?.trim() || null,
+      input.aboutJapanese?.trim() || null,
       input.isVerified === undefined ? null : input.isVerified ? 1 : 0,
       input.isVerified === undefined ? null : input.isVerified ? 1 : 0,
       input.isVerified === undefined ? null : input.isVerified ? 1 : 0,
@@ -160,11 +177,12 @@ export async function updateStation(
                 floor_id,
                 facility_id,
                 note,
+                note_japanese,
                 facility_count,
                 location_type,
                 sort_order
               )
-              SELECT ?, ?, ?, ?, ?, ?
+              SELECT ?, ?, ?, ?, ?, ?, ?
               WHERE EXISTS (
                 SELECT 1
                 FROM station_floors
@@ -177,6 +195,7 @@ export async function updateStation(
             facility.floorId,
             facility.facilityId,
             facility.note?.trim() || null,
+            facility.noteJapanese?.trim() || null,
             facility.facilityCount,
             facility.locationType === "outside" ? "outside" : "inside",
             index,
@@ -228,38 +247,45 @@ export async function updateStation(
     });
   }
 
-  /*
-   * Preserve the existing top-pick update behavior.
-   * Floor-wise top-pick assignments are not modified here.
-   */
-  statements.push(
-    db
-      .prepare(
-        `
-          DELETE FROM station_top_picks
-          WHERE station_id = ?
-        `,
-      )
-      .bind(id),
-  );
+  if (syncTopPicks) {
+    /*
+     * Remove only the picks that were taken off the list, and keep the rows
+     * that stay: they carry the floor, exit, location and walking time that
+     * were set on the Top Pick pages.
+     */
+    const keep = topPickIds.map(() => "?").join(", ");
 
-  topPickIds.forEach((topPickId, index) => {
     statements.push(
       db
         .prepare(
-          `
-            INSERT INTO station_top_picks (
-              station_id,
-              top_pick_id,
-              sort_order,
-              walking_minutes
-            )
-            VALUES (?, ?, ?, NULL)
-          `,
+          keep
+            ? `DELETE FROM station_top_picks
+               WHERE station_id = ? AND top_pick_id NOT IN (${keep})`
+            : `DELETE FROM station_top_picks WHERE station_id = ?`,
         )
-        .bind(id, topPickId, index + 1),
+        .bind(id, ...topPickIds),
     );
-  });
+
+    topPickIds.forEach((topPickId, index) => {
+      statements.push(
+        db
+          .prepare(
+            `
+              INSERT INTO station_top_picks (
+                station_id,
+                top_pick_id,
+                sort_order,
+                walking_minutes
+              )
+              VALUES (?, ?, ?, NULL)
+              ON CONFLICT (station_id, top_pick_id)
+              DO UPDATE SET sort_order = excluded.sort_order
+            `,
+          )
+          .bind(id, topPickId, index + 1),
+      );
+    });
+  }
 
   if (statements.length > 0) {
     await db.batch(statements);

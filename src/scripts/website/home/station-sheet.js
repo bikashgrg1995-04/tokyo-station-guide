@@ -3,6 +3,7 @@
 import { line as currentLine, list } from "./current-line.js";
 import { data, searchable } from "./data.js";
 import { sheet } from "./dom.js";
+import { isJp, names, pick, t } from "./i18n.js";
 import { state } from "./state.js";
 import { findLinesForStation } from "./station-lookup.js";
 import { $, esc } from "./utils.js";
@@ -39,9 +40,12 @@ function stationField(stn, names) {
 var view = {
   stn: null,
   tab: "facilities",
-  lang: "en",
   sel: -1,
   platformSel: -1,
+
+  /* Suggestion form: a suggestion was just sent / is being sent. */
+  sent: false,
+  submitting: false,
 };
 
 /* A JSON string (or array) from the page data, as an array. */
@@ -68,7 +72,7 @@ function stationLines(stn) {
       return c.name;
     })
     .map(function (c) {
-      return { name: c.name, code: c.code, color: c.color };
+      return { name: c.name, jp: c.name_jp, code: c.code, color: c.color };
     });
 
   if (out.length) {
@@ -80,6 +84,7 @@ function stationLines(stn) {
 
     out.push({
       name: m.lineName,
+      jp: line.jp,
       code: line.code,
       color: line.color,
     });
@@ -168,11 +173,11 @@ function iconKey(f) {
 }
 
 function isDark() {
-  var t = document.documentElement.dataset.theme;
+  var theme = document.documentElement.dataset.theme;
 
   return (
-    t === "dark" ||
-    (t !== "light" &&
+    theme === "dark" ||
+    (theme !== "light" &&
       window.matchMedia &&
       window.matchMedia("(prefers-color-scheme: dark)").matches)
   );
@@ -219,10 +224,6 @@ var SOURCES = {
   o: ["seen on site", "現地で確認"],
 };
 
-function isJp() {
-  return view.lang === "jp";
-}
-
 function sourceTag(v) {
   if (!v) {
     return "";
@@ -241,7 +242,7 @@ function exitChips(list) {
         '<span class="ex"><i' +
         (e.color ? ' style="background:' + esc(e.color) + '"' : "") +
         "></i>" +
-        esc(isJp() && e.name_jp ? e.name_jp : e.name) +
+        esc(pick(e.name, e.name_jp)) +
         "</span>"
       );
     })
@@ -305,6 +306,7 @@ function groupedFacilities(items) {
       byKey[key] = {
         key: key,
         name: name,
+        name_jp: f.name_jp,
         icon: f.icon,
         icon_dark: f.icon_dark,
         slug: f.slug,
@@ -325,7 +327,7 @@ function facilityFloorLabel(group) {
   var floors = [];
 
   group.floors.forEach(function (f) {
-    var floor = String(f.floor || "").trim();
+    var floor = String(pick(f.floor, f.floor_japanese) || "").trim();
 
     if (floor && floors.indexOf(floor) === -1) {
       floors.push(floor);
@@ -340,7 +342,9 @@ function facilityCountLabel(count) {
     return "";
   }
 
-  return esc(count) + (Number(count) === 1 ? " unit" : " units");
+  return esc(
+    t(Number(count) === 1 ? "sheet.unit" : "sheet.units", { n: count }),
+  );
 }
 
 /* ---------- Tab contents ---------- */
@@ -367,7 +371,7 @@ function facilitiesHtml(stn) {
             '">' +
             facilityIcon(group.floors[0]) +
             "<b>" +
-            esc(group.name) +
+            esc(pick(group.name, group.name_jp)) +
             "</b>" +
             (floors ? '<span class="fl">' + esc(floors) + "</span>" : "") +
             "</button>"
@@ -375,14 +379,16 @@ function facilitiesHtml(stn) {
         })
         .join("") +
       "</div>"
-    : '<p class="sheet-empty">No facilities listed yet.</p>';
+    : '<p class="sheet-empty">' + esc(t("sheet.noFacilities")) + "</p>";
 
   return (
     '<div class="gwrap">' +
     '<div class="gw">' +
     gridContent +
     "</div>" +
-    '<button type="button" class="more" id="sheet-more" aria-label="Scroll for more">' +
+    '<button type="button" class="more" id="sheet-more" aria-label="' +
+    esc(t("sheet.scrollMore")) +
+    '">' +
     '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
     '<path d="M3.5 6l4.5 4.5L12.5 6"/>' +
     "</svg>" +
@@ -399,7 +405,7 @@ function facilitiesHtml(stn) {
 /* One selected facility; show every floor record separately. */
 function facilityDetailHtml(group) {
   if (!group) {
-    return '<span class="hint">Tap an icon for detail.</span>';
+    return '<span class="hint">' + esc(t("sheet.tapIcon")) + "</span>";
   }
 
   var allExits = [];
@@ -421,7 +427,9 @@ function facilityDetailHtml(group) {
     var bits = [];
 
     if (f.floor) {
-      bits.push("Floor " + esc(f.floor));
+      bits.push(
+        esc(t("sheet.floor", { n: pick(f.floor, f.floor_japanese) })),
+      );
     }
 
     var count = facilityCountLabel(f.count);
@@ -439,12 +447,13 @@ function facilityDetailHtml(group) {
     }
 
     var detail = bits.join(" · ");
+    var note = pick(f.note, f.note_jp);
 
     if (detail) {
       floorDetails.push(
         detail +
-          (f.note && String(f.note).trim()
-            ? " · " + esc(String(f.note).trim())
+          (note && String(note).trim()
+            ? " · " + esc(String(note).trim())
             : ""),
       );
     }
@@ -454,14 +463,7 @@ function facilityDetailHtml(group) {
 
   var locationPills = locations
     .map(function (type) {
-      var label =
-        type === "inside"
-          ? isJp()
-            ? "駅構内"
-            : "Inside"
-          : isJp()
-            ? "駅の外"
-            : "Outside";
+      var label = type === "inside" ? t("sheet.inside") : t("sheet.outside");
 
       return (
         '<span class="io pk-status pk-status-' +
@@ -476,7 +478,9 @@ function facilityDetailHtml(group) {
   /* The pill sits beside the nearby exits; alone when there are no exits. */
   var topRow = exits
     ? '<div class="facility-nearby-row">' +
-      '<span class="near">Nearby Exit</span>' +
+      '<span class="near">' +
+      esc(t("sheet.nearbyExit")) +
+      "</span>" +
       '<div class="facility-nearby-exits">' +
       exits +
       locationPills +
@@ -498,13 +502,17 @@ function platformsHtml(stn) {
   var items = parseList(stationField(stn, ["platforms"]));
 
   if (!items.length) {
-    return '<p class="sheet-empty">No platform information yet.</p>';
+    return '<p class="sheet-empty">' + esc(t("sheet.noPlatforms")) + "</p>";
   }
 
   var rows = items
     .map(function (p) {
-      var title = p.destinations || "Platform " + (p.number || "");
-      var sub = [p.line, p.location].filter(Boolean).join(" · ");
+      var title =
+        pick(p.destinations, p.destinations_jp) ||
+        t("sheet.platform", { n: p.number || "" });
+      var sub = [pick(p.line, p.line_jp), p.location]
+        .filter(Boolean)
+        .join(" · ");
 
       return (
         '<div class="row platform-row">' +
@@ -578,7 +586,7 @@ function pickOpeningHours(raw) {
 
   if (Number(schedule.is_closed) === 1) {
     return {
-      hours: isJp() ? "定休日" : "Closed",
+      hours: t("sheet.closed"),
       lastEntry: "",
     };
   }
@@ -613,18 +621,18 @@ function picksHtml(stn) {
   var items = parseList(stationField(stn, ["top_picks", "topPicks"]));
 
   if (!items.length) {
-    return '<p class="sheet-empty">No top picks yet.</p>';
+    return '<p class="sheet-empty">' + esc(t("sheet.noPicks")) + "</p>";
   }
 
   var locationLabels = {
-    inside: isJp() ? "駅構内" : "Inside",
-    outside: isJp() ? "駅の外" : "Outside",
-    inside_outside: isJp() ? "駅構内・駅外" : "Inside & outside",
+    inside: t("sheet.inside"),
+    outside: t("sheet.outside"),
+    inside_outside: t("sheet.insideOutside"),
   };
 
   return items
-    .map(function (t) {
-      var locationType = String(t.location_type || "").toLowerCase();
+    .map(function (item) {
+      var locationType = String(item.location_type || "").toLowerCase();
 
       var locationLabel = locationLabels[locationType] || "";
 
@@ -637,15 +645,13 @@ function picksHtml(stn) {
         : "";
 
       /* Exit name only, with its actual station exit color. */
-      var exitName = isJp()
-        ? t.exit_name_japanese || t.exit_name || ""
-        : t.exit_name || "";
+      var exitName = pick(item.exit_name, item.exit_name_japanese) || "";
 
       var exit = exitName
         ? '<span class="pk-exit">' +
           '<i class="pk-exit-dot"' +
-          (t.exit_color
-            ? ' style="background-color:' + esc(t.exit_color) + '"'
+          (item.exit_color
+            ? ' style="background-color:' + esc(item.exit_color) + '"'
             : "") +
           "></i>" +
           esc(exitName) +
@@ -655,19 +661,15 @@ function picksHtml(stn) {
       /* Walking time applies whenever part of the trip is outside. */
       var minutes =
         (locationType === "outside" || locationType === "inside_outside") &&
-        t.minutes != null &&
-        t.minutes !== ""
+        item.minutes != null &&
+        item.minutes !== ""
           ? '<span class="pk-walk">' +
-            esc(
-              isJp()
-                ? "徒歩約" + t.minutes + "分"
-                : "About " + t.minutes + " min walk",
-            ) +
+            esc(t("sheet.walk", { n: item.minutes })) +
             "</span>"
           : "";
 
       /* Google Maps button: only for a real http(s) link set in the admin. */
-      var mapUrl = String(t.map_url || "").trim();
+      var mapUrl = String(item.map_url || "").trim();
 
       var mapLink = /^https?:\/\//i.test(mapUrl)
         ? '<a class="pk-map" href="' +
@@ -676,7 +678,7 @@ function picksHtml(stn) {
           '<svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">' +
           '<path d="M8 .5A5.5 5.5 0 0 0 2.5 6c0 3.9 4.6 8.9 5.1 9.4a.6.6 0 0 0 .8 0c.5-.5 5.1-5.5 5.1-9.4A5.5 5.5 0 0 0 8 .5zm0 7.6a2.1 2.1 0 1 1 0-4.2 2.1 2.1 0 0 1 0 4.2z"/>' +
           "</svg>" +
-          esc(isJp() ? "Googleマップで見る" : "View on Google Maps") +
+          esc(t("sheet.mapLink")) +
           "</a>"
         : "";
 
@@ -688,34 +690,34 @@ function picksHtml(stn) {
       /* Build the information row in the required order. */
       var info = [];
 
-      if (t.entry_fee != null && String(t.entry_fee).trim() !== "") {
-        info.push(
-          (isJp() ? "入場料: " : "Entry fee: ") + String(t.entry_fee).trim(),
-        );
+      var fee = pick(item.entry_fee, item.entry_fee_jp);
+
+      if (fee != null && String(fee).trim() !== "") {
+        info.push(t("sheet.fee") + String(fee).trim());
       }
 
-      var schedule = pickOpeningHours(t.opening_hours);
+      var schedule = pickOpeningHours(item.opening_hours);
 
       if (schedule && schedule.hours) {
-        info.push((isJp() ? "営業時間: " : "Hours: ") + schedule.hours);
+        info.push(t("sheet.hours") + schedule.hours);
       }
 
       if (schedule && schedule.lastEntry) {
-        info.push(
-          (isJp() ? "最終入場: " : "Last entry: ") + schedule.lastEntry,
-        );
+        info.push(t("sheet.lastEntry") + schedule.lastEntry);
       }
 
       /* Show Visitor Notes only; do not display Description. */
-      if (t.notes != null && String(t.notes).trim() !== "") {
-        info.push(String(t.notes).trim());
+      var notes = pick(item.notes, item.notes_jp);
+
+      if (notes != null && String(notes).trim() !== "") {
+        info.push(String(notes).trim());
       }
 
       var infoHtml = info.length
         ? '<div class="pk-info">' + info.map(esc).join(" | ") + "</div>"
         : "";
 
-      var photo = pickPhotoSrc(t.image_url);
+      var photo = pickPhotoSrc(item.image_url);
 
       return (
         '<div class="pk' +
@@ -725,13 +727,13 @@ function picksHtml(stn) {
           ? '<img class="pk-photo" src="' +
             esc(photo) +
             '" alt="' +
-            esc(isJp() && t.name_jp ? t.name_jp : t.name) +
+            esc(pick(item.name, item.name_jp)) +
             '" loading="lazy" decoding="async">'
           : "") +
         '<div class="pk-body">' +
         '<div class="pk-heading">' +
         '<b class="pk-name">' +
-        esc(isJp() && t.name_jp ? t.name_jp : t.name) +
+        esc(pick(item.name, item.name_jp)) +
         "</b>" +
         status +
         "</div>" +
@@ -749,7 +751,7 @@ function verifiedText(stn) {
   var at = stationField(stn, ["verified_at"]);
 
   if (!yes) {
-    return { ok: false, html: "Not yet verified" };
+    return { ok: false, html: esc(t("sheet.notVerified")) };
   }
 
   var when = "";
@@ -777,7 +779,7 @@ function verifiedText(stn) {
     ok: true,
     html:
       "<b>✓ " +
-      (isJp() ? "確認済み" : "Verified") +
+      esc(t("sheet.verified")) +
       "</b>" +
       (when ? " " + esc(when) : ""),
   };
@@ -785,29 +787,18 @@ function verifiedText(stn) {
 
 function renderNames() {
   var stn = view.stn;
-  var jp = stn.jp || stn.name;
+  var pair = names(stn.name, stn.jp);
   var main = $("#sheet-main");
-  var sub = $("#sheet-sub");
 
-  if (isJp()) {
-    main.textContent = jp;
-    main.lang = "ja";
-    sub.textContent = stn.name;
-  } else {
-    main.textContent = stn.name;
-    main.lang = "en";
-    sub.textContent = stn.jp || "";
-  }
+  main.textContent = pair[0];
+  main.lang = isJp() && stn.jp ? "ja" : "en";
+  $("#sheet-sub").textContent = pair[1];
 
   var v = verifiedText(stn);
   var verified = $("#sheet-verified");
 
   verified.innerHTML = v.html;
   verified.classList.toggle("is-ok", v.ok);
-
-  document.querySelectorAll(".sheet-lang button").forEach(function (b) {
-    b.setAttribute("aria-pressed", String(b.dataset.lang === view.lang));
-  });
 }
 
 /* Fade + chevron on the facility grid, depending on scroll position. */
@@ -857,10 +848,8 @@ function renderTab() {
   updateGridScroll();
 
   var note = $("#sheet-note");
-  var note = $("#sheet-note");
 
-  note.textContent =
-    "Icons appear only when the floor is checked. Unverified facts stay hidden.";
+  note.textContent = t("sheet.note");
 
   note.hidden = false;
 
@@ -903,11 +892,24 @@ function prepareSuggestionForm(stn) {
   section.hidden = true;
   button.setAttribute("aria-expanded", "false");
 
-  $("#sheet-cancel-edit").textContent = "Cancel";
+  view.sent = false;
+  view.submitting = false;
+  updateSuggestButtons();
 
   message.textContent = "";
   message.hidden = true;
   message.classList.remove("is-success", "is-error");
+}
+
+/* Cancel / Close and Submit change with the state and with the language. */
+function updateSuggestButtons() {
+  $("#sheet-cancel-edit").textContent = view.sent
+    ? t("sug.close")
+    : t("sug.cancel");
+
+  $("#sheet-submit-edit").textContent = view.submitting
+    ? t("sug.submitting")
+    : t("sug.submit");
 }
 
 /*
@@ -926,12 +928,48 @@ function fillSuggestionHead() {
       '<span class="suggestion-line-dot"' +
       (line.color ? ' style="--c:' + esc(line.color) + '"' : "") +
       "></span>" +
-      esc(line.name);
+      esc(pick(line.name, line.jp));
     sub.hidden = false;
   } else {
     sub.textContent = "";
     sub.hidden = true;
   }
+}
+
+/* Line badges under the station name. */
+function renderLineBadges(stn) {
+  $("#sheet-lines").innerHTML = stationLines(stn)
+    .map(function (l) {
+      var text =
+        l.code ||
+        String(l.name || "")
+          .slice(0, 2)
+          .toUpperCase();
+
+      return (
+        '<span class="sheet-line" title="' +
+        esc(pick(l.name, l.jp)) +
+        '"' +
+        (l.color ? ' style="--c:' + esc(l.color) + '"' : "") +
+        ">" +
+        esc(text) +
+        "</span>"
+      );
+    })
+    .join("");
+}
+
+/* The station text: the Japanese one when it was written, else English. */
+function renderDescription(stn) {
+  var desc = pick(
+    stationField(stn, ["about", "description", "summary"]),
+    stationField(stn, ["about_jp", "description_jp"]),
+  );
+
+  var descEl = $("#sheet-desc");
+
+  descEl.textContent = desc || "";
+  descEl.hidden = false;
 }
 
 function openSheet() {
@@ -947,33 +985,8 @@ function openSheet() {
 
   renderNames();
 
-  /* Line badges */
-  $("#sheet-lines").innerHTML = stationLines(stn)
-    .map(function (l) {
-      var text =
-        l.code ||
-        String(l.name || "")
-          .slice(0, 2)
-          .toUpperCase();
-
-      return (
-        '<span class="sheet-line" title="' +
-        esc(l.name) +
-        '"' +
-        (l.color ? ' style="--c:' + esc(l.color) + '"' : "") +
-        ">" +
-        esc(text) +
-        "</span>"
-      );
-    })
-    .join("");
-
-  /* Description */
-  var desc = stationField(stn, ["about", "description", "summary"]);
-  var descEl = $("#sheet-desc");
-
-  descEl.textContent = desc || "";
-  descEl.hidden = false;
+  renderLineBadges(stn);
+  renderDescription(stn);
 
   /* First tab that has something to show */
   var has = {
@@ -1001,6 +1014,27 @@ function openSheet() {
   $("#sheet-close").focus();
 }
 
+/*
+ * The language changed (from the top bar or from this sheet's own switch).
+ * Everything the sheet shows is written again in the new language.
+ */
+export function refreshSheetLanguage() {
+  updateSuggestButtons();
+
+  if (!view.stn) {
+    return;
+  }
+
+  renderNames();
+  renderLineBadges(view.stn);
+  renderDescription(view.stn);
+  renderTab();
+
+  if (!$("#sheet-edit-form").hidden) {
+    fillSuggestionHead();
+  }
+}
+
 export function closeSheet() {
   sheet.hidden = true;
 }
@@ -1024,18 +1058,6 @@ export function initStationSheet() {
       view.tab = b.dataset.tab;
       view.sel = -1;
       view.platformSel = -1;
-      renderTab();
-    });
-  });
-
-  document.querySelectorAll(".sheet-lang button").forEach(function (b) {
-    b.addEventListener("click", function () {
-      if (!view.stn) {
-        return;
-      }
-
-      view.lang = b.dataset.lang;
-      renderNames();
       renderTab();
     });
   });
@@ -1101,7 +1123,8 @@ export function initStationSheet() {
     if (opening) {
       fillSuggestionHead();
 
-      $("#sheet-cancel-edit").textContent = "Cancel";
+      view.sent = false;
+      updateSuggestButtons();
 
       section.scrollIntoView({
         behavior: "smooth",
@@ -1140,7 +1163,8 @@ export function initStationSheet() {
       message.classList.remove("is-success", "is-error");
 
       submitButton.disabled = true;
-      submitButton.textContent = "Submitting...";
+      view.submitting = true;
+      updateSuggestButtons();
 
       try {
         var response = await fetch("/api/station-suggestions", {
@@ -1155,37 +1179,37 @@ export function initStationSheet() {
 
         if (!response.ok || !result.ok) {
           throw new Error(
-            result.message ||
-              "Unable to submit your suggestion. Please try again.",
+            isJp() ? t("sug.error") : result.message || t("sug.error"),
           );
         }
 
-        message.textContent =
-          result.message ||
-          "Thank you! Your suggestion has been sent for review.";
+        message.textContent = isJp()
+          ? t("sug.thanks")
+          : result.message || t("sug.thanks");
         message.classList.remove("is-error");
         message.classList.add("is-success");
         message.hidden = false;
 
         // Ready for another suggestion; the button now just closes the form.
         $("#suggestion-text").value = "";
-        $("#sheet-cancel-edit").textContent = "Close";
+        view.sent = true;
       } catch (error) {
         message.textContent =
-          error instanceof Error
-            ? error.message
-            : "A network error occurred. Please try again.";
+          error instanceof Error ? error.message : t("sug.network");
 
         message.classList.remove("is-success");
         message.classList.add("is-error");
         message.hidden = false;
       } finally {
         submitButton.disabled = false;
-        submitButton.textContent = "Submit Suggestion";
+        view.submitting = false;
+        updateSuggestButtons();
       }
     },
   );
 
   $("#sheet-close").addEventListener("click", closeSheet);
   $("#sheet-backdrop").addEventListener("click", closeSheet);
+
+  updateSuggestButtons();
 }

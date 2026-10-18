@@ -121,6 +121,7 @@ function readStationFacilities(formData: FormData): ParsedStationFacilities {
   const floorIds = formData.getAll("facility_entry_floor_id");
   const counts = formData.getAll("facility_entry_count");
   const notes = formData.getAll("facility_entry_note");
+  const notesJapanese = formData.getAll("facility_entry_note_japanese");
   const locations = formData.getAll("facility_entry_location");
   const exitIdsJson = formData.getAll("facility_entry_exit_ids_json");
 
@@ -132,6 +133,7 @@ function readStationFacilities(formData: FormData): ParsedStationFacilities {
     floorIds.length,
     counts.length,
     notes.length,
+    notesJapanese.length,
     exitIdsJson.length,
   );
 
@@ -140,6 +142,7 @@ function readStationFacilities(formData: FormData): ParsedStationFacilities {
     const rawFloorId = String(floorIds[index] ?? "").trim();
     const rawCount = String(counts[index] ?? "").trim();
     const note = String(notes[index] ?? "").trim();
+    const noteJapanese = String(notesJapanese[index] ?? "").trim();
     const locationType =
       String(locations[index] ?? "").trim() === "outside" ? "outside" : "inside";
 
@@ -149,6 +152,14 @@ function readStationFacilities(formData: FormData): ParsedStationFacilities {
       );
       continue;
     }
+
+    if (noteJapanese.length > 150) {
+      errors.push(
+        `Facility row ${index + 1}: Japanese note must not exceed 150 characters.`,
+      );
+      continue;
+    }
+
     const exitIds = readFacilityExitIds(exitIdsJson[index], index + 1, errors);
 
     if (
@@ -156,6 +167,7 @@ function readStationFacilities(formData: FormData): ParsedStationFacilities {
       !rawFloorId &&
       !rawCount &&
       !note &&
+      !noteJapanese &&
       (!String(exitIdsJson[index] ?? "").trim() ||
         String(exitIdsJson[index]).trim() === "[]")
     ) {
@@ -189,6 +201,7 @@ function readStationFacilities(formData: FormData): ParsedStationFacilities {
       facilityCount,
       locationType,
       note: note || null,
+      noteJapanese: noteJapanese || null,
       exitIds,
     });
   }
@@ -220,7 +233,9 @@ function readStationForm(formData: FormData) {
     slug: readText(formData, "slug").toLowerCase(),
     locationUrl: readText(formData, "location_url"),
     description: readText(formData, "description"),
+    descriptionJapanese: readText(formData, "description_japanese"),
     about: readText(formData, "about"),
+    aboutJapanese: readText(formData, "about_japanese"),
     isVerified: formData.get("is_verified") === "on",
     verifiedAt: readText(formData, "verified_at"),
   };
@@ -233,6 +248,7 @@ function readStationForm(formData: FormData) {
     stationFacilities: parsedFacilities.entries,
     stationFacilitiesError: parsedFacilities.error,
     topPickIds: readIds(formData, "top_pick_ids"),
+    topPickIdsManaged: formData.has("top_pick_ids_managed"),
   };
 }
 
@@ -268,7 +284,7 @@ function validateStationSelections(
 function toStationInput(
   values: StationFormValues,
   facilityIds: number[],
-  topPickIds: number[],
+  topPickIds: number[] | undefined,
   stationFacilities: StationFacilityInput[],
 ) {
   return {
@@ -277,7 +293,9 @@ function toStationInput(
     slug: values.slug,
     locationUrl: values.locationUrl || null,
     description: values.description || null,
+    descriptionJapanese: values.descriptionJapanese || null,
     about: values.about || null,
+    aboutJapanese: values.aboutJapanese || null,
     facilityIds,
     stationFacilities,
     topPickIds,
@@ -305,7 +323,9 @@ export async function handleStationCreate(
       slug: "",
       locationUrl: "",
       description: "",
+      descriptionJapanese: "",
       about: "",
+      aboutJapanese: "",
       isVerified: false,
       verifiedAt: "",
     },
@@ -376,7 +396,9 @@ export async function handleStationUpdate(
       slug: station.slug,
       locationUrl: station.location_url ?? "",
       description: station.description ?? "",
+      descriptionJapanese: station.description_japanese ?? "",
       about: station.about ?? "",
+      aboutJapanese: station.about_japanese ?? "",
       isVerified: station.is_verified === 1,
       verifiedAt: station.verified_at?.slice(0, 10) ?? "",
     },
@@ -403,6 +425,7 @@ export async function handleStationUpdate(
     stationFacilities,
     stationFacilitiesError,
     topPickIds,
+    topPickIdsManaged,
   } = readStationForm(formData);
 
   const allFacilities = await getFacilities(db);
@@ -447,7 +470,12 @@ export async function handleStationUpdate(
       await updateStation(
         db,
         id,
-        toStationInput(values, facilityIds, topPickIds, stationFacilities),
+        toStationInput(
+          values,
+          facilityIds,
+          topPickIdsManaged ? topPickIds : undefined,
+          stationFacilities,
+        ),
       );
 
       result.redirectTo = LIST_PATH;
@@ -497,6 +525,7 @@ export async function handleStationUpdate(
       sort_order: facility?.sort_order ?? 0,
       facility_count: entry.facilityCount,
       note: entry.note ?? null,
+      note_japanese: entry.noteJapanese ?? null,
       location_type: entry.locationType === "outside" ? "outside" : "inside",
       exits: selectedExits,
     };

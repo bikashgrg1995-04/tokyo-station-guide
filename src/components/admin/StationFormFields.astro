@@ -22,7 +22,9 @@ const {
   slug,
   locationUrl,
   description,
+  descriptionJapanese,
   about,
+  aboutJapanese,
   isVerified,
   verifiedAt,
 } = values;
@@ -212,6 +214,59 @@ const {
       errors.about && (
         <small id="about-error" class="admin-form-error">
           {errors.about}
+        </small>
+      )
+    }
+  </div>
+
+  <!-- Japanese Description -->
+  <div class="admin-form-group span-6">
+    <label for="description_japanese">Japanese Description</label>
+
+    <textarea
+      id="description_japanese"
+      name="description_japanese"
+      rows="3"
+      lang="ja"
+      class="admin-station-description"
+      placeholder="この駅の簡単な説明..."
+      aria-invalid={errors.descriptionJapanese ? "true" : "false"}
+      aria-describedby={errors.descriptionJapanese ? "description-japanese-error" : undefined}
+      >{descriptionJapanese}</textarea
+    >
+
+    {
+      errors.descriptionJapanese && (
+        <small id="description-japanese-error" class="admin-form-error">
+          {errors.descriptionJapanese}
+        </small>
+      )
+    }
+  </div>
+
+  <!-- Japanese About -->
+  <div class="admin-form-group span-6">
+    <label for="about_japanese">
+      Japanese About <span class="admin-label-hint">up to 150 characters</span>
+    </label>
+
+    <textarea
+      id="about_japanese"
+      name="about_japanese"
+      maxlength="150"
+      rows="3"
+      lang="ja"
+      class="admin-station-description"
+      placeholder="駅ポップアップの「概要」に表示される短い文章..."
+      aria-invalid={errors.aboutJapanese ? "true" : "false"}
+      aria-describedby={errors.aboutJapanese ? "about-japanese-error" : undefined}
+      >{aboutJapanese}</textarea
+    >
+
+    {
+      errors.aboutJapanese && (
+        <small id="about-japanese-error" class="admin-form-error">
+          {errors.aboutJapanese}
         </small>
       )
     }
