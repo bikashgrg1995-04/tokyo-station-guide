@@ -99,23 +99,3 @@ html.lite .lang-switch,
 html.lite .round {
   box-shadow: 0 2px 10px rgba(20, 30, 50, 0.18);
 }
-
-/* Lite: a simpler train and no per-label shadows, so the train ride stays smooth */
-html.lite #train,
-html.lite .pill,
-html.lite .stn:hover .pill,
-html.lite .stn.current .pill,
-html.lite .lamp,
-html.lite .tail {
-  filter: none !important;
-}
-
-html.lite .headlight,
-html.lite .car-glaze,
-html.lite .ac-line {
-  display: none !important;
-}
-
-html.lite .stop {
-  transition: none;
-}

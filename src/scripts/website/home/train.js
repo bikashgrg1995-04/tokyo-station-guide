@@ -399,14 +399,6 @@ function drawTrain(s, lane, dir) {
   return pointAt(s);
 }
 
-function setMoving(on) {
-  var stage = $("#stage");
-
-  if (stage) {
-    stage.classList.toggle("moving", on);
-  }
-}
-
 /*
  * Animate train from current position
  * to selected station.
@@ -444,8 +436,6 @@ export function moveTrain() {
    */
 
   if (from === target) {
-    setMoving(false);
-
     setView(drawTrain(state.trainS, state.trainLane, state.trainDir));
 
     return;
@@ -466,8 +456,6 @@ export function moveTrain() {
    */
 
   if (dur === 0) {
-    setMoving(false);
-
     state.trainS = target;
 
     state.trainLane = toDir;
@@ -476,10 +464,6 @@ export function moveTrain() {
 
     return;
   }
-
-  /* While the train rides, the idle blink / radar on the map pauses (see
-     transit.css): fewer things repaint every frame, so the train stays smooth. */
-  setMoving(true);
 
   /* Start the clock on the first animation frame: Safari's frame timestamp
      is not always on the same clock as performance.now(). */
@@ -501,10 +485,6 @@ export function moveTrain() {
     setView(drawTrain(state.trainS, state.trainLane, state.trainDir));
 
     state.anim = k < 1 ? requestAnimationFrame(step) : null;
-
-    if (k >= 1) {
-      setMoving(false);
-    }
   }
 
   state.anim = requestAnimationFrame(step);

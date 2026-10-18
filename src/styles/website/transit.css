@@ -260,10 +260,3 @@
     stroke-width: 1.6;
   }
 }
-
-/* The train is riding: pause the selected-station blink / radar so only the
-   train repaints. They start again when it arrives. */
-.stage.moving .stn.current .pulse,
-.stage.moving .stn.current .stop {
-  animation-play-state: paused;
-}
