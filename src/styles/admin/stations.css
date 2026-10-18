@@ -1013,8 +1013,61 @@
   width: 76px;
 }
 
-.admin-compact-table input[name="facility_entry_note"] {
-  min-width: 160px;
+/* Facilities table: compact columns, notes get the room (multi-line). */
+#station-facilities-table th,
+#station-facilities-table td {
+  padding: 4px 8px;
+}
+
+#station-facilities-table .admin-line-name {
+  max-width: 130px;
+}
+
+#station-facilities-table select {
+  width: 84px;
+  padding: 0 4px;
+}
+
+#station-facilities-table input[type="number"] {
+  width: 56px;
+}
+
+#station-facilities-table .facility-exit-pills {
+  max-width: 190px;
+  margin-bottom: 0.2rem;
+}
+
+#station-facilities-table th:last-child,
+#station-facilities-table td:last-child {
+  padding-right: 10px;
+}
+
+.facility-note-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.facility-note-fields textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 5px 8px;
+  border: 1px solid var(--admin-border);
+  border-radius: 7px;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+@media (max-width: 760px) {
+  .facility-note-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 .admin-top-pick-japanese {

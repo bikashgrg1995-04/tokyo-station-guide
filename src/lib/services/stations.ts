@@ -141,8 +141,8 @@ function readStationFacilities(formData: FormData): ParsedStationFacilities {
     const rawFacilityId = String(facilityIds[index] ?? "").trim();
     const rawFloorId = String(floorIds[index] ?? "").trim();
     const rawCount = String(counts[index] ?? "").trim();
-    const note = String(notes[index] ?? "").trim();
-    const noteJapanese = String(notesJapanese[index] ?? "").trim();
+    const note = String(notes[index] ?? "").replace(/\s*\r?\n\s*/g, " ").trim();
+    const noteJapanese = String(notesJapanese[index] ?? "").replace(/\s*\r?\n\s*/g, " ").trim();
     const locationType =
       String(locations[index] ?? "").trim() === "outside" ? "outside" : "inside";
 

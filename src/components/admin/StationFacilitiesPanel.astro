@@ -194,24 +194,23 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
                 </td>
 
                 <td>
-                  <input
-                    type="text"
-                    name="facility_entry_note"
-                    value={facility.note ?? ""}
-                    placeholder="Optional note (max 15 characters)"
-                    maxlength="150"
-                    aria-label={`Note for ${facility.name}`}
-                  />
-                  <input
-                    type="text"
-                    name="facility_entry_note_japanese"
-                    value={facility.note_japanese ?? ""}
-                    lang="ja"
-                    placeholder="Japanese note (optional)"
-                    maxlength="150"
-                    aria-label={`Japanese note for ${facility.name}`}
-                    style="margin-top: 6px"
-                  />
+                  <div class="facility-note-fields">
+                    <textarea
+                      name="facility_entry_note"
+                      rows="2"
+                      maxlength="150"
+                      placeholder="Note (optional)"
+                      aria-label={`Note for ${facility.name}`}
+                    >{facility.note ?? ""}</textarea>
+                    <textarea
+                      name="facility_entry_note_japanese"
+                      rows="2"
+                      maxlength="150"
+                      lang="ja"
+                      placeholder="日本語メモ (optional)"
+                      aria-label={`Japanese note for ${facility.name}`}
+                    >{facility.note_japanese ?? ""}</textarea>
+                  </div>
                 </td>
 
                 <td>

@@ -415,24 +415,38 @@ export function initializeFacilityPicker(): void {
 
     const noteCell = document.createElement("td");
 
-    const noteInput = createInput("facility_entry_note", "", {
-      placeholder: "Optional note",
-      maxLength: 150,
-      ariaLabel: `Note for ${facilityName}`,
-    });
+    const noteFields = document.createElement("div");
+    noteFields.className = "facility-note-fields";
 
-    noteCell.appendChild(noteInput);
+    const makeNote = (
+      name: string,
+      placeholder: string,
+      label: string,
+      lang?: string,
+    ) => {
+      const area = document.createElement("textarea");
+      area.name = name;
+      area.rows = 2;
+      area.maxLength = 150;
+      area.placeholder = placeholder;
+      area.setAttribute("aria-label", label);
+      if (lang) area.lang = lang;
+      return area;
+    };
 
-    const noteJapaneseInput = createInput("facility_entry_note_japanese", "", {
-      placeholder: "Japanese note (optional)",
-      maxLength: 150,
-      ariaLabel: `Japanese note for ${facilityName}`,
-    });
+    noteFields.appendChild(
+      makeNote("facility_entry_note", "Note (optional)", `Note for ${facilityName}`),
+    );
+    noteFields.appendChild(
+      makeNote(
+        "facility_entry_note_japanese",
+        "日本語メモ (optional)",
+        `Japanese note for ${facilityName}`,
+        "ja",
+      ),
+    );
 
-    noteJapaneseInput.lang = "ja";
-    noteJapaneseInput.style.marginTop = "6px";
-
-    noteCell.appendChild(noteJapaneseInput);
+    noteCell.appendChild(noteFields);
 
     /* Actions */
 
