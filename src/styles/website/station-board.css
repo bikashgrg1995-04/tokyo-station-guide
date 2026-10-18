@@ -19,10 +19,10 @@
   justify-items: center;
   gap: 0;
   width: min(430px, 100%);
-  padding: 9px 9px 10px;
+  padding: 10px 10px 11px;
   background: var(--surface);
   border: 1px solid var(--edge);
-  border-radius: 22px;
+  border-radius: 24px;
   box-shadow:
     0 1px 2px rgba(20, 30, 50, 0.05),
     0 16px 36px -10px rgba(20, 30, 50, 0.32);
@@ -33,14 +33,14 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 26px;
+  height: 28px;
   padding: 0 10px 0 11px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--line) 12%, var(--surface));
   color: var(--ink);
   font-weight: 500;
-  font-size: 11px;
-  line-height: 26px;
+  font-size: 11.5px;
+  line-height: 28px;
   white-space: nowrap;
   transition: background 0.15s ease;
 }
@@ -48,14 +48,14 @@
   background: color-mix(in srgb, var(--line) 22%, var(--surface));
 }
 .line-pill svg {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   color: var(--muted);
   stroke-width: 2.4;
 }
 .dot {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--line);
   display: inline-block;
@@ -75,13 +75,13 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 33px;
-  padding: 0 11px;
+  height: 35px;
+  padding: 0 12px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--line) 10%, var(--surface));
   color: var(--ink);
-  font-size: 11px;
-  line-height: 33px;
+  font-size: 11.5px;
+  line-height: 35px;
   font-weight: 500;
   white-space: nowrap;
   transition: background 0.15s ease;
@@ -94,14 +94,14 @@
 }
 .board-action svg {
   flex: none;
-  width: 18px;
-  height: 18px;
+  width: 19px;
+  height: 19px;
   color: var(--line);
   stroke-width: 1.9;
 }
 .board-action svg.chev {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
   color: var(--ink);
   stroke-width: 2.6;
 }
@@ -136,13 +136,13 @@
 }
 /* Station number: outlined capsule */
 .code {
-  height: 19px;
-  padding: 0 9px;
+  height: 20px;
+  padding: 0 10px;
   border-radius: 999px;
   border: 1px solid var(--line);
   color: var(--line);
-  font-size: 10.5px;
-  line-height: 17px;
+  font-size: 11px;
+  line-height: 18px;
   font-weight: 700;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -152,31 +152,31 @@
 }
 /* Station name: big, heavy, airy sans (like the reference sign) */
 .current strong {
-  max-width: 170px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 190px;
   font-family: "Noto Sans JP", "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic",
     system-ui, sans-serif;
-  font-size: 16px;
-  line-height: 22px;
+  font-size: 18px;
+  line-height: 24px;
   font-weight: 800;
   letter-spacing: 0.05em;
   text-indent: 0.05em;
   color: var(--ink);
+  /* a long name goes onto the next line instead of being cut off */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 .cur-en {
   max-width: 190px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 8.5px;
-  line-height: 12px;
+  font-size: 10px;
+  line-height: 14px;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-indent: 0.16em;
   color: var(--muted);
   text-transform: uppercase;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 /* Previous / next — one solid rounded bar in the line colour */
@@ -185,16 +185,16 @@
   grid-template-columns: 1fr 1px 1fr;
   align-items: center;
   width: 100%;
-  height: 50px;
-  margin-top: 5px;
-  padding: 0 4px;
-  border-radius: 18px;
+  min-height: 54px;
+  margin-top: 6px;
+  padding: 3px 4px;
+  border-radius: 19px;
   background: var(--line);
   color: #fff;
 }
 .board-divider {
   width: 1px;
-  height: 34px;
+  height: 38px;
   background: rgba(255, 255, 255, 0.5);
 }
 .side {
@@ -202,9 +202,9 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  height: 42px;
-  padding: 0 6px;
-  border-radius: 13px;
+  min-height: 46px;
+  padding: 2px 6px;
+  border-radius: 14px;
   color: #fff;
   transition: background 0.15s ease;
 }
@@ -227,42 +227,45 @@
 .side .arrow {
   flex: none;
   width: 14px;
-  height: 20px;
+  height: 22px;
   stroke-width: 2;
 }
 .side-text {
   display: grid;
   min-width: 0;
+  text-align: left;
 }
-.side-text b,
-.side-text small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.side.next .side-text {
+  text-align: right;
 }
 .side-text b {
   font-family: "Noto Sans JP", "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic",
     system-ui, sans-serif;
-  font-size: 13px;
-  line-height: 18px;
+  font-size: 13.5px;
+  line-height: 17px;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
+  /* long names (e.g. Takanawa Gateway) wrap onto a second line, never "..." */
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .side-text small {
-  font-size: 8.5px;
-  line-height: 12px;
+  font-size: 10px;
+  line-height: 14px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.88);
   text-transform: uppercase;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 /* Station number sign: line letters over the number */
 .badge {
   flex: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
+  width: 35px;
+  height: 35px;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -273,8 +276,8 @@
 .badge small,
 .badge b {
   display: block;
-  font-size: 11px;
-  line-height: 12.5px;
+  font-size: 12px;
+  line-height: 13.5px;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
