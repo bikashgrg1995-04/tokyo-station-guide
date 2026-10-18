@@ -5,7 +5,7 @@
    board card, and overflows visibly so a zoomed map runs behind both. */
 :root {
   --map-top: 44px;
-  --map-bottom: 184px;
+  --map-bottom: 214px;
 }
 .stage {
   touch-action: none; /* we handle pinch zoom ourselves */

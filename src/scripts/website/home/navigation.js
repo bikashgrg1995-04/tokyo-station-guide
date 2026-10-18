@@ -77,9 +77,26 @@ function updateBoard() {
 
     $("#" + prefix + "-en").textContent = pair[1];
 
-    $("#" + prefix + "-num").textContent = s ? num(s.code) : "";
+    /* Badge like a station number sign: line letters over the number. */
+    var badge = $("#" + prefix + "-num");
 
-    $("#" + prefix + "-num").hidden = !s;
+    var digits = s ? num(s.code) : "";
+
+    var letters = s
+      ? String(s.code || "")
+          .replace(/\d+\s*$/, "")
+          .trim()
+      : "";
+
+    badge.textContent = "";
+
+    if (letters) {
+      badge.appendChild(document.createElement("small")).textContent = letters;
+    }
+
+    badge.appendChild(document.createElement("b")).textContent = digits;
+
+    badge.hidden = !s;
   }
 
   side("prev", prev);
