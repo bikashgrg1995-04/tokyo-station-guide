@@ -26,15 +26,6 @@ export function drawMap() {
     "path",
     {
       d: state.track.d,
-      class: "rail-bed",
-    },
-    trackG,
-  );
-
-  el(
-    "path",
-    {
-      d: state.track.d,
       class: "rail-base",
     },
     trackG,
