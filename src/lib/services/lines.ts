@@ -2,7 +2,7 @@ import {
   createLine,
   deleteLine,
   getLinesPaginated,
-  setLinePublished,
+  setLineWebsiteStatus,
   updateLine,
   type Line,
 } from "../db/lines";
@@ -27,6 +27,7 @@ import {
   type LineFormValues,
   type LineFormErrors,
   emptyLineErrors,
+  parseLineWebsiteStatus,
   validateLineForm,
 } from "../validators/line";
 
@@ -53,7 +54,7 @@ function readLineForm(formData: FormData): LineFormValues {
     description: readText(formData, "description"),
     nameJapanese: readText(formData, "name_japanese"),
     descriptionJapanese: readText(formData, "description_japanese"),
-    isPublished: formData.has("is_published") ? "1" : "",
+    websiteStatus: parseLineWebsiteStatus(readText(formData, "website_status")),
   };
 }
 
@@ -125,7 +126,7 @@ export async function handleLineCreate(
       description: "",
       nameJapanese: "",
       descriptionJapanese: "",
-      isPublished: "",
+      websiteStatus: "coming_soon",
     },
     errors: emptyLineErrors(),
     formError: "",
@@ -150,7 +151,7 @@ export async function handleLineCreate(
         color: values.color || null,
         nameJapanese: values.nameJapanese || null,
         descriptionJapanese: values.descriptionJapanese || null,
-        isPublished: values.isPublished === "1",
+        websiteStatus: values.websiteStatus,
       });
     },
   );
@@ -175,7 +176,7 @@ export async function handleLineUpdate(
       description: line?.description ?? "",
       nameJapanese: line?.name_japanese ?? "",
       descriptionJapanese: line?.description_japanese ?? "",
-      isPublished: line?.is_published ? "1" : "",
+      websiteStatus: parseLineWebsiteStatus(line?.website_status),
     },
     errors: emptyLineErrors(),
     formError: "",
@@ -200,7 +201,7 @@ export async function handleLineUpdate(
         description: values.description || null,
         nameJapanese: values.nameJapanese || null,
         descriptionJapanese: values.descriptionJapanese || null,
-        isPublished: values.isPublished === "1",
+        websiteStatus: values.websiteStatus,
       });
     },
   );
@@ -263,7 +264,11 @@ export async function handleLineVisibility(
   const backTo = back.startsWith(LIST_PATH) ? back : LIST_PATH;
 
   try {
-    await setLinePublished(db, id, formData.get("published") === "1");
+    await setLineWebsiteStatus(
+      db,
+      id,
+      parseLineWebsiteStatus(formData.get("website_status")),
+    );
   } catch (err) {
     console.error("Failed to change line visibility:", err);
   }

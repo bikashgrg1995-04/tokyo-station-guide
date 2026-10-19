@@ -1,5 +1,20 @@
 import type { Operator } from "../db/operators";
 
+export const LINE_WEBSITE_STATUSES = [
+  { value: "live", label: "Live" },
+  { value: "coming_soon", label: "Coming soon" },
+  { value: "hidden", label: "Hide" },
+] as const;
+
+export type LineWebsiteStatus = (typeof LINE_WEBSITE_STATUSES)[number]["value"];
+
+/** Anything that is not a known status falls back to "coming_soon". */
+export function parseLineWebsiteStatus(value: unknown): LineWebsiteStatus {
+  return LINE_WEBSITE_STATUSES.some((status) => status.value === value)
+    ? (value as LineWebsiteStatus)
+    : "coming_soon";
+}
+
 export interface LineFormValues {
   operatorId: string;
   name: string;
@@ -9,8 +24,7 @@ export interface LineFormValues {
   description: string;
   nameJapanese: string;
   descriptionJapanese: string;
-  /** "1" = browsable on the website, "" = "Coming soon". */
-  isPublished: string;
+  websiteStatus: LineWebsiteStatus;
 }
 
 export type LineFormErrors = Record<keyof LineFormValues, string>;
@@ -25,7 +39,7 @@ export function emptyLineErrors(): LineFormErrors {
     description: "",
     nameJapanese: "",
     descriptionJapanese: "",
-    isPublished: "",
+    websiteStatus: "coming_soon",
   };
 }
 

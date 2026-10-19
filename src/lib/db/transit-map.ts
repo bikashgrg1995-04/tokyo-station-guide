@@ -25,6 +25,8 @@ export interface TransitMapLine {
   shape: "loop" | "u" | "line" | null;
   /** true = browsable; false = "Coming soon". */
   published: boolean;
+  /** live | coming_soon | hidden. Hidden lines are left out of the line picker. */
+  status: "live" | "coming_soon" | "hidden";
 }
 
 export interface TransitMapStation {
@@ -502,6 +504,7 @@ export async function getTransitMapData(
     operatorJp: line.operator_name_japanese,
     descriptionJp: line.description_japanese,
     published: line.is_published === 1,
+    status: line.website_status ?? (line.is_published === 1 ? "live" : "coming_soon"),
     shape: line.code === "JY" || /yamanote/i.test(line.name) ? "loop" : null,
   }));
 

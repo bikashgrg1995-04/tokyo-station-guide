@@ -1,4 +1,5 @@
 ---
+import { LINE_WEBSITE_STATUSES } from "../../../lib/validators/line";
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/admin/tables.css";
 import "../../../styles/admin/lines.css";
@@ -184,30 +185,24 @@ const {
                                       name="redirect"
                                       value={`${paginationUrl.pathname}${paginationUrl.search}`}
                                     />
-                                    <input
-                                      type="hidden"
-                                      name="published"
-                                      value={line.is_published ? "0" : "1"}
-                                    />
 
-                                    <label class="admin-switch" title={line.is_published ? "Live on the website — click to set Coming soon" : "Coming soon — click to show on the website"}>
-                                      <input
-                                        type="checkbox"
-                                        class="js-line-visibility"
-                                        checked={Boolean(line.is_published)}
-                                        aria-label={`Show ${line.name} on the website`}
-                                      />
-                                      <span class="admin-switch-slider"></span>
-                                    </label>
-
-                                    <span
+                                    <select
+                                      name="website_status"
                                       class:list={[
-                                        "admin-line-status",
-                                        line.is_published ? "is-live" : "is-soon",
+                                        "admin-line-status-select",
+                                        `is-${line.website_status}`,
                                       ]}
+                                      aria-label={`Website status of ${line.name}`}
                                     >
-                                      {line.is_published ? "Live" : "Coming soon"}
-                                    </span>
+                                      {LINE_WEBSITE_STATUSES.map((status) => (
+                                        <option
+                                          value={status.value}
+                                          selected={line.website_status === status.value}
+                                        >
+                                          {status.label}
+                                        </option>
+                                      ))}
+                                    </select>
                                   </form>
                                 </td>
 

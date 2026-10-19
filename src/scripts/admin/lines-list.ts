@@ -19,14 +19,21 @@ initializeAutoSearch({
   onContentUpdated: initializeDeleteButtons,
 });
 
-/* Website switch: flipping it saves straight away (works after the list
-   is refreshed by the search too, because it listens on the document). */
+/* Website status dropdown: choosing a value saves straight away (works after
+   the list is refreshed by the search too, because it listens on the document). */
 document.addEventListener("change", (event) => {
   const target = event.target;
 
-  if (target instanceof HTMLInputElement && target.matches(".js-line-visibility")) {
-    target.disabled = true;
+  if (
+    target instanceof HTMLSelectElement &&
+    target.name === "website_status" &&
+    target.closest(".admin-line-visibility-form")
+  ) {
     target.form?.requestSubmit();
+    // Disable only after the value has been captured by the submit.
+    window.setTimeout(() => {
+      target.disabled = true;
+    }, 0);
   }
 });
 

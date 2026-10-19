@@ -1,3 +1,4 @@
+import { parseLineWebsiteStatus, type LineWebsiteStatus } from "../validators/line";
 /* ========================================
    Lines Database Helpers
 ======================================== */
@@ -16,6 +17,8 @@ export interface Line {
   color: string | null;
   /** 1 = browsable on the website, 0 = listed as "Coming soon". */
   is_published: number;
+  /** live | coming_soon | hidden (see migration 0024). */
+  website_status: LineWebsiteStatus;
   created_at: string;
   updated_at: string;
 }
@@ -29,7 +32,7 @@ export interface CreateLineInput {
   color?: string | null;
   nameJapanese?: string | null;
   descriptionJapanese?: string | null;
-  isPublished?: boolean;
+  websiteStatus?: LineWebsiteStatus;
 }
 
 export interface UpdateLineInput {
@@ -41,7 +44,7 @@ export interface UpdateLineInput {
   color?: string | null;
   nameJapanese?: string | null;
   descriptionJapanese?: string | null;
-  isPublished?: boolean;
+  websiteStatus?: LineWebsiteStatus;
 }
 
 export interface PaginatedLines {
@@ -76,6 +79,7 @@ export async function getLines(
           l.description_japanese,
           l.color,
           l.is_published,
+          l.website_status,
           l.created_at,
           l.updated_at
         FROM lines l
@@ -185,6 +189,7 @@ export async function getLinesPaginated(
           l.description_japanese,
           l.color,
           l.is_published,
+          l.website_status,
           l.created_at,
           l.updated_at
         FROM lines l
@@ -247,6 +252,7 @@ export async function getLineById(
           l.description_japanese,
           l.color,
           l.is_published,
+          l.website_status,
           l.created_at,
           l.updated_at
         FROM lines l
@@ -282,9 +288,10 @@ export async function createLine(
           color,
           name_japanese,
           description_japanese,
-          is_published
+          is_published,
+          website_status
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
     )
     .bind(
@@ -296,7 +303,8 @@ export async function createLine(
       input.color?.trim() || null,
       input.nameJapanese?.trim() || null,
       input.descriptionJapanese?.trim() || null,
-      input.isPublished ? 1 : 0,
+      input.websiteStatus === "live" ? 1 : 0,
+      parseLineWebsiteStatus(input.websiteStatus),
     )
     .run();
 
@@ -327,6 +335,7 @@ export async function updateLine(
           name_japanese = ?,
           description_japanese = ?,
           is_published = ?,
+          website_status = ?,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `,
@@ -340,7 +349,8 @@ export async function updateLine(
       input.color?.trim() || null,
       input.nameJapanese?.trim() || null,
       input.descriptionJapanese?.trim() || null,
-      input.isPublished ? 1 : 0,
+      input.websiteStatus === "live" ? 1 : 0,
+      parseLineWebsiteStatus(input.websiteStatus),
       id,
     )
     .run();
@@ -368,13 +378,13 @@ export async function deleteLine(
 
 
 /* ========================================
-   Set Published (website visibility)
+   Set website status (live / coming soon / hide)
 ======================================== */
 
-export async function setLinePublished(
+export async function setLineWebsiteStatus(
   db: D1Database,
   id: number,
-  published: boolean,
+  status: LineWebsiteStatus,
 ): Promise<void> {
   await db
     .prepare(
@@ -382,10 +392,11 @@ export async function setLinePublished(
         UPDATE lines
         SET
           is_published = ?,
+          website_status = ?,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `,
     )
-    .bind(published ? 1 : 0, id)
+    .bind(status === "live" ? 1 : 0, parseLineWebsiteStatus(status), id)
     .run();
 }

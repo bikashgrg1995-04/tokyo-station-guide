@@ -1,4 +1,5 @@
 ---
+import { LINE_WEBSITE_STATUSES } from "../../../../lib/validators/line";
 import AdminLayout from "../../../../layouts/AdminLayout.astro";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/lines.css";
@@ -48,7 +49,7 @@ const {
   description,
   nameJapanese,
   descriptionJapanese,
-  isPublished,
+  websiteStatus,
 } = form.values;
 const { errors, formError } = form;
 
@@ -483,31 +484,27 @@ const admin = await Astro.session?.get<{
                           }
                         </div>
 
-                        <!-- Website visibility -->
-                        <div class="admin-form-group">
-                          <div class="admin-line-visibility">
-                            <div class="admin-line-visibility-copy">
-                              <span class="admin-line-visibility-title">Show on website</span>
-                              <small>
-                                On: visitors can open this line and its stations.
-                                Off: it is listed in the line picker as “Coming soon”.
-                              </small>
-                            </div>
+                        <!-- Website status -->
+                  <div class="admin-form-group">
+                    <label for="website_status">Website status</label>
+                    <select id="website_status" name="website_status">
+                      {LINE_WEBSITE_STATUSES.map((status) => (
+                        <option
+                          value={status.value}
+                          selected={websiteStatus === status.value}
+                        >
+                          {status.label}
+                        </option>
+                      ))}
+                    </select>
+                    <small>
+                      Live: visitors can open this line and its stations.
+                      Coming soon: listed in the line picker as “Coming soon”.
+                      Hide: not shown in the line picker at all.
+                    </small>
+                  </div>
 
-                            <label class="admin-switch" for="is_published">
-                              <input
-                                id="is_published"
-                                name="is_published"
-                                type="checkbox"
-                                checked={isPublished === "1"}
-                                aria-label="Show this line on the website"
-                              />
-                              <span class="admin-switch-slider"></span>
-                            </label>
-                          </div>
-                        </div>
-
-                        <!-- Actions -->
+                  <!-- Actions -->
                         <div class="admin-form-actions">
 
                           <Button

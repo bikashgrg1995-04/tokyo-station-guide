@@ -31,6 +31,7 @@ const readyIds = new Set(lines.map((line) => String(line.id)));
 const readyNames = new Set(lines.map((line) => line.name));
 
 const comingSoon = all.lines
+  .filter((line) => line.status !== "hidden")
   .filter((line) => !readyIds.has(String(line.id)))
   .map((line) => ({
     id: line.id,
