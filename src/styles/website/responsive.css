@@ -14,9 +14,24 @@
     padding: 0 10px calc(12px + env(safe-area-inset-bottom, 0px));
   }
   .current strong {
-    font-size: 26px;
+    max-width: 150px;
+    font-size: 15px;
+    line-height: 20px;
+    letter-spacing: 0.03em;
+    text-indent: 0.03em;
+  }
+  .cur-en {
+    max-width: 150px;
+    font-size: 8.5px;
+    line-height: 12px;
+    letter-spacing: 0.12em;
   }
   .side-text b {
     font-size: 10.5px;
+    line-height: 13px;
+  }
+  .side-text small {
+    font-size: 8px;
+    line-height: 11px;
   }
 }
