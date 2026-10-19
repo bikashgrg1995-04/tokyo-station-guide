@@ -8,6 +8,8 @@ import {
   listStationSuggestions,
 } from "../../lib/db/station-suggestions";
 
+import { getDashboardCounts } from "../../lib/db/dashboard";
+
 export const prerender = false;
 
 const title = "Dashboard";
@@ -15,32 +17,8 @@ const title = "Dashboard";
 const { env } = await import("cloudflare:workers");
 const db = env.DB;
 
-const [
-  operatorCount,
-  lineCount,
-  stationCount,
-  facilityCount,
-  topPickCount,
-  lineStationCount,
-  latestSuggestions,
-  suggestionCounts,
-] = await Promise.all([
-  db
-    .prepare("SELECT COUNT(*) AS count FROM operators")
-    .first<{ count: number }>(),
-  db.prepare("SELECT COUNT(*) AS count FROM lines").first<{ count: number }>(),
-  db
-    .prepare("SELECT COUNT(*) AS count FROM stations")
-    .first<{ count: number }>(),
-  db
-    .prepare("SELECT COUNT(*) AS count FROM facilities")
-    .first<{ count: number }>(),
-  db
-    .prepare("SELECT COUNT(*) AS count FROM top_picks")
-    .first<{ count: number }>(),
-  db
-    .prepare("SELECT COUNT(*) AS count FROM line_stations")
-    .first<{ count: number }>(),
+const [counts, latestSuggestions, suggestionCounts] = await Promise.all([
+  getDashboardCounts(db),
   listStationSuggestions(db, { status: "pending", limit: 5, offset: 0 }),
   countStationSuggestions(db),
 ]);
@@ -77,27 +55,27 @@ function formatDate(value: string): string {
     <section class="admin-stats">
       <div class="admin-stat-card">
         <span class="admin-stat-label">Operators</span>
-        <strong class="admin-stat-value">{operatorCount?.count ?? 0}</strong>
+        <strong class="admin-stat-value">{counts.operators}</strong>
       </div>
       <div class="admin-stat-card">
         <span class="admin-stat-label">Railway Lines</span>
-        <strong class="admin-stat-value">{lineCount?.count ?? 0}</strong>
+        <strong class="admin-stat-value">{counts.lines}</strong>
       </div>
       <div class="admin-stat-card">
         <span class="admin-stat-label">Stations</span>
-        <strong class="admin-stat-value">{stationCount?.count ?? 0}</strong>
+        <strong class="admin-stat-value">{counts.stations}</strong>
       </div>
       <div class="admin-stat-card">
         <span class="admin-stat-label">Facilities</span>
-        <strong class="admin-stat-value">{facilityCount?.count ?? 0}</strong>
+        <strong class="admin-stat-value">{counts.facilities}</strong>
       </div>
       <div class="admin-stat-card">
         <span class="admin-stat-label">Top Picks</span>
-        <strong class="admin-stat-value">{topPickCount?.count ?? 0}</strong>
+        <strong class="admin-stat-value">{counts.top_picks}</strong>
       </div>
       <div class="admin-stat-card">
         <span class="admin-stat-label">Line Connections</span>
-        <strong class="admin-stat-value">{lineStationCount?.count ?? 0}</strong>
+        <strong class="admin-stat-value">{counts.line_stations}</strong>
       </div>
     </section>
 

@@ -1,4 +1,9 @@
+import { getStationExits } from "../db/station-exits";
+import { getStationFloors } from "../db/station-floors";
+import { getStations } from "../db/stations";
+import { getTopPickById } from "../db/top-picks";
 import {
+  getTopPickStationAssignments,
   removeTopPickStationAssignment,
   saveTopPickStationAssignment,
   type SaveTopPickStationAssignmentInput,
@@ -106,4 +111,72 @@ export async function handleTopPickStationAssignment(
   }
 
   return result;
+}
+
+/* ========================================
+   Stations page: everything the page shows
+======================================== */
+
+export const TOP_PICK_LOCATION_TYPES = [
+  { value: "inside", label: "Inside station" },
+  { value: "outside", label: "Outside station" },
+  { value: "inside_outside", label: "Inside and outside station" },
+];
+
+const SUCCESS_MESSAGES: Record<string, string> = {
+  save: "Station assignment saved successfully.",
+  remove: "Station assignment removed successfully.",
+};
+
+/**
+ * Loads a top pick with its station assignments (and the floors / exits of
+ * every station for the picker) and handles the add / remove form on POST.
+ * `redirectTo` is set when the page should redirect instead of rendering.
+ */
+export async function loadTopPickStationsPage(
+  request: Request,
+  url: URL,
+  db: D1Database,
+  topPickId: number,
+) {
+  const topPick = await getTopPickById(db, topPickId);
+
+  const form = topPick
+    ? await handleTopPickStationAssignment(request, db, topPickId)
+    : { redirectTo: null, error: "" };
+
+  if (form.redirectTo) {
+    return { redirectTo: form.redirectTo };
+  }
+
+  const stations = topPick ? await getStations(db) : [];
+
+  const assignments = topPick
+    ? await getTopPickStationAssignments(db, topPickId)
+    : [];
+
+  const stationDetails = await Promise.all(
+    stations.map(async (station) => {
+      const [floors, exits] = await Promise.all([
+        getStationFloors(db, station.id),
+        getStationExits(db, station.id),
+      ]);
+
+      return { station, floors, exits };
+    }),
+  );
+
+  return {
+    redirectTo: null,
+    topPick,
+    error: form.error,
+    stations,
+    assignments,
+    stationDetails,
+    assignedStationIds: new Set(
+      assignments.map((assignment) => assignment.station_id),
+    ),
+    successMessage: SUCCESS_MESSAGES[url.searchParams.get("success") ?? ""] ?? "",
+    locationTypes: TOP_PICK_LOCATION_TYPES,
+  };
 }

@@ -1,5 +1,11 @@
 import { getStationById } from "../db/stations";
-import { createStationSuggestion } from "../db/station-suggestions";
+import {
+  SUGGESTION_STATUS_LABELS,
+  countStationSuggestions,
+  createStationSuggestion,
+  listStationSuggestions,
+  type StationSuggestionStatus,
+} from "../db/station-suggestions";
 import {
   emptyStationSuggestionErrors,
   validateStationSuggestion,
@@ -121,4 +127,104 @@ export async function handleStationSuggestion(
       },
     };
   }
+}
+
+/* ========================================
+   Admin: Suggestions page
+======================================== */
+
+const PER_PAGE = 10;
+
+export type SuggestionFilter = StationSuggestionStatus | "all";
+
+export const SUGGESTION_FILTERS: Array<{ value: SuggestionFilter; label: string }> = [
+  { value: "pending", label: "New" },
+  { value: "approved", label: "Resolved" },
+  { value: "rejected", label: "Dismissed" },
+  { value: "all", label: "All" },
+];
+
+export function formatSuggestionDate(value: string): string {
+  // SQLite stores UTC as "YYYY-MM-DD HH:MM:SS".
+  const date = new Date(value.replace(" ", "T") + "Z");
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleString("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export function suggestionSnippet(value: string | null, max = 110): string {
+  const text = (value ?? "").replace(/\s+/g, " ").trim();
+
+  return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
+}
+
+/** Everything the Suggestions page shows for the requested filter and page. */
+export async function loadSuggestionsPage(db: D1Database, url: URL) {
+  const statusParam = url.searchParams.get("status");
+
+  const filter: SuggestionFilter = SUGGESTION_FILTERS.some(
+    (item) => item.value === statusParam,
+  )
+    ? (statusParam as SuggestionFilter)
+    : "pending";
+
+  const counts = await countStationSuggestions(db);
+
+  const totalItems = filter === "all" ? counts.total : counts[filter];
+  const totalPages = Math.max(1, Math.ceil(totalItems / PER_PAGE));
+
+  const pageParam = Number(url.searchParams.get("page"));
+  const currentPage = Math.min(
+    Math.max(Number.isInteger(pageParam) ? pageParam : 1, 1),
+    totalPages,
+  );
+
+  const suggestions = await listStationSuggestions(db, {
+    status: filter === "all" ? undefined : filter,
+    limit: PER_PAGE,
+    offset: (currentPage - 1) * PER_PAGE,
+  });
+
+  // Data for the detail dialog. Embedded as JSON so it opens instantly.
+  const dialogData = suggestions.map((suggestion) => ({
+    id: suggestion.id,
+    status: suggestion.status,
+    statusLabel: SUGGESTION_STATUS_LABELS[suggestion.status],
+    stationId: suggestion.station_id,
+    stationName: suggestion.station_name,
+    lineName: suggestion.line_name,
+    lineColor: suggestion.line_color,
+    message: suggestion.message,
+    submittedAt: formatSuggestionDate(suggestion.created_at),
+    reviewedAt: suggestion.reviewed_at
+      ? formatSuggestionDate(suggestion.reviewed_at)
+      : null,
+  }));
+
+  return {
+    filter,
+    counts,
+    suggestions,
+    totalItems,
+    totalPages,
+    currentPage,
+    perPage: PER_PAGE,
+    dialogJson: JSON.stringify(dialogData).replace(/</g, "\\u003c"),
+    filterCount: (value: SuggestionFilter) =>
+      value === "all" ? counts.total : counts[value],
+    filterUrl: (value: SuggestionFilter) =>
+      value === "pending"
+        ? "/admin/suggestions"
+        : `/admin/suggestions?status=${value}`,
+    paginationBase: `/admin/suggestions${
+      filter === "pending" ? "" : `?status=${filter}`
+    }`,
+  };
 }

@@ -1,4 +1,5 @@
 ---
+import "../../styles/admin/facility-modal.css";
 import Button from "../common/Button.astro";
 import EmptyState from "../common/EmptyState.astro";
 import type { Facility } from "../../lib/db/facilities";
@@ -154,52 +155,3 @@ const { facilities, floors, description, emptyDescription } = Astro.props;
   </div>
 </div>
 
-<style>
-  .admin-facility-floor-selector {
-    min-width: 0;
-    margin: 0 0 0.6rem;
-    padding: 0;
-    border: 0;
-  }
-
-  .admin-facility-floor-selector legend {
-    margin-bottom: 0.4rem;
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .admin-facility-floor-options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-  }
-
-  .admin-floor-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.25rem 0.65rem;
-    border: 1px solid var(--admin-border, #d1d5db);
-    border-radius: 999px;
-    background: var(--admin-muted-bg, #f3f4f6);
-    color: var(--admin-text, #374151);
-    font: inherit;
-    font-size: 0.8rem;
-    cursor: pointer;
-  }
-
-  .admin-floor-pill[aria-pressed="true"] {
-    border-color: var(--admin-primary, #2563eb);
-    background: var(--admin-primary, #2563eb);
-    color: #fff;
-  }
-
-  .admin-floor-pill:focus-visible {
-    outline: 2px solid var(--admin-primary, #2563eb);
-    outline-offset: 2px;
-  }
-
-  [data-facility-option][hidden] {
-    display: none !important;
-  }
-</style>

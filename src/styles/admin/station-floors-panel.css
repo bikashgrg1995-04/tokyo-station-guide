@@ -1,0 +1,23 @@
+.admin-floor-page-size {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--admin-muted);
+    font-size: 12px;
+}
+
+.admin-floor-page-size select {
+    min-height: 32px;
+    padding: 0 8px;
+    border: 1px solid var(--admin-border);
+    border-radius: 7px;
+    background: var(--admin-surface);
+    color: var(--admin-text);
+}
+
+@media (max-width: 760px) {
+  #station-floors .admin-table-footer {
+        flex-wrap: wrap;
+        gap: 12px;
+  }
+}

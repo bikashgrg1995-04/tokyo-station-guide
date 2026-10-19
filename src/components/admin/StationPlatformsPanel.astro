@@ -1,4 +1,5 @@
 ---
+import "../../styles/admin/station-platforms-panel.css";
 import Button from "../common/Button.astro";
 import SearchInput from "../common/SearchInput.astro";
 import EmptyState from "../common/EmptyState.astro";
@@ -425,32 +426,3 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
   import "../../scripts/admin/station-platforms-panel.ts";
 </script>
 
-<style>
-  .admin-line-station-modal[hidden] {
-    display: none;
-  }
-
-  .admin-platform-page-size {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--admin-muted);
-    font-size: 12px;
-  }
-
-  .admin-platform-page-size select {
-    min-height: 32px;
-    padding: 0 8px;
-    border: 1px solid var(--admin-border);
-    border-radius: 7px;
-    background: var(--admin-surface);
-    color: var(--admin-text);
-  }
-
-  @media (max-width: 760px) {
-    .admin-table-footer {
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-  }
-</style>

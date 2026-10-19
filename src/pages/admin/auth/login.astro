@@ -11,6 +11,7 @@ import {
   isLoginBlocked,
   recordFailedLogin,
 } from "../../../lib/auth/login-throttle";
+import { getAdminUserByEmail } from "../../../lib/db/admin-users";
 import Button from "../../../components/common/Button.astro";
 
 export const prerender = false;
@@ -38,30 +39,7 @@ if (Astro.request.method === "POST") {
 
     const blocked = await isLoginBlocked(db, email, ip);
 
-    const admin = blocked
-      ? null
-      : await db
-      .prepare(
-        `
-          SELECT
-            id,
-            email,
-            name,
-            password_hash,
-            is_active
-          FROM admin_users
-          WHERE email = ?
-          LIMIT 1
-        `,
-      )
-      .bind(email)
-      .first<{
-        id: number;
-        email: string;
-        name: string;
-        password_hash: string;
-        is_active: number;
-      }>();
+    const admin = blocked ? null : await getAdminUserByEmail(db, email);
 
     if (blocked) {
       error = "Too many failed attempts. Try again in 15 minutes.";
