@@ -1151,7 +1151,6 @@
   min-width: 160px;
   max-width: 240px;
   height: 38px;
-  margin-left: auto;
   padding: 0 10px;
   border: 1px solid var(--admin-border);
   border-radius: 9px;
@@ -1167,4 +1166,14 @@
     max-width: none;
     margin-left: 0;
   }
+}
+
+/* search + line filter + add button sit together as one group */
+.admin-list-toolbar--grouped {
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.admin-list-toolbar--grouped .admin-search-form {
+  flex: 0 1 320px;
 }
