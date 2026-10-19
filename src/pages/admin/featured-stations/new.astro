@@ -1,4 +1,5 @@
 ---
+import StationPicker from "../../../components/admin/StationPicker.astro";
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import "../../../styles/admin/forms.css";
 import "../../../styles/admin/stations.css";
@@ -129,50 +130,15 @@ const error = form.formError;
                   <!-- Station -->
                   <div class="admin-form-group full-width">
 
-                    <label for="station_id">
-                      Station
-                    </label>
+                    <label>Station</label>
 
-                    <select
-                      id="station_id"
-                      name="station_id"
-                      required
-                      aria-invalid={
-                        errors.stationId
-                          ? "true"
-                          : undefined
-                      }
-                      aria-describedby={
-                        errors.stationId
-                          ? "station-id-error"
-                          : undefined
-                      }
-                    >
-
-                      <option value="">
-                        Select a station
-                      </option>
-
-                      {
-                        stations.map((station) => (
-                          <option
-                            value={station.id}
-                            selected={
-                              stationIdValue ===
-                              String(station.id)
-                            }
-                          >
-                            {station.name}
-                            {
-                              station.name_japanese
-                                ? ` ${station.name_japanese}`
-                                : ""
-                            }
-                          </option>
-                        ))
-                      }
-
-                    </select>
+                    <StationPicker
+                  stations={stations}
+                  value={stationIdValue}
+                  required
+                  invalid={Boolean(errors.stationId)}
+                  describedBy={errors.stationId ? "station-id-error" : undefined}
+                />
 
                     {
                       errors.stationId && (

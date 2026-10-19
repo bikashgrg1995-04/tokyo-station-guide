@@ -1,0 +1,89 @@
+---
+import "../../styles/admin/station-picker.css";
+
+export interface Props {
+  stations: { id: number; name: string; name_japanese: string | null }[];
+  /** Form field name submitted with the chosen station id. */
+  name?: string;
+  /** Currently chosen station id (as a string), if any. */
+  value?: string;
+  required?: boolean;
+  invalid?: boolean;
+  describedBy?: string;
+}
+
+const {
+  stations,
+  name = "station_id",
+  value = "",
+  required = false,
+  invalid = false,
+  describedBy,
+} = Astro.props;
+---
+
+<div
+  class="sp"
+  data-station-picker
+  data-required={required ? "true" : "false"}
+  aria-describedby={describedBy}
+>
+  <input type="hidden" name={name} value={value} data-sp-value />
+
+  <div class="sp-chip" data-sp-chip hidden>
+    <span class="sp-chip-text">
+      <strong data-sp-chip-name></strong>
+      <span data-sp-chip-jp></span>
+    </span>
+    <button type="button" class="sp-chip-clear" data-sp-clear>Change</button>
+  </div>
+
+  <div class="sp-body" data-sp-body>
+    <div class="sp-input">
+      <svg
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <circle cx="7" cy="7" r="4.6"></circle>
+        <path d="M10.5 10.5 14 14"></path>
+      </svg>
+      <input
+        type="search"
+        data-sp-search
+        placeholder="Search English or Japanese name"
+        autocomplete="off"
+        aria-label="Search stations"
+        aria-invalid={invalid ? "true" : undefined}
+      />
+    </div>
+
+    <div class="sp-list" data-sp-list role="list" aria-label="Stations">
+      {
+        stations.map((station) => (
+          <button
+            type="button"
+            class="sp-option"
+            data-id={station.id}
+            data-name={station.name}
+            data-jp={station.name_japanese ?? ""}
+          >
+            <strong>{station.name}</strong>
+            {station.name_japanese && <span>{station.name_japanese}</span>}
+          </button>
+        ))
+      }
+    </div>
+
+    <p class="sp-empty" data-sp-empty hidden>No matching stations found.</p>
+  </div>
+
+  <p class="sp-hint" data-sp-hint aria-live="polite"></p>
+</div>
+
+<script>
+  import "../../scripts/admin/station-picker";
+</script>

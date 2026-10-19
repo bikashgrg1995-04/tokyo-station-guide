@@ -1,4 +1,5 @@
 ---
+import StationPicker from "../../../../components/admin/StationPicker.astro";
 import AdminLayout from "../../../../layouts/AdminLayout.astro";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/stations.css";
@@ -96,31 +97,15 @@ const { errors, formError } = form;
           >
             <div class="admin-form-grid">
               <div class="admin-form-group full-width">
-                <label for="station_id"> Station </label>
+                <label>Station</label>
 
-                <select
-                  id="station_id"
-                  name="station_id"
+                <StationPicker
+                  stations={stations}
+                  value={stationIdValue}
                   required
-                  aria-invalid={errors.stationId ? "true" : "false"}
-                  aria-describedby={errors.stationId
-                    ? "station-id-error"
-                    : undefined}
-                >
-                  {
-                    stations.map((station) => (
-                      <option
-                        value={station.id}
-                        selected={stationIdValue === String(station.id)}
-                      >
-                        {station.name}
-                        {station.name_japanese
-                          ? ` ${station.name_japanese}`
-                          : ""}
-                      </option>
-                    ))
-                  }
-                </select>
+                  invalid={Boolean(errors.stationId)}
+                  describedBy={errors.stationId ? "station-id-error" : undefined}
+                />
 
                 {
                   errors.stationId && (

@@ -1,0 +1,152 @@
+/* Reusable searchable station picker (components/admin/StationPicker.astro) */
+.sp {
+  min-width: 0;
+}
+
+.sp .sp-input {
+  position: relative;
+}
+
+.sp .sp-input svg {
+  position: absolute;
+  top: 50%;
+  left: 11px;
+  width: 15px;
+  height: 15px;
+  transform: translateY(-50%);
+  color: var(--admin-muted, #6b7280);
+  pointer-events: none;
+}
+
+.sp .sp-input input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 7px 10px 7px 34px;
+  font-size: 0.9rem;
+}
+
+.sp .sp-list {
+  max-height: 176px;
+  overflow-y: auto;
+  margin-top: 6px;
+  padding: 3px;
+  border: 1px solid var(--admin-border, #d1d5db);
+  border-radius: 8px;
+  background: var(--admin-surface, #fff);
+}
+
+.sp .sp-option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.sp .sp-option strong {
+  font-weight: 600;
+}
+
+.sp .sp-option span {
+  color: var(--admin-muted, #6b7280);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.sp .sp-option:hover {
+  background: var(--admin-muted-bg, #f3f4f6);
+}
+
+.sp .sp-option:focus-visible {
+  outline: none;
+  background: var(--admin-muted-bg, #f3f4f6);
+  box-shadow: inset 0 0 0 2px var(--admin-primary, #2563eb);
+}
+
+.sp .sp-option[hidden],
+.sp .sp-list[hidden],
+.sp .sp-empty[hidden] {
+  display: none !important;
+}
+
+.sp .sp-empty {
+  margin: 6px 0 0;
+  color: var(--admin-muted, #6b7280);
+  font-size: 0.85rem;
+}
+
+.sp .sp-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  padding: 4px 5px 4px 11px;
+  border: 1px solid var(--admin-primary, #2563eb);
+  border-radius: 8px;
+  background: color-mix(
+    in srgb,
+    var(--admin-primary, #2563eb) 8%,
+    var(--admin-surface, #fff)
+  );
+}
+
+.sp .sp-chip-text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: 0.9rem;
+}
+
+.sp .sp-chip-text span {
+  color: var(--admin-muted, #6b7280);
+  font-size: 0.8rem;
+}
+
+.sp .sp-chip-clear {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--admin-primary, #2563eb);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sp .sp-chip-clear:hover {
+  background: color-mix(
+    in srgb,
+    var(--admin-primary, #2563eb) 12%,
+    transparent
+  );
+}
+
+.sp .sp-chip[hidden],
+.sp .sp-chip-clear[hidden],
+.sp .sp-body[hidden] {
+  display: none !important;
+}
+
+.sp .sp-hint {
+  margin: 6px 0 0;
+  color: var(--admin-danger, #b91c1c);
+  font-size: 0.8rem;
+}
+
+.sp .sp-hint:empty {
+  display: none;
+}
