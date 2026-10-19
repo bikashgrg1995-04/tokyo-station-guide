@@ -1179,11 +1179,30 @@
 }
 
 @media (max-width: 760px) {
+  /* phone: search on top, filter + add button side by side, tight spacing */
   .admin-list-toolbar--grouped {
-    gap: 10px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
   }
 
   .admin-list-toolbar--grouped .admin-search-form {
-    flex: none;
+    flex: 0 0 100%;
+    width: 100%;
+  }
+
+  .admin-list-toolbar--grouped .admin-line-filter {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .admin-list-toolbar--grouped > .common-button {
+    flex: 0 0 auto;
+    width: auto;
   }
 }
+
