@@ -27,9 +27,13 @@
 
 /* Compact Statistics: one slim row per card, label left / number right */
 
+/* The grid shrinks to its content: every box is as wide as the longest one
+   ("Line Connections"), so no space is wasted. */
 .admin-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: inline-grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: max-content;
+  max-width: 100%;
   gap: 8px;
   margin-bottom: 18px;
 }
@@ -40,6 +44,7 @@
   justify-content: space-between;
   gap: 8px;
   min-width: 0;
+  gap: 16px;
   padding: 9px 12px;
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
@@ -52,12 +57,9 @@
 }
 
 .admin-stat-label {
-  min-width: 0;
-  overflow: hidden;
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 500;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -72,7 +74,7 @@
 
 @media (max-width: 760px) {
   .admin-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 6px;
     margin-bottom: 14px;
   }
