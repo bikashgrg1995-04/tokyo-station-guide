@@ -296,7 +296,9 @@
 }
 
 .suggestion-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 9px 13px;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -340,7 +342,12 @@
   }
 
   .suggestion-details {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .suggestion-detail:nth-child(3) {
+    grid-column: 1 / -1;
   }
 
   .suggestion-modal-footer {
@@ -358,7 +365,109 @@
     text-align: center;
   }
 
-  .admin-suggestions-table {
-    min-width: 720px;
+  .suggestion-modal {
+    width: calc(100vw - 20px);
+    max-width: none;
+    max-height: calc(100dvh - 24px);
+    border-radius: 12px;
+  }
+
+  .suggestion-modal-header h2 {
+    font-size: 18px;
+  }
+
+  .suggestion-modal-body {
+    padding: 14px 16px;
+  }
+
+  .suggestion-message-text {
+    padding: 12px;
+    font-size: 13.5px;
+  }
+
+  .suggestion-feedback {
+    padding: 0 16px;
+  }
+}
+
+/* Phone: the suggestions table becomes a list of cards (no sideways scrolling) */
+@media (max-width: 760px) {
+  .admin-suggestions-table-wrap {
+    overflow: visible;
+  }
+
+  .admin-suggestions-table,
+  .admin-suggestions-table tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-suggestions-table thead {
+    display: none;
+  }
+
+  .admin-suggestions-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "station status"
+      "line    date"
+      "text    text"
+      "action  action";
+    align-items: center;
+    gap: 4px 12px;
+    padding: 12px 14px;
+    border-top: 1px solid var(--admin-border, #e5e7eb);
+  }
+
+  .admin-suggestions-table tr:first-child {
+    border-top: 0;
+  }
+
+  .admin-suggestions-table td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .admin-suggestions-table td:nth-child(1) {
+    grid-area: station;
+    font-size: 15px;
+  }
+
+  .admin-suggestions-table td:nth-child(2) {
+    grid-area: line;
+    font-size: 12.5px;
+  }
+
+  .admin-suggestions-table td:nth-child(3) {
+    grid-area: text;
+    max-width: none;
+    margin-top: 4px;
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+
+  .admin-suggestions-table td:nth-child(4) {
+    grid-area: date;
+    color: var(--admin-muted, #6b7280);
+    font-size: 12px;
+    text-align: right;
+  }
+
+  .admin-suggestions-table td:nth-child(5) {
+    grid-area: status;
+    justify-self: end;
+  }
+
+  .admin-suggestions-table td:nth-child(6) {
+    grid-area: action;
+    margin-top: 6px;
+  }
+
+  .admin-suggestions-table .admin-suggestion-actions button {
+    width: 100%;
   }
 }
