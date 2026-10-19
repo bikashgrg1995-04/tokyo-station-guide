@@ -70,10 +70,10 @@ if (Astro.request.method === "POST") {
 ---
 
 <BaseLayout title={`${title} | ${SITE_NAME}`} robots="noindex, nofollow">
-    <div class="admin-login-lang"><AdminLangSwitch /></div>
-
     <main class="admin-login-page">
       <section class="admin-login-card">
+        <div class="admin-login-card-lang"><AdminLangSwitch /></div>
+
         <div class="admin-login-logo">T</div>
 
         <div class="admin-login-heading">

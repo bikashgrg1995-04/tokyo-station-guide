@@ -1,7 +1,6 @@
 ---
 import "../../styles/common/admin-navigation.css";
 import ConfirmDialog from "../common/ConfirmDialog.astro";
-import AdminLangSwitch from "./AdminLangSwitch.astro";
 
 export interface Props {
   activePath?: string;
@@ -31,8 +30,6 @@ const isActive = (path: string) => {
       </div>
     </div>
   </div>
-
-  <AdminLangSwitch />
 
   <!-- Management -->
   <div class="admin-section-label">Management</div>

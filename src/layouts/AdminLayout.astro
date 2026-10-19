@@ -54,6 +54,11 @@ const { title, activePath = "/admin" } = Astro.props;
     <div class="admin-menu-backdrop" data-admin-menu-close hidden></div>
 
     <main class="admin-main">
+      <!-- Desktop / tablet: language switch at the top right of every page -->
+      <div class="admin-desktop-bar">
+        <AdminLangSwitch />
+      </div>
+
       <slot />
     </main>
   </div>
