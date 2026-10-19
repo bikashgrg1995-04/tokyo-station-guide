@@ -1,6 +1,7 @@
 ---
 import "../../styles/common/admin-navigation.css";
 import ConfirmDialog from "../common/ConfirmDialog.astro";
+import AdminLangSwitch from "./AdminLangSwitch.astro";
 
 export interface Props {
   activePath?: string;
@@ -30,6 +31,8 @@ const isActive = (path: string) => {
       </div>
     </div>
   </div>
+
+  <AdminLangSwitch />
 
   <!-- Management -->
   <div class="admin-section-label">Management</div>
@@ -162,6 +165,7 @@ const isActive = (path: string) => {
 
   <!-- Sidebar Bottom -->
   <div class="admin-sidebar-bottom">
+    
     <a href="/" class="admin-back-link"> ← Back to website </a>
   </div>
 </aside>

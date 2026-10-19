@@ -3,6 +3,7 @@ import "../styles/admin/shared.css";
 import "../styles/admin/mobile-nav.css";
 
 import BaseLayout from "./BaseLayout.astro";
+import AdminLangSwitch from "../components/admin/AdminLangSwitch.astro";
 import AdminNavigation from "../components/admin/AdminNavigation.astro";
 import { SITE_NAME } from "../config/site";
 
@@ -15,6 +16,19 @@ const { title, activePath = "/admin" } = Astro.props;
 ---
 
 <BaseLayout title={`${title} | Admin | ${SITE_NAME}`} robots="noindex, nofollow">
+  <!-- Hide the page until the saved language (English / 日本語) is applied -->
+  <script is:inline slot="head">
+    try {
+      if (localStorage.getItem("admin-lang") === "ja") {
+        var root = document.documentElement;
+        root.classList.add("admin-i18n-pending");
+        setTimeout(function () {
+          root.classList.remove("admin-i18n-pending");
+        }, 1500);
+      }
+    } catch (e) {}
+  </script>
+
   <div class="admin-shell">
     <!-- Phone only: top bar with the menu (three-line) button -->
     <header class="admin-mobile-bar">
@@ -32,6 +46,7 @@ const { title, activePath = "/admin" } = Astro.props;
       </button>
 
       <strong class="admin-mobile-title">{title}</strong>
+      <AdminLangSwitch />
     </header>
 
     <AdminNavigation activePath={activePath} />
@@ -45,6 +60,7 @@ const { title, activePath = "/admin" } = Astro.props;
 
   <script>
     import "../scripts/admin/shared/mobile-menu";
+    import "../scripts/admin/shared/admin-i18n";
   </script>
 
   <!-- Dialogs and page scripts that live outside the admin shell -->

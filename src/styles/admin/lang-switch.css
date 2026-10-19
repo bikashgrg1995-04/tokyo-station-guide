@@ -1,0 +1,57 @@
+/* English / 日本語 switch (admin sidebar, phone top bar, login page) */
+.admin-lang {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.admin-lang button {
+  min-width: 34px;
+  height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.admin-lang button[aria-pressed="true"] {
+  background: var(--admin-primary, #2563eb);
+  color: #fff;
+  opacity: 1;
+}
+
+.admin-sidebar .admin-lang {
+  margin: 0 10px 18px;
+  align-self: flex-start;
+}
+
+.admin-mobile-bar .admin-lang {
+  margin-left: auto;
+}
+
+.admin-login-lang {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+}
+
+/* hides the page for a moment while the saved language is applied (no English flash) */
+html.admin-i18n-pending body {
+  visibility: hidden;
+}
+
+/* inactive button text must be readable on the (light) sidebar and top bar */
+.admin-lang button:not([aria-pressed="true"]) {
+  color: #475569;
+}
