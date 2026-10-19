@@ -1177,3 +1177,13 @@
 .admin-list-toolbar--grouped .admin-search-form {
   flex: 0 1 320px;
 }
+
+@media (max-width: 760px) {
+  .admin-list-toolbar--grouped {
+    gap: 10px;
+  }
+
+  .admin-list-toolbar--grouped .admin-search-form {
+    flex: none;
+  }
+}

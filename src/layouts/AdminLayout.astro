@@ -1,5 +1,6 @@
 ---
 import "../styles/admin/shared.css";
+import "../styles/admin/mobile-nav.css";
 
 import BaseLayout from "./BaseLayout.astro";
 import AdminNavigation from "../components/admin/AdminNavigation.astro";
@@ -15,12 +16,36 @@ const { title, activePath = "/admin" } = Astro.props;
 
 <BaseLayout title={`${title} | Admin | ${SITE_NAME}`} robots="noindex, nofollow">
   <div class="admin-shell">
+    <!-- Phone only: top bar with the menu (three-line) button -->
+    <header class="admin-mobile-bar">
+      <button
+        type="button"
+        class="admin-menu-button"
+        data-admin-menu-toggle
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="admin-sidebar"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <strong class="admin-mobile-title">{title}</strong>
+    </header>
+
     <AdminNavigation activePath={activePath} />
+
+    <div class="admin-menu-backdrop" data-admin-menu-close hidden></div>
 
     <main class="admin-main">
       <slot />
     </main>
   </div>
+
+  <script>
+    import "../scripts/admin/shared/mobile-menu";
+  </script>
 
   <!-- Dialogs and page scripts that live outside the admin shell -->
   <slot name="after" />

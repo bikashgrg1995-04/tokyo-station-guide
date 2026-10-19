@@ -550,13 +550,6 @@ select {
 }
 
 @media (max-width: 760px) {
-  .admin-sidebar {
-    position: static;
-    width: 100%;
-    min-height: auto;
-    padding: 16px;
-  }
-
   .admin-shell {
     display: block;
   }
@@ -589,10 +582,6 @@ select {
 
   .admin-user-info {
     display: none;
-  }
-
-  .admin-sidebar-bottom {
-    margin-top: 12px;
   }
 
   .admin-modal {

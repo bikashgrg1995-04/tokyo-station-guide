@@ -257,18 +257,3 @@
   }
 }
 
-@media (max-width: 760px) {
-  .admin-sidebar {
-    position: static;
-
-    width: 100%;
-    height: auto;
-
-    border-right: 0;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .admin-sidebar-bottom {
-    margin-top: 18px;
-  }
-}
