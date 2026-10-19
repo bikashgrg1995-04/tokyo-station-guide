@@ -19,4 +19,21 @@ initializeAutoSearch({
   onContentUpdated: initializeDeleteButtons,
 });
 
+// Filter by line: reload the list with ?line=<id> (keeps the search term)
+document
+  .getElementById("station-line-filter")
+  ?.addEventListener("change", (event) => {
+    const select = event.target as HTMLSelectElement;
+    const url = new URL(window.location.href);
+
+    if (select.value) {
+      url.searchParams.set("line", select.value);
+    } else {
+      url.searchParams.delete("line");
+    }
+
+    url.searchParams.delete("page");
+    window.location.href = url.toString();
+  });
+
 export {};

@@ -1146,3 +1146,25 @@
     padding: 14px;
   }
 }
+
+.admin-line-filter {
+  min-width: 160px;
+  max-width: 240px;
+  height: 38px;
+  margin-left: auto;
+  padding: 0 10px;
+  border: 1px solid var(--admin-border);
+  border-radius: 9px;
+  background: var(--admin-surface);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  .admin-line-filter {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+  }
+}

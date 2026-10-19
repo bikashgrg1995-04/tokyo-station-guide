@@ -22,6 +22,7 @@ import {
   type TopPick,
 } from "../db/top-picks";
 
+import { getLines } from "../db/lines";
 import { getStationFloors } from "../db/station-floors";
 import type { StationFacilityInput } from "../db/stations/types";
 
@@ -595,12 +596,26 @@ export async function handleStationDelete(
 export async function loadStationList(db: D1Database, url: URL) {
   const { search, page } = readListQuery(url);
 
-  const { items, totalItems, currentPage, totalPages } =
-    await getAdminStationsPaginated(db, {
-      page,
-      perPage: PER_PAGE,
-      search,
-    });
+  const parsedLine = Number(url.searchParams.get("line"));
+  const lineId =
+    Number.isInteger(parsedLine) && parsedLine > 0 ? parsedLine : 0;
+
+  const [{ items, totalItems, currentPage, totalPages }, lines] =
+    await Promise.all([
+      getAdminStationsPaginated(db, {
+        page,
+        perPage: PER_PAGE,
+        search,
+        lineId,
+      }),
+      getLines(db),
+    ]);
+
+  const paginationUrl = paginationUrlFor(LIST_PATH, url, search);
+
+  if (lineId) {
+    paginationUrl.searchParams.set("line", String(lineId));
+  }
 
   return {
     stations: items,
@@ -609,6 +624,8 @@ export async function loadStationList(db: D1Database, url: URL) {
     totalPages,
     perPage: PER_PAGE,
     searchParam: search,
-    paginationUrl: paginationUrlFor(LIST_PATH, url, search),
+    lineId,
+    lines: lines.map((line) => ({ id: line.id, name: line.name })),
+    paginationUrl,
   };
 }

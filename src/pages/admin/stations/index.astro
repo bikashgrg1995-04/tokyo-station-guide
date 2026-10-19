@@ -21,6 +21,8 @@ const {
   totalPages,
   perPage,
   searchParam,
+  lineId,
+  lines,
   paginationUrl,
 } = await loadStationList(env.DB, Astro.url);
 
@@ -62,6 +64,23 @@ const {
                 ariaLabel="Search stations"
               />
             </form>
+
+            <select
+              id="station-line-filter"
+              class="admin-line-filter"
+              name="line"
+              form="station-search-form"
+              aria-label="Filter by line"
+            >
+              <option value="">All lines</option>
+              {
+                lines.map((line) => (
+                  <option value={line.id} selected={line.id === lineId}>
+                    {line.name}
+                  </option>
+                ))
+              }
+            </select>
 
             <Button
               href="/admin/stations/new"

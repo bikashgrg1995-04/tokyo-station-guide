@@ -47,6 +47,7 @@ export async function getAdminStationsPaginated(
     page?: number;
     perPage?: number;
     search?: string;
+    lineId?: number;
   } = {},
 ): Promise<PaginatedStations> {
   const perPage = Math.max(1, options.perPage ?? 10);
@@ -57,20 +58,30 @@ export async function getAdminStationsPaginated(
 
   const searchValue = `%${search}%`;
 
+  const lineId = Number.isInteger(options.lineId) ? Number(options.lineId) : 0;
+
   const countResult = await db
     .prepare(
       `
         SELECT COUNT(*) AS total
         FROM stations
         WHERE
-          ? = ''
-          OR name LIKE ?
-          OR name_japanese LIKE ?
-          OR slug LIKE ?
-          OR description LIKE ?
+          (
+            ? = ''
+            OR name LIKE ?
+            OR name_japanese LIKE ?
+            OR slug LIKE ?
+            OR description LIKE ?
+          )
+          AND (
+            ? = 0
+            OR id IN (
+              SELECT station_id FROM line_stations WHERE line_id = ?
+            )
+          )
       `,
     )
-    .bind(search, searchValue, searchValue, searchValue, searchValue)
+    .bind(search, searchValue, searchValue, searchValue, searchValue, lineId, lineId)
     .first<{ total: number }>();
 
   const totalItems = Number(countResult?.total ?? 0);
@@ -97,11 +108,19 @@ export async function getAdminStationsPaginated(
           updated_at
         FROM stations
         WHERE
-          ? = ''
-          OR name LIKE ?
-          OR name_japanese LIKE ?
-          OR slug LIKE ?
-          OR description LIKE ?
+          (
+            ? = ''
+            OR name LIKE ?
+            OR name_japanese LIKE ?
+            OR slug LIKE ?
+            OR description LIKE ?
+          )
+          AND (
+            ? = 0
+            OR id IN (
+              SELECT station_id FROM line_stations WHERE line_id = ?
+            )
+          )
         ORDER BY name ASC
         LIMIT ? OFFSET ?
       `,
@@ -112,6 +131,8 @@ export async function getAdminStationsPaginated(
       searchValue,
       searchValue,
       searchValue,
+      lineId,
+      lineId,
       perPage,
       offset,
     )
