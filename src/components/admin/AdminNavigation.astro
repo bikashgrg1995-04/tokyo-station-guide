@@ -131,24 +131,17 @@ const isActive = (path: string) => {
       <span> Suggestions </span>
     </a>
 
-    <a
-      href="/admin/import"
-      class:list={{
-        active: isActive("/admin/import"),
-      }}
-      aria-current={isActive("/admin/import") ? "page" : undefined}
-    >
-      <span class="admin-nav-icon" aria-hidden="true"> ⇪ </span>
-
-      <span> Import </span>
-    </a>
   </nav>
 
   <!-- System -->
   <div class="admin-section-label">System</div>
 
   <nav class="admin-nav" aria-label="System">
-    <a href="#">
+    <a
+      href="/admin/settings"
+      class:list={{ active: isActive("/admin/settings") }}
+      aria-current={isActive("/admin/settings") ? "page" : undefined}
+    >
       <span class="admin-nav-icon" aria-hidden="true"> ⚙ </span>
 
       <span> Settings </span>

@@ -25,6 +25,13 @@ export const exact: Record<string, string> = {
   "Sheet": "シート",
   "Total": "合計",
   "Settings": "設定",
+  "Language and data tools for this admin panel.": "この管理画面の言語とデータツール。",
+  "Language": "言語",
+  "Show this admin panel in English or 日本語.": "管理画面の表示言語を選びます。",
+  "Add or update many records from one Excel file.": "1つのExcelファイルから多数のデータを追加・更新します。",
+  "or drop it here (.xlsx, 5 MB max)": "またはここにドロップ（.xlsx、最大5MB）",
+  "How it works": "使い方",
+
   "Logout": "ログアウト",
   "Are you sure you want to logout from the admin panel?": "管理画面からログアウトしますか？",
   "Cancel": "キャンセル",

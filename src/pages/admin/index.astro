@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import AdminLangSwitch from "../../components/admin/AdminLangSwitch.astro";
 import "../../styles/admin/dashboard.css";
 import "../../styles/admin/suggestions.css";
 import {
@@ -50,6 +51,7 @@ function formatDate(value: string): string {
         <h2>Dashboard</h2>
         <p>Manage stations, railway lines and operators.</p>
       </div>
+      <AdminLangSwitch />
     </div>
 
     <section class="admin-stats">

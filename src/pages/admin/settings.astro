@@ -1,0 +1,104 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import AdminLangSwitch from "../../components/admin/AdminLangSwitch.astro";
+import "../../styles/admin/dashboard.css";
+import "../../styles/admin/import.css";
+import "../../styles/admin/settings.css";
+
+import { SHEET_ORDER } from "../../lib/import/sheets";
+
+export const prerender = false;
+---
+
+<AdminLayout title="Settings" activePath="/admin/settings">
+  <div class="admin-content settings-page">
+    <div class="admin-page-header">
+      <div>
+        <h2>Settings</h2>
+        <p>Language and data tools for this admin panel.</p>
+      </div>
+    </div>
+
+    <!-- Language -->
+    <section class="settings-card" id="language">
+      <div class="settings-row">
+        <span class="settings-icon" aria-hidden="true">文</span>
+        <div class="settings-row-text">
+          <h3>Language</h3>
+          <p>Show this admin panel in English or 日本語.</p>
+        </div>
+        <AdminLangSwitch />
+      </div>
+    </section>
+
+    <!-- Import -->
+    <section class="settings-card" id="import">
+      <div class="settings-row">
+        <span class="settings-icon" aria-hidden="true">⇪</span>
+        <div class="settings-row-text">
+          <h3>Import data</h3>
+          <p>Add or update many records from one Excel file.</p>
+        </div>
+        <a
+          class="settings-link-button"
+          href="/templates/tokyo-guide-bulk-upload-template.xlsx"
+          download
+        >
+          Download Excel template
+        </a>
+      </div>
+
+      <div class="settings-body">
+        <label class="import-drop" id="import-drop" for="import-file">
+          <span class="import-drop-icon" aria-hidden="true">⇪</span>
+          <span class="import-drop-text">
+            <span class="import-drop-title">Choose an Excel file</span>
+            <span class="import-drop-hint">or drop it here (.xlsx, 5 MB max)</span>
+          </span>
+          <span class="import-file-name" id="import-file-name"></span>
+          <input
+            id="import-file"
+            class="import-file-input"
+            type="file"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          />
+        </label>
+
+        <div class="import-status" id="import-status" hidden role="status" aria-live="polite"></div>
+        <div class="import-result" id="import-result" hidden></div>
+
+        <div class="import-actions">
+          <button type="button" class="settings-primary" id="import-apply" disabled>
+            Import now
+          </button>
+          <button type="button" class="import-reset" id="import-reset" hidden>
+            Start over
+          </button>
+        </div>
+
+        <details class="import-help-box">
+          <summary>How it works</summary>
+          <ul class="import-rules">
+            <li>Rows link to each other by <strong>slug</strong> or name, never by ID.</li>
+            <li>Same slug as in the database = <strong>update</strong>; new slug = <strong>create</strong>. Nothing is ever deleted.</li>
+            <li>An empty cell keeps the value that is already saved.</li>
+            <li>A row whose first cell starts with <code>#</code> is skipped (the example rows).</li>
+            <li>Photos and icons are not part of the file; add them in the matching admin page.</li>
+          </ul>
+          <p class="import-order">
+            Sheets are applied in this order:
+            {SHEET_ORDER.map((name, i) => (
+              <>
+                <code>{name}</code>{i < SHEET_ORDER.length - 1 ? " → " : ""}
+              </>
+            ))}
+          </p>
+        </details>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    import "../../scripts/admin/import";
+  </script>
+</AdminLayout>

@@ -3,7 +3,6 @@ import "../styles/admin/shared.css";
 import "../styles/admin/mobile-nav.css";
 
 import BaseLayout from "./BaseLayout.astro";
-import AdminLangSwitch from "../components/admin/AdminLangSwitch.astro";
 import AdminNavigation from "../components/admin/AdminNavigation.astro";
 import { SITE_NAME } from "../config/site";
 
@@ -46,7 +45,6 @@ const { title, activePath = "/admin" } = Astro.props;
       </button>
 
       <strong class="admin-mobile-title">{title}</strong>
-      <AdminLangSwitch />
     </header>
 
     <AdminNavigation activePath={activePath} />
@@ -54,11 +52,6 @@ const { title, activePath = "/admin" } = Astro.props;
     <div class="admin-menu-backdrop" data-admin-menu-close hidden></div>
 
     <main class="admin-main">
-      <!-- Desktop / tablet: language switch at the top right of every page -->
-      <div class="admin-desktop-bar">
-        <AdminLangSwitch />
-      </div>
-
       <slot />
     </main>
   </div>

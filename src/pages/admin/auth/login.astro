@@ -12,7 +12,6 @@ import {
   recordFailedLogin,
 } from "../../../lib/auth/login-throttle";
 import { getAdminUserByEmail } from "../../../lib/db/admin-users";
-import AdminLangSwitch from "../../../components/admin/AdminLangSwitch.astro";
 import Button from "../../../components/common/Button.astro";
 
 export const prerender = false;
@@ -72,8 +71,6 @@ if (Astro.request.method === "POST") {
 <BaseLayout title={`${title} | ${SITE_NAME}`} robots="noindex, nofollow">
     <main class="admin-login-page">
       <section class="admin-login-card">
-        <div class="admin-login-card-lang"><AdminLangSwitch /></div>
-
         <div class="admin-login-logo">T</div>
 
         <div class="admin-login-heading">
