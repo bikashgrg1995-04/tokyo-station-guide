@@ -7,7 +7,7 @@ import { markActiveRow } from "./lines-dialog.js";
 import { drawMap } from "./map-render.js";
 import { state } from "./state.js";
 import { initTrain, moveTrain } from "./train.js";
-import { $, num } from "./utils.js";
+import { $ } from "./utils.js";
 
 function updateMap() {
   document.querySelectorAll(".stn").forEach(function (g) {
@@ -29,6 +29,25 @@ function updateMap() {
   }
 
   moveTrain();
+}
+
+/*
+ * The numbers on the board follow the stop order of the line (1, 2, 3 ...),
+ * so the previous / current / next signs always count up by one. Letters come
+ * from the station's own code, or from the line's code when it has none.
+ */
+function seqParts(s, index) {
+  var letters = s
+    ? String(s.code || "")
+        .replace(/\d+\s*$/, "")
+        .trim()
+    : "";
+
+  if (!letters) letters = String(line().code || "").trim();
+
+  var n = index + 1;
+
+  return { letters: letters, digits: n < 10 ? "0" + n : String(n) };
 }
 
 function updateBoard() {
@@ -67,11 +86,13 @@ function updateBoard() {
 
   $("#cur-en").textContent = curNames[1];
 
-  $("#cur-code").textContent = cur ? cur.code || "" : "";
+  var curSeq = cur ? seqParts(cur, state.idx) : null;
 
-  $("#cur-code").hidden = !(cur && cur.code);
+  $("#cur-code").textContent = curSeq ? curSeq.letters + " " + curSeq.digits : "";
 
-  function side(prefix, s) {
+  $("#cur-code").hidden = !cur;
+
+  function side(prefix, s, index) {
     var btn = $("#" + prefix + "-btn");
 
     btn.disabled = !s;
@@ -85,13 +106,11 @@ function updateBoard() {
     /* Badge like a station number sign: line letters over the number. */
     var badge = $("#" + prefix + "-num");
 
-    var digits = s ? num(s.code) : "";
+    var seq = s ? seqParts(s, index) : null;
 
-    var letters = s
-      ? String(s.code || "")
-          .replace(/\d+\s*$/, "")
-          .trim()
-      : "";
+    var digits = seq ? seq.digits : "";
+
+    var letters = seq ? seq.letters : "";
 
     badge.textContent = "";
 
@@ -104,9 +123,13 @@ function updateBoard() {
     badge.hidden = !s;
   }
 
-  side("prev", prev);
+  var prevIdx = around ? (state.idx - 1 + l.length) % l.length : state.idx - 1;
 
-  side("next", next);
+  var nextIdx = around ? (state.idx + 1) % l.length : state.idx + 1;
+
+  side("prev", prev, prevIdx);
+
+  side("next", next, nextIdx);
 }
 
 /*
