@@ -7,7 +7,6 @@ import { setView } from "./view-controls.js";
 
 const LANE_OFFSET = 8.7;
 
-const LIGHT_REACH = 40;
 
 const reduceMotion =
   window.matchMedia &&
@@ -225,6 +224,19 @@ function buildCar(k, len, w, gap) {
     );
 
     [-1, 1].forEach(function (sx) {
+      /* Bulb bloom around the lamp (dark theme only, see transit.css) */
+      el(
+        "circle",
+        {
+          cx: sx * w * 0.28,
+          cy: -h + capH * 0.22,
+          r: w * 0.4,
+          fill: "url(#bulb-grad)",
+          class: "bulb",
+        },
+        g,
+      );
+
       el(
         "circle",
         {
@@ -322,44 +334,37 @@ export function initTrain() {
 
   var lamp = carW * 0.28;
 
+  /*
+   * Headlight like the reference: one very wide, soft, cream-coloured pool of
+   * light that starts at the nose and fades out far ahead (about 5 car-widths),
+   * plus two short thin streaks from the lamps. Gradients only: no blur filter.
+   */
+  el(
+    "ellipse",
+    {
+      cx: 0,
+      cy: y0 - carW * 2.1,
+      rx: carW * 4.4,
+      ry: carW * 5.6,
+      fill: "url(#glow-grad)",
+    },
+    state.glowEl,
+  );
+
   [-1, 1].forEach(function (sx) {
     el(
       "polygon",
       {
         points:
-          sx * (lamp + 0.9) +
-          "," +
-          y0 +
-          " " +
-          sx * (lamp - 1.3) +
-          "," +
-          y0 +
-          " " +
-          sx * (lamp + 3.2) +
-          "," +
-          (y0 - LIGHT_REACH) +
-          " " +
-          sx * (lamp + 12.2) +
-          "," +
-          (y0 - LIGHT_REACH),
-
+          sx * (lamp + 0.5) + "," + y0 +
+          " " + sx * (lamp - 0.5) + "," + y0 +
+          " " + sx * (lamp - 0.2) + "," + (y0 - carW * 0.75) +
+          " " + sx * (lamp + 0.2) + "," + (y0 - carW * 0.75),
         fill: "url(#beam-grad)",
       },
       state.glowEl,
     );
   });
-
-  el(
-    "ellipse",
-    {
-      cx: 0,
-      cy: y0 - LIGHT_REACH * 0.62,
-      rx: 13,
-      ry: LIGHT_REACH * 0.58,
-      fill: "url(#glow-grad)",
-    },
-    state.glowEl,
-  );
 
   if (state.anim) {
     cancelAnimationFrame(state.anim);

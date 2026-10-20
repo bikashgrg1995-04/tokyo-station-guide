@@ -223,7 +223,34 @@
   fill: #ff3b30;
 }
 
-/* Headlight: beam + glow on the track ahead, dark theme only */
+/* Headlight: bulb bloom, beam + glow on the track ahead, dark theme only */
+.bulb {
+  display: none;
+  pointer-events: none;
+}
+:root[data-theme="dark"] .bulb {
+  display: block;
+  animation: bulb-breathe 2.8s ease-in-out infinite;
+}
+@keyframes bulb-breathe {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+html.lite .bulb,
+html.lite .headlight {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="dark"] .bulb {
+    animation: none;
+  }
+}
+
 #glow {
   pointer-events: none;
 }
@@ -234,8 +261,8 @@
   display: block;
 }
 :root[data-theme="dark"] .lamp {
-  fill: #fff6d2;
-  filter: drop-shadow(0 0 2.5px #ffe9a8);
+  fill: #ffffff;
+  filter: drop-shadow(0 0 3px #ffe45c);
 }
 :root[data-theme="dark"] .tail {
   filter: drop-shadow(0 0 2px #ff3b30);
