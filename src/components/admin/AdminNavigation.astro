@@ -130,6 +130,18 @@ const isActive = (path: string) => {
 
       <span> Suggestions </span>
     </a>
+
+    <a
+      href="/admin/import"
+      class:list={{
+        active: isActive("/admin/import"),
+      }}
+      aria-current={isActive("/admin/import") ? "page" : undefined}
+    >
+      <span class="admin-nav-icon" aria-hidden="true"> ⇪ </span>
+
+      <span> Import </span>
+    </a>
   </nav>
 
   <!-- System -->

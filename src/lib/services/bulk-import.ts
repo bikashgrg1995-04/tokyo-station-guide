@@ -1,0 +1,550 @@
+import {
+  COMMENT_PREFIX,
+  FACILITY_LOCATIONS,
+  LINE_TYPES,
+  MAX_ROWS_PER_SHEET,
+  MAX_ROWS_TOTAL,
+  REQUIRED_COLUMNS,
+  SHEET_ORDER,
+  TOP_PICK_CATEGORIES,
+  TOP_PICK_LOCATIONS,
+  WEBSITE_STATUSES,
+  type ImportIssue,
+  type ImportPreview,
+  type RawSheets,
+  type SheetName,
+  type SheetSummary,
+} from "../import/sheets";
+import type { ImportOp, ImportSnapshot } from "../import/types";
+
+/**
+ * Checks an uploaded workbook against the database and turns it into a list
+ * of operations. Pure: it reads nothing and writes nothing.
+ * Rule for every sheet: same key as the database = update, new key = create,
+ * an empty cell keeps the stored value, and nothing is ever deleted.
+ */
+
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_ERRORS_SHOWN = 200;
+
+export interface ImportPlan {
+  preview: ImportPreview;
+  ops: ImportOp[];
+}
+
+type Row = Record<string, string>;
+
+/** Excel stores dates as a day count (1900 system). */
+function excelSerialToDate(serial: number): string {
+  const ms = Math.round((serial - 25569) * 86400000);
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+function cleanSheetName(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, "_");
+}
+
+export function buildImportPlan(
+  raw: RawSheets,
+  snap: ImportSnapshot,
+): ImportPlan {
+  const errors: ImportIssue[] = [];
+  const warnings: string[] = [];
+  const ops: ImportOp[] = [];
+  const counts = new Map<SheetName, { created: number; updated: number }>();
+
+  let totalErrors = 0;
+  const fail = (sheet: string, row: number, message: string) => {
+    totalErrors += 1;
+    if (errors.length < MAX_ERRORS_SHOWN) {
+      errors.push({ sheet, row, message });
+    }
+  };
+
+  // ---- Read the rows of every known sheet --------------------------------
+  const sheets = new Map<SheetName, { rowNumber: number; data: Row }[]>();
+  let totalRows = 0;
+
+  const byName = new Map<string, string[][]>();
+  for (const [name, rows] of Object.entries(raw)) {
+    byName.set(cleanSheetName(name), rows);
+  }
+
+  for (const name of Object.keys(raw)) {
+    const clean = cleanSheetName(name);
+    if (
+      clean !== "readme" &&
+      !SHEET_ORDER.includes(clean as SheetName)
+    ) {
+      warnings.push(`Sheet "${name}" is not part of the template and was ignored.`);
+    }
+  }
+
+  for (const sheet of SHEET_ORDER) {
+    const rows = byName.get(sheet);
+    if (!rows || rows.length === 0) continue;
+
+    const header = (rows[0] ?? []).map((h) => String(h ?? "").trim().toLowerCase());
+    const missing = REQUIRED_COLUMNS[sheet].filter((c) => !header.includes(c));
+
+    if (missing.length > 0) {
+      fail(sheet, 1, `Missing column(s): ${missing.join(", ")}.`);
+      continue;
+    }
+
+    const list: { rowNumber: number; data: Row }[] = [];
+
+    for (let i = 1; i < rows.length; i += 1) {
+      const cells = rows[i] ?? [];
+      const values = header.map((_, c) => String(cells[c] ?? "").trim());
+
+      if (values.every((v) => v === "")) continue;
+      if (values[0].startsWith(COMMENT_PREFIX)) continue;
+
+      const data: Row = {};
+      header.forEach((h, c) => {
+        if (h) data[h] = values[c];
+      });
+      list.push({ rowNumber: i + 1, data });
+    }
+
+    if (list.length > MAX_ROWS_PER_SHEET) {
+      fail(sheet, 0, `Too many rows (${list.length}). Maximum is ${MAX_ROWS_PER_SHEET} per sheet.`);
+      continue;
+    }
+
+    totalRows += list.length;
+    if (list.length > 0) sheets.set(sheet, list);
+  }
+
+  if (totalRows > MAX_ROWS_TOTAL) {
+    fail("-", 0, `Too many rows in total (${totalRows}). Maximum is ${MAX_ROWS_TOTAL}. Upload in smaller parts.`);
+  }
+
+  // ---- Known keys (database + earlier rows of this upload) ----------------
+  const operatorSlugs = new Set(snap.operators.map((o) => o.slug));
+  const operatorNames = new Map(snap.operators.map((o) => [o.name.toLowerCase(), o.slug]));
+  const lineSlugs = new Set(snap.lines.map((l) => l.slug));
+  const stationSlugs = new Set(snap.stations.map((s) => s.slug));
+  const facilitySlugs = new Set(snap.facilities.map((f) => f.slug));
+  const facilityNames = new Map(snap.facilities.map((f) => [f.name.toLowerCase(), f.slug]));
+  const topPickSlugs = new Set(snap.topPicks.map((t) => t.slug));
+  const floors = new Set(snap.floors);
+  const exits = new Set(snap.exits);
+  const platforms = new Set(snap.platforms);
+  const floorFacilities = new Set(snap.floorFacilities);
+  const stationTopPicks = new Set(snap.stationTopPicks);
+
+  const lineOrders = new Map<string, Map<string, number>>();
+  for (const ls of snap.lineStations) {
+    const m = lineOrders.get(ls.lineSlug) ?? new Map<string, number>();
+    m.set(ls.stationSlug, ls.order);
+    lineOrders.set(ls.lineSlug, m);
+  }
+
+  const bump = (sheet: SheetName, isNew: boolean) => {
+    const c = counts.get(sheet) ?? { created: 0, updated: 0 };
+    if (isNew) c.created += 1;
+    else c.updated += 1;
+    counts.set(sheet, c);
+  };
+
+  // ---- Field helpers --------------------------------------------------------
+  const opt = (v: string): string | null => (v === "" ? null : v);
+
+  const text = (
+    data: Row,
+    col: string,
+    max: number,
+    err: (m: string) => void,
+    required = false,
+  ): string | null => {
+    const v = data[col] ?? "";
+    if (v === "") {
+      if (required) err(`"${col}" is required.`);
+      return null;
+    }
+    if (v.length > max) err(`"${col}" must be ${max} characters or less.`);
+    return v;
+  };
+
+  const slugField = (data: Row, col: string, err: (m: string) => void): string => {
+    const v = data[col] ?? "";
+    if (!v) {
+      err(`"${col}" is required.`);
+      return "";
+    }
+    if (!SLUG_RE.test(v) || v.length > 150) {
+      err(`"${col}" can only contain lowercase letters, numbers and hyphens.`);
+    }
+    return v;
+  };
+
+  const intField = (
+    data: Row,
+    col: string,
+    err: (m: string) => void,
+    min = 0,
+    max = 100000,
+  ): number | null => {
+    const v = data[col] ?? "";
+    if (v === "") return null;
+    const n = Number(v);
+    if (!Number.isInteger(n) || n < min || n > max) {
+      err(`"${col}" must be a whole number from ${min} to ${max}.`);
+      return null;
+    }
+    return n;
+  };
+
+  const oneOf = (
+    data: Row,
+    col: string,
+    allowed: string[],
+    err: (m: string) => void,
+  ): string | null => {
+    const v = (data[col] ?? "").toLowerCase();
+    if (v === "") return null;
+    if (!allowed.includes(v)) {
+      err(`"${col}" must be one of: ${allowed.join(", ")}.`);
+      return null;
+    }
+    return v;
+  };
+
+  const urlField = (data: Row, col: string, err: (m: string) => void): string | null => {
+    const v = data[col] ?? "";
+    if (v === "") return null;
+    let ok = false;
+    try {
+      const u = new URL(v);
+      ok = u.protocol === "https:" || u.protocol === "http:";
+    } catch {
+      ok = false;
+    }
+    if (!ok) err(`"${col}" must be a valid http(s) link.`);
+    else if (v.length > 500) err(`"${col}" must be 500 characters or less.`);
+    return v;
+  };
+
+  const duplicate = (
+    seen: Set<string>,
+    key: string,
+    firstRows: Map<string, number>,
+    rowNumber: number,
+    err: (m: string) => void,
+  ) => {
+    if (seen.has(key)) {
+      err(`Duplicate of row ${firstRows.get(key)} in this sheet.`);
+      return true;
+    }
+    seen.add(key);
+    firstRows.set(key, rowNumber);
+    return false;
+  };
+
+  const eachRow = (
+    sheet: SheetName,
+    keyOf: (data: Row) => string,
+    handler: (data: Row, err: (msg: string) => void, isDuplicate: boolean) => void,
+  ) => {
+    const seen = new Set<string>();
+    const firstRows = new Map<string, number>();
+    for (const { rowNumber, data } of sheets.get(sheet) ?? []) {
+      const err = (message: string) => fail(sheet, rowNumber, message);
+      const dup = duplicate(seen, keyOf(data), firstRows, rowNumber, err);
+      handler(data, err, dup);
+    }
+  };
+
+  // ---- operators -------------------------------------------------------------
+  const opNameSeen = new Map<string, string>();
+  eachRow("operators", (d) => d.slug, (d, err, dup) => {
+    const slug = slugField(d, "slug", err);
+    const name = text(d, "name", 150, err, true) ?? "";
+    const nameJa = text(d, "name_japanese", 150, err);
+    const desc = text(d, "description", 1000, err);
+    const descJa = text(d, "description_japanese", 1000, err);
+    const url = urlField(d, "website_url", err);
+
+    const owner = operatorNames.get(name.toLowerCase());
+    const sameName = opNameSeen.get(name.toLowerCase());
+    if (name && ((owner && owner !== slug) || (sameName && sameName !== slug))) {
+      err(`Another operator already uses the name "${name}".`);
+    }
+    opNameSeen.set(name.toLowerCase(), slug);
+    if (dup || !slug) return;
+
+    bump("operators", !operatorSlugs.has(slug));
+    operatorSlugs.add(slug);
+    operatorNames.set(name.toLowerCase(), slug);
+    ops.push({ t: "operator", slug, name, nameJa, desc, descJa, url });
+  });
+
+  // ---- lines -----------------------------------------------------------------
+  eachRow("lines", (d) => d.slug, (d, err, dup) => {
+    const slug = slugField(d, "slug", err);
+    const operatorSlug = d.operator_slug ?? "";
+    if (!operatorSlug) err(`"operator_slug" is required.`);
+    else if (!operatorSlugs.has(operatorSlug)) {
+      err(`Operator "${operatorSlug}" does not exist (add it in the operators sheet or Admin).`);
+    }
+    const name = text(d, "name", 150, err, true) ?? "";
+    const nameJa = text(d, "name_japanese", 150, err);
+    const code = text(d, "code", 50, err);
+    const color = opt(d.color ?? "");
+    if (color && !HEX_RE.test(color)) err(`"color" must look like #9ACD32.`);
+    const lineType = oneOf(d, "line_type", LINE_TYPES, err);
+    const status = oneOf(d, "website_status", WEBSITE_STATUSES, err);
+    const desc = text(d, "description", 1000, err);
+    const descJa = text(d, "description_japanese", 1000, err);
+    if (dup || !slug) return;
+
+    bump("lines", !lineSlugs.has(slug));
+    lineSlugs.add(slug);
+    ops.push({ t: "line", slug, operatorSlug, name, nameJa, code, color, lineType, status, desc, descJa });
+  });
+
+  // ---- stations --------------------------------------------------------------
+  eachRow("stations", (d) => d.slug, (d, err, dup) => {
+    const slug = slugField(d, "slug", err);
+    const name = text(d, "name", 150, err, true) ?? "";
+    const nameJa = text(d, "name_japanese", 150, err);
+    const desc = text(d, "description", 1000, err);
+    const descJa = text(d, "description_japanese", 1000, err);
+    const about = text(d, "about", 150, err);
+    const aboutJa = text(d, "about_japanese", 150, err);
+    const locationUrl = urlField(d, "location_url", err);
+
+    let isVerified: number | null = null;
+    const rawVerified = (d.is_verified ?? "").toLowerCase();
+    if (rawVerified !== "") {
+      if (["1", "yes", "true"].includes(rawVerified)) isVerified = 1;
+      else if (["0", "no", "false"].includes(rawVerified)) isVerified = 0;
+      else err(`"is_verified" must be 1 or 0.`);
+    }
+
+    let verifiedAt = opt(d.verified_at ?? "");
+    if (verifiedAt && /^\d+(\.\d+)?$/.test(verifiedAt)) {
+      verifiedAt = excelSerialToDate(Number(verifiedAt));
+    }
+    if (verifiedAt) {
+      const date = new Date(`${verifiedAt}T00:00:00Z`);
+      if (!DATE_RE.test(verifiedAt) || Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== verifiedAt) {
+        err(`"verified_at" must be a date like 2026-10-01.`);
+      }
+    }
+    if (dup || !slug) return;
+
+    bump("stations", !stationSlugs.has(slug));
+    stationSlugs.add(slug);
+    ops.push({ t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt });
+  });
+
+  // ---- line_stations ---------------------------------------------------------
+  const lsOps: Extract<ImportOp, { t: "lineStation" }>[] = [];
+  eachRow("line_stations", (d) => `${d.line_slug}|${d.station_slug}`, (d, err, dup) => {
+    const lineSlug = d.line_slug ?? "";
+    const stationSlug = d.station_slug ?? "";
+    if (!lineSlugs.has(lineSlug)) err(`Line "${lineSlug}" does not exist.`);
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    const order = intField(d, "station_order", err, 0, 10000);
+    if (order === null && (d.station_order ?? "") === "") err(`"station_order" is required.`);
+    const code = text(d, "station_code", 50, err);
+    if (dup || order === null || !lineSlugs.has(lineSlug) || !stationSlugs.has(stationSlug)) return;
+
+    lsOps.push({ t: "lineStation", lineSlug, stationSlug, order, code });
+  });
+
+  // Station order must stay unique within a line after the upload.
+  const finalOrders = new Map<string, Map<string, number>>();
+  for (const [line, m] of lineOrders) finalOrders.set(line, new Map(m));
+  for (const op of lsOps) {
+    const m = finalOrders.get(op.lineSlug) ?? new Map<string, number>();
+    m.set(op.stationSlug, op.order);
+    finalOrders.set(op.lineSlug, m);
+  }
+  const clashes = new Set<string>();
+  for (const [line, m] of finalOrders) {
+    const used = new Map<number, string>();
+    for (const [station, order] of m) {
+      const other = used.get(order);
+      if (other !== undefined) clashes.add(`${line}|${order}|${other}|${station}`);
+      used.set(order, station);
+    }
+  }
+  const rowOf = new Map<string, number>();
+  for (const { rowNumber, data } of sheets.get("line_stations") ?? []) {
+    rowOf.set(`${data.line_slug}|${data.station_slug}`, rowNumber);
+  }
+  for (const key of clashes) {
+    const [line, order, a, b] = key.split("|");
+    const row = rowOf.get(`${line}|${a}`) ?? rowOf.get(`${line}|${b}`) ?? 0;
+    fail("line_stations", row, `Stations "${a}" and "${b}" would both be number ${order} on line "${line}".`);
+  }
+  for (const op of lsOps) {
+    const isNew = !(lineOrders.get(op.lineSlug)?.has(op.stationSlug) ?? false);
+    bump("line_stations", isNew);
+    ops.push(op);
+  }
+
+  // ---- facilities ------------------------------------------------------------
+  const facNameSeen = new Map<string, string>();
+  eachRow("facilities", (d) => d.slug, (d, err, dup) => {
+    const slug = slugField(d, "slug", err);
+    const name = text(d, "name", 150, err, true) ?? "";
+    const nameJa = text(d, "name_japanese", 150, err);
+    const sortOrder = intField(d, "sort_order", err);
+
+    const owner = facilityNames.get(name.toLowerCase());
+    const sameName = facNameSeen.get(name.toLowerCase());
+    if (name && ((owner && owner !== slug) || (sameName && sameName !== slug))) {
+      err(`Another facility already uses the name "${name}".`);
+    }
+    facNameSeen.set(name.toLowerCase(), slug);
+    if (dup || !slug) return;
+
+    bump("facilities", !facilitySlugs.has(slug));
+    facilitySlugs.add(slug);
+    facilityNames.set(name.toLowerCase(), slug);
+    ops.push({ t: "facility", slug, name, nameJa, sortOrder });
+  });
+
+  // ---- floors ----------------------------------------------------------------
+  eachRow("floors", (d) => `${d.station_slug}|${d.name}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    const name = text(d, "name", 100, err, true) ?? "";
+    const nameJa = text(d, "name_japanese", 100, err);
+    const floorOrder = intField(d, "floor_order", err, -100, 1000);
+    if (dup || !name || !stationSlugs.has(stationSlug)) return;
+
+    const key = `${stationSlug}|${name}`;
+    bump("floors", !floors.has(key));
+    floors.add(key);
+    ops.push({ t: "floor", stationSlug, name, nameJa, floorOrder });
+  });
+
+  // ---- floor_facilities ------------------------------------------------------
+  eachRow("floor_facilities", (d) => `${d.station_slug}|${d.floor_name}|${d.facility_slug}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    const floorName = d.floor_name ?? "";
+    const facilitySlug = d.facility_slug ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    else if (!floors.has(`${stationSlug}|${floorName}`)) err(`Floor "${floorName}" does not exist for station "${stationSlug}".`);
+    if (!facilitySlugs.has(facilitySlug)) err(`Facility "${facilitySlug}" does not exist.`);
+    const count = intField(d, "facility_count", err);
+    const note = text(d, "note", 500, err);
+    const noteJa = text(d, "note_japanese", 500, err);
+    const locationType = oneOf(d, "location_type", FACILITY_LOCATIONS, err);
+    const sortOrder = intField(d, "sort_order", err);
+    if (dup || !floors.has(`${stationSlug}|${floorName}`) || !facilitySlugs.has(facilitySlug)) return;
+
+    const key = `${stationSlug}|${floorName}|${facilitySlug}`;
+    bump("floor_facilities", !floorFacilities.has(key));
+    floorFacilities.add(key);
+    ops.push({ t: "floorFacility", stationSlug, floorName, facilitySlug, count, note, noteJa, locationType, sortOrder });
+  });
+
+  // ---- exits -----------------------------------------------------------------
+  eachRow("exits", (d) => `${d.station_slug}|${d.name}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    const floorName = d.floor_name ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    else if (!floors.has(`${stationSlug}|${floorName}`)) err(`Floor "${floorName}" does not exist for station "${stationSlug}".`);
+    const name = text(d, "name", 150, err, true) ?? "";
+    const nameJa = text(d, "name_japanese", 150, err);
+    const code = text(d, "code", 50, err);
+    const colorCode = opt(d.color_code ?? "");
+    if (colorCode && !HEX_RE.test(colorCode)) err(`"color_code" must look like #FF3B30.`);
+    const desc = text(d, "description", 200, err);
+    const descJa = text(d, "description_japanese", 200, err);
+    const sortOrder = intField(d, "sort_order", err);
+    if (dup || !name || !floors.has(`${stationSlug}|${floorName}`)) return;
+
+    const key = `${stationSlug}|${name}`;
+    bump("exits", !exits.has(key));
+    exits.add(key);
+    ops.push({ t: "exit", stationSlug, floorName, name, nameJa, code, colorCode, desc, descJa, sortOrder });
+  });
+
+  // ---- platforms -------------------------------------------------------------
+  eachRow("platforms", (d) => `${d.station_slug}|${d.platform_number}|${d.line_slug ?? ""}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    const lineSlug = opt(d.line_slug ?? "");
+    if (lineSlug && !lineSlugs.has(lineSlug)) err(`Line "${lineSlug}" does not exist.`);
+    const floorName = opt(d.floor_name ?? "");
+    if (floorName && !floors.has(`${stationSlug}|${floorName}`)) err(`Floor "${floorName}" does not exist for station "${stationSlug}".`);
+    const number = text(d, "platform_number", 50, err, true) ?? "";
+    const dest = text(d, "destinations", 500, err);
+    const destJa = text(d, "destinations_japanese", 500, err);
+    const notes = text(d, "notes", 2000, err);
+    const notesJa = text(d, "notes_japanese", 2000, err);
+    const sortOrder = intField(d, "sort_order", err);
+    if (dup || !number || !stationSlugs.has(stationSlug)) return;
+
+    const key = `${stationSlug}|${number}|${lineSlug ?? ""}`;
+    bump("platforms", !platforms.has(key));
+    platforms.add(key);
+    ops.push({ t: "platform", stationSlug, lineSlug, floorName, number, dest, destJa, notes, notesJa, sortOrder });
+  });
+
+  // ---- top_picks -------------------------------------------------------------
+  eachRow("top_picks", (d) => d.slug, (d, err, dup) => {
+    const slug = slugField(d, "slug", err);
+    const name = text(d, "name", 150, err, true) ?? "";
+    const nameJa = text(d, "name_japanese", 150, err);
+    const category = oneOf(d, "category", TOP_PICK_CATEGORIES, err);
+    const desc = text(d, "description", 1000, err);
+    const descJa = text(d, "description_japanese", 1000, err);
+    const entryFee = text(d, "entry_fee", 150, err);
+    const entryFeeJa = text(d, "entry_fee_japanese", 150, err);
+    const notes = text(d, "notes", 150, err);
+    const notesJa = text(d, "notes_japanese", 150, err);
+    const mapUrl = urlField(d, "map_url", err);
+    if (dup || !slug) return;
+
+    bump("top_picks", !topPickSlugs.has(slug));
+    topPickSlugs.add(slug);
+    ops.push({ t: "topPick", slug, name, nameJa, category, desc, descJa, entryFee, entryFeeJa, notes, notesJa, mapUrl });
+  });
+
+  // ---- station_top_picks -----------------------------------------------------
+  eachRow("station_top_picks", (d) => `${d.station_slug}|${d.top_pick_slug}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    const topPickSlug = d.top_pick_slug ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    if (!topPickSlugs.has(topPickSlug)) err(`Top pick "${topPickSlug}" does not exist.`);
+    const minutes = intField(d, "walking_minutes", err, 0, 600);
+    const locationType = oneOf(d, "location_type", TOP_PICK_LOCATIONS, err);
+    const sortOrder = intField(d, "sort_order", err);
+    if (dup || !stationSlugs.has(stationSlug) || !topPickSlugs.has(topPickSlug)) return;
+
+    const key = `${stationSlug}|${topPickSlug}`;
+    bump("station_top_picks", !stationTopPicks.has(key));
+    stationTopPicks.add(key);
+    ops.push({ t: "stationTopPick", stationSlug, topPickSlug, minutes, locationType, sortOrder });
+  });
+
+  const summary: SheetSummary[] = SHEET_ORDER.filter((s) => counts.has(s)).map(
+    (sheet) => ({ sheet, ...counts.get(sheet)! }),
+  );
+
+  if (summary.length === 0 && totalErrors === 0) {
+    fail("-", 0, "No data rows found. Fill the sheets of the template (row 2 is only an example) and try again.");
+  }
+
+  return {
+    ops: totalErrors > 0 ? [] : ops,
+    preview: {
+      ok: totalErrors === 0,
+      summary,
+      errors,
+      totalErrors,
+      warnings,
+    },
+  };
+}

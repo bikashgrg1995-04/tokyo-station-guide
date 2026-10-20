@@ -1,0 +1,99 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import "../../../styles/admin/dashboard.css";
+import "../../../styles/admin/import.css";
+
+import Button from "../../../components/common/Button.astro";
+import { SHEET_ORDER } from "../../../lib/import/sheets";
+
+export const prerender = false;
+---
+
+<AdminLayout title="Import" activePath="/admin/import">
+  <div class="admin-content">
+    <div class="admin-page-header">
+      <div>
+        <h2>Import data</h2>
+        <p>
+          Add or update many records at once from one Excel file. Photos and
+          icons are not part of the file; add them afterwards in the matching
+          admin page.
+        </p>
+      </div>
+    </div>
+
+    <section class="admin-panel import-panel">
+      <div class="admin-panel-header">
+        <h3>1. Download the template</h3>
+      </div>
+      <p class="import-help">
+        One Excel file with a sheet for each kind of data. Fill only the
+        sheets you need and leave the others empty. The README sheet explains
+        every column.
+      </p>
+      <Button
+        href="/templates/tokyo-guide-bulk-upload-template.xlsx"
+        variant="secondary"
+      >
+        Download Excel template
+      </Button>
+
+      <ul class="import-rules">
+        <li>
+          Rows link to each other by <strong>slug</strong> or name, never by ID.
+        </li>
+        <li>
+          Same slug as in the database = <strong>update</strong>; new slug =
+          <strong>create</strong>. Nothing is ever deleted.
+        </li>
+        <li>An empty cell keeps the value that is already saved.</li>
+        <li>
+          A row whose first cell starts with <code>#</code> is skipped (the
+          example rows).
+        </li>
+      </ul>
+
+      <p class="import-order">
+        Sheets are applied in this order:
+        {SHEET_ORDER.map((name, i) => (
+          <>
+            <code>{name}</code>{i < SHEET_ORDER.length - 1 ? " → " : ""}
+          </>
+        ))}
+      </p>
+    </section>
+
+    <section class="admin-panel import-panel">
+      <div class="admin-panel-header">
+        <h3>2. Upload and check</h3>
+      </div>
+
+      <label class="import-drop" id="import-drop" for="import-file">
+        <span class="import-drop-title">Choose an Excel file</span>
+        <span class="import-drop-hint">or drop it here (.xlsx, 5 MB max)</span>
+        <span class="import-file-name" id="import-file-name"></span>
+        <input
+          id="import-file"
+          class="import-file-input"
+          type="file"
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        />
+      </label>
+
+      <div class="import-status" id="import-status" hidden role="status" aria-live="polite"></div>
+
+      <div class="import-result" id="import-result" hidden></div>
+
+      <div class="import-actions">
+        <Button id="import-apply" variant="primary" disabled>3. Import now</Button>
+        <button type="button" class="import-reset" id="import-reset" hidden>
+          Start over
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    import "../../../scripts/admin/import";
+  </script>
+</AdminLayout>

@@ -1,0 +1,194 @@
+/* Import data page */
+
+.import-panel {
+  margin-bottom: 18px;
+}
+
+.import-help {
+  margin: 0 0 14px;
+  color: var(--admin-muted, #6b7280);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.import-rules {
+  margin: 16px 0 0;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.import-order {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 2;
+  color: var(--admin-muted, #6b7280);
+}
+
+.import-panel code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--admin-table-header, #f3f4f6);
+  font-size: 12px;
+}
+
+.import-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 28px 16px;
+  border: 2px dashed var(--admin-border, #d1d5db);
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.import-drop:hover,
+.import-drop.is-dragging {
+  border-color: var(--admin-primary, #2563eb);
+  background: var(--admin-table-header, #f3f4f6);
+}
+
+.import-drop-title {
+  font-weight: 700;
+}
+
+.import-drop-hint {
+  font-size: 13px;
+  color: var(--admin-muted, #6b7280);
+}
+
+.import-file-name {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.import-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.import-status {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--admin-table-header, #f3f4f6);
+}
+
+.import-status[hidden],
+.import-result[hidden],
+.import-reset[hidden] {
+  display: none;
+}
+
+.import-status-error {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.import-status-success {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.import-result {
+  margin-top: 14px;
+}
+
+.import-table-wrap {
+  overflow-x: auto;
+}
+
+.import-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.import-table th,
+.import-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--admin-border, #e5e7eb);
+  text-align: left;
+}
+
+.import-table th:not(:first-child),
+.import-table td:not(:first-child) {
+  text-align: right;
+  width: 130px;
+}
+
+.import-table td:first-child {
+  text-transform: capitalize;
+}
+
+.import-total td {
+  font-weight: 700;
+}
+
+.import-errors-title {
+  margin: 18px 0 8px;
+  color: #991b1b;
+  font-size: 15px;
+}
+
+.import-errors,
+.import-warnings {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.import-errors {
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.import-errors strong {
+  text-transform: capitalize;
+}
+
+.import-warnings {
+  margin-top: 12px;
+  color: #92400e;
+}
+
+.import-more {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--admin-muted, #6b7280);
+}
+
+.import-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.import-reset {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--admin-primary, #2563eb);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .import-actions .common-button {
+    width: 100%;
+  }
+}
