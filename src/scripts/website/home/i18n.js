@@ -65,10 +65,10 @@ export function names(en, jp) {
 
 /*
  * The station board names never change with the language switch:
- * Japanese on top, English underneath (English alone when no Japanese name).
+ * English on top, Japanese underneath (English alone when no Japanese name).
  */
 export function fixedNames(en, jp) {
-  return filled(jp) ? [jp, en] : [en, ""];
+  return [en, filled(jp) ? jp : ""];
 }
 
 /* Fill the fixed text in the page markup:
