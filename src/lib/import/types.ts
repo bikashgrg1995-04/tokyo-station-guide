@@ -1,4 +1,28 @@
-/** What already exists in the database (slugs / names only), used to check an upload. */
+/**
+ * Value of one importable field in a row of the file:
+ *  - a value      = save it
+ *  - null         = the cell was left empty: clear the stored value
+ *  - undefined    = the column is not in the file at all: keep the stored value
+ */
+export type Opt<T> = T | null | undefined;
+
+export type OpType =
+  | "operator"
+  | "line"
+  | "station"
+  | "lineStation"
+  | "facility"
+  | "floor"
+  | "floorFacility"
+  | "exit"
+  | "platform"
+  | "topPick"
+  | "stationTopPick";
+
+/** Stored values of one existing row, named like the fields of its ImportOp. */
+export type StoredRow = Record<string, string | number | null>;
+
+/** What already exists in the database (keys, plus the stored values to detect changes). */
 export interface ImportSnapshot {
   operators: { slug: string; name: string }[];
   lines: { slug: string }[];
@@ -16,18 +40,49 @@ export interface ImportSnapshot {
   /** `stationSlug|topPickSlug` */
   stationTopPicks: string[];
   lineStations: { lineSlug: string; stationSlug: string; order: number }[];
+  /** Stored values per row type, keyed like the arrays above (lineStation: `lineSlug|stationSlug`). */
+  stored: Record<OpType, Record<string, StoredRow>>;
 }
 
-/** A null field means "cell left empty": keep the stored value on update. */
+/** Fields that identify a row (never compared or changed by an import). */
+export const KEY_FIELDS: Record<OpType, string[]> = {
+  operator: ["slug"],
+  line: ["slug"],
+  station: ["slug"],
+  lineStation: ["lineSlug", "stationSlug"],
+  facility: ["slug"],
+  floor: ["stationSlug", "name"],
+  floorFacility: ["stationSlug", "floorName", "facilitySlug"],
+  exit: ["stationSlug", "name"],
+  platform: ["stationSlug", "lineSlug", "number"],
+  topPick: ["slug"],
+  stationTopPick: ["stationSlug", "topPickSlug"],
+};
+
+/** Fields that can never be empty in the database: an empty cell keeps the stored value. */
+export const NOT_NULL_FIELDS: Record<OpType, string[]> = {
+  operator: ["name"],
+  line: ["name", "operatorSlug", "lineType", "status"],
+  station: ["name", "isVerified"],
+  lineStation: ["order"],
+  facility: ["name", "sortOrder"],
+  floor: ["floorOrder"],
+  floorFacility: ["locationType", "sortOrder"],
+  exit: ["floorName", "sortOrder"],
+  platform: ["sortOrder"],
+  topPick: ["name", "category"],
+  stationTopPick: ["locationType", "sortOrder"],
+};
+
 export type ImportOp =
-  | { t: "operator"; slug: string; name: string; nameJa: string | null; desc: string | null; descJa: string | null; url: string | null }
-  | { t: "line"; slug: string; operatorSlug: string; name: string; nameJa: string | null; code: string | null; color: string | null; lineType: string | null; status: string | null; desc: string | null; descJa: string | null }
-  | { t: "station"; slug: string; name: string; nameJa: string | null; desc: string | null; descJa: string | null; about: string | null; aboutJa: string | null; locationUrl: string | null; isVerified: number | null; verifiedAt: string | null }
-  | { t: "lineStation"; lineSlug: string; stationSlug: string; order: number; code: string | null }
-  | { t: "facility"; slug: string; name: string; nameJa: string | null; sortOrder: number | null }
-  | { t: "floor"; stationSlug: string; name: string; nameJa: string | null; floorOrder: number | null }
-  | { t: "floorFacility"; stationSlug: string; floorName: string; facilitySlug: string; count: number | null; note: string | null; noteJa: string | null; locationType: string | null; sortOrder: number | null }
-  | { t: "exit"; stationSlug: string; floorName: string; name: string; nameJa: string | null; code: string | null; colorCode: string | null; desc: string | null; descJa: string | null; sortOrder: number | null }
-  | { t: "platform"; stationSlug: string; lineSlug: string | null; floorName: string | null; number: string; dest: string | null; destJa: string | null; notes: string | null; notesJa: string | null; sortOrder: number | null }
-  | { t: "topPick"; slug: string; name: string; nameJa: string | null; category: string | null; desc: string | null; descJa: string | null; entryFee: string | null; entryFeeJa: string | null; notes: string | null; notesJa: string | null; mapUrl: string | null }
-  | { t: "stationTopPick"; stationSlug: string; topPickSlug: string; minutes: number | null; locationType: string | null; sortOrder: number | null };
+  | { t: "operator"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; url: Opt<string> }
+  | { t: "line"; slug: string; operatorSlug: string; name: string; nameJa: Opt<string>; code: Opt<string>; color: Opt<string>; lineType: Opt<string>; status: Opt<string>; desc: Opt<string>; descJa: Opt<string> }
+  | { t: "station"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; about: Opt<string>; aboutJa: Opt<string>; locationUrl: Opt<string>; isVerified: Opt<number>; verifiedAt: Opt<string> }
+  | { t: "lineStation"; lineSlug: string; stationSlug: string; order: number; code: Opt<string> }
+  | { t: "facility"; slug: string; name: string; nameJa: Opt<string>; sortOrder: Opt<number> }
+  | { t: "floor"; stationSlug: string; name: string; nameJa: Opt<string>; floorOrder: Opt<number> }
+  | { t: "floorFacility"; stationSlug: string; floorName: string; facilitySlug: string; count: Opt<number>; note: Opt<string>; noteJa: Opt<string>; locationType: Opt<string>; sortOrder: Opt<number> }
+  | { t: "exit"; stationSlug: string; floorName: string; name: string; nameJa: Opt<string>; code: Opt<string>; colorCode: Opt<string>; desc: Opt<string>; descJa: Opt<string>; sortOrder: Opt<number> }
+  | { t: "platform"; stationSlug: string; lineSlug: string | null; floorName: Opt<string>; number: string; dest: Opt<string>; destJa: Opt<string>; notes: Opt<string>; notesJa: Opt<string>; sortOrder: Opt<number> }
+  | { t: "topPick"; slug: string; name: string; nameJa: Opt<string>; category: Opt<string>; desc: Opt<string>; descJa: Opt<string>; entryFee: Opt<string>; entryFeeJa: Opt<string>; notes: Opt<string>; notesJa: Opt<string>; mapUrl: Opt<string> }
+  | { t: "stationTopPick"; stationSlug: string; topPickSlug: string; minutes: Opt<number>; locationType: Opt<string>; sortOrder: Opt<number> };

@@ -4,7 +4,7 @@ import { readXlsx, type SheetRows } from "./shared/xlsx-reader";
 
 interface Preview {
   ok: boolean;
-  summary: { sheet: string; created: number; updated: number }[];
+  summary: { sheet: string; created: number; updated: number; unchanged: number }[];
   errors: { sheet: string; row: number; message: string }[];
   totalErrors: number;
   warnings: string[];
@@ -60,7 +60,7 @@ function renderPreview(preview: Preview, applied: boolean) {
     const table = node("table", "import-table");
     const head = node("thead");
     const headRow = node("tr");
-    ["Sheet", applied ? "Created" : "Will create", applied ? "Updated" : "Will update"].forEach(
+    ["Sheet", applied ? "Created" : "Will create", applied ? "Updated" : "Will update", "Unchanged"].forEach(
       (label) => headRow.appendChild(node("th", "", label)),
     );
     head.appendChild(headRow);
@@ -69,19 +69,23 @@ function renderPreview(preview: Preview, applied: boolean) {
     const body = node("tbody");
     let created = 0;
     let updated = 0;
+    let unchanged = 0;
     preview.summary.forEach((s) => {
       const tr = node("tr");
       tr.appendChild(node("td", "", sheetLabel(s.sheet)));
       tr.appendChild(node("td", "", String(s.created)));
       tr.appendChild(node("td", "", String(s.updated)));
+      tr.appendChild(node("td", "import-muted", String(s.unchanged)));
       body.appendChild(tr);
       created += s.created;
       updated += s.updated;
+      unchanged += s.unchanged;
     });
     const total = node("tr", "import-total");
     total.appendChild(node("td", "", "Total"));
     total.appendChild(node("td", "", String(created)));
     total.appendChild(node("td", "", String(updated)));
+    total.appendChild(node("td", "import-muted", String(unchanged)));
     body.appendChild(total);
     table.appendChild(body);
 
@@ -171,6 +175,8 @@ async function handleFile(file: File) {
     if (preview.ok && rowsToSave > 0) {
       setStatus("The file looks good. Check the numbers, then press Import.", "success");
       applyButton.disabled = false;
+    } else if (preview.ok) {
+      setStatus("Everything in this file is already saved. Nothing to import.", "info");
     } else {
       setStatus("Nothing was saved. Fix the problems below in Excel and upload the file again.", "error");
     }
@@ -243,7 +249,7 @@ dropZone.addEventListener("drop", (event) => {
 });
 
 applyButton.addEventListener("click", () => {
-  if (window.confirm("Save this data to the database now? Existing rows with the same key will be updated.")) {
+  if (window.confirm("Save this data to the database now? New rows are created and changed rows are updated. Empty cells clear the saved value.")) {
     void handleApply();
   }
 });

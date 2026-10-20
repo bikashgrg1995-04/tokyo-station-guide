@@ -78,6 +78,8 @@ export interface ImportIssue {
 }
 
 export interface SheetSummary {
+  /** Rows already identical to the database (skipped). */
+  unchanged: number;
   sheet: SheetName;
   created: number;
   updated: number;

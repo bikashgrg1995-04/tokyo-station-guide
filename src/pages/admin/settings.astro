@@ -80,8 +80,8 @@ export const prerender = false;
           <summary>How it works</summary>
           <ul class="import-rules">
             <li>Rows link to each other by <strong>slug</strong> or name, never by ID.</li>
-            <li>Same slug as in the database = <strong>update</strong>; new slug = <strong>create</strong>. Nothing is ever deleted.</li>
-            <li>An empty cell keeps the value that is already saved.</li>
+            <li>New slug = <strong>create</strong>. Same slug = <strong>update</strong> only if a value changed; identical rows are skipped. Nothing is ever deleted.</li>
+            <li>An <strong>empty cell clears</strong> the saved value. Leave out a whole column to keep its values. (Columns that can never be empty, like name or line type, keep their value.)</li>
             <li>A row whose first cell starts with <code>#</code> is skipped (the example rows).</li>
             <li>Photos and icons are not part of the file; add them in the matching admin page.</li>
           </ul>

@@ -31,6 +31,8 @@ export const exact: Record<string, string> = {
   "Add or update many records from one Excel file.": "1つのExcelファイルから多数のデータを追加・更新します。",
   "or drop it here (.xlsx, 5 MB max)": "またはここにドロップ（.xlsx、最大5MB）",
   "How it works": "使い方",
+  "Unchanged": "変更なし",
+  "Everything in this file is already saved. Nothing to import.": "このファイルの内容はすべて保存済みです。インポートするものはありません。",
 
   "Logout": "ログアウト",
   "Are you sure you want to logout from the admin panel?": "管理画面からログアウトしますか？",

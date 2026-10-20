@@ -192,3 +192,7 @@
     width: 100%;
   }
 }
+
+.import-muted {
+  color: var(--admin-muted, #6b7280);
+}

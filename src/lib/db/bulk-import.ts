@@ -1,4 +1,4 @@
-import type { ImportOp, ImportSnapshot } from "../import/types";
+import type { ImportOp, ImportSnapshot, StoredRow } from "../import/types";
 
 /** Reads the keys of everything an upload can refer to. */
 export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot> {
@@ -47,7 +47,10 @@ export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot
       ),
     ]);
 
+  const stored = await loadStoredRows(all);
+
   return {
+    stored,
     operators,
     lines,
     stations,
@@ -60,6 +63,65 @@ export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot
     stationTopPicks: stationTopPicks.map((r) => r.k),
     lineStations,
   };
+}
+
+type Reader = <T>(sql: string) => Promise<T[]>;
+
+/** Stored values of every importable row, named like the fields of its ImportOp. */
+async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
+  const keyed = async (sql: string): Promise<Record<string, StoredRow>> => {
+    const rows = await all<StoredRow & { k: string }>(sql);
+    const out: Record<string, StoredRow> = {};
+    for (const { k, ...rest } of rows) out[k] = rest;
+    return out;
+  };
+
+  const [operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, topPick, stationTopPick] =
+    await Promise.all([
+      keyed(`SELECT slug AS k, name, name_japanese AS nameJa, description AS "desc",
+                    description_japanese AS descJa, website_url AS url FROM operators`),
+      keyed(`SELECT l.slug AS k, o.slug AS operatorSlug, l.name, l.name_japanese AS nameJa, l.code,
+                    l.color, l.line_type AS lineType, l.website_status AS status,
+                    l.description AS "desc", l.description_japanese AS descJa
+             FROM lines l JOIN operators o ON o.id = l.operator_id`),
+      keyed(`SELECT slug AS k, name, name_japanese AS nameJa, description AS "desc",
+                    description_japanese AS descJa, about, about_japanese AS aboutJa,
+                    location_url AS locationUrl, is_verified AS isVerified, verified_at AS verifiedAt
+             FROM stations`),
+      keyed(`SELECT l.slug || '|' || s.slug AS k, ls.station_order AS "order", ls.station_code AS code
+             FROM line_stations ls JOIN lines l ON l.id = ls.line_id JOIN stations s ON s.id = ls.station_id`),
+      keyed(`SELECT slug AS k, name, name_japanese AS nameJa, sort_order AS sortOrder FROM facilities`),
+      keyed(`SELECT s.slug || '|' || f.name AS k, f.name_japanese AS nameJa, f.floor_order AS floorOrder
+             FROM station_floors f JOIN stations s ON s.id = f.station_id`),
+      keyed(`SELECT s.slug || '|' || f.name || '|' || fa.slug AS k, sff.facility_count AS count,
+                    sff.note, sff.note_japanese AS noteJa, sff.location_type AS locationType,
+                    sff.sort_order AS sortOrder
+             FROM station_floor_facilities sff
+             JOIN station_floors f ON f.id = sff.floor_id
+             JOIN stations s ON s.id = f.station_id
+             JOIN facilities fa ON fa.id = sff.facility_id`),
+      keyed(`SELECT s.slug || '|' || e.name AS k, f.name AS floorName, e.name_japanese AS nameJa,
+                    e.code, e.color_code AS colorCode, e.description AS "desc",
+                    e.description_japanese AS descJa, e.sort_order AS sortOrder
+             FROM station_exits e JOIN stations s ON s.id = e.station_id
+             LEFT JOIN station_floors f ON f.id = e.floor_id`),
+      keyed(`SELECT s.slug || '|' || p.platform_number || '|' || COALESCE(l.slug, '') AS k,
+                    f.name AS floorName, p.destinations AS dest, p.destinations_japanese AS destJa,
+                    p.notes, p.notes_japanese AS notesJa, p.sort_order AS sortOrder
+             FROM station_platforms p JOIN stations s ON s.id = p.station_id
+             LEFT JOIN lines l ON l.id = p.line_id
+             LEFT JOIN station_floors f ON f.id = p.floor_id`),
+      keyed(`SELECT slug AS k, name, name_japanese AS nameJa, category, description AS "desc",
+                    description_japanese AS descJa, entry_fee AS entryFee,
+                    entry_fee_japanese AS entryFeeJa, notes, notes_japanese AS notesJa,
+                    map_url AS mapUrl FROM top_picks`),
+      keyed(`SELECT s.slug || '|' || t.slug AS k, stp.walking_minutes AS minutes,
+                    stp.location_type AS locationType, stp.sort_order AS sortOrder
+             FROM station_top_picks stp JOIN stations s ON s.id = stp.station_id
+             JOIN top_picks t ON t.id = stp.top_pick_id`),
+    ]);
+
+  return { operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, topPick, stationTopPick };
 }
 
 /** Order in which operation types are applied (a type only needs the ones before it). */
@@ -77,28 +139,71 @@ const TYPE_ORDER: ImportOp["t"][] = [
   "stationTopPick",
 ];
 
+type V = string | number | null | undefined;
+type Bind = string | number | null;
+/** [column, value, column can never be empty] */
+type Pair = [string, V, boolean?];
+
+/** undefined (column not in the file) is stored as empty on a new row. */
+const n = (v: V): Bind => (v === undefined ? null : v);
+
+/**
+ * "col = ?k" for every column the file actually contains. A column missing from
+ * the file keeps its value; an empty cell clears it (except columns that can
+ * never be empty, which keep their value).
+ */
+function sets(pairs: Pair[], firstParam: number) {
+  const parts: string[] = [];
+  const params: Bind[] = [];
+  for (const [col, v, notNull] of pairs) {
+    if (v === undefined || (v === null && notNull)) continue;
+    params.push(v);
+    parts.push(`${col} = ?${firstParam + params.length - 1}`);
+  }
+  return { sql: parts.map((x) => `, ${x}`).join(""), params };
+}
+
 function statementsFor(db: D1Database, op: ImportOp): D1PreparedStatement[] {
-  const p = (sql: string, ...values: (string | number | null)[]) =>
-    db.prepare(sql).bind(...values);
+  const p = (sql: string, ...values: Bind[]) => db.prepare(sql).bind(...values);
 
   switch (op.t) {
-    case "operator":
+    case "operator": {
+      const u = sets(
+        [
+          ["name_japanese", op.nameJa],
+          ["description", op.desc],
+          ["description_japanese", op.descJa],
+          ["website_url", op.url],
+        ],
+        7,
+      );
       return [
         p(
           `INSERT INTO operators (slug, name, name_japanese, description, description_japanese, website_url)
            VALUES (?1, ?2, ?3, ?4, ?5, ?6)
-           ON CONFLICT(slug) DO UPDATE SET
-             name = excluded.name,
-             name_japanese = COALESCE(?3, operators.name_japanese),
-             description = COALESCE(?4, operators.description),
-             description_japanese = COALESCE(?5, operators.description_japanese),
-             website_url = COALESCE(?6, operators.website_url),
-             updated_at = CURRENT_TIMESTAMP`,
-          op.slug, op.name, op.nameJa, op.desc, op.descJa, op.url,
+           ON CONFLICT(slug) DO UPDATE SET name = excluded.name${u.sql}, updated_at = CURRENT_TIMESTAMP`,
+          op.slug, op.name, n(op.nameJa), n(op.desc), n(op.descJa), n(op.url), ...u.params,
         ),
       ];
+    }
 
-    case "line":
+    case "line": {
+      const statusGiven = op.status !== undefined && op.status !== null;
+      const u = sets(
+        [
+          ["name_japanese", op.nameJa],
+          ["code", op.code],
+          ["color", op.color],
+          ["line_type", op.lineType, true],
+          ["website_status", op.status, true],
+          ["description", op.desc],
+          ["description_japanese", op.descJa],
+        ],
+        11,
+      );
+      const published = statusGiven
+        ? `, is_published = ${op.status === "live" ? 1 : 0}`
+        : "";
       return [
         p(
           `INSERT INTO lines
@@ -110,78 +215,83 @@ function statementsFor(db: D1Database, op: ImportOp): D1PreparedStatement[] {
            FROM operators o WHERE o.slug = ?10
            ON CONFLICT(slug) DO UPDATE SET
              operator_id = excluded.operator_id,
-             name = excluded.name,
-             name_japanese = COALESCE(?3, lines.name_japanese),
-             code = COALESCE(?4, lines.code),
-             color = COALESCE(?5, lines.color),
-             line_type = COALESCE(?6, lines.line_type),
-             website_status = COALESCE(?7, lines.website_status),
-             is_published = COALESCE(CASE WHEN ?7 = 'live' THEN 1 WHEN ?7 IS NOT NULL THEN 0 END, lines.is_published),
-             description = COALESCE(?8, lines.description),
-             description_japanese = COALESCE(?9, lines.description_japanese),
+             name = excluded.name${u.sql}${published},
              updated_at = CURRENT_TIMESTAMP`,
-          op.slug, op.name, op.nameJa, op.code, op.color, op.lineType, op.status, op.desc, op.descJa, op.operatorSlug,
+          op.slug, op.name, n(op.nameJa), n(op.code), n(op.color), n(op.lineType), n(op.status),
+          n(op.desc), n(op.descJa), op.operatorSlug, ...u.params,
         ),
       ];
+    }
 
-    case "station":
+    case "station": {
+      const u = sets(
+        [
+          ["name_japanese", op.nameJa],
+          ["description", op.desc],
+          ["description_japanese", op.descJa],
+          ["about", op.about],
+          ["about_japanese", op.aboutJa],
+          ["location_url", op.locationUrl],
+          ["is_verified", op.isVerified, true],
+          ["verified_at", op.verifiedAt],
+        ],
+        11,
+      );
       return [
         p(
           `INSERT INTO stations
              (slug, name, name_japanese, description, description_japanese, about,
               about_japanese, location_url, is_verified, verified_at)
            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, COALESCE(?9, 0), ?10)
-           ON CONFLICT(slug) DO UPDATE SET
-             name = excluded.name,
-             name_japanese = COALESCE(?3, stations.name_japanese),
-             description = COALESCE(?4, stations.description),
-             description_japanese = COALESCE(?5, stations.description_japanese),
-             about = COALESCE(?6, stations.about),
-             about_japanese = COALESCE(?7, stations.about_japanese),
-             location_url = COALESCE(?8, stations.location_url),
-             is_verified = COALESCE(?9, stations.is_verified),
-             verified_at = COALESCE(?10, stations.verified_at),
-             updated_at = CURRENT_TIMESTAMP`,
-          op.slug, op.name, op.nameJa, op.desc, op.descJa, op.about, op.aboutJa, op.locationUrl, op.isVerified, op.verifiedAt,
+           ON CONFLICT(slug) DO UPDATE SET name = excluded.name${u.sql}, updated_at = CURRENT_TIMESTAMP`,
+          op.slug, op.name, n(op.nameJa), n(op.desc), n(op.descJa), n(op.about), n(op.aboutJa),
+          n(op.locationUrl), n(op.isVerified), n(op.verifiedAt), ...u.params,
         ),
       ];
+    }
 
-    case "facility":
+    case "facility": {
+      const u = sets([["name_japanese", op.nameJa], ["sort_order", op.sortOrder, true]], 5);
       return [
         p(
           `INSERT INTO facilities (slug, name, name_japanese, sort_order)
            VALUES (?1, ?2, ?3, COALESCE(?4, 0))
-           ON CONFLICT(slug) DO UPDATE SET
-             name = excluded.name,
-             name_japanese = COALESCE(?3, facilities.name_japanese),
-             sort_order = COALESCE(?4, facilities.sort_order)`,
-          op.slug, op.name, op.nameJa, op.sortOrder,
+           ON CONFLICT(slug) DO UPDATE SET name = excluded.name${u.sql}`,
+          op.slug, op.name, n(op.nameJa), n(op.sortOrder), ...u.params,
         ),
       ];
+    }
 
-    case "topPick":
+    case "topPick": {
+      const u = sets(
+        [
+          ["name_japanese", op.nameJa],
+          ["category", op.category, true],
+          ["description", op.desc],
+          ["description_japanese", op.descJa],
+          ["entry_fee", op.entryFee],
+          ["entry_fee_japanese", op.entryFeeJa],
+          ["notes", op.notes],
+          ["notes_japanese", op.notesJa],
+          ["map_url", op.mapUrl],
+        ],
+        12,
+      );
       return [
         p(
           `INSERT INTO top_picks
              (slug, name, name_japanese, category, description, description_japanese,
               entry_fee, entry_fee_japanese, notes, notes_japanese, map_url)
            VALUES (?1, ?2, ?3, COALESCE(?4, 'landmark'), ?5, ?6, ?7, ?8, ?9, ?10, ?11)
-           ON CONFLICT(slug) DO UPDATE SET
-             name = excluded.name,
-             name_japanese = COALESCE(?3, top_picks.name_japanese),
-             category = COALESCE(?4, top_picks.category),
-             description = COALESCE(?5, top_picks.description),
-             description_japanese = COALESCE(?6, top_picks.description_japanese),
-             entry_fee = COALESCE(?7, top_picks.entry_fee),
-             entry_fee_japanese = COALESCE(?8, top_picks.entry_fee_japanese),
-             notes = COALESCE(?9, top_picks.notes),
-             notes_japanese = COALESCE(?10, top_picks.notes_japanese),
-             map_url = COALESCE(?11, top_picks.map_url)`,
-          op.slug, op.name, op.nameJa, op.category, op.desc, op.descJa, op.entryFee, op.entryFeeJa, op.notes, op.notesJa, op.mapUrl,
+           ON CONFLICT(slug) DO UPDATE SET name = excluded.name${u.sql}`,
+          op.slug, op.name, n(op.nameJa), n(op.category), n(op.desc), n(op.descJa), n(op.entryFee),
+          n(op.entryFeeJa), n(op.notes), n(op.notesJa), n(op.mapUrl), ...u.params,
         ),
       ];
+    }
 
-    case "lineStation":
+    case "lineStation": {
+      const u = sets([["station_code", op.code]], 5);
       return [
         // Park the existing row on a negative number first, so a swap of two
         // stations never hits the "unique order per line" rule half way.
@@ -196,26 +306,35 @@ function statementsFor(db: D1Database, op: ImportOp): D1PreparedStatement[] {
            SELECT l.id, s.id, ?3, ?4
            FROM lines l, stations s WHERE l.slug = ?1 AND s.slug = ?2
            ON CONFLICT(line_id, station_id) DO UPDATE SET
-             station_order = excluded.station_order,
-             station_code = COALESCE(?4, line_stations.station_code)`,
-          op.lineSlug, op.stationSlug, op.order, op.code,
+             station_order = excluded.station_order${u.sql}`,
+          op.lineSlug, op.stationSlug, op.order, n(op.code), ...u.params,
         ),
       ];
+    }
 
-    case "floor":
+    case "floor": {
+      const u = sets([["name_japanese", op.nameJa], ["floor_order", op.floorOrder, true]], 5);
       return [
         p(
           `INSERT INTO station_floors (station_id, name, name_japanese, floor_order)
            SELECT s.id, ?2, ?3, COALESCE(?4, 0) FROM stations s WHERE s.slug = ?1
-           ON CONFLICT(station_id, name) DO UPDATE SET
-             name_japanese = COALESCE(?3, station_floors.name_japanese),
-             floor_order = COALESCE(?4, station_floors.floor_order),
-             updated_at = CURRENT_TIMESTAMP`,
-          op.stationSlug, op.name, op.nameJa, op.floorOrder,
+           ON CONFLICT(station_id, name) DO UPDATE SET updated_at = CURRENT_TIMESTAMP${u.sql}`,
+          op.stationSlug, op.name, n(op.nameJa), n(op.floorOrder), ...u.params,
         ),
       ];
+    }
 
-    case "floorFacility":
+    case "floorFacility": {
+      const u = sets(
+        [
+          ["facility_count", op.count],
+          ["note", op.note],
+          ["note_japanese", op.noteJa],
+          ["location_type", op.locationType, true],
+          ["sort_order", op.sortOrder, true],
+        ],
+        9,
+      );
       return [
         p(
           `INSERT INTO station_floor_facilities
@@ -225,30 +344,32 @@ function statementsFor(db: D1Database, op: ImportOp): D1PreparedStatement[] {
            JOIN stations s ON s.id = fl.station_id
            JOIN facilities fa ON fa.slug = ?3
            WHERE s.slug = ?1 AND fl.name = ?2
-           ON CONFLICT(floor_id, facility_id) DO UPDATE SET
-             facility_count = COALESCE(?4, station_floor_facilities.facility_count),
-             note = COALESCE(?5, station_floor_facilities.note),
-             note_japanese = COALESCE(?6, station_floor_facilities.note_japanese),
-             location_type = COALESCE(?7, station_floor_facilities.location_type),
-             sort_order = COALESCE(?8, station_floor_facilities.sort_order)`,
-          op.stationSlug, op.floorName, op.facilitySlug, op.count, op.note, op.noteJa, op.locationType, op.sortOrder,
+           ON CONFLICT(floor_id, facility_id) DO UPDATE SET facility_id = excluded.facility_id${u.sql}`,
+          op.stationSlug, op.floorName, op.facilitySlug, n(op.count), n(op.note), n(op.noteJa),
+          n(op.locationType), n(op.sortOrder), ...u.params,
         ),
       ];
+    }
 
-    case "exit":
+    case "exit": {
+      const u = sets(
+        [
+          ["name_japanese", op.nameJa],
+          ["code", op.code],
+          ["color_code", op.colorCode],
+          ["description", op.desc],
+          ["description_japanese", op.descJa],
+          ["sort_order", op.sortOrder, true],
+        ],
+        4,
+      );
       return [
         p(
           `UPDATE station_exits SET
-             floor_id = (SELECT f.id FROM station_floors f WHERE f.station_id = station_exits.station_id AND f.name = ?3),
-             name_japanese = COALESCE(?4, name_japanese),
-             code = COALESCE(?5, code),
-             color_code = COALESCE(?6, color_code),
-             description = COALESCE(?7, description),
-             description_japanese = COALESCE(?8, description_japanese),
-             sort_order = COALESCE(?9, sort_order),
+             floor_id = (SELECT f.id FROM station_floors f WHERE f.station_id = station_exits.station_id AND f.name = ?3)${u.sql},
              updated_at = CURRENT_TIMESTAMP
            WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND name = ?2`,
-          op.stationSlug, op.name, op.floorName, op.nameJa, op.code, op.colorCode, op.desc, op.descJa, op.sortOrder,
+          op.stationSlug, op.name, op.floorName, ...u.params,
         ),
         p(
           `INSERT INTO station_exits
@@ -257,25 +378,36 @@ function statementsFor(db: D1Database, op: ImportOp): D1PreparedStatement[] {
            FROM stations s JOIN station_floors f ON f.station_id = s.id AND f.name = ?3
            WHERE s.slug = ?1
              AND NOT EXISTS (SELECT 1 FROM station_exits e WHERE e.station_id = s.id AND e.name = ?2)`,
-          op.stationSlug, op.name, op.floorName, op.nameJa, op.code, op.colorCode, op.desc, op.descJa, op.sortOrder,
+          op.stationSlug, op.name, op.floorName, n(op.nameJa), n(op.code), n(op.colorCode), n(op.desc),
+          n(op.descJa), n(op.sortOrder),
         ),
       ];
+    }
 
-    case "platform":
+    case "platform": {
+      const u = sets(
+        [
+          ["destinations", op.dest],
+          ["destinations_japanese", op.destJa],
+          ["notes", op.notes],
+          ["notes_japanese", op.notesJa],
+          ["sort_order", op.sortOrder, true],
+        ],
+        5,
+      );
+      const floorSet =
+        op.floorName === undefined
+          ? ""
+          : `floor_id = (SELECT f.id FROM station_floors f WHERE f.station_id = station_platforms.station_id AND f.name = ?3),`;
       return [
         p(
           `UPDATE station_platforms SET
-             floor_id = COALESCE((SELECT f.id FROM station_floors f WHERE f.station_id = station_platforms.station_id AND f.name = ?3), floor_id),
-             destinations = COALESCE(?4, destinations),
-             destinations_japanese = COALESCE(?5, destinations_japanese),
-             notes = COALESCE(?6, notes),
-             notes_japanese = COALESCE(?7, notes_japanese),
-             sort_order = COALESCE(?8, sort_order),
-             updated_at = CURRENT_TIMESTAMP
+             ${floorSet}
+             updated_at = CURRENT_TIMESTAMP${u.sql}
            WHERE station_id = (SELECT id FROM stations WHERE slug = ?1)
-             AND platform_number = ?9
+             AND platform_number = ?4
              AND line_id IS (SELECT id FROM lines WHERE slug = ?2)`,
-          op.stationSlug, op.lineSlug, op.floorName, op.dest, op.destJa, op.notes, op.notesJa, op.sortOrder, op.number,
+          op.stationSlug, op.lineSlug, n(op.floorName), op.number, ...u.params,
         ),
         p(
           `INSERT INTO station_platforms
@@ -292,24 +424,32 @@ function statementsFor(db: D1Database, op: ImportOp): D1PreparedStatement[] {
                WHERE x.station_id = s.id AND x.platform_number = ?9
                  AND x.line_id IS (SELECT id FROM lines WHERE slug = ?2)
              )`,
-          op.stationSlug, op.lineSlug, op.floorName, op.dest, op.destJa, op.notes, op.notesJa, op.sortOrder, op.number,
+          op.stationSlug, op.lineSlug, n(op.floorName), n(op.dest), n(op.destJa), n(op.notes),
+          n(op.notesJa), n(op.sortOrder), op.number,
         ),
       ];
+    }
 
-    case "stationTopPick":
+    case "stationTopPick": {
+      const u = sets(
+        [
+          ["walking_minutes", op.minutes],
+          ["location_type", op.locationType, true],
+          ["sort_order", op.sortOrder, true],
+        ],
+        6,
+      );
       return [
         p(
           `INSERT INTO station_top_picks
              (station_id, top_pick_id, walking_minutes, location_type, sort_order)
            SELECT s.id, t.id, ?3, COALESCE(?4, 'outside'), COALESCE(?5, 0)
            FROM stations s, top_picks t WHERE s.slug = ?1 AND t.slug = ?2
-           ON CONFLICT(station_id, top_pick_id) DO UPDATE SET
-             walking_minutes = COALESCE(?3, station_top_picks.walking_minutes),
-             location_type = COALESCE(?4, station_top_picks.location_type),
-             sort_order = COALESCE(?5, station_top_picks.sort_order)`,
-          op.stationSlug, op.topPickSlug, op.minutes, op.locationType, op.sortOrder,
+           ON CONFLICT(station_id, top_pick_id) DO UPDATE SET top_pick_id = excluded.top_pick_id${u.sql}`,
+          op.stationSlug, op.topPickSlug, n(op.minutes), n(op.locationType), n(op.sortOrder), ...u.params,
         ),
       ];
+    }
   }
 }
 

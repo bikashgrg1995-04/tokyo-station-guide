@@ -15,13 +15,22 @@ import {
   type SheetName,
   type SheetSummary,
 } from "../import/sheets";
-import type { ImportOp, ImportSnapshot } from "../import/types";
+import {
+  KEY_FIELDS,
+  NOT_NULL_FIELDS,
+  type ImportOp,
+  type ImportSnapshot,
+  type Opt,
+  type OpType,
+} from "../import/types";
 
 /**
  * Checks an uploaded workbook against the database and turns it into a list
  * of operations. Pure: it reads nothing and writes nothing.
- * Rule for every sheet: same key as the database = update, new key = create,
- * an empty cell keeps the stored value, and nothing is ever deleted.
+ * Rule for every sheet: new key = create; same key = update, but only when a
+ * value really differs (identical rows are skipped as "unchanged").
+ * A column missing from the file keeps the stored value, an empty cell clears
+ * it (columns that can never be empty keep their value), nothing is deleted.
  */
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -53,7 +62,7 @@ export function buildImportPlan(
   const errors: ImportIssue[] = [];
   const warnings: string[] = [];
   const ops: ImportOp[] = [];
-  const counts = new Map<SheetName, { created: number; updated: number }>();
+  const counts = new Map<SheetName, { created: number; updated: number; unchanged: number }>();
 
   let totalErrors = 0;
   const fail = (sheet: string, row: number, message: string) => {
@@ -144,15 +153,46 @@ export function buildImportPlan(
     lineOrders.set(ls.lineSlug, m);
   }
 
-  const bump = (sheet: SheetName, isNew: boolean) => {
-    const c = counts.get(sheet) ?? { created: 0, updated: 0 };
-    if (isNew) c.created += 1;
-    else c.updated += 1;
+  const norm = (v: unknown) => (v === null || v === undefined ? "" : String(v));
+
+  /** True when the row is new or any value in the file differs from the stored one. */
+  const differs = (op: ImportOp, key: string): boolean => {
+    const stored = snap.stored[op.t as OpType]?.[key];
+    if (!stored) return true;
+    const skip = new Set([...KEY_FIELDS[op.t], "t"]);
+    const notNull = NOT_NULL_FIELDS[op.t];
+    for (const [field, value] of Object.entries(op)) {
+      if (skip.has(field) || value === undefined) continue;
+      if (value === null && notNull.includes(field)) continue;
+      if (field === "color" || field === "colorCode") {
+        if (norm(value).toLowerCase() !== norm(stored[field]).toLowerCase()) return true;
+      } else if (norm(value) !== norm(stored[field])) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  /** Counts the row and keeps it for saving only when it is new or changed. */
+  const record = (sheet: SheetName, op: ImportOp, key: string, exists: boolean) => {
+    const c = counts.get(sheet) ?? { created: 0, updated: 0, unchanged: 0 };
+    if (!exists) {
+      c.created += 1;
+      ops.push(op);
+    } else if (differs(op, key)) {
+      c.updated += 1;
+      ops.push(op);
+    } else {
+      c.unchanged += 1;
+    }
     counts.set(sheet, c);
   };
 
   // ---- Field helpers --------------------------------------------------------
   const opt = (v: string): string | null => (v === "" ? null : v);
+  /** undefined = column not in the file, null = empty cell, else the text. */
+  const optCol = (data: Row, col: string): Opt<string> =>
+    !(col in data) ? undefined : opt(data[col]);
 
   const text = (
     data: Row,
@@ -160,7 +200,8 @@ export function buildImportPlan(
     max: number,
     err: (m: string) => void,
     required = false,
-  ): string | null => {
+  ): Opt<string> => {
+    if (!(col in data) && !required) return undefined;
     const v = data[col] ?? "";
     if (v === "") {
       if (required) err(`"${col}" is required.`);
@@ -188,7 +229,8 @@ export function buildImportPlan(
     err: (m: string) => void,
     min = 0,
     max = 100000,
-  ): number | null => {
+  ): Opt<number> => {
+    if (!(col in data)) return undefined;
     const v = data[col] ?? "";
     if (v === "") return null;
     const n = Number(v);
@@ -204,7 +246,8 @@ export function buildImportPlan(
     col: string,
     allowed: string[],
     err: (m: string) => void,
-  ): string | null => {
+  ): Opt<string> => {
+    if (!(col in data)) return undefined;
     const v = (data[col] ?? "").toLowerCase();
     if (v === "") return null;
     if (!allowed.includes(v)) {
@@ -214,7 +257,8 @@ export function buildImportPlan(
     return v;
   };
 
-  const urlField = (data: Row, col: string, err: (m: string) => void): string | null => {
+  const urlField = (data: Row, col: string, err: (m: string) => void): Opt<string> => {
+    if (!(col in data)) return undefined;
     const v = data[col] ?? "";
     if (v === "") return null;
     let ok = false;
@@ -277,10 +321,10 @@ export function buildImportPlan(
     opNameSeen.set(name.toLowerCase(), slug);
     if (dup || !slug) return;
 
-    bump("operators", !operatorSlugs.has(slug));
+    const exists = operatorSlugs.has(slug);
     operatorSlugs.add(slug);
     operatorNames.set(name.toLowerCase(), slug);
-    ops.push({ t: "operator", slug, name, nameJa, desc, descJa, url });
+    record("operators", { t: "operator", slug, name, nameJa, desc, descJa, url }, slug, exists);
   });
 
   // ---- lines -----------------------------------------------------------------
@@ -294,7 +338,7 @@ export function buildImportPlan(
     const name = text(d, "name", 150, err, true) ?? "";
     const nameJa = text(d, "name_japanese", 150, err);
     const code = text(d, "code", 50, err);
-    const color = opt(d.color ?? "");
+    const color = optCol(d, "color");
     if (color && !HEX_RE.test(color)) err(`"color" must look like #9ACD32.`);
     const lineType = oneOf(d, "line_type", LINE_TYPES, err);
     const status = oneOf(d, "website_status", WEBSITE_STATUSES, err);
@@ -302,9 +346,9 @@ export function buildImportPlan(
     const descJa = text(d, "description_japanese", 1000, err);
     if (dup || !slug) return;
 
-    bump("lines", !lineSlugs.has(slug));
+    const exists = lineSlugs.has(slug);
     lineSlugs.add(slug);
-    ops.push({ t: "line", slug, operatorSlug, name, nameJa, code, color, lineType, status, desc, descJa });
+    record("lines", { t: "line", slug, operatorSlug, name, nameJa, code, color, lineType, status, desc, descJa }, slug, exists);
   });
 
   // ---- stations --------------------------------------------------------------
@@ -318,7 +362,7 @@ export function buildImportPlan(
     const aboutJa = text(d, "about_japanese", 150, err);
     const locationUrl = urlField(d, "location_url", err);
 
-    let isVerified: number | null = null;
+    let isVerified: Opt<number> = "is_verified" in d ? null : undefined;
     const rawVerified = (d.is_verified ?? "").toLowerCase();
     if (rawVerified !== "") {
       if (["1", "yes", "true"].includes(rawVerified)) isVerified = 1;
@@ -326,7 +370,7 @@ export function buildImportPlan(
       else err(`"is_verified" must be 1 or 0.`);
     }
 
-    let verifiedAt = opt(d.verified_at ?? "");
+    let verifiedAt: Opt<string> = optCol(d, "verified_at");
     if (verifiedAt && /^\d+(\.\d+)?$/.test(verifiedAt)) {
       verifiedAt = excelSerialToDate(Number(verifiedAt));
     }
@@ -338,9 +382,9 @@ export function buildImportPlan(
     }
     if (dup || !slug) return;
 
-    bump("stations", !stationSlugs.has(slug));
+    const exists = stationSlugs.has(slug);
     stationSlugs.add(slug);
-    ops.push({ t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt });
+    record("stations", { t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt }, slug, exists);
   });
 
   // ---- line_stations ---------------------------------------------------------
@@ -351,9 +395,9 @@ export function buildImportPlan(
     if (!lineSlugs.has(lineSlug)) err(`Line "${lineSlug}" does not exist.`);
     if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
     const order = intField(d, "station_order", err, 0, 10000);
-    if (order === null && (d.station_order ?? "") === "") err(`"station_order" is required.`);
+    if (order == null && (d.station_order ?? "") === "") err(`"station_order" is required.`);
     const code = text(d, "station_code", 50, err);
-    if (dup || order === null || !lineSlugs.has(lineSlug) || !stationSlugs.has(stationSlug)) return;
+    if (dup || order == null || !lineSlugs.has(lineSlug) || !stationSlugs.has(stationSlug)) return;
 
     lsOps.push({ t: "lineStation", lineSlug, stationSlug, order, code });
   });
@@ -385,9 +429,8 @@ export function buildImportPlan(
     fail("line_stations", row, `Stations "${a}" and "${b}" would both be number ${order} on line "${line}".`);
   }
   for (const op of lsOps) {
-    const isNew = !(lineOrders.get(op.lineSlug)?.has(op.stationSlug) ?? false);
-    bump("line_stations", isNew);
-    ops.push(op);
+    const exists = lineOrders.get(op.lineSlug)?.has(op.stationSlug) ?? false;
+    record("line_stations", op, `${op.lineSlug}|${op.stationSlug}`, exists);
   }
 
   // ---- facilities ------------------------------------------------------------
@@ -406,10 +449,10 @@ export function buildImportPlan(
     facNameSeen.set(name.toLowerCase(), slug);
     if (dup || !slug) return;
 
-    bump("facilities", !facilitySlugs.has(slug));
+    const exists = facilitySlugs.has(slug);
     facilitySlugs.add(slug);
     facilityNames.set(name.toLowerCase(), slug);
-    ops.push({ t: "facility", slug, name, nameJa, sortOrder });
+    record("facilities", { t: "facility", slug, name, nameJa, sortOrder }, slug, exists);
   });
 
   // ---- floors ----------------------------------------------------------------
@@ -422,9 +465,9 @@ export function buildImportPlan(
     if (dup || !name || !stationSlugs.has(stationSlug)) return;
 
     const key = `${stationSlug}|${name}`;
-    bump("floors", !floors.has(key));
+    const exists = floors.has(key);
     floors.add(key);
-    ops.push({ t: "floor", stationSlug, name, nameJa, floorOrder });
+    record("floors", { t: "floor", stationSlug, name, nameJa, floorOrder }, key, exists);
   });
 
   // ---- floor_facilities ------------------------------------------------------
@@ -443,9 +486,9 @@ export function buildImportPlan(
     if (dup || !floors.has(`${stationSlug}|${floorName}`) || !facilitySlugs.has(facilitySlug)) return;
 
     const key = `${stationSlug}|${floorName}|${facilitySlug}`;
-    bump("floor_facilities", !floorFacilities.has(key));
+    const exists = floorFacilities.has(key);
     floorFacilities.add(key);
-    ops.push({ t: "floorFacility", stationSlug, floorName, facilitySlug, count, note, noteJa, locationType, sortOrder });
+    record("floor_facilities", { t: "floorFacility", stationSlug, floorName, facilitySlug, count, note, noteJa, locationType, sortOrder }, key, exists);
   });
 
   // ---- exits -----------------------------------------------------------------
@@ -457,7 +500,7 @@ export function buildImportPlan(
     const name = text(d, "name", 150, err, true) ?? "";
     const nameJa = text(d, "name_japanese", 150, err);
     const code = text(d, "code", 50, err);
-    const colorCode = opt(d.color_code ?? "");
+    const colorCode = optCol(d, "color_code");
     if (colorCode && !HEX_RE.test(colorCode)) err(`"color_code" must look like #FF3B30.`);
     const desc = text(d, "description", 200, err);
     const descJa = text(d, "description_japanese", 200, err);
@@ -465,9 +508,9 @@ export function buildImportPlan(
     if (dup || !name || !floors.has(`${stationSlug}|${floorName}`)) return;
 
     const key = `${stationSlug}|${name}`;
-    bump("exits", !exits.has(key));
+    const exists = exits.has(key);
     exits.add(key);
-    ops.push({ t: "exit", stationSlug, floorName, name, nameJa, code, colorCode, desc, descJa, sortOrder });
+    record("exits", { t: "exit", stationSlug, floorName, name, nameJa, code, colorCode, desc, descJa, sortOrder }, key, exists);
   });
 
   // ---- platforms -------------------------------------------------------------
@@ -476,7 +519,7 @@ export function buildImportPlan(
     if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
     const lineSlug = opt(d.line_slug ?? "");
     if (lineSlug && !lineSlugs.has(lineSlug)) err(`Line "${lineSlug}" does not exist.`);
-    const floorName = opt(d.floor_name ?? "");
+    const floorName = optCol(d, "floor_name");
     if (floorName && !floors.has(`${stationSlug}|${floorName}`)) err(`Floor "${floorName}" does not exist for station "${stationSlug}".`);
     const number = text(d, "platform_number", 50, err, true) ?? "";
     const dest = text(d, "destinations", 500, err);
@@ -487,9 +530,9 @@ export function buildImportPlan(
     if (dup || !number || !stationSlugs.has(stationSlug)) return;
 
     const key = `${stationSlug}|${number}|${lineSlug ?? ""}`;
-    bump("platforms", !platforms.has(key));
+    const exists = platforms.has(key);
     platforms.add(key);
-    ops.push({ t: "platform", stationSlug, lineSlug, floorName, number, dest, destJa, notes, notesJa, sortOrder });
+    record("platforms", { t: "platform", stationSlug, lineSlug, floorName, number, dest, destJa, notes, notesJa, sortOrder }, key, exists);
   });
 
   // ---- top_picks -------------------------------------------------------------
@@ -507,9 +550,9 @@ export function buildImportPlan(
     const mapUrl = urlField(d, "map_url", err);
     if (dup || !slug) return;
 
-    bump("top_picks", !topPickSlugs.has(slug));
+    const exists = topPickSlugs.has(slug);
     topPickSlugs.add(slug);
-    ops.push({ t: "topPick", slug, name, nameJa, category, desc, descJa, entryFee, entryFeeJa, notes, notesJa, mapUrl });
+    record("top_picks", { t: "topPick", slug, name, nameJa, category, desc, descJa, entryFee, entryFeeJa, notes, notesJa, mapUrl }, slug, exists);
   });
 
   // ---- station_top_picks -----------------------------------------------------
@@ -524,9 +567,9 @@ export function buildImportPlan(
     if (dup || !stationSlugs.has(stationSlug) || !topPickSlugs.has(topPickSlug)) return;
 
     const key = `${stationSlug}|${topPickSlug}`;
-    bump("station_top_picks", !stationTopPicks.has(key));
+    const exists = stationTopPicks.has(key);
     stationTopPicks.add(key);
-    ops.push({ t: "stationTopPick", stationSlug, topPickSlug, minutes, locationType, sortOrder });
+    record("station_top_picks", { t: "stationTopPick", stationSlug, topPickSlug, minutes, locationType, sortOrder }, key, exists);
   });
 
   const summary: SheetSummary[] = SHEET_ORDER.filter((s) => counts.has(s)).map(
