@@ -92,9 +92,12 @@
   color: var(--muted);
 }
 
-#search-input:focus {
-  border-color: var(--accent, #9caf31);
-  box-shadow: 0 0 0 3px rgba(156, 175, 49, 0.14);
+/* No coloured border or ring when the search bar is focused */
+#search-input:focus,
+#search-input:focus-visible {
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
 }
 
 .search-cancel {
@@ -169,11 +172,7 @@
     border-color 0.2s ease;
 }
 
-@media (hover: hover) {
-  .featured-station:hover {
-    border-color: var(--accent, #9caf31);
-  }
-}
+/* No colour change on hover */
 
 .featured-image-wrap {
   flex: 0 0 auto;
