@@ -63,6 +63,14 @@ export function names(en, jp) {
   return [en, has ? jp : ""];
 }
 
+/*
+ * The station board names never change with the language switch:
+ * Japanese on top, English underneath (English alone when no Japanese name).
+ */
+export function fixedNames(en, jp) {
+  return filled(jp) ? [jp, en] : [en, ""];
+}
+
 /* Fill the fixed text in the page markup:
  *   data-i18n="key"                         -> text content
  *   data-i18n-attr="aria-label:key;title:k" -> attributes

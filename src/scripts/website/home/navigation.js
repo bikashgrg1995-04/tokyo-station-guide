@@ -2,7 +2,7 @@
 
 import { line, list } from "./current-line.js";
 import { data } from "./data.js";
-import { names, pick, t } from "./i18n.js";
+import { fixedNames, pick, t } from "./i18n.js";
 import { markActiveRow } from "./lines-dialog.js";
 import { drawMap } from "./map-render.js";
 import { state } from "./state.js";
@@ -80,7 +80,7 @@ function updateBoard() {
    * say jp / en; they just hold "main" and "sub".)
    */
 
-  var curNames = cur ? names(cur.name, cur.jp) : ["—", ""];
+  var curNames = cur ? fixedNames(cur.name, cur.jp) : ["—", ""];
 
   $("#cur-jp").textContent = curNames[0];
 
@@ -97,7 +97,7 @@ function updateBoard() {
 
     btn.disabled = !s;
 
-    var pair = s ? names(s.name, s.jp) : ["", ""];
+    var pair = s ? fixedNames(s.name, s.jp) : ["", ""];
 
     $("#" + prefix + "-jp").textContent = pair[0];
 
