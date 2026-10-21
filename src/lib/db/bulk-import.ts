@@ -1,4 +1,4 @@
-import type { ImportOp, ImportSnapshot, StoredRow } from "../import/types";
+import type { DeleteOp, ImportOp, ImportSnapshot, OpType, StoredRow, UpsertOp } from "../import/types";
 
 /** Reads the keys of everything an upload can refer to. */
 export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot> {
@@ -125,7 +125,7 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
 }
 
 /** Order in which operation types are applied (a type only needs the ones before it). */
-const TYPE_ORDER: ImportOp["t"][] = [
+const TYPE_ORDER: OpType[] = [
   "operator",
   "line",
   "station",
@@ -163,7 +163,7 @@ function sets(pairs: Pair[], firstParam: number) {
   return { sql: parts.map((x) => `, ${x}`).join(""), params };
 }
 
-function statementsFor(db: D1Database, op: ImportOp): D1PreparedStatement[] {
+function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
   const p = (sql: string, ...values: Bind[]) => db.prepare(sql).bind(...values);
 
   switch (op.t) {
@@ -293,14 +293,6 @@ function statementsFor(db: D1Database, op: ImportOp): D1PreparedStatement[] {
     case "lineStation": {
       const u = sets([["station_code", op.code]], 5);
       return [
-        // Park the existing row on a negative number first, so a swap of two
-        // stations never hits the "unique order per line" rule half way.
-        p(
-          `UPDATE line_stations SET station_order = -id
-           WHERE line_id = (SELECT id FROM lines WHERE slug = ?1)
-             AND station_id = (SELECT id FROM stations WHERE slug = ?2)`,
-          op.lineSlug, op.stationSlug,
-        ),
         p(
           `INSERT INTO line_stations (line_id, station_id, station_order, station_code)
            SELECT l.id, s.id, ?3, ?4
@@ -453,12 +445,99 @@ function statementsFor(db: D1Database, op: ImportOp): D1PreparedStatement[] {
   }
 }
 
-/** Applies every operation in one batch: either all of it is saved, or none. */
+/** DELETE for one row (children are removed by the foreign keys' ON DELETE rules). */
+function deleteStatement(db: D1Database, op: DeleteOp): D1PreparedStatement {
+  const k = op.key.split("|");
+  const p = (sql: string, ...values: string[]) => db.prepare(sql).bind(...values);
+
+  switch (op.type) {
+    case "operator":
+      return p("DELETE FROM operators WHERE slug = ?1", k[0]);
+    case "line":
+      return p("DELETE FROM lines WHERE slug = ?1", k[0]);
+    case "station":
+      return p("DELETE FROM stations WHERE slug = ?1", k[0]);
+    case "facility":
+      return p("DELETE FROM facilities WHERE slug = ?1", k[0]);
+    case "topPick":
+      return p("DELETE FROM top_picks WHERE slug = ?1", k[0]);
+    case "lineStation":
+      return p(
+        `DELETE FROM line_stations
+         WHERE line_id = (SELECT id FROM lines WHERE slug = ?1)
+           AND station_id = (SELECT id FROM stations WHERE slug = ?2)`,
+        k[0], k[1],
+      );
+    case "floor":
+      return p(
+        `DELETE FROM station_floors
+         WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND name = ?2`,
+        k[0], k[1],
+      );
+    case "floorFacility":
+      return p(
+        `DELETE FROM station_floor_facilities
+         WHERE floor_id = (SELECT f.id FROM station_floors f JOIN stations s ON s.id = f.station_id
+                           WHERE s.slug = ?1 AND f.name = ?2)
+           AND facility_id = (SELECT id FROM facilities WHERE slug = ?3)`,
+        k[0], k[1], k[2],
+      );
+    case "exit":
+      return p(
+        `DELETE FROM station_exits
+         WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND name = ?2`,
+        k[0], k[1],
+      );
+    case "platform":
+      return p(
+        `DELETE FROM station_platforms
+         WHERE station_id = (SELECT id FROM stations WHERE slug = ?1)
+           AND platform_number = ?2
+           AND line_id IS (SELECT id FROM lines WHERE slug = ?3)`,
+        k[0], k[1], k[2] ?? "",
+      );
+    case "stationTopPick":
+      return p(
+        `DELETE FROM station_top_picks
+         WHERE station_id = (SELECT id FROM stations WHERE slug = ?1)
+           AND top_pick_id = (SELECT id FROM top_picks WHERE slug = ?2)`,
+        k[0], k[1],
+      );
+  }
+}
+
+/**
+ * Applies every operation in one batch: either all of it is saved, or none.
+ * Deletes run first (children before parents), then the creates and updates.
+ */
 export async function applyImportOps(db: D1Database, ops: ImportOp[]): Promise<void> {
-  const sorted = [...ops].sort(
-    (a, b) => TYPE_ORDER.indexOf(a.t) - TYPE_ORDER.indexOf(b.t),
-  );
-  const statements = sorted.flatMap((op) => statementsFor(db, op));
+  const deletes = ops
+    .filter((op): op is DeleteOp => op.t === "delete")
+    .sort((a, b) => TYPE_ORDER.indexOf(b.type) - TYPE_ORDER.indexOf(a.type));
+  const upserts = ops
+    .filter((op): op is UpsertOp => op.t !== "delete")
+    .sort((a, b) => TYPE_ORDER.indexOf(a.t) - TYPE_ORDER.indexOf(b.t));
+
+  // Stations may swap or shift places in a line. The "unique order per line"
+  // rule must not trip half way, so every row that is about to move is first
+  // parked on a negative number; the upserts then put the real numbers back.
+  const parking = upserts
+    .filter((op): op is Extract<UpsertOp, { t: "lineStation" }> => op.t === "lineStation")
+    .map((op) =>
+      db
+        .prepare(
+          `UPDATE line_stations SET station_order = -id
+           WHERE line_id = (SELECT id FROM lines WHERE slug = ?1)
+             AND station_id = (SELECT id FROM stations WHERE slug = ?2)`,
+        )
+        .bind(op.lineSlug, op.stationSlug),
+    );
+
+  const statements = [
+    ...deletes.map((op) => deleteStatement(db, op)),
+    ...parking,
+    ...upserts.flatMap((op) => statementsFor(db, op)),
+  ];
 
   if (statements.length === 0) return;
   await db.batch(statements);

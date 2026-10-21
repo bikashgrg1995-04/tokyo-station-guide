@@ -74,7 +74,14 @@ export const NOT_NULL_FIELDS: Record<OpType, string[]> = {
   stationTopPick: ["locationType", "sortOrder"],
 };
 
-export type ImportOp =
+/** Removes a row that is in the database but not in the (synced) sheet. */
+export interface DeleteOp {
+  t: "delete";
+  type: OpType;
+  key: string;
+}
+
+export type UpsertOp =
   | { t: "operator"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; url: Opt<string> }
   | { t: "line"; slug: string; operatorSlug: string; name: string; nameJa: Opt<string>; code: Opt<string>; color: Opt<string>; lineType: Opt<string>; status: Opt<string>; desc: Opt<string>; descJa: Opt<string> }
   | { t: "station"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; about: Opt<string>; aboutJa: Opt<string>; locationUrl: Opt<string>; isVerified: Opt<number>; verifiedAt: Opt<string> }
@@ -86,3 +93,5 @@ export type ImportOp =
   | { t: "platform"; stationSlug: string; lineSlug: string | null; floorName: Opt<string>; number: string; dest: Opt<string>; destJa: Opt<string>; notes: Opt<string>; notesJa: Opt<string>; sortOrder: Opt<number> }
   | { t: "topPick"; slug: string; name: string; nameJa: Opt<string>; category: Opt<string>; desc: Opt<string>; descJa: Opt<string>; entryFee: Opt<string>; entryFeeJa: Opt<string>; notes: Opt<string>; notesJa: Opt<string>; mapUrl: Opt<string> }
   | { t: "stationTopPick"; stationSlug: string; topPickSlug: string; minutes: Opt<number>; locationType: Opt<string>; sortOrder: Opt<number> };
+
+export type ImportOp = UpsertOp | DeleteOp;

@@ -175,3 +175,160 @@
     height: 40px;
   }
 }
+
+/* ---- Compact importer ---- */
+.import-sync {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.import-sync input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: #dc2626;
+}
+
+.import-sync b {
+  display: block;
+  font-weight: 600;
+}
+
+.import-sync small {
+  color: var(--admin-muted);
+  font-size: 12px;
+}
+
+.settings-card .import-status {
+  margin-top: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.settings-card .import-result {
+  margin-top: 10px;
+}
+
+.import-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.import-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.import-chip b {
+  font-size: 13px;
+}
+
+.import-chip-new {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.import-chip-upd {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.import-chip-del {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.import-chip-same {
+  background: var(--admin-bg);
+  color: var(--admin-muted);
+}
+
+.import-chip.is-zero {
+  opacity: 0.45;
+}
+
+.import-details {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.import-details > summary {
+  color: var(--admin-muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.import-details-del > summary {
+  color: #b91c1c;
+}
+
+.import-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.settings-card .import-table {
+  margin-top: 6px;
+  font-size: 12.5px;
+}
+
+.settings-card .import-table th,
+.settings-card .import-table td {
+  padding: 4px 8px;
+}
+
+.settings-card .import-table th:not(:first-child),
+.settings-card .import-table td:not(:first-child) {
+  width: 52px;
+  text-align: right;
+}
+
+.import-del {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.settings-card .import-errors {
+  max-height: 260px;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.settings-card .import-warnings {
+  margin-top: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .settings-body {
+    padding: 12px 12px 14px;
+  }
+
+  .settings-row {
+    padding: 12px;
+  }
+
+  .import-chip {
+    padding: 3px 9px;
+    font-size: 12px;
+  }
+}

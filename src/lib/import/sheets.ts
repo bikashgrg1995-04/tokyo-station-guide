@@ -80,6 +80,8 @@ export interface ImportIssue {
 export interface SheetSummary {
   /** Rows already identical to the database (skipped). */
   unchanged: number;
+  /** Rows removed because the (synced) sheet no longer has them. */
+  deleted: number;
   sheet: SheetName;
   created: number;
   updated: number;
@@ -91,4 +93,6 @@ export interface ImportPreview {
   errors: ImportIssue[];
   totalErrors: number;
   warnings: string[];
+  /** Keys of the rows that will be deleted (first few per sheet). */
+  deletions: { sheet: SheetName; total: number; keys: string[] }[];
 }

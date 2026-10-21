@@ -64,6 +64,14 @@ export const prerender = false;
           />
         </label>
 
+        <label class="import-sync" for="import-delete-missing">
+          <input type="checkbox" id="import-delete-missing" checked />
+          <span>
+            <b>Delete rows that are not in the file</b>
+            <small>Only for sheets that have data. Empty sheets are left alone.</small>
+          </span>
+        </label>
+
         <div class="import-status" id="import-status" hidden role="status" aria-live="polite"></div>
         <div class="import-result" id="import-result" hidden></div>
 
@@ -80,7 +88,8 @@ export const prerender = false;
           <summary>How it works</summary>
           <ul class="import-rules">
             <li>Rows link to each other by <strong>slug</strong> or name, never by ID.</li>
-            <li>New slug = <strong>create</strong>. Same slug = <strong>update</strong> only if a value changed; identical rows are skipped. Nothing is ever deleted.</li>
+            <li>New slug = <strong>create</strong>. Same slug = <strong>update</strong> only if a value changed; identical rows are skipped.</li>
+            <li>With <strong>Delete rows that are not in the file</strong> on, a row that is in the database but missing from a sheet is <strong>deleted</strong>. A sheet with no data rows is never touched. Deleting a station also removes its floors, exits and platforms.</li>
             <li>An <strong>empty cell clears</strong> the saved value. Leave out a whole column to keep its values. (Columns that can never be empty, like name or line type, keep their value.)</li>
             <li>A row whose first cell starts with <code>#</code> is skipped (the example rows).</li>
             <li>Photos and icons are not part of the file; add them in the matching admin page.</li>

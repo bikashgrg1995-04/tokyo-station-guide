@@ -20,6 +20,7 @@ import {
   NOT_NULL_FIELDS,
   type ImportOp,
   type ImportSnapshot,
+  type UpsertOp,
   type Opt,
   type OpType,
 } from "../import/types";
@@ -55,14 +56,24 @@ function cleanSheetName(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, "_");
 }
 
+export interface ImportOptions {
+  /**
+   * Sync mode: for every sheet that has data rows, rows that are in the
+   * database but not in the sheet are deleted. Sheets without data rows are left alone.
+   */
+  deleteMissing?: boolean;
+}
+
 export function buildImportPlan(
   raw: RawSheets,
   snap: ImportSnapshot,
+  options: ImportOptions = {},
 ): ImportPlan {
   const errors: ImportIssue[] = [];
   const warnings: string[] = [];
   const ops: ImportOp[] = [];
-  const counts = new Map<SheetName, { created: number; updated: number; unchanged: number }>();
+  const counts = new Map<SheetName, { created: number; updated: number; unchanged: number; deleted: number }>();
+  const deletions: ImportPreview["deletions"] = [];
 
   let totalErrors = 0;
   const fail = (sheet: string, row: number, message: string) => {
@@ -153,10 +164,100 @@ export function buildImportPlan(
     lineOrders.set(ls.lineSlug, m);
   }
 
+  // ---- Sync mode: rows that the database has but a synced sheet no longer has --
+  if (options.deleteMissing) {
+    const fileKeys = (sheet: SheetName, keyOf: (d: Row) => string) =>
+      new Set((sheets.get(sheet) ?? []).map((r) => keyOf(r.data)));
+    const synced = (sheet: SheetName) => (sheets.get(sheet)?.length ?? 0) > 0;
+    const gone = (type: OpType, sheet: SheetName, keyOf: (d: Row) => string, keep: (k: string, row: Record<string, string | number | null>) => boolean = () => true): Set<string> => {
+      const out = new Set<string>();
+      if (!synced(sheet)) return out;
+      const inFile = fileKeys(sheet, keyOf);
+      for (const [key, row] of Object.entries(snap.stored[type] ?? {})) {
+        if (!inFile.has(key) && keep(key, row)) out.add(key);
+      }
+      return out;
+    };
+    const part = (key: string, i: number) => key.split("|")[i] ?? "";
+
+    const delOperators = gone("operator", "operators", (d) => d.slug);
+    const delLines = gone("line", "lines", (d) => d.slug);
+    const delStations = gone("station", "stations", (d) => d.slug);
+    const delFacilities = gone("facility", "facilities", (d) => d.slug);
+    const delTopPicks = gone("topPick", "top_picks", (d) => d.slug);
+
+    const stationKept = (st: string) => !delStations.has(st);
+    const delLineStations = gone("lineStation", "line_stations", (d) => `${d.line_slug}|${d.station_slug}`,
+      (k) => !delLines.has(part(k, 0)) && stationKept(part(k, 1)));
+    const delFloors = gone("floor", "floors", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
+    const floorKept = (st: string, floor: string) => stationKept(st) && !delFloors.has(`${st}|${floor}`);
+    const delFloorFacilities = gone("floorFacility", "floor_facilities",
+      (d) => `${d.station_slug}|${d.floor_name}|${d.facility_slug}`,
+      (k) => floorKept(part(k, 0), part(k, 1)) && !delFacilities.has(part(k, 2)));
+    const delExits = gone("exit", "exits", (d) => `${d.station_slug}|${d.name}`,
+      (k, row) => floorKept(part(k, 0), String(row.floorName ?? "")));
+    const delPlatforms = gone("platform", "platforms",
+      (d) => `${d.station_slug}|${d.platform_number}|${d.line_slug ?? ""}`, (k) => stationKept(part(k, 0)));
+    const delStationTopPicks = gone("stationTopPick", "station_top_picks",
+      (d) => `${d.station_slug}|${d.top_pick_slug}`, (k) => stationKept(part(k, 0)) && !delTopPicks.has(part(k, 1)));
+
+    // An operator cannot be deleted while a line of it stays.
+    for (const op of delOperators) {
+      const stays = Object.entries(snap.stored.line ?? {}).find(
+        ([slug, row]) => row.operatorSlug === op && !delLines.has(slug),
+      );
+      if (stays) {
+        fail("operators", 0, `Operator "${op}" is not in the file but its line "${stays[0]}" stays, so it cannot be deleted. Add the operator back, or include the lines sheet without that line.`);
+      }
+    }
+
+    const groups: [OpType, SheetName, Set<string>][] = [
+      ["station", "stations", delStations],
+      ["line", "lines", delLines],
+      ["operator", "operators", delOperators],
+      ["facility", "facilities", delFacilities],
+      ["topPick", "top_picks", delTopPicks],
+      ["lineStation", "line_stations", delLineStations],
+      ["floor", "floors", delFloors],
+      ["floorFacility", "floor_facilities", delFloorFacilities],
+      ["exit", "exits", delExits],
+      ["platform", "platforms", delPlatforms],
+      ["stationTopPick", "station_top_picks", delStationTopPicks],
+    ];
+    for (const [type, sheet, set] of groups) {
+      if (set.size === 0) continue;
+      const c = counts.get(sheet) ?? { created: 0, updated: 0, unchanged: 0, deleted: 0 };
+      c.deleted = set.size;
+      counts.set(sheet, c);
+      deletions.push({ sheet, total: set.size, keys: [...set].slice(0, 15).map((k) => k.replace(/\|/g, " · ")) });
+      for (const key of set) ops.push({ t: "delete", type, key });
+    }
+    if (delStations.size > 0) {
+      warnings.push(`Deleting ${delStations.size} station(s) also removes their floors, exits, platforms, facilities, top-pick links, featured entry and suggestions.`);
+    }
+    if (delFacilities.size > 0) {
+      warnings.push(`Deleting ${delFacilities.size} facility type(s) also removes them from every station and loses their icons.`);
+    }
+
+    // Deleted rows no longer count as existing for the checks below.
+    delOperators.forEach((k) => { operatorSlugs.delete(k); for (const [n, sl] of operatorNames) if (sl === k) operatorNames.delete(n); });
+    delLines.forEach((k) => lineSlugs.delete(k));
+    delStations.forEach((k) => stationSlugs.delete(k));
+    delFacilities.forEach((k) => { facilitySlugs.delete(k); for (const [n, sl] of facilityNames) if (sl === k) facilityNames.delete(n); });
+    delTopPicks.forEach((k) => topPickSlugs.delete(k));
+    delFloors.forEach((k) => floors.delete(k));
+    for (const f of [...floors]) if (delStations.has(part(f, 0))) floors.delete(f);
+    delLineStations.forEach((k) => lineOrders.get(part(k, 0))?.delete(part(k, 1)));
+    for (const [line, m] of lineOrders) {
+      if (delLines.has(line)) lineOrders.delete(line);
+      else for (const st of [...m.keys()]) if (delStations.has(st)) m.delete(st);
+    }
+  }
+
   const norm = (v: unknown) => (v === null || v === undefined ? "" : String(v));
 
   /** True when the row is new or any value in the file differs from the stored one. */
-  const differs = (op: ImportOp, key: string): boolean => {
+  const differs = (op: UpsertOp, key: string): boolean => {
     const stored = snap.stored[op.t as OpType]?.[key];
     if (!stored) return true;
     const skip = new Set([...KEY_FIELDS[op.t], "t"]);
@@ -174,8 +275,8 @@ export function buildImportPlan(
   };
 
   /** Counts the row and keeps it for saving only when it is new or changed. */
-  const record = (sheet: SheetName, op: ImportOp, key: string, exists: boolean) => {
-    const c = counts.get(sheet) ?? { created: 0, updated: 0, unchanged: 0 };
+  const record = (sheet: SheetName, op: UpsertOp, key: string, exists: boolean) => {
+    const c = counts.get(sheet) ?? { created: 0, updated: 0, unchanged: 0, deleted: 0 };
     if (!exists) {
       c.created += 1;
       ops.push(op);
@@ -388,7 +489,7 @@ export function buildImportPlan(
   });
 
   // ---- line_stations ---------------------------------------------------------
-  const lsOps: Extract<ImportOp, { t: "lineStation" }>[] = [];
+  const lsOps: Extract<UpsertOp, { t: "lineStation" }>[] = [];
   eachRow("line_stations", (d) => `${d.line_slug}|${d.station_slug}`, (d, err, dup) => {
     const lineSlug = d.line_slug ?? "";
     const stationSlug = d.station_slug ?? "";
@@ -588,6 +689,7 @@ export function buildImportPlan(
       errors,
       totalErrors,
       warnings,
+      deletions,
     },
   };
 }

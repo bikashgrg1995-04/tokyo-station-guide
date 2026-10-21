@@ -32,6 +32,9 @@ export const exact: Record<string, string> = {
   "or drop it here (.xlsx, 5 MB max)": "またはここにドロップ（.xlsx、最大5MB）",
   "How it works": "使い方",
   "Unchanged": "変更なし",
+  "Delete rows that are not in the file": "ファイルにない行を削除する",
+  "Only for sheets that have data. Empty sheets are left alone.": "データのあるシートのみ対象です。空のシートは変更されません。",
+  "Details by sheet": "シート別の詳細",
   "Everything in this file is already saved. Nothing to import.": "このファイルの内容はすべて保存済みです。インポートするものはありません。",
 
   "Logout": "ログアウト",

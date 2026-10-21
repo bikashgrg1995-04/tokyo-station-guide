@@ -36,7 +36,7 @@ function parseSheets(value: unknown): RawSheets | null {
 }
 
 /**
- * POST { mode: "preview" | "apply", sheets }
+ * POST { mode: "preview" | "apply", sheets, deleteMissing }
  * Both modes check the file against the database. "apply" repeats that check
  * (the browser's preview is never trusted) and then saves everything at once.
  */
@@ -57,7 +57,7 @@ export const POST: APIRoute = async ({ request, session, url }) => {
     return json({ ok: false, message: "The file is too large." }, 413);
   }
 
-  let body: { mode?: unknown; sheets?: unknown };
+  let body: { mode?: unknown; sheets?: unknown; deleteMissing?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -72,7 +72,9 @@ export const POST: APIRoute = async ({ request, session, url }) => {
   const { env } = await import("cloudflare:workers");
 
   try {
-    const plan = buildImportPlan(sheets, await loadImportSnapshot(env.DB));
+    const plan = buildImportPlan(sheets, await loadImportSnapshot(env.DB), {
+      deleteMissing: body.deleteMissing === true,
+    });
 
     if (body.mode === "preview" || !plan.preview.ok) {
       return json({ ok: true, applied: false, preview: plan.preview });
