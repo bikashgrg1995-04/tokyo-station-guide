@@ -467,6 +467,17 @@ export function initializeFacilityPicker(): void {
     actions.appendChild(removeButton);
     actionsCell.appendChild(actions);
 
+    const selectCell = document.createElement("td");
+    selectCell.className = "admin-select-cell";
+
+    const selectBox = document.createElement("input");
+    selectBox.type = "checkbox";
+    selectBox.className = "admin-row-checkbox";
+    selectBox.setAttribute("data-facility-select", "");
+    selectBox.setAttribute("aria-label", `Select ${facilityName} on ${floorName}`);
+    selectCell.appendChild(selectBox);
+
+    row.appendChild(selectCell);
     row.appendChild(nameCell);
     row.appendChild(floorCell);
     row.appendChild(locationCell);

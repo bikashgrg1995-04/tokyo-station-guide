@@ -34,7 +34,7 @@ export interface TablePager {
 }
 
 /** Text a row is searched by: every cell except the last (actions). */
-function rowSearchText(row: HTMLElement): string {
+export function rowSearchText(row: HTMLElement): string {
   if (row.dataset.search) {
     return row.dataset.search;
   }
@@ -50,7 +50,7 @@ function rowSearchText(row: HTMLElement): string {
 
       const values = Array.from(
         cell.querySelectorAll<HTMLInputElement>(
-          "input:not([type='hidden']):not([type='color'])",
+          "input:not([type='hidden']):not([type='color']):not([type='checkbox'])",
         ),
       ).map((input) => input.value);
 

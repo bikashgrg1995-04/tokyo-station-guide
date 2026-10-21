@@ -22,13 +22,23 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
         <p><slot /></p>
       </div>
 
-      {
-        canAdd && (
-          <Button type="button" variant="primary" id="open-add-facility-button">
-            + Add
-          </Button>
-        )
-      }
+      <div class="admin-station-feature-actions">
+        {
+          canAdd && (
+            <Button type="button" variant="primary" id="open-add-facility-button">
+              + Add
+            </Button>
+          )
+        }
+
+        <Button
+          type="button"
+          variant="danger"
+          id="delete-selected-facilities-button"
+        >
+          Delete
+        </Button>
+      </div>
     </div>
 
     {error && <Alert>{error}</Alert>}
@@ -71,6 +81,14 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
       >
         <thead>
           <tr>
+            <th class="admin-select-cell">
+              <input
+                type="checkbox"
+                id="facility-select-all"
+                class="admin-row-checkbox"
+                aria-label="Select all facilities"
+              />
+            </th>
             <th>Facility</th>
             <th>Floor</th>
             <th>Location</th>
@@ -91,6 +109,15 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
                 data-facility-name={facility.name}
                 data-floor-name={facility.floor_name}
               >
+                <td class="admin-select-cell">
+                  <input
+                    type="checkbox"
+                    class="admin-row-checkbox"
+                    data-facility-select
+                    aria-label={`Select ${facility.name} on ${facility.floor_name}`}
+                  />
+                </td>
+
                 <td>
                   <div class="admin-line-name">{facility.name}</div>
                   <input
@@ -231,7 +258,7 @@ const { assigned = [], canAdd, error, allAddedMessage } = Astro.props;
           }
 
           <tr id="station-facilities-empty-row" hidden={assigned.length > 0}>
-            <td colspan="7">
+            <td colspan="8">
               <div class="admin-feature-empty">No facilities assigned.</div>
             </td>
           </tr>

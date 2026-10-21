@@ -1,5 +1,6 @@
 
  // Edit station page: facilities, floor filtering and confirmation before saving
+import { initializeFacilityBulkSelect } from "./shared/facility-bulk-select";
 import { initializeFacilityPicker } from "./shared/facility-picker";
 import { initializeSubmitConfirm } from "./shared/submit-confirm";
 
@@ -40,6 +41,8 @@ function initializeFacilityFloorFilter(): void {
 initializeFacilityFloorFilter();
 
 initializeFacilityPicker();
+
+initializeFacilityBulkSelect();
 
 initializeSubmitConfirm({
   formId: "edit-station-form",
