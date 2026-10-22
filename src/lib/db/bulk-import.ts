@@ -95,7 +95,13 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
              FROM station_floors f JOIN stations s ON s.id = f.station_id`),
       keyed(`SELECT s.slug || '|' || f.name || '|' || fa.slug AS k, sff.facility_count AS count,
                     sff.note, sff.note_japanese AS noteJa, sff.location_type AS locationType,
-                    sff.sort_order AS sortOrder
+                    sff.sort_order AS sortOrder,
+                    (SELECT group_concat(name, '|') FROM (
+                       SELECT e.name AS name
+                       FROM station_floor_facility_exits x
+                       JOIN station_exits e ON e.id = x.station_exit_id
+                       WHERE x.station_floor_facility_id = sff.id
+                       ORDER BY e.name)) AS exits
              FROM station_floor_facilities sff
              JOIN station_floors f ON f.id = sff.floor_id
              JOIN stations s ON s.id = f.station_id
@@ -133,8 +139,8 @@ const TYPE_ORDER: OpType[] = [
   "topPick",
   "lineStation",
   "floor",
-  "floorFacility",
   "exit",
+  "floorFacility",
   "platform",
   "stationTopPick",
 ];
@@ -327,7 +333,8 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
         ],
         9,
       );
-      return [
+
+      const statements = [
         p(
           `INSERT INTO station_floor_facilities
              (floor_id, facility_id, facility_count, note, note_japanese, location_type, sort_order)
@@ -341,6 +348,37 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
           n(op.locationType), n(op.sortOrder), ...u.params,
         ),
       ];
+
+      // Nearby exits: the column is in the file = the list is replaced by it
+      // (an empty cell clears it); no column = leave the exits alone.
+      if (op.exits !== undefined) {
+        const entry = `(SELECT sff.id FROM station_floor_facilities sff
+                         JOIN station_floors f ON f.id = sff.floor_id
+                         JOIN stations s ON s.id = f.station_id
+                         JOIN facilities fa ON fa.id = sff.facility_id
+                         WHERE s.slug = ?1 AND f.name = ?2 AND fa.slug = ?3)`;
+
+        statements.push(
+          p(
+            `DELETE FROM station_floor_facility_exits WHERE station_floor_facility_id = ${entry}`,
+            op.stationSlug, op.floorName, op.facilitySlug,
+          ),
+        );
+
+        for (const exitName of (op.exits ?? "").split("|").filter(Boolean)) {
+          statements.push(
+            p(
+              `INSERT OR IGNORE INTO station_floor_facility_exits (station_floor_facility_id, station_exit_id)
+               SELECT ${entry}, e.id
+               FROM station_exits e
+               WHERE e.station_id = (SELECT id FROM stations WHERE slug = ?1) AND e.name = ?4`,
+              op.stationSlug, op.floorName, op.facilitySlug, exitName,
+            ),
+          );
+        }
+      }
+
+      return statements;
     }
 
     case "exit": {

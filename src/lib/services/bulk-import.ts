@@ -164,6 +164,8 @@ export function buildImportPlan(
     lineOrders.set(ls.lineSlug, m);
   }
 
+  const removedExits = new Set<string>();
+
   // ---- Sync mode: rows that the database has but a synced sheet no longer has --
   if (options.deleteMissing) {
     const fileKeys = (sheet: SheetName, keyOf: (d: Row) => string) =>
@@ -200,6 +202,11 @@ export function buildImportPlan(
       (d) => `${d.station_slug}|${d.platform_number}|${d.line_slug ?? ""}`, (k) => stationKept(part(k, 0)));
     const delStationTopPicks = gone("stationTopPick", "station_top_picks",
       (d) => `${d.station_slug}|${d.top_pick_slug}`, (k) => stationKept(part(k, 0)) && !delTopPicks.has(part(k, 1)));
+
+    delExits.forEach((k) => removedExits.add(k));
+    delStations.forEach((st) => {
+      for (const e of exits) if (e.startsWith(`${st}|`)) removedExits.add(e);
+    });
 
     // An operator cannot be deleted while a line of it stays.
     for (const op of delOperators) {
@@ -265,7 +272,11 @@ export function buildImportPlan(
     for (const [field, value] of Object.entries(op)) {
       if (skip.has(field) || value === undefined) continue;
       if (value === null && notNull.includes(field)) continue;
-      if (field === "color" || field === "colorCode") {
+      if (field === "exits") {
+        const a = norm(value).split("|").filter(Boolean).sort().join("|");
+        const b = norm(stored[field]).split("|").filter(Boolean).sort().join("|");
+        if (a !== b) return true;
+      } else if (field === "color" || field === "colorCode") {
         if (norm(value).toLowerCase() !== norm(stored[field]).toLowerCase()) return true;
       } else if (norm(value) !== norm(stored[field])) {
         return true;
@@ -571,6 +582,14 @@ export function buildImportPlan(
     record("floors", { t: "floor", stationSlug, name, nameJa, floorOrder }, key, exists);
   });
 
+  const fileExitKeys = new Set(
+    (sheets.get("exits") ?? []).map((r) => `${r.data.station_slug}|${r.data.name}`),
+  );
+  const knownExit = (station: string, name: string) => {
+    const key = `${station}|${name}`;
+    return fileExitKeys.has(key) || (exits.has(key) && !removedExits.has(key));
+  };
+
   // ---- floor_facilities ------------------------------------------------------
   eachRow("floor_facilities", (d) => `${d.station_slug}|${d.floor_name}|${d.facility_slug}`, (d, err, dup) => {
     const stationSlug = d.station_slug ?? "";
@@ -584,12 +603,24 @@ export function buildImportPlan(
     const noteJa = text(d, "note_japanese", 500, err);
     const locationType = oneOf(d, "location_type", FACILITY_LOCATIONS, err);
     const sortOrder = intField(d, "sort_order", err);
+
+    // Nearby exits: names separated by commas, semicolons or line breaks.
+    let exitsValue: Opt<string> = undefined;
+    if ("exits" in d) {
+      const names = [...new Set((d.exits ?? "").split(/[,;\n]/).map((x) => x.trim()).filter(Boolean))];
+      for (const name of names) {
+        if (!knownExit(stationSlug, name)) {
+          err(`Exit "${name}" does not exist for station "${stationSlug}" (add it in the exits sheet).`);
+        }
+      }
+      exitsValue = names.length > 0 ? names.sort().join("|") : null;
+    }
     if (dup || !floors.has(`${stationSlug}|${floorName}`) || !facilitySlugs.has(facilitySlug)) return;
 
     const key = `${stationSlug}|${floorName}|${facilitySlug}`;
     const exists = floorFacilities.has(key);
     floorFacilities.add(key);
-    record("floor_facilities", { t: "floorFacility", stationSlug, floorName, facilitySlug, count, note, noteJa, locationType, sortOrder }, key, exists);
+    record("floor_facilities", { t: "floorFacility", stationSlug, floorName, facilitySlug, count, note, noteJa, locationType, sortOrder, exits: exitsValue }, key, exists);
   });
 
   // ---- exits -----------------------------------------------------------------
