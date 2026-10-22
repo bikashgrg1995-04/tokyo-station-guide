@@ -1,6 +1,7 @@
 import {
   createStationExit,
   deleteStationExit,
+  deleteStationExits,
   getStationExits,
   updateStationExit,
   type StationExit,
@@ -135,7 +136,7 @@ export async function handleStationExits(
   const formData = await request.formData();
   const action = readText(formData, "exit_action");
 
-  if (!["create", "update", "delete"].includes(action)) {
+  if (!["create", "update", "delete", "delete_many"].includes(action)) {
     return result;
   }
 
@@ -150,6 +151,26 @@ export async function handleStationExits(
 
     return result;
   };
+
+  if (action === "delete_many") {
+    const ids = [...new Set(formData.getAll("exit_id").map((v) => Number(v)))];
+    const owned = new Set(result.exits.map((row) => row.id));
+
+    if (ids.length === 0 || ids.some((id) => !Number.isInteger(id) || !owned.has(id))) {
+      result.formError = "Some selected exits were not found for this station.";
+      return reload();
+    }
+
+    try {
+      await deleteStationExits(db, stationId, ids);
+      result.redirectTo = `${basePath}#station-exits`;
+    } catch (error) {
+      console.error("Failed to delete station exits:", error);
+      result.formError = "Unable to delete the selected exits.";
+    }
+
+    return reload();
+  }
 
   if (action === "delete") {
     if (!validExitId || !exits.some((exit) => exit.id === exitId)) {

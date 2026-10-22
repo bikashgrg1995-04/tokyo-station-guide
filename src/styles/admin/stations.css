@@ -1219,8 +1219,22 @@
   gap: 8px;
 }
 
-#delete-selected-facilities-button:not(.is-visible) {
+#delete-selected-facilities-button:not(.is-visible),
+[data-bulk-delete]:not(.is-visible) {
   display: none;
+}
+
+.admin-toolbar-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-table .admin-select-cell {
+  width: 40px;
+  padding-right: 0;
+  text-align: center;
 }
 
 .admin-compact-table .admin-select-cell {

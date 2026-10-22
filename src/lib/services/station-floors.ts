@@ -2,6 +2,7 @@
 import {
   createStationFloor,
   deleteStationFloor,
+  deleteStationFloors,
   getStationFloors,
   updateStationFloor,
   type StationFloor,
@@ -98,11 +99,36 @@ export async function handleStationFloors(
   const formData = await request.formData();
   const action = readText(formData, "floor_action");
 
-  if (!["create", "update", "delete"].includes(action)) {
+  if (!["create", "update", "delete", "delete_many"].includes(action)) {
     return result;
   }
 
   const floorId = Number(readText(formData, "floor_id"));
+
+  const reloadAfterBulk = async () => {
+    if (!result.redirectTo) result.floors = await getStationFloors(db, stationId);
+    return result;
+  };
+
+  if (action === "delete_many") {
+    const ids = [...new Set(formData.getAll("floor_id").map((v) => Number(v)))];
+    const owned = new Set(result.floors.map((row) => row.id));
+
+    if (ids.length === 0 || ids.some((id) => !Number.isInteger(id) || !owned.has(id))) {
+      result.formError = "Some selected floors were not found for this station.";
+      return reloadAfterBulk();
+    }
+
+    try {
+      await deleteStationFloors(db, stationId, ids);
+      result.redirectTo = `${basePath}#station-floors`;
+    } catch (error) {
+      console.error("Failed to delete station floors:", error);
+      result.formError = "Unable to delete the selected floors.";
+    }
+
+    return reloadAfterBulk();
+  }
 
   if (action === "delete") {
     if (!Number.isInteger(floorId) || floorId <= 0) {

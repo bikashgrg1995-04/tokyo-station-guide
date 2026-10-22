@@ -128,3 +128,22 @@ export async function deleteStationFloor(
     .bind(stationId, floorId)
     .run();
 }
+
+/**
+ * Delete several rows of one station at once (all or nothing).
+ */
+export async function deleteStationFloors(
+  db: D1Database,
+  stationId: number,
+  ids: number[],
+): Promise<void> {
+  if (ids.length === 0) return;
+
+  await db.batch(
+    ids.map((id) =>
+      db
+        .prepare("DELETE FROM station_floors WHERE station_id = ? AND id = ?")
+        .bind(stationId, id),
+    ),
+  );
+}

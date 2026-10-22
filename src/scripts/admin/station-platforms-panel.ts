@@ -170,4 +170,15 @@ nextButton?.addEventListener("click", () => {
 
 renderPage();
 
+import { initBulkSelect } from "./shared/bulk-select";
+
+initBulkSelect({
+  rows: "[data-platform-row]",
+  searchId: "platform-search",
+  formId: "bulk-delete-platform-form",
+  dialogId: "bulk-delete-platform-dialog",
+  idField: "platform_id",
+  noun: ["platform", "platforms"],
+});
+
 export {};

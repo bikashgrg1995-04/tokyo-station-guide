@@ -1,6 +1,7 @@
 import {
   createStationPlatform,
   deleteStationPlatform,
+  deleteStationPlatforms,
   getStationPlatforms,
   updateStationPlatform,
   type StationPlatform,
@@ -116,11 +117,36 @@ export async function handleStationPlatforms(
   const formData = await request.formData();
   const action = readText(formData, "platform_action");
 
-  if (!["create", "update", "delete"].includes(action)) {
+  if (!["create", "update", "delete", "delete_many"].includes(action)) {
     return result;
   }
 
   const platformId = Number(readText(formData, "platform_id"));
+
+  const reloadAfterBulk = async () => {
+    if (!result.redirectTo) result.platforms = await getStationPlatforms(db, stationId);
+    return result;
+  };
+
+  if (action === "delete_many") {
+    const ids = [...new Set(formData.getAll("platform_id").map((v) => Number(v)))];
+    const owned = new Set(result.platforms.map((row) => row.id));
+
+    if (ids.length === 0 || ids.some((id) => !Number.isInteger(id) || !owned.has(id))) {
+      result.formError = "Some selected platforms were not found for this station.";
+      return reloadAfterBulk();
+    }
+
+    try {
+      await deleteStationPlatforms(db, stationId, ids);
+      result.redirectTo = `/admin/stations/${stationId}/platforms#station-platforms`;
+    } catch (error) {
+      console.error("Failed to delete station platforms:", error);
+      result.formError = "Unable to delete the selected platforms.";
+    }
+
+    return reloadAfterBulk();
+  }
 
   if (action === "delete") {
     if (!Number.isInteger(platformId) || platformId <= 0) {

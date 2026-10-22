@@ -70,9 +70,18 @@ const showDeleteError =
         />
       </form>
 
-      <Button type="button" variant="primary" id="open-add-floor">
+      <div class="admin-toolbar-actions">
+        <button
+          type="button"
+          class="common-button common-button-danger common-button-medium"
+          data-bulk-delete
+        >
+          Delete
+        </button>
+        <Button type="button" variant="primary" id="open-add-floor">
         + Add Floor
       </Button>
+      </div>
     </div>
 
     <div class="admin-table-meta">
@@ -87,6 +96,9 @@ const showDeleteError =
           <table class="admin-table">
             <thead>
               <tr>
+                <th class="admin-select-cell">
+                  <input type="checkbox" class="admin-row-checkbox" data-bulk-all aria-label="Select all floors" />
+                </th>
                 <th>ID</th>
                 <th>Floor Name</th>
                 <th>Japanese Name</th>
@@ -101,6 +113,9 @@ const showDeleteError =
                   data-floor-row
                   data-search={`${floor.id} ${floor.name} ${floor.name_japanese ?? ""}`.toLowerCase()}
                 >
+                  <td class="admin-select-cell">
+                    <input type="checkbox" class="admin-row-checkbox" data-bulk-select value={floor.id} aria-label="Select floor" />
+                  </td>
                   <td class="admin-table-id">{floor.id}</td>
                   <td><strong>{floor.name}</strong></td>
                   <td>
@@ -320,6 +335,26 @@ const showDeleteError =
   variant="danger"
   showName={true}
   warning="Deleting this floor also removes its facility, top-pick and exit assignments. Platforms assigned to this floor will become unassigned. This action cannot be undone."
+/>
+
+<form
+  method="POST"
+  id="bulk-delete-floor-form"
+  action={`/admin/stations/${stationId}/floors`}
+  hidden
+>
+  <input type="hidden" name="floor_action" value="delete_many" />
+</form>
+
+<ConfirmDialog
+  id="bulk-delete-floor-dialog"
+  formId="bulk-delete-floor-form"
+  title="Delete Floors"
+  description="Are you sure you want to delete the selected floors?"
+  confirmText="Delete Floors"
+  cancelText="Cancel"
+  variant="danger"
+  warning="This action cannot be undone."
 />
 
 <script>

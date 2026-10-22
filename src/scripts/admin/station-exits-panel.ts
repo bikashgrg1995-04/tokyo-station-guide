@@ -189,4 +189,15 @@ if (tableBody) {
   });
 }
 
+import { initBulkSelect } from "./shared/bulk-select";
+
+initBulkSelect({
+  rows: "[data-exit-row]",
+  searchId: "exit-search",
+  formId: "bulk-delete-exit-form",
+  dialogId: "bulk-delete-exit-dialog",
+  idField: "exit_id",
+  noun: ["exit", "exits"],
+});
+
 export {};

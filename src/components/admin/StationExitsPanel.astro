@@ -90,11 +90,20 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
         />
       </form>
 
-      {floors.length > 0 && (
+      <div class="admin-toolbar-actions">
+        <button
+          type="button"
+          class="common-button common-button-danger common-button-medium"
+          data-bulk-delete
+        >
+          Delete
+        </button>
+        {floors.length > 0 && (
         <Button type="button" variant="primary" id="open-add-exit">
           + Add Exit
         </Button>
       )}
+      </div>
     </div>
 
     <div class="admin-table-meta">
@@ -122,6 +131,9 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
           <table class="admin-table">
             <thead>
               <tr>
+                <th class="admin-select-cell">
+                  <input type="checkbox" class="admin-row-checkbox" data-bulk-all aria-label="Select all exits" />
+                </th>
                 <th>Exit</th>
                 <th>Floor</th>
                 <th>Code</th>
@@ -137,6 +149,9 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
                   data-exit-row
                   data-search={`${exit.name} ${exit.name_japanese ?? ""} ${exit.code ?? ""} ${floorName(exit.floor_id)} ${exit.description ?? ""} ${exit.description_japanese ?? ""}`.toLowerCase()}
                 >
+                  <td class="admin-select-cell">
+                    <input type="checkbox" class="admin-row-checkbox" data-bulk-select value={exit.id} aria-label="Select exit" />
+                  </td>
                   <td>
                     <strong>{exit.name}</strong>
                     {exit.name_japanese && (
@@ -483,6 +498,26 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
   variant="danger"
   showName={true}
   warning="The exit is also removed from the nearby exits of any facility that uses it. This action cannot be undone."
+/>
+
+<form
+  method="POST"
+  id="bulk-delete-exit-form"
+  action={`/admin/stations/${stationId}/exits`}
+  hidden
+>
+  <input type="hidden" name="exit_action" value="delete_many" />
+</form>
+
+<ConfirmDialog
+  id="bulk-delete-exit-dialog"
+  formId="bulk-delete-exit-form"
+  title="Delete Exits"
+  description="Are you sure you want to delete the selected exits?"
+  confirmText="Delete Exits"
+  cancelText="Cancel"
+  variant="danger"
+  warning="This action cannot be undone."
 />
 
 <script>

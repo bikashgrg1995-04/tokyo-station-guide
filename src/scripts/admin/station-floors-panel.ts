@@ -194,4 +194,15 @@ nextButton?.addEventListener("click", () => {
 
 renderPage();
 
+import { initBulkSelect } from "./shared/bulk-select";
+
+initBulkSelect({
+  rows: "[data-floor-row]",
+  searchId: "floor-search",
+  formId: "bulk-delete-floor-form",
+  dialogId: "bulk-delete-floor-dialog",
+  idField: "floor_id",
+  noun: ["floor", "floors"],
+});
+
 export {};

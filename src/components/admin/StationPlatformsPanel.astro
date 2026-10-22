@@ -77,9 +77,18 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
         />
       </form>
 
-      <Button type="button" variant="primary" id="open-add-platform">
+      <div class="admin-toolbar-actions">
+        <button
+          type="button"
+          class="common-button common-button-danger common-button-medium"
+          data-bulk-delete
+        >
+          Delete
+        </button>
+        <Button type="button" variant="primary" id="open-add-platform">
         + Add Platform
       </Button>
+      </div>
     </div>
 
     <div class="admin-table-meta">
@@ -94,6 +103,9 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
           <table class="admin-table">
             <thead>
               <tr>
+                <th class="admin-select-cell">
+                  <input type="checkbox" class="admin-row-checkbox" data-bulk-all aria-label="Select all platforms" />
+                </th>
                 <th>ID</th>
                 <th>Platform</th>
                 <th>Destinations</th>
@@ -110,6 +122,9 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
                   data-platform-row
                   data-search={`${platform.id} ${platform.platform_number} ${platform.destinations ?? ""} ${platform.destinations_japanese ?? ""} ${platform.line_name ?? ""} ${platform.notes ?? ""} ${platform.notes_japanese ?? ""}`.toLowerCase()}
                 >
+                  <td class="admin-select-cell">
+                    <input type="checkbox" class="admin-row-checkbox" data-bulk-select value={platform.id} aria-label="Select platform" />
+                  </td>
                   <td class="admin-table-id">{platform.id}</td>
 
                   <td>
@@ -419,6 +434,26 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
   cancelText="Cancel"
   variant="danger"
   showName={true}
+  warning="This action cannot be undone."
+/>
+
+<form
+  method="POST"
+  id="bulk-delete-platform-form"
+  action={`/admin/stations/${stationId}/platforms`}
+  hidden
+>
+  <input type="hidden" name="platform_action" value="delete_many" />
+</form>
+
+<ConfirmDialog
+  id="bulk-delete-platform-dialog"
+  formId="bulk-delete-platform-form"
+  title="Delete Platforms"
+  description="Are you sure you want to delete the selected platforms?"
+  confirmText="Delete Platforms"
+  cancelText="Cancel"
+  variant="danger"
   warning="This action cannot be undone."
 />
 
