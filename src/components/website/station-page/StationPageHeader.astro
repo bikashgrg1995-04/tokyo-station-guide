@@ -1,0 +1,43 @@
+---
+/** Top bar of the station page: back to the map, logo, language switch, theme. */
+---
+
+<header class="sp-header">
+  <a class="sp-back" href="/" aria-label="Tokyo map" data-i18n-attr="aria-label:sp.back">
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></svg>
+    <span data-i18n="sp.back">Tokyo map</span>
+  </a>
+
+  <a href="/" class="brand" aria-label="Tokyo Station Guide">
+    <span class="brand-jp">東<i></i>京</span>
+    <span class="brand-en">TOKYO</span>
+  </a>
+
+  <div class="top-right">
+    <div
+      class="lang-switch"
+      role="group"
+      aria-label="Language"
+      data-i18n-attr="aria-label:top.lang"
+    >
+      <button type="button" data-set-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-set-lang="jp" aria-pressed="false" lang="ja">日本語</button>
+    </div>
+
+    <button
+      class="top-icon"
+      id="theme-toggle"
+      aria-label="Toggle theme"
+      data-i18n-attr="aria-label:top.theme"
+    >
+      <svg class="icon-sun" viewBox="0 0 24 24"
+        ><circle cx="12" cy="12" r="4"></circle><path
+          d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"
+        ></path></svg
+      >
+      <svg class="icon-moon" viewBox="0 0 24 24"
+        ><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a6.8 6.8 0 0 0 10.7 10.7z"></path></svg
+      >
+    </button>
+  </div>
+</header>

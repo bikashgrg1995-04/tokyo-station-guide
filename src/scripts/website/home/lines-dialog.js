@@ -100,6 +100,22 @@ export function openSoon() {
   $("#soon-close").focus();
 }
 
+/*
+ * "Page" button: a verified station opens its own page (/station/<slug>);
+ * a station that is not verified yet shows the "not verified" message.
+ */
+export function openStationPage() {
+  var cur = list()[state.idx];
+
+  if (cur && Number(cur.is_verified) === 1 && cur.slug) {
+    window.location.href = "/station/" + encodeURIComponent(cur.slug);
+
+    return;
+  }
+
+  openSoon();
+}
+
 export function closeSoon() {
   if (soon.hidden) {
     return;
@@ -132,7 +148,7 @@ export function initLinesDialog() {
     }
   });
 
-  $("#page-link").addEventListener("click", openSoon);
+  $("#page-link").addEventListener("click", openStationPage);
   $("#soon-close").addEventListener("click", closeSoon);
   $("#soon-backdrop").addEventListener("click", closeSoon);
 }

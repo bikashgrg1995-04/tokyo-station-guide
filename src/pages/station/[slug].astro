@@ -1,0 +1,89 @@
+---
+import { env } from "cloudflare:workers";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import StationPageHeader from "../../components/website/station-page/StationPageHeader.astro";
+import StationHero from "../../components/website/station-page/StationHero.astro";
+import StationSection from "../../components/website/station-page/StationSection.astro";
+import { getStationPage } from "../../lib/db/station-page";
+import { SECTIONS } from "../../components/website/station-page/sections";
+
+import "@fontsource-variable/inter";
+import "@fontsource-variable/noto-sans-jp";
+import "../../styles/website/global.css";
+import "../../styles/website/theme.css";
+import "../../styles/website/header.css";
+import "../../styles/website/station-page.css";
+
+export const prerender = false;
+
+const station = await getStationPage(env.DB, Astro.params.slug ?? "");
+
+// Only verified stations have a public page.
+if (!station || Number(station.is_verified) !== 1) {
+  return new Response("Station not found", {
+    status: 404,
+    headers: { "Cache-Control": "no-store" },
+  });
+}
+
+const title = `${station.name} Station Guide | Tokyo Station Guide`;
+const description =
+  station.description ??
+  `Exits, platforms, facilities and nearby places at ${station.name} Station.`;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  robots="index, follow"
+  viewport="width=device-width, initial-scale=1, viewport-fit=cover"
+>
+  <Fragment slot="head">
+    <!-- Same theme as the map page, set before the first paint. -->
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem("tokyo-theme");
+          if (t) document.documentElement.setAttribute("data-theme", t);
+          var l = localStorage.getItem("tokyo-lang");
+          if (l === "jp" || l === "ja") document.documentElement.lang = "ja";
+        } catch (e) {}
+      })();
+    </script>
+  </Fragment>
+
+  <div class="sp">
+    <StationPageHeader />
+
+    <main class="sp-main">
+      <StationHero station={station} />
+
+      <div class="sp-layout">
+        <div class="sp-content">
+          {SECTIONS.map((section) => (
+            <StationSection section={section} station={station} />
+          ))}
+        </div>
+
+        <aside class="sp-toc" aria-label="On this page" data-i18n-attr="aria-label:sp.toc">
+          <p class="sp-toc-title" data-i18n="sp.toc">On this page</p>
+          <nav>
+            {SECTIONS.map((section) => (
+              <a href={`#${section.id}`} data-toc-link={section.id}>
+                <span data-i18n={`sp.s.${section.id}`}>{section.title}</span>
+              </a>
+            ))}
+          </nav>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="sp-footer">
+      <a href="/" class="sp-footer-link" data-i18n="sp.backToMap">Back to the map</a>
+    </footer>
+  </div>
+
+  <script>
+    import "../../scripts/website/station-page.js";
+  </script>
+</BaseLayout>

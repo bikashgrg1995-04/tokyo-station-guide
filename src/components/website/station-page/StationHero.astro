@@ -1,0 +1,88 @@
+---
+import type { StationPageData } from "../../../lib/db/station-page";
+import { ICONS, SECTIONS } from "./sections";
+
+export interface Props {
+  station: StationPageData;
+}
+
+const { station } = Astro.props;
+---
+
+<section class="sp-hero">
+  <nav class="sp-crumbs" aria-label="Breadcrumb">
+    <a href="/" data-i18n="sp.crumbHome">Home</a>
+    <span aria-hidden="true">/</span>
+    <span data-i18n="sp.crumbStations">Stations</span>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page" data-pick data-en={station.name} data-jp={station.name_japanese ?? ""}>{station.name}</span>
+  </nav>
+
+  <p class="sp-badge">
+    <svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+    <span data-i18n="sp.verified">Verified</span>
+  </p>
+
+  <h1 class="sp-title">
+    <span data-station-en>{station.name} Station</span>
+    {station.name_japanese && <span class="sp-title-jp" lang="ja">{station.name_japanese}駅</span>}
+  </h1>
+
+  {
+    (station.description || station.description_japanese) && (
+      <p
+        class="sp-lead"
+        data-pick
+        data-en={station.description ?? ""}
+        data-jp={station.description_japanese ?? ""}
+      >
+        {station.description}
+      </p>
+    )
+  }
+
+  <div class="sp-chips">
+    {
+      station.lines.map((line) => (
+        <span class="sp-chip" style={`--c:${line.color ?? "#8a93a0"}`}>
+          <i class="sp-chip-dot"></i>
+          <span data-pick data-en={line.name} data-jp={line.name_japanese ?? ""}>{line.name}</span>
+          {line.station_code && <b>{line.station_code}</b>}
+        </span>
+      ))
+    }
+  </div>
+
+  <p class="sp-note">
+    <svg viewBox="0 0 24 24"><path d={ICONS.info}></path></svg>
+    <span data-i18n="sp.note">This page is being built section by section. More details will appear here soon.</span>
+  </p>
+
+  <!-- Quick jump buttons -->
+  <nav class="sp-quick" aria-label="Sections">
+    {
+      SECTIONS.slice(0, 8).map((section) => (
+        <a href={`#${section.id}`}>
+          <svg viewBox="0 0 24 24"><path d={ICONS[section.icon]}></path></svg>
+          <span data-i18n={`sp.s.${section.id}`}>{section.title}</span>
+        </a>
+      ))
+    }
+  </nav>
+
+  <!-- Stats (filled in section by section) -->
+  <div class="sp-stats">
+    <div>
+      <strong>{station.lines.length}</strong>
+      <span data-i18n="sp.stat.lines">Lines</span>
+    </div>
+    <div>
+      <strong>—</strong>
+      <span data-i18n="sp.stat.platforms">Platforms</span>
+    </div>
+    <div>
+      <strong>—</strong>
+      <span data-i18n="sp.stat.exits">Exits</span>
+    </div>
+  </div>
+</section>
