@@ -9,9 +9,9 @@
  *   it; other data centres catch up when their copy expires.
  */
 
-const FRESH_SECONDS = 300;
+const FRESH_SECONDS = 600;
 const STALE_SECONDS = 3600;
-const BROWSER_SECONDS = 60;
+const BROWSER_SECONDS = 0;
 
 /** Pages that may be cached (public, same for everyone). */
 const CACHEABLE_PATHS = new Set(["/"]);
@@ -19,12 +19,12 @@ const CACHEABLE_PATHS = new Set(["/"]);
 type WaitUntil = (promise: Promise<unknown>) => void;
 
 /**
- * Content version, kept in KV (the SESSION namespace, own key). Admin changes
- * bump it, and the version is part of the cache key, so every data centre
- * stops using the old copy at once (KV needs up to ~60 s to spread).
+ * Content version, stored in D1 (table site_meta). Every successful admin
+ * change bumps it before the admin gets the answer, and the version is part of
+ * the cache key, so the next visitor anywhere renders fresh data. D1 is read
+ * with one tiny query (a few ms), much cheaper than the page's own queries.
  */
-const VERSION_KEY = "site:content-version";
-const VERSION_MEMO_MS = 5000;
+const VERSION_MEMO_MS = 2000;
 let memo = { value: "0", at: 0 };
 
 async function getVersion(): Promise<string> {
@@ -32,11 +32,12 @@ async function getVersion(): Promise<string> {
 
   try {
     const { env } = await import("cloudflare:workers");
-    const kv = (env as { SESSION?: KVNamespace }).SESSION;
-    const value = kv ? ((await kv.get(VERSION_KEY)) ?? "0") : "0";
-    memo = { value, at: Date.now() };
+    const row = await env.DB.prepare(
+      "SELECT value FROM site_meta WHERE key = 'content_version'",
+    ).first<{ value: string }>();
+    memo = { value: row?.value ?? "0", at: Date.now() };
   } catch {
-    // KV unavailable: keep using the last known version.
+    // Table not there yet / D1 hiccup: keep the last known version.
     memo = { ...memo, at: Date.now() };
   }
 
@@ -46,14 +47,18 @@ async function getVersion(): Promise<string> {
 async function bumpVersion(): Promise<void> {
   try {
     const { env } = await import("cloudflare:workers");
-    const kv = (env as { SESSION?: KVNamespace }).SESSION;
-    if (!kv) return;
-
     const value = String(Date.now());
-    await kv.put(VERSION_KEY, value);
+
+    await env.DB.prepare(
+      `INSERT INTO site_meta (key, value) VALUES ('content_version', ?)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+    )
+      .bind(value)
+      .run();
+
     memo = { value, at: Date.now() };
-  } catch {
-    // Best effort: the cache still expires on its own.
+  } catch (error) {
+    console.error("Could not bump the content version:", error);
   }
 }
 
@@ -79,7 +84,7 @@ export async function readPageCache(url: URL): Promise<Response | null> {
     response.headers.delete("X-Cached-At");
     response.headers.set(
       "Cache-Control",
-      `public, max-age=${BROWSER_SECONDS}, s-maxage=${FRESH_SECONDS}`,
+      `public, max-age=${BROWSER_SECONDS}, must-revalidate, s-maxage=${FRESH_SECONDS}`,
     );
 
     // Past the fresh window: still served, but the caller refreshes it.
@@ -117,14 +122,11 @@ export async function storePage(
   out.headers.delete("Set-Cookie");
   out.headers.set(
     "Cache-Control",
-    `public, max-age=${BROWSER_SECONDS}, s-maxage=${FRESH_SECONDS}`,
+    `public, max-age=${BROWSER_SECONDS}, must-revalidate, s-maxage=${FRESH_SECONDS}`,
   );
   out.headers.set("X-Cache", "MISS");
   return out;
 }
 
-/** Make every cached public page out of date (call after the content changed). */
-export function purgePages(_url: URL, waitUntil?: WaitUntil) {
-  const job = bumpVersion();
-  waitUntil ? waitUntil(job) : void job;
-}
+/** Make every cached public page out of date (await it: the admin's next page view must be fresh). */
+export const purgePages = bumpVersion;

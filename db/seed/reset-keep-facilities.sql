@@ -16,3 +16,7 @@ DELETE FROM stations;
 DELETE FROM lines;
 DELETE FROM operators;
 DELETE FROM login_attempts;
+
+-- Make the cached public pages rebuild straight away.
+INSERT INTO site_meta (key, value) VALUES ('content_version', strftime('%s','now') || '000')
+ON CONFLICT(key) DO UPDATE SET value = excluded.value;

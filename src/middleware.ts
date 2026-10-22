@@ -56,7 +56,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
     // A successful change from the admin makes the public page out of date.
     if (request.method !== 'GET' && request.method !== 'HEAD' && response.status < 400) {
-      purgePages(url, waitUntil);
+      await purgePages();
     }
   }
 
