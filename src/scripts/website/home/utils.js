@@ -76,3 +76,12 @@ export function esc(v) {
     }[c];
   });
 }
+
+/* Base address for uploaded R2 files. Empty = served by this site (/media);
+   set MEDIA_BASE_URL (R2 custom domain) to serve them without the Worker. */
+export function mediaSrc(key) {
+  var meta = document.querySelector('meta[name="media-base"]');
+  var base = ((meta && meta.content) || "/media").replace(/\/+$/, "");
+
+  return base + "/" + key;
+}

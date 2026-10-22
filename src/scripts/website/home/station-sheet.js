@@ -6,7 +6,7 @@ import { sheet } from "./dom.js";
 import { isJp, names, pick, t } from "./i18n.js";
 import { state } from "./state.js";
 import { findLinesForStation } from "./station-lookup.js";
-import { $, esc } from "./utils.js";
+import { $, esc, mediaSrc } from "./utils.js";
 
 /*
  * Read a field from the line's station object first,
@@ -185,8 +185,8 @@ function isDark() {
 
 function uploadedIconImg(key) {
   return (
-    '<img class="ic ic-img" alt="" loading="lazy" src="/media/' +
-    esc(key) +
+    '<img class="ic ic-img" alt="" loading="lazy" src="' +
+    esc(mediaSrc(key)) +
     '">'
   );
 }
@@ -618,7 +618,7 @@ function pickPhotoSrc(value) {
   var v = value == null ? "" : String(value).trim();
 
   if (v.indexOf("top-pick-images/") === 0) {
-    return "/media/" + v;
+    return mediaSrc(v);
   }
 
   return /^https?:\/\//i.test(v) ? v : "";

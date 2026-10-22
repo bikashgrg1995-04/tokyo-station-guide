@@ -18,6 +18,10 @@ export interface Props {
 }
 
 const { title, description } = Astro.props;
+
+// Optional R2 custom domain for photos/icons (set MEDIA_BASE_URL in wrangler vars).
+const { env } = await import("cloudflare:workers");
+const mediaBase = String((env as { MEDIA_BASE_URL?: string }).MEDIA_BASE_URL ?? "").trim();
 ---
 
 <BaseLayout
@@ -27,6 +31,7 @@ const { title, description } = Astro.props;
   viewport="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
 >
   <Fragment slot="head">
+    {mediaBase && <meta name="media-base" content={mediaBase} />}
     <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/icon-light-192.png" media="(prefers-color-scheme: light)" />
     <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/icon-dark-192.png" media="(prefers-color-scheme: dark)" />
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/icon-light-180.png" />

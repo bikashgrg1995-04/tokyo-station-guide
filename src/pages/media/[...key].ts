@@ -9,7 +9,7 @@ export const prerender = false;
  * Public read access to uploaded facility icons, top pick images and featured station photos only.
  * Anything outside those prefixes is a 404.
  */
-export const GET: APIRoute = async ({ params, request }) => {
+export const GET: APIRoute = async ({ params, request, locals }) => {
   const { env } = await import("cloudflare:workers");
   const key = params.key ?? "";
   const bucket = iconBucket(env);
@@ -25,6 +25,12 @@ export const GET: APIRoute = async ({ params, request }) => {
   ) {
     return new Response("Not found", { status: 404 });
   }
+
+  // Files are never overwritten (random keys), so the edge copy never goes stale.
+  const cache = (caches as unknown as { default: Cache }).default;
+  const cacheKey = new Request(new URL(request.url).origin + "/media/" + key);
+  const hit = await cache.match(cacheKey).catch(() => undefined);
+  if (hit) return hit;
 
   const object = await bucket.get(key);
 
@@ -47,5 +53,7 @@ export const GET: APIRoute = async ({ params, request }) => {
     return new Response(null, { status: 304, headers });
   }
 
-  return new Response(object.body, { headers });
+  const response = new Response(object.body, { headers });
+  locals.cfContext?.waitUntil(cache.put(cacheKey, response.clone()).catch(() => {}));
+  return response;
 };

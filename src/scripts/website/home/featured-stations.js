@@ -4,7 +4,7 @@ import { featuredStations, searchable } from "./data.js";
 import { featuredHost, featuredSection } from "./dom.js";
 import { names, pick } from "./i18n.js";
 import { selectStationOnMap } from "./station-lookup.js";
-import { esc } from "./utils.js";
+import { esc, mediaSrc } from "./utils.js";
 
 /*
  * Featured items come from a different table/query than
@@ -49,7 +49,7 @@ export function renderFeaturedStations() {
   function featuredImageSrc(value) {
     var v = value == null ? "" : String(value);
 
-    return v.indexOf("featured-station-images/") === 0 ? "/media/" + v : v;
+    return v.indexOf("featured-station-images/") === 0 ? mediaSrc(v) : v;
   }
 
   featuredStations.forEach(function (station) {
