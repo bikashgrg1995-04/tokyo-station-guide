@@ -17,7 +17,7 @@ const ALLOWED_CONTENT_TYPES = new Set([
   "image/svg+xml",
 ]);
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, request, locals }) => {
   const key = params.key;
 
   if (
@@ -39,6 +39,13 @@ export const GET: APIRoute = async ({ params }) => {
     return new Response("Not found", { status: 404 });
   }
 
+  // Image names are random ids and never reused, so a cached copy never goes
+  // stale: answer from the edge cache before touching R2.
+  const cache = (caches as unknown as { default: Cache }).default;
+  const cacheKey = new Request(new URL(request.url).origin + "/api/assets/" + key);
+  const hit = await cache.match(cacheKey).catch(() => undefined);
+  if (hit) return hit;
+
   try {
     const { env } = await import("cloudflare:workers");
     const object = await env.ASSETS_BUCKET.get(key);
@@ -57,7 +64,7 @@ export const GET: APIRoute = async ({ params }) => {
     const headers = new Headers({
       "Content-Type": contentType,
       "X-Content-Type-Options": "nosniff",
-      "Cache-Control": "public, max-age=3600",
+      "Cache-Control": "public, max-age=31536000, immutable",
     });
 
     // SVG must not be able to run scripts or load external resources.
@@ -68,7 +75,11 @@ export const GET: APIRoute = async ({ params }) => {
       );
     }
 
-    return new Response(object.body, { headers });
+    const response = new Response(object.body, { headers });
+    locals.cfContext?.waitUntil(
+      cache.put(cacheKey, response.clone()).catch(() => {}),
+    );
+    return response;
   } catch (error) {
     console.error("R2 asset retrieval failed:", error);
 
