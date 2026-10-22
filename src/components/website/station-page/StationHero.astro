@@ -23,6 +23,9 @@ const operators = [
 const day = (value: string | null) => (value ? value.slice(0, 10) : "");
 const updated = day(station.updated_at);
 const checked = day(station.verified_at);
+
+// Draft notice: shown until the page content is finished (see also robots=noindex in the page).
+const isDraft = true;
 ---
 
 <section class="sp-hero">
@@ -97,7 +100,11 @@ const checked = day(station.verified_at);
     </>)}
     {checked && (<>
       <span aria-hidden="true"> · </span>
-      <span data-i18n-date="sp.checked" data-date={checked}>Checked in person on {checked}</span>
+      <span data-i18n-date="sp.checked" data-date={checked}>Checked in person on {checked}; details we could not check on site are marked</span>
+    </>)}
+    {isDraft && (<>
+      <span aria-hidden="true"> · </span>
+      <strong class="sp-draft" data-i18n="sp.draft">DRAFT (noindex): verify facts, add photos, then set status to "published"</strong>
     </>)}
   </p>
 </section>

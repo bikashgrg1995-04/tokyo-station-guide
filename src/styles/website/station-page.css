@@ -41,7 +41,6 @@ html[data-lang="jp"] body {
   padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 8px;
   background: color-mix(in srgb, var(--page) 88%, transparent);
   backdrop-filter: blur(12px);
-  border-top: 2px solid var(--accent-red);
   border-bottom: 1px solid var(--row-edge);
 }
 
@@ -465,4 +464,13 @@ html[data-lang="jp"] [data-station-en] {
   .sp-photo {
     aspect-ratio: 16 / 10;
   }
+}
+
+.sp-draft {
+  color: #c25e00;
+  font-weight: 700;
+}
+
+:root[data-theme="dark"] .sp-draft {
+  color: #e0852b;
 }
