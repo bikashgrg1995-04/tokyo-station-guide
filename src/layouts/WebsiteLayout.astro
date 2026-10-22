@@ -1,6 +1,8 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
 
+import "@fontsource-variable/inter";
+import "@fontsource-variable/noto-sans-jp";
 import "../styles/website/global.css";
 import "../styles/website/theme.css";
 import "../styles/website/base.css";
@@ -49,21 +51,6 @@ const mediaBase = String((env as { MEDIA_BASE_URL?: string }).MEDIA_BASE_URL ?? 
         } catch (e) {}
       })();
     </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Web fonts load without blocking the first paint (system font until they arrive). -->
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Noto+Sans+JP:wght@500;700;800&display=swap"
-      media="print"
-      onload="this.media='all'"
-    />
-    <noscript>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Noto+Sans+JP:wght@500;700;800&display=swap"
-      />
-    </noscript>
     <slot name="head" />
   </Fragment>
   <slot />

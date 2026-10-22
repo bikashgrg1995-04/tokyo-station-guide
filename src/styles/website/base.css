@@ -26,8 +26,8 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family:
-    "Inter",
-    "Noto Sans JP",
+    "Inter Variable", "Inter",
+    "Noto Sans JP Variable", "Noto Sans JP",
     system-ui,
     -apple-system,
     "Segoe UI",

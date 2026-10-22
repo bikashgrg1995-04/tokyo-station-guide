@@ -18,8 +18,50 @@ const CACHEABLE_PATHS = new Set(["/"]);
 
 type WaitUntil = (promise: Promise<unknown>) => void;
 
-const cacheKey = (url: URL, path = url.pathname) =>
-  new Request(`${url.origin}${path}`, { method: "GET" });
+/**
+ * Content version, kept in KV (the SESSION namespace, own key). Admin changes
+ * bump it, and the version is part of the cache key, so every data centre
+ * stops using the old copy at once (KV needs up to ~60 s to spread).
+ */
+const VERSION_KEY = "site:content-version";
+const VERSION_MEMO_MS = 5000;
+let memo = { value: "0", at: 0 };
+
+async function getVersion(): Promise<string> {
+  if (Date.now() - memo.at < VERSION_MEMO_MS) return memo.value;
+
+  try {
+    const { env } = await import("cloudflare:workers");
+    const kv = (env as { SESSION?: KVNamespace }).SESSION;
+    const value = kv ? ((await kv.get(VERSION_KEY)) ?? "0") : "0";
+    memo = { value, at: Date.now() };
+  } catch {
+    // KV unavailable: keep using the last known version.
+    memo = { ...memo, at: Date.now() };
+  }
+
+  return memo.value;
+}
+
+async function bumpVersion(): Promise<void> {
+  try {
+    const { env } = await import("cloudflare:workers");
+    const kv = (env as { SESSION?: KVNamespace }).SESSION;
+    if (!kv) return;
+
+    const value = String(Date.now());
+    await kv.put(VERSION_KEY, value);
+    memo = { value, at: Date.now() };
+  } catch {
+    // Best effort: the cache still expires on its own.
+  }
+}
+
+declare const __BUILD_ID__: string;
+const BUILD_ID = typeof __BUILD_ID__ === "string" ? __BUILD_ID__ : "dev";
+
+const cacheKey = (url: URL, version: string, path = url.pathname) =>
+  new Request(`${url.origin}${path}?v=${version}&b=${BUILD_ID}`, { method: "GET" });
 
 export const isCacheablePage = (request: Request, url: URL) =>
   request.method === "GET" && CACHEABLE_PATHS.has(url.pathname);
@@ -28,7 +70,7 @@ const defaultCache = () => (caches as unknown as { default: Cache }).default;
 
 export async function readPageCache(url: URL): Promise<Response | null> {
   try {
-    const hit = await defaultCache().match(cacheKey(url));
+    const hit = await defaultCache().match(cacheKey(url, await getVersion()));
     if (!hit) return null;
 
     const age = Number(hit.headers.get("X-Cached-At") ?? 0);
@@ -50,7 +92,11 @@ export async function readPageCache(url: URL): Promise<Response | null> {
   }
 }
 
-export function storePage(url: URL, response: Response, waitUntil?: WaitUntil) {
+export async function storePage(
+  url: URL,
+  response: Response,
+  waitUntil?: WaitUntil,
+) {
   const isHtml = response.headers.get("Content-Type")?.includes("text/html");
   if (response.status !== 200 || !isHtml) return response;
 
@@ -62,7 +108,9 @@ export function storePage(url: URL, response: Response, waitUntil?: WaitUntil) {
   );
   stored.headers.set("X-Cached-At", String(Date.now()));
 
-  const put = defaultCache().put(cacheKey(url), stored).catch(() => {});
+  const put = defaultCache()
+    .put(cacheKey(url, await getVersion()), stored)
+    .catch(() => {});
   waitUntil ? waitUntil(put) : void put;
 
   const out = new Response(response.body, response);
@@ -75,12 +123,8 @@ export function storePage(url: URL, response: Response, waitUntil?: WaitUntil) {
   return out;
 }
 
-/** Drop the cached public pages (call after the content changed). */
-export function purgePages(url: URL, waitUntil?: WaitUntil) {
-  const jobs = Promise.all(
-    [...CACHEABLE_PATHS].map((path) =>
-      defaultCache().delete(cacheKey(url, path)).catch(() => false),
-    ),
-  );
-  waitUntil ? waitUntil(jobs) : void jobs;
+/** Make every cached public page out of date (call after the content changed). */
+export function purgePages(_url: URL, waitUntil?: WaitUntil) {
+  const job = bumpVersion();
+  waitUntil ? waitUntil(job) : void job;
 }

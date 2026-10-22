@@ -153,7 +153,7 @@
 /* Station name: big, heavy, airy sans (like the reference sign) */
 .current strong {
   max-width: 190px;
-  font-family: "Noto Sans JP", "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic",
+  font-family: "Noto Sans JP Variable", "Noto Sans JP", "Inter Variable", "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic",
     system-ui, sans-serif;
   font-size: 18px;
   line-height: 24px;
@@ -239,7 +239,7 @@
   text-align: right;
 }
 .side-text b {
-  font-family: "Noto Sans JP", "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic",
+  font-family: "Noto Sans JP Variable", "Noto Sans JP", "Inter Variable", "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic",
     system-ui, sans-serif;
   font-size: 13.5px;
   line-height: 17px;

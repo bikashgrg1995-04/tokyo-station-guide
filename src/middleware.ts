@@ -22,15 +22,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
       if (cached.headers.get('X-Cache') === 'STALE') {
         // Serve the old copy now, refresh it in the background.
         waitUntil?.(
-          next().then((fresh) => {
-            storePage(url, fresh, waitUntil);
-          }),
+          next().then((fresh) => storePage(url, fresh, waitUntil)),
         );
       }
       return cached;
     }
 
-    return storePage(url, await next(), waitUntil);
+    return await storePage(url, await next(), waitUntil);
   }
 
   // ---- Admin ----
