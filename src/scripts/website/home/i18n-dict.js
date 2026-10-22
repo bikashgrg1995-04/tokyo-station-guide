@@ -87,7 +87,12 @@ export const DICT = {
     "sug.network": "A network error occurred. Please try again.",
 
     /* Station page (/station/<slug>) */
-    "sp.back": "Tokyo map",
+    "sp.back": "Map",
+    "sp.site": "tokyoguide.jp",
+    "sp.by": "By TokyoGuide.jp",
+    "sp.updated": "Last updated {date}",
+    "sp.checked": "Checked in person on {date}",
+    "sp.photo": "Main photo coming soon",
     "sp.crumbHome": "Home",
     "sp.crumbStations": "Stations",
     "sp.verified": "Verified",
@@ -199,7 +204,12 @@ export const DICT = {
     "sug.network": "通信エラーが発生しました。もう一度お試しください。",
 
     /* Station page (/station/<slug>) */
-    "sp.back": "東京マップ",
+    "sp.back": "マップ",
+    "sp.site": "tokyoguide.jp",
+    "sp.by": "TokyoGuide.jp",
+    "sp.updated": "最終更新 {date}",
+    "sp.checked": "{date} に現地確認",
+    "sp.photo": "メイン写真は準備中です",
     "sp.crumbHome": "ホーム",
     "sp.crumbStations": "駅",
     "sp.verified": "確認済み",

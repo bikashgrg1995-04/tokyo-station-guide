@@ -1,27 +1,46 @@
 ---
 import type { StationPageData } from "../../../lib/db/station-page";
-import { ICONS, SECTIONS } from "./sections";
 
 export interface Props {
   station: StationPageData;
 }
 
 const { station } = Astro.props;
+
+const first = station.lines[0];
+const code = first?.station_code ?? null;
+const codeColor = first?.color ?? "#8a93a0";
+
+// Operators of the lines that serve this station, each once.
+const operators = [
+  ...new Map(
+    station.lines
+      .filter((line) => line.operator_name)
+      .map((line) => [line.operator_name, line.operator_name_japanese]),
+  ),
+];
+
+const day = (value: string | null) => (value ? value.slice(0, 10) : "");
+const updated = day(station.updated_at);
+const checked = day(station.verified_at);
 ---
 
 <section class="sp-hero">
   <nav class="sp-crumbs" aria-label="Breadcrumb">
-    <a href="/" data-i18n="sp.crumbHome">Home</a>
-    <span aria-hidden="true">/</span>
-    <span data-i18n="sp.crumbStations">Stations</span>
-    <span aria-hidden="true">/</span>
-    <span aria-current="page" data-pick data-en={station.name} data-jp={station.name_japanese ?? ""}>{station.name}</span>
+    <a href="/" data-i18n="sp.site">tokyoguide.jp</a>
+    <span aria-hidden="true">›</span>
+    <span aria-current="page">
+      <span data-pick data-en={`${station.name} Station`} data-jp={station.name_japanese ? `${station.name_japanese}駅` : ""}>{station.name} Station</span>
+    </span>
   </nav>
 
-  <p class="sp-badge">
-    <svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
-    <span data-i18n="sp.verified">Verified</span>
-  </p>
+  {
+    code && (
+      <p class="sp-code-row">
+        <span class="sp-code" style={`--c:${codeColor}`}>{code}</span>
+      </p>
+    )
+  }
 
   <h1 class="sp-title">
     <span data-station-en>{station.name} Station</span>
@@ -41,48 +60,44 @@ const { station } = Astro.props;
     )
   }
 
-  <div class="sp-chips">
+  <div class="sp-meta">
     {
-      station.lines.map((line) => (
-        <span class="sp-chip" style={`--c:${line.color ?? "#8a93a0"}`}>
-          <i class="sp-chip-dot"></i>
-          <span data-pick data-en={line.name} data-jp={line.name_japanese ?? ""}>{line.name}</span>
-          {line.station_code && <b>{line.station_code}</b>}
-        </span>
-      ))
+      operators.length > 0 && (
+        <p class="sp-operators">
+          {operators.map(([name, jp], index) => (
+            <>
+              {index > 0 && <span aria-hidden="true"> · </span>}
+              <span data-pick data-en={name ?? ""} data-jp={jp ?? ""}>{name}</span>
+            </>
+          ))}
+        </p>
+      )
     }
-  </div>
 
-  <p class="sp-note">
-    <svg viewBox="0 0 24 24"><path d={ICONS.info}></path></svg>
-    <span data-i18n="sp.note">This page is being built section by section. More details will appear here soon.</span>
-  </p>
-
-  <!-- Quick jump buttons -->
-  <nav class="sp-quick" aria-label="Sections">
     {
-      SECTIONS.slice(0, 8).map((section) => (
-        <a href={`#${section.id}`}>
-          <svg viewBox="0 0 24 24"><path d={ICONS[section.icon]}></path></svg>
-          <span data-i18n={`sp.s.${section.id}`}>{section.title}</span>
+      station.location_url && (
+        <a
+          class="sp-maps"
+          href={station.location_url}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <svg viewBox="0 0 24 24"><path d="M12 21s-6-5.6-6-10.5A6 6 0 0 1 18 10.5C18 15.4 12 21 12 21zM12 12.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"></path></svg>
+          <span data-i18n="sp.openMap">Open in Google Maps</span>
         </a>
-      ))
+      )
     }
-  </nav>
-
-  <!-- Stats (filled in section by section) -->
-  <div class="sp-stats">
-    <div>
-      <strong>{station.lines.length}</strong>
-      <span data-i18n="sp.stat.lines">Lines</span>
-    </div>
-    <div>
-      <strong>—</strong>
-      <span data-i18n="sp.stat.platforms">Platforms</span>
-    </div>
-    <div>
-      <strong>—</strong>
-      <span data-i18n="sp.stat.exits">Exits</span>
-    </div>
   </div>
+
+  <p class="sp-byline">
+    <span data-i18n="sp.by">By TokyoGuide.jp</span>
+    {updated && (<>
+      <span aria-hidden="true"> · </span>
+      <span data-i18n-date="sp.updated" data-date={updated}>Last updated {updated}</span>
+    </>)}
+    {checked && (<>
+      <span aria-hidden="true"> · </span>
+      <span data-i18n-date="sp.checked" data-date={checked}>Checked in person on {checked}</span>
+    </>)}
+  </p>
 </section>

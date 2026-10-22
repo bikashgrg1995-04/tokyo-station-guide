@@ -1,7 +1,7 @@
 // Station page entry: language, theme and the table of contents.
 // Uses the same language / theme settings as the map page (localStorage).
 
-import { initLang, onLangChange, pick } from "./home/i18n.js";
+import { initLang, onLangChange, pick, t } from "./home/i18n.js";
 import { initTheme } from "./home/theme.js";
 
 /* Text from the database: [data-pick data-en="…" data-jp="…"] */
@@ -12,6 +12,13 @@ function applyPicks() {
     if (text) {
       node.textContent = text;
     }
+  });
+}
+
+/* "Last updated {date}": fixed text with a date inside. */
+function applyDates() {
+  document.querySelectorAll("[data-i18n-date]").forEach(function (node) {
+    node.textContent = t(node.dataset.i18nDate, { date: node.dataset.date });
   });
 }
 
@@ -52,6 +59,10 @@ function initScrollSpy() {
 initLang();
 initTheme();
 applyPicks();
+applyDates();
 initScrollSpy();
 
-onLangChange(applyPicks);
+onLangChange(function () {
+  applyPicks();
+  applyDates();
+});

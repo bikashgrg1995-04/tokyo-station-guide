@@ -1,0 +1,38 @@
+---
+import type { StationPageData } from "../../../lib/db/station-page";
+import { ICONS, SECTIONS } from "./sections";
+
+export interface Props {
+  station: StationPageData;
+}
+
+const { station } = Astro.props;
+---
+
+<!-- Quick jump buttons -->
+<nav class="sp-quick" aria-label="Sections">
+  {
+    SECTIONS.slice(0, 8).map((section) => (
+      <a href={`#${section.id}`}>
+        <svg viewBox="0 0 24 24"><path d={ICONS[section.icon]}></path></svg>
+        <span data-i18n={`sp.s.${section.id}`}>{section.title}</span>
+      </a>
+    ))
+  }
+</nav>
+
+<!-- Stats (filled in section by section) -->
+<div class="sp-stats">
+  <div>
+    <strong>{station.lines.length}</strong>
+    <span data-i18n="sp.stat.lines">Lines</span>
+  </div>
+  <div>
+    <strong>—</strong>
+    <span data-i18n="sp.stat.platforms">Platforms</span>
+  </div>
+  <div>
+    <strong>—</strong>
+    <span data-i18n="sp.stat.exits">Exits</span>
+  </div>
+</div>

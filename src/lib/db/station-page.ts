@@ -7,6 +7,8 @@ export interface StationPageLine {
   color: string | null;
   code: string | null;
   station_code: string | null;
+  operator_name: string | null;
+  operator_name_japanese: string | null;
 }
 
 export interface StationPageData {
@@ -18,6 +20,8 @@ export interface StationPageData {
   description_japanese: string | null;
   is_verified: number;
   verified_at: string | null;
+  location_url: string | null;
+  updated_at: string | null;
   lines: StationPageLine[];
 }
 
@@ -28,7 +32,7 @@ export async function getStationPage(
   const station = await db
     .prepare(
       `SELECT id, slug, name, name_japanese, description, description_japanese,
-              is_verified, verified_at
+              is_verified, verified_at, location_url, updated_at
        FROM stations WHERE slug = ?`,
     )
     .bind(slug)
@@ -38,11 +42,13 @@ export async function getStationPage(
 
   const lines = await db
     .prepare(
-      `SELECT l.id, l.name, l.name_japanese, l.color, l.code, ls.station_code
+      `SELECT l.id, l.name, l.name_japanese, l.color, l.code, ls.station_code,
+              o.name AS operator_name, o.name_japanese AS operator_name_japanese
        FROM line_stations ls
        JOIN lines l ON l.id = ls.line_id
+       LEFT JOIN operators o ON o.id = l.operator_id
        WHERE ls.station_id = ? AND l.website_status != 'hidden'
-       ORDER BY l.name`,
+       ORDER BY ls.id`,
     )
     .bind(station.id)
     .all<StationPageLine>();
