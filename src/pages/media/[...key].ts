@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { ICON_PREFIX, iconBucket } from "../../lib/storage/facility-icons";
 import { TOP_PICK_IMAGE_PREFIX } from "../../lib/storage/top-pick-images";
+import { STATION_IMAGE_PREFIX } from "../../lib/storage/station-images";
 import { FEATURED_IMAGE_PREFIX } from "../../lib/storage/featured-station-images";
 
 export const prerender = false;
@@ -19,7 +20,8 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
     !(
       key.startsWith(ICON_PREFIX) ||
       key.startsWith(TOP_PICK_IMAGE_PREFIX) ||
-      key.startsWith(FEATURED_IMAGE_PREFIX)
+      key.startsWith(FEATURED_IMAGE_PREFIX) ||
+      key.startsWith(STATION_IMAGE_PREFIX)
     ) ||
     key.includes("..")
   ) {

@@ -85,7 +85,7 @@ const facilityError = errors.facilities;
       picks. Floors, platforms and exits have their own pages.
     </p>
 
-    <form method="POST" class="admin-form" id="edit-station-form">
+    <form method="POST" enctype="multipart/form-data" class="admin-form" id="edit-station-form">
       <input type="hidden" name="action" value="update" />
 
       <!-- Station Details -->
@@ -97,7 +97,7 @@ const facilityError = errors.facilities;
 
           {formError && <Alert>{formError}</Alert>}
 
-          <StationFormFields values={form.values} errors={errors} />
+          <StationFormFields values={form.values} errors={errors} mainImage={station.main_image} />
         </div>
       </section>
 

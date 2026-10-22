@@ -21,6 +21,9 @@ export interface StationPageData {
   is_verified: number;
   verified_at: string | null;
   location_url: string | null;
+  region: string | null;
+  region_japanese: string | null;
+  main_image: string | null;
   updated_at: string | null;
   lines: StationPageLine[];
 }
@@ -32,7 +35,8 @@ export async function getStationPage(
   const station = await db
     .prepare(
       `SELECT id, slug, name, name_japanese, description, description_japanese,
-              is_verified, verified_at, location_url, updated_at
+              is_verified, verified_at, location_url, region, region_japanese,
+              main_image, updated_at
        FROM stations WHERE slug = ?`,
     )
     .bind(slug)

@@ -23,6 +23,13 @@ import {
 } from "../db/top-picks";
 
 import { getLines } from "../db/lines";
+import { iconBucket } from "../storage/facility-icons";
+import {
+  checkStationImage,
+  deleteStationImage,
+  readStationImageFile,
+  saveStationImage,
+} from "../storage/station-images";
 import { getStationFloors } from "../db/station-floors";
 import type { StationFacilityInput } from "../db/stations/types";
 
@@ -237,6 +244,8 @@ function readStationForm(formData: FormData) {
     descriptionJapanese: readText(formData, "description_japanese"),
     about: readText(formData, "about"),
     aboutJapanese: readText(formData, "about_japanese"),
+    region: readText(formData, "region"),
+    regionJapanese: readText(formData, "region_japanese"),
     isVerified: formData.get("is_verified") === "on",
     verifiedAt: readText(formData, "verified_at"),
   };
@@ -251,6 +260,24 @@ function readStationForm(formData: FormData) {
     topPickIds: readIds(formData, "top_pick_ids"),
     topPickIdsManaged: formData.has("top_pick_ids_managed"),
   };
+}
+
+/**
+ * Main photo of the station page. Reads the optional upload / "remove" tick from
+ * the form and checks the file. Nothing is written to R2 here.
+ */
+async function readMainImage(formData: FormData) {
+  const file = readStationImageFile(formData, "main_image_file");
+  const remove = formData.get("remove_main_image") === "on";
+  const check = file ? await checkStationImage(file) : null;
+
+  return { file, remove, check, error: check && !check.ok ? check.error : "" };
+}
+
+async function getBucket(): Promise<R2Bucket | undefined> {
+  const { env } = await import("cloudflare:workers");
+
+  return iconBucket(env);
 }
 
 function validateStationSelections(
@@ -297,6 +324,8 @@ function toStationInput(
     descriptionJapanese: values.descriptionJapanese || null,
     about: values.about || null,
     aboutJapanese: values.aboutJapanese || null,
+    region: values.region || null,
+    regionJapanese: values.regionJapanese || null,
     facilityIds,
     stationFacilities,
     topPickIds,
@@ -327,6 +356,8 @@ export async function handleStationCreate(
       descriptionJapanese: "",
       about: "",
       aboutJapanese: "",
+      region: "",
+      regionJapanese: "",
       isVerified: false,
       verifiedAt: "",
     },
@@ -338,13 +369,16 @@ export async function handleStationCreate(
 
   if (request.method !== "POST") return result;
 
+  const formData = await request.formData();
+  const image = await readMainImage(formData);
+
   const {
     values,
     facilityIds,
     stationFacilities,
     stationFacilitiesError,
     topPickIds,
-  } = readStationForm(await request.formData());
+  } = readStationForm(formData);
 
   result.values = values;
 
@@ -366,13 +400,32 @@ export async function handleStationCreate(
       "Create the station first, then add floors and assign facilities from Edit Station.";
   }
 
+  const bucket = image.check?.ok ? await getBucket() : undefined;
+
+  if (image.error) {
+    result.errors.mainImage = image.error;
+  } else if (image.check?.ok && !bucket) {
+    result.errors.mainImage =
+      "Image storage (R2) is not configured. Bind the ASSETS_BUCKET R2 bucket.";
+  }
+
   if (hasErrors(result.errors)) return result;
 
+  let uploadedKey: string | null = null;
+
   try {
-    await createStation(db, toStationInput(values, [], topPickIds, []));
+    if (bucket && image.check?.ok) {
+      uploadedKey = await saveStationImage(bucket, values.slug, image.check);
+    }
+
+    await createStation(db, {
+      ...toStationInput(values, [], topPickIds, []),
+      mainImage: uploadedKey,
+    });
     result.redirectTo = LIST_PATH;
   } catch (err) {
     console.error(err);
+    await deleteStationImage(bucket, uploadedKey);
     result.formError = "Unable to create station. The slug may already exist.";
   }
 
@@ -400,6 +453,8 @@ export async function handleStationUpdate(
       descriptionJapanese: station.description_japanese ?? "",
       about: station.about ?? "",
       aboutJapanese: station.about_japanese ?? "",
+      region: station.region ?? "",
+      regionJapanese: station.region_japanese ?? "",
       isVerified: station.is_verified === 1,
       verifiedAt: station.verified_at?.slice(0, 10) ?? "",
     },
@@ -419,6 +474,8 @@ export async function handleStationUpdate(
   if (String(formData.get("action") ?? "") !== "update") {
     return result;
   }
+
+  const image = await readMainImage(formData);
 
   const {
     values,
@@ -466,23 +523,46 @@ export async function handleStationUpdate(
       "One or more selected exits do not belong to this station.";
   }
 
+  const bucket = image.check?.ok || image.remove ? await getBucket() : undefined;
+
+  if (image.error) {
+    result.errors.mainImage = image.error;
+  } else if (image.check?.ok && !bucket) {
+    result.errors.mainImage =
+      "Image storage (R2) is not configured. Bind the ASSETS_BUCKET R2 bucket.";
+  }
+
   if (!hasErrors(result.errors) && !result.formError) {
+    let uploadedKey: string | null = null;
+
     try {
-      await updateStation(
-        db,
-        id,
-        toStationInput(
+      if (bucket && image.check?.ok) {
+        uploadedKey = await saveStationImage(bucket, values.slug, image.check);
+      }
+
+      // undefined = keep the saved photo, null = remove it, a key = replace it.
+      const mainImage = uploadedKey ?? (image.remove ? null : undefined);
+
+      await updateStation(db, id, {
+        ...toStationInput(
           values,
           facilityIds,
           topPickIdsManaged ? topPickIds : undefined,
           stationFacilities,
         ),
-      );
+        mainImage,
+      });
+
+      // The old file goes only after the new one is saved.
+      if (mainImage !== undefined) {
+        await deleteStationImage(bucket, station.main_image);
+      }
 
       result.redirectTo = LIST_PATH;
       return result;
     } catch (err) {
       console.error(err);
+      await deleteStationImage(bucket, uploadedKey);
       result.formError =
         "Unable to update the station. Please check the submitted values and try again.";
     }

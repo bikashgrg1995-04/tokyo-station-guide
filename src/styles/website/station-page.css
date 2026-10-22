@@ -34,18 +34,58 @@ html[data-lang="jp"] body {
   position: sticky;
   top: 0;
   z-index: 30;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 8px;
-  padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 8px;
-  background: color-mix(in srgb, var(--page) 88%, transparent);
+  padding-top: env(safe-area-inset-top, 0px);
+  background: color-mix(in srgb, var(--page) 90%, transparent);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--row-edge);
 }
 
+/* Same width and side margin as the page content below */
+.sp-header-inner {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 8px 16px;
+}
+
 .sp-header .top-right {
   justify-self: end;
+}
+
+/* The map page's buttons rely on its base reset; repeat what they need here. */
+.sp button {
+  color: inherit;
+  border: 0;
+  background: none;
+}
+
+/* Language switch: same pill as the map page */
+.sp-header .lang-switch {
+  backdrop-filter: none;
+  background: var(--surface);
+  border: 1px solid var(--row-edge);
+  box-shadow: none;
+}
+
+/* Theme button shows the mode you switch TO: moon in light, sun in dark */
+.sp-header .icon-sun {
+  display: none;
+}
+
+.sp-header .icon-moon {
+  display: block;
+}
+
+:root[data-theme="dark"] .sp-header .icon-sun {
+  display: block;
+}
+
+:root[data-theme="dark"] .sp-header .icon-moon {
+  display: none;
 }
 
 .sp-back {
@@ -77,9 +117,6 @@ html[data-lang="jp"] body {
 
 .sp-header .top-icon {
   color: var(--accent-red);
-  background: none;
-  border: 0;
-  box-shadow: none;
 }
 
 .sp-header .top-icon svg {
@@ -473,4 +510,24 @@ html[data-lang="jp"] [data-station-en] {
 
 :root[data-theme="dark"] .sp-draft {
   color: #e0852b;
+}
+
+.sp-code-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+
+.sp-region {
+  color: var(--accent-red);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.sp-photo-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
 }

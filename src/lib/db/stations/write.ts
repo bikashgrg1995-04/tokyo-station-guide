@@ -29,10 +29,13 @@ export async function createStation(
           description_japanese,
           about,
           about_japanese,
+          region,
+          region_japanese,
+          main_image,
           is_verified,
           verified_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CASE
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE
           WHEN ? = 1 THEN COALESCE(?, date('now'))
           ELSE NULL
         END)
@@ -47,6 +50,9 @@ export async function createStation(
       input.descriptionJapanese?.trim() || null,
       input.about?.trim() || null,
       input.aboutJapanese?.trim() || null,
+      input.region?.trim() || null,
+      input.regionJapanese?.trim() || null,
+      input.mainImage || null,
       input.isVerified ? 1 : 0,
       input.isVerified ? 1 : 0,
       input.verifiedAt || null,
@@ -116,6 +122,9 @@ export async function updateStation(
           description_japanese = ?,
           about = ?,
           about_japanese = ?,
+          region = ?,
+          region_japanese = ?,
+          main_image = CASE WHEN ? = 1 THEN ? ELSE main_image END,
           is_verified = COALESCE(?, is_verified),
           verified_at = CASE
             WHEN ? = 0 THEN NULL
@@ -135,6 +144,10 @@ export async function updateStation(
       input.descriptionJapanese?.trim() || null,
       input.about?.trim() || null,
       input.aboutJapanese?.trim() || null,
+      input.region?.trim() || null,
+      input.regionJapanese?.trim() || null,
+      input.mainImage === undefined ? 0 : 1,
+      input.mainImage ?? null,
       input.isVerified === undefined ? null : input.isVerified ? 1 : 0,
       input.isVerified === undefined ? null : input.isVerified ? 1 : 0,
       input.isVerified === undefined ? null : input.isVerified ? 1 : 0,

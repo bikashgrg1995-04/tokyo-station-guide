@@ -8,13 +8,16 @@ export interface StationFormValues {
   descriptionJapanese: string;
   about: string;
   aboutJapanese: string;
+  /** Location label on the station page, e.g. "Chiyoda City · Tokyo". */
+  region: string;
+  regionJapanese: string;
   isVerified: boolean;
   /** Date the station was verified, as YYYY-MM-DD. */
   verifiedAt: string;
 }
 
 export type StationFormErrors = Record<
-  keyof StationFormValues | "facilities" | "topPicks",
+  keyof StationFormValues | "facilities" | "topPicks" | "mainImage",
   string
 >;
 
@@ -28,6 +31,9 @@ export function emptyStationErrors(): StationFormErrors {
     descriptionJapanese: "",
     about: "",
     aboutJapanese: "",
+    region: "",
+    regionJapanese: "",
+    mainImage: "",
     facilities: "",
     topPicks: "",
     isVerified: "",
@@ -50,6 +56,8 @@ export function validateStationForm(
     descriptionJapanese,
     about,
     aboutJapanese,
+    region,
+    regionJapanese,
   } = values;
   const errors = emptyStationErrors();
 
@@ -112,6 +120,14 @@ export function validateStationForm(
 
   if (about.length > 150) {
     errors.about = "About must be 150 characters or less.";
+  }
+
+  if (region.length > 100) {
+    errors.region = "Location must be 100 characters or less.";
+  }
+
+  if (regionJapanese.length > 100) {
+    errors.regionJapanese = "Japanese location must be 100 characters or less.";
   }
 
   if (aboutJapanese.length > 150) {

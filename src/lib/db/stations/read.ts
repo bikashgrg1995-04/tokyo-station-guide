@@ -168,6 +168,9 @@ export async function getStationById(
           description_japanese,
           about,
           about_japanese,
+          region,
+          region_japanese,
+          main_image,
           is_verified,
           verified_at,
           created_at,
@@ -183,6 +186,9 @@ export async function getStationById(
         description_japanese: string | null;
         about: string | null;
         about_japanese: string | null;
+        region: string | null;
+        region_japanese: string | null;
+        main_image: string | null;
       }
     >();
 

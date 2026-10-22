@@ -38,9 +38,19 @@ const isDraft = true;
   </nav>
 
   {
-    code && (
+    (code || station.region || station.region_japanese) && (
       <p class="sp-code-row">
-        <span class="sp-code" style={`--c:${codeColor}`}>{code}</span>
+        {code && <span class="sp-code" style={`--c:${codeColor}`}>{code}</span>}
+        {(station.region || station.region_japanese) && (
+          <span
+            class="sp-region"
+            data-pick
+            data-en={station.region ?? ""}
+            data-jp={station.region_japanese ?? ""}
+          >
+            {station.region}
+          </span>
+        )}
       </p>
     )
   }

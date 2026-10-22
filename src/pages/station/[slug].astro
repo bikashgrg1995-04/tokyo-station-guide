@@ -27,6 +27,18 @@ if (!station || Number(station.is_verified) !== 1) {
   });
 }
 
+// Photos come from the R2 custom domain when MEDIA_BASE_URL is set, else from /media.
+const mediaBase =
+  String((env as { MEDIA_BASE_URL?: string }).MEDIA_BASE_URL ?? "")
+    .trim()
+    .replace(/\/+$/, "") || "/media";
+const mainImage = station.main_image;
+const photoSrc = !mainImage
+  ? ""
+  : /^https?:\/\//i.test(mainImage)
+    ? mainImage
+    : `${mediaBase}/${mainImage}`;
+
 const title = `${station.name} Station Guide | Tokyo Station Guide`;
 const description =
   station.description ??
@@ -59,10 +71,16 @@ const description =
     <main class="sp-main">
       <StationHero station={station} />
 
-      <!-- Main photo (added later) -->
-      <div class="sp-photo" role="img" aria-label="Main photo">
-        <span data-i18n="sp.photo">Main photo coming soon</span>
-      </div>
+      <!-- Main photo (uploaded in Admin > Stations > Edit) -->
+      {
+        photoSrc ? (
+          <img class="sp-photo sp-photo-img" src={photoSrc} alt={`${station.name} Station`} fetchpriority="high" />
+        ) : (
+          <div class="sp-photo" role="img" aria-label="Main photo">
+            <span data-i18n="sp.photo">Main photo coming soon</span>
+          </div>
+        )
+      }
 
       <StationQuickNav station={station} />
 

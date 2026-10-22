@@ -894,6 +894,10 @@
   grid-column: span 6;
 }
 
+.admin-station-fields > .span-12 {
+  grid-column: 1 / -1;
+}
+
 .admin-station-fields .admin-form-group {
   min-width: 0;
   margin-bottom: 0;

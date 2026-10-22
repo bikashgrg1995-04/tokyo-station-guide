@@ -73,6 +73,9 @@ export interface StationEditItem extends StationAdminListItem {
   description_japanese: string | null;
   about: string | null;
   about_japanese: string | null;
+  region: string | null;
+  region_japanese: string | null;
+  main_image: string | null;
   facilities: string | null;
   top_picks: string | null;
   connections: string | null;
@@ -99,6 +102,11 @@ export interface CreateStationInput {
   descriptionJapanese?: string | null;
   about?: string | null;
   aboutJapanese?: string | null;
+  /** Location label on the station page, e.g. "Chiyoda City · Tokyo". */
+  region?: string | null;
+  regionJapanese?: string | null;
+  /** Main photo key. undefined = keep the saved one, null = remove it. */
+  mainImage?: string | null;
   facilities?: string | null;
   /** Floor-wise facility entries to save. */
   stationFacilities?: StationFacilityInput[];
@@ -121,6 +129,11 @@ export interface UpdateStationInput {
   descriptionJapanese?: string | null;
   about?: string | null;
   aboutJapanese?: string | null;
+  /** Location label on the station page, e.g. "Chiyoda City · Tokyo". */
+  region?: string | null;
+  regionJapanese?: string | null;
+  /** Main photo key. undefined = keep the saved one, null = remove it. */
+  mainImage?: string | null;
   facilities?: string | null;
   /** Floor-wise facility entries to save. */
   stationFacilities?: StationFacilityInput[];

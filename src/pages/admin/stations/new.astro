@@ -41,7 +41,7 @@ const error = form.formError;
 
     <p>Add a railway or subway station to the Tokyo Station Guide.</p>
 
-    <form method="POST" class="admin-form" id="add-station-form">
+    <form method="POST" enctype="multipart/form-data" class="admin-form" id="add-station-form">
       <!-- Station Details -->
       <section class="admin-panel">
         <div class="admin-panel-body">
@@ -51,7 +51,7 @@ const error = form.formError;
 
           {error && <Alert>{error}</Alert>}
 
-          <StationFormFields values={form.values} errors={errors} />
+          <StationFormFields values={form.values} errors={errors} mainImage={null} />
         </div>
       </section>
 

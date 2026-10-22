@@ -4,6 +4,7 @@
  * grid. The verification switch is part of the grid, so there is no separate
  * verification panel.
  */
+import { topPickImageSrc } from "../../lib/storage/station-images";
 import type {
   StationFormErrors,
   StationFormValues,
@@ -12,9 +13,12 @@ import type {
 export interface Props {
   values: StationFormValues;
   errors: StationFormErrors;
+  /** Main photo saved for this station (R2 key), when editing. */
+  mainImage?: string | null;
 }
 
-const { values, errors } = Astro.props;
+const { values, errors, mainImage = null } = Astro.props;
+const mainImageSrc = topPickImageSrc(mainImage);
 
 const {
   name,
@@ -25,6 +29,8 @@ const {
   descriptionJapanese,
   about,
   aboutJapanese,
+  region,
+  regionJapanese,
   isVerified,
   verifiedAt,
 } = values;
@@ -187,6 +193,82 @@ const {
       errors.description && (
         <small id="description-error" class="admin-form-error">
           {errors.description}
+        </small>
+      )
+    }
+  </div>
+
+  <!-- Location label on the station page -->
+  <div class="admin-form-group span-6">
+    <label for="region">
+      Location <span class="admin-label-hint">shown under the station code, e.g. Chiyoda City · Tokyo</span>
+    </label>
+    <input
+      id="region"
+      name="region"
+      type="text"
+      maxlength="100"
+      placeholder="e.g. Chiyoda City · Tokyo"
+      value={region}
+      aria-invalid={errors.region ? "true" : "false"}
+    />
+    {errors.region && <small class="admin-form-error">{errors.region}</small>}
+  </div>
+
+  <div class="admin-form-group span-6">
+    <label for="region_japanese">Japanese Location</label>
+    <input
+      id="region_japanese"
+      name="region_japanese"
+      type="text"
+      lang="ja"
+      maxlength="100"
+      placeholder="例: 東京・千代田区"
+      value={regionJapanese}
+      aria-invalid={errors.regionJapanese ? "true" : "false"}
+    />
+    {errors.regionJapanese && <small class="admin-form-error">{errors.regionJapanese}</small>}
+  </div>
+
+  <!-- Main photo of the station page -->
+  <div class="admin-form-group span-12">
+    <label for="main_image_file">
+      Main photo <span class="admin-label-hint">station page, PNG, WebP or JPEG up to 2 MB</span>
+    </label>
+
+    {
+      mainImageSrc && (
+        <div class="admin-photo-current">
+          <img src={mainImageSrc} alt="Current main photo" loading="lazy" />
+        </div>
+      )
+    }
+
+    <input
+      id="main_image_file"
+      name="main_image_file"
+      type="file"
+      accept="image/png,image/webp,image/jpeg"
+      aria-invalid={errors.mainImage ? "true" : "false"}
+    />
+
+    {
+      mainImageSrc && (
+        <label class="admin-check-inline">
+          <input type="checkbox" name="remove_main_image" />
+          Remove the current photo
+        </label>
+      )
+    }
+
+    {
+      errors.mainImage ? (
+        <small class="admin-form-error">{errors.mainImage}</small>
+      ) : (
+        <small>
+          {mainImageSrc
+            ? "Choose a new file to replace the current photo."
+            : "Optional. Shown at the top of the station page."}
         </small>
       )
     }
