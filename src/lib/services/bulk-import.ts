@@ -155,6 +155,7 @@ export function buildImportPlan(
   const floors = new Set(snap.floors);
   const exits = new Set(snap.exits);
   const platforms = new Set(snap.platforms);
+  const sides = new Set(snap.sides);
   const floorFacilities = new Set(snap.floorFacilities);
   const stationTopPicks = new Set(snap.stationTopPicks);
 
@@ -201,6 +202,7 @@ export function buildImportPlan(
       (k, row) => floorKept(part(k, 0), String(row.floorName ?? "")));
     const delPlatforms = gone("platform", "platforms",
       (d) => `${d.station_slug}|${d.platform_number}|${d.line_slug ?? ""}`, (k) => stationKept(part(k, 0)));
+    const delSides = gone("side", "sides", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
     const delStationTopPicks = gone("stationTopPick", "station_top_picks",
       (d) => `${d.station_slug}|${d.top_pick_slug}`, (k) => stationKept(part(k, 0)) && !delTopPicks.has(part(k, 1)));
 
@@ -230,6 +232,7 @@ export function buildImportPlan(
       ["floorFacility", "floor_facilities", delFloorFacilities],
       ["exit", "exits", delExits],
       ["platform", "platforms", delPlatforms],
+      ["side", "sides", delSides],
       ["stationTopPick", "station_top_picks", delStationTopPicks],
     ];
     for (const [type, sheet, set] of groups) {
@@ -478,6 +481,8 @@ export function buildImportPlan(
     const regionJa = text(d, "region_japanese", 100, err);
     const address = text(d, "address", 200, err);
     const addressJa = text(d, "address_japanese", 200, err);
+    const sidesNote = text(d, "sides_note", 1500, err);
+    const sidesNoteJa = text(d, "sides_note_japanese", 1500, err);
     const statLinesNote = text(d, "stat_lines_note", 150, err);
     const statLinesNoteJa = text(d, "stat_lines_note_japanese", 150, err);
     const statRidersValue = text(d, "stat_riders_value", 60, err);
@@ -509,7 +514,7 @@ export function buildImportPlan(
 
     const exists = stationSlugs.has(slug);
     stationSlugs.add(slug);
-    record("stations", { t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt, region, regionJa, address, addressJa, statLinesNote, statLinesNoteJa, statRidersValue, statRidersNote, statRidersNoteJa, statOpenedValue, statOpenedNote, statOpenedNoteJa }, slug, exists);
+    record("stations", { t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt, region, regionJa, address, addressJa, statLinesNote, statLinesNoteJa, statRidersValue, statRidersNote, statRidersNoteJa, statOpenedValue, statOpenedNote, statOpenedNoteJa, sidesNote, sidesNoteJa }, slug, exists);
   });
 
   // ---- line_stations ---------------------------------------------------------
@@ -681,6 +686,25 @@ export function buildImportPlan(
     const exists = platforms.has(key);
     platforms.add(key);
     record("platforms", { t: "platform", stationSlug, lineSlug, floorName, number, dest, destJa, notes, notesJa, group, groupJa, sortOrder }, key, exists);
+  });
+
+  // ---- sides -----------------------------------------------------------------
+  eachRow("sides", (d) => `${d.station_slug}|${d.name}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    const name = text(d, "name", 80, err, true) ?? "";
+    const nameJa = text(d, "name_japanese", 80, err);
+    const subtitle = text(d, "subtitle", 120, err);
+    const subtitleJa = text(d, "subtitle_japanese", 120, err);
+    const desc = text(d, "description", 1500, err);
+    const descJa = text(d, "description_japanese", 1500, err);
+    const sortOrder = intField(d, "sort_order", err);
+    if (dup || !name || !stationSlugs.has(stationSlug)) return;
+
+    const key = `${stationSlug}|${name}`;
+    const exists = sides.has(key);
+    sides.add(key);
+    record("sides", { t: "side", stationSlug, name, nameJa, subtitle, subtitleJa, desc, descJa, sortOrder }, key, exists);
   });
 
   // ---- top_picks -------------------------------------------------------------
