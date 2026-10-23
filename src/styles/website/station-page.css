@@ -351,7 +351,7 @@ html[data-lang="jp"] [data-station-en] {
     position: sticky;
     top: 76px;
     display: block;
-    max-height: calc(100dvh - 92px);
+    max-height: calc(100dvh - 96px);
     overflow-y: auto;
     padding: 4px 0;
   }
@@ -371,21 +371,17 @@ html[data-lang="jp"] [data-station-en] {
     color: var(--ink);
     font-size: 14px;
     font-weight: 500;
-    opacity: 0.85;
   }
 
   .sp-toc a:hover {
     background: var(--row-hover);
-    opacity: 1;
   }
 
   .sp-toc a.is-active {
     background: var(--sp-red);
     color: #fff;
     font-weight: 700;
-    opacity: 1;
   }
-
 }
 
 /* ---------- Footer ---------- */

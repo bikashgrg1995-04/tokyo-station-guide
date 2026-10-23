@@ -22,7 +22,8 @@ function applyDates() {
   });
 }
 
-/* Highlight the section that is on screen in the "On this page" list. */
+/* Highlight the section that is under the header in the "On this page" list:
+   the last section whose top has scrolled past the header. */
 function initScrollSpy() {
   var links = {};
 
@@ -30,30 +31,47 @@ function initScrollSpy() {
     links[a.dataset.tocLink] = a;
   });
 
-  var sections = document.querySelectorAll("[data-section]");
+  var sections = Array.prototype.slice.call(document.querySelectorAll("[data-section]"));
 
-  if (!("IntersectionObserver" in window) || !sections.length) {
+  if (!sections.length) {
     return;
   }
 
-  var observer = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) {
-          return;
-        }
+  var ticking = false;
 
-        Object.keys(links).forEach(function (id) {
-          links[id].classList.toggle("is-active", id === entry.target.dataset.section);
-        });
-      });
+  function update() {
+    ticking = false;
+
+    var active = sections[0];
+
+    sections.forEach(function (section) {
+      if (section.getBoundingClientRect().top <= 110) {
+        active = section;
+      }
+    });
+
+    /* Bottom of the page: the last section is the one being read. */
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
+      active = sections[sections.length - 1];
+    }
+
+    Object.keys(links).forEach(function (id) {
+      links[id].classList.toggle("is-active", id === active.dataset.section);
+    });
+  }
+
+  window.addEventListener(
+    "scroll",
+    function () {
+      if (!ticking) {
+        ticking = true;
+        window.requestAnimationFrame(update);
+      }
     },
-    { rootMargin: "-80px 0px -65% 0px" },
+    { passive: true },
   );
 
-  sections.forEach(function (section) {
-    observer.observe(section);
-  });
+  update();
 }
 
 initLang();
