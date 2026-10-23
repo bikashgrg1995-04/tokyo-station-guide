@@ -469,13 +469,15 @@ export function buildImportPlan(
     const slug = slugField(d, "slug", err);
     const name = text(d, "name", 150, err, true) ?? "";
     const nameJa = text(d, "name_japanese", 150, err);
-    const desc = text(d, "description", 1000, err);
-    const descJa = text(d, "description_japanese", 1000, err);
+    const desc = text(d, "description", 2500, err);
+    const descJa = text(d, "description_japanese", 2500, err);
     const about = text(d, "about", 150, err);
     const aboutJa = text(d, "about_japanese", 150, err);
     const locationUrl = urlField(d, "location_url", err);
     const region = text(d, "region", 100, err);
     const regionJa = text(d, "region_japanese", 100, err);
+    const address = text(d, "address", 200, err);
+    const addressJa = text(d, "address_japanese", 200, err);
     const statLinesNote = text(d, "stat_lines_note", 150, err);
     const statLinesNoteJa = text(d, "stat_lines_note_japanese", 150, err);
     const statRidersValue = text(d, "stat_riders_value", 60, err);
@@ -507,7 +509,7 @@ export function buildImportPlan(
 
     const exists = stationSlugs.has(slug);
     stationSlugs.add(slug);
-    record("stations", { t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt, region, regionJa, statLinesNote, statLinesNoteJa, statRidersValue, statRidersNote, statRidersNoteJa, statOpenedValue, statOpenedNote, statOpenedNoteJa }, slug, exists);
+    record("stations", { t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt, region, regionJa, address, addressJa, statLinesNote, statLinesNoteJa, statRidersValue, statRidersNote, statRidersNoteJa, statOpenedValue, statOpenedNote, statOpenedNoteJa }, slug, exists);
   });
 
   // ---- line_stations ---------------------------------------------------------

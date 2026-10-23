@@ -31,6 +31,8 @@ const {
   aboutJapanese,
   region,
   regionJapanese,
+  address,
+  addressJapanese,
   statLinesNote,
   statLinesNoteJapanese,
   statRidersValue,
@@ -236,6 +238,38 @@ const {
       aria-invalid={errors.regionJapanese ? "true" : "false"}
     />
     {errors.regionJapanese && <small class="admin-form-error">{errors.regionJapanese}</small>}
+  </div>
+
+  <!-- Street address in the Overview facts card -->
+  <div class="admin-form-group span-6">
+    <label for="address">
+      Address <span class="admin-label-hint">shown in Overview, e.g. 1-6-5 Marunouchi, Chiyoda City</span>
+    </label>
+    <input
+      id="address"
+      name="address"
+      type="text"
+      maxlength="200"
+      placeholder="e.g. 1-6-5 Marunouchi, Chiyoda City"
+      value={address}
+      aria-invalid={errors.address ? "true" : "false"}
+    />
+    {errors.address && <small class="admin-form-error">{errors.address}</small>}
+  </div>
+
+  <div class="admin-form-group span-6">
+    <label for="address_japanese">Japanese Address</label>
+    <input
+      id="address_japanese"
+      name="address_japanese"
+      type="text"
+      lang="ja"
+      maxlength="200"
+      placeholder="例: 千代田区丸の内1-6-5"
+      value={addressJapanese}
+      aria-invalid={errors.addressJapanese ? "true" : "false"}
+    />
+    {errors.addressJapanese && <small class="admin-form-error">{errors.addressJapanese}</small>}
   </div>
 
   <!-- Main photo of the station page -->

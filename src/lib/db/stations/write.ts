@@ -30,7 +30,9 @@ export async function createStation(
           about,
           about_japanese,
           region,
+          address,
           region_japanese,
+          address_japanese,
           main_image,
           stat_lines_note,
           stat_lines_note_japanese,
@@ -43,7 +45,7 @@ export async function createStation(
           is_verified,
           verified_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE
           WHEN ? = 1 THEN COALESCE(?, date('now'))
           ELSE NULL
         END)
@@ -59,7 +61,9 @@ export async function createStation(
       input.about?.trim() || null,
       input.aboutJapanese?.trim() || null,
       input.region?.trim() || null,
+      input.address?.trim() || null,
       input.regionJapanese?.trim() || null,
+      input.addressJapanese?.trim() || null,
       input.mainImage || null,
       input.statLinesNote?.trim() || null,
       input.statLinesNoteJapanese?.trim() || null,
@@ -139,7 +143,9 @@ export async function updateStation(
           about = ?,
           about_japanese = ?,
           region = ?,
+          address = ?,
           region_japanese = ?,
+          address_japanese = ?,
           main_image = CASE WHEN ? = 1 THEN ? ELSE main_image END,
           stat_lines_note = ?,
           stat_lines_note_japanese = ?,
@@ -169,7 +175,9 @@ export async function updateStation(
       input.about?.trim() || null,
       input.aboutJapanese?.trim() || null,
       input.region?.trim() || null,
+      input.address?.trim() || null,
       input.regionJapanese?.trim() || null,
+      input.addressJapanese?.trim() || null,
       input.mainImage === undefined ? 0 : 1,
       input.mainImage ?? null,
       input.statLinesNote?.trim() || null,

@@ -2,6 +2,7 @@
 import type { StationPageData } from "../../../lib/db/station-page";
 import { ICONS, type StationSectionDef } from "./sections";
 import PlatformMap from "./PlatformMap.astro";
+import StationOverview from "./StationOverview.astro";
 
 export interface Props {
   section: StationSectionDef;
@@ -25,14 +26,7 @@ const isMap = section.id === "map" && station.platforms.length > 0;
       isMap ? (
         <PlatformMap platforms={station.platforms} />
       ) : isOverview && (station.description || station.description_japanese) ? (
-        <p
-          class="sp-text"
-          data-pick
-          data-en={station.description ?? ""}
-          data-jp={station.description_japanese ?? ""}
-        >
-          {station.description}
-        </p>
+        <StationOverview station={station} />
       ) : isLines && station.lines.length > 0 ? (
         <ul class="sp-line-list">
           {station.lines.map((line) => (

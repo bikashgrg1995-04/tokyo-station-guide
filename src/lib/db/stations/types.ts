@@ -74,7 +74,9 @@ export interface StationEditItem extends StationAdminListItem {
   about: string | null;
   about_japanese: string | null;
   region: string | null;
+  address: string | null;
   region_japanese: string | null;
+  address_japanese: string | null;
   main_image: string | null;
   stat_lines_note: string | null;
   stat_lines_note_japanese: string | null;
@@ -112,7 +114,9 @@ export interface CreateStationInput {
   aboutJapanese?: string | null;
   /** Location label on the station page, e.g. "Chiyoda City · Tokyo". */
   region?: string | null;
+  address?: string | null;
   regionJapanese?: string | null;
+  addressJapanese?: string | null;
   /** Main photo key. undefined = keep the saved one, null = remove it. */
   mainImage?: string | null;
   /** Stat cards under "At this station". Blank hides the card. */
@@ -148,7 +152,9 @@ export interface UpdateStationInput {
   aboutJapanese?: string | null;
   /** Location label on the station page, e.g. "Chiyoda City · Tokyo". */
   region?: string | null;
+  address?: string | null;
   regionJapanese?: string | null;
+  addressJapanese?: string | null;
   /** Main photo key. undefined = keep the saved one, null = remove it. */
   mainImage?: string | null;
   /** Stat cards under "At this station". Blank hides the card. */

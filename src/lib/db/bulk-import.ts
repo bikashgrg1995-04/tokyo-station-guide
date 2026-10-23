@@ -87,7 +87,7 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
       keyed(`SELECT slug AS k, name, name_japanese AS nameJa, description AS "desc",
                     description_japanese AS descJa, about, about_japanese AS aboutJa,
                     location_url AS locationUrl, is_verified AS isVerified, verified_at AS verifiedAt,
-                    region, region_japanese AS regionJa,
+                    region, region_japanese AS regionJa, address, address_japanese AS addressJa,
                     stat_lines_note AS statLinesNote, stat_lines_note_japanese AS statLinesNoteJa,
                     stat_riders_value AS statRidersValue, stat_riders_note AS statRidersNote,
                     stat_riders_note_japanese AS statRidersNoteJa,
@@ -249,6 +249,8 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
           ["verified_at", op.verifiedAt],
           ["region", op.region],
           ["region_japanese", op.regionJa],
+          ["address", op.address],
+          ["address_japanese", op.addressJa],
           ["stat_lines_note", op.statLinesNote],
           ["stat_lines_note_japanese", op.statLinesNoteJa],
           ["stat_riders_value", op.statRidersValue],
@@ -258,7 +260,7 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
           ["stat_opened_note", op.statOpenedNote],
           ["stat_opened_note_japanese", op.statOpenedNoteJa],
         ],
-        21,
+        23,
       );
       return [
         p(
@@ -267,15 +269,16 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
               about_japanese, location_url, is_verified, verified_at,
               region, region_japanese, stat_lines_note, stat_lines_note_japanese,
               stat_riders_value, stat_riders_note, stat_riders_note_japanese,
-              stat_opened_value, stat_opened_note, stat_opened_note_japanese)
+              stat_opened_value, stat_opened_note, stat_opened_note_japanese,
+              address, address_japanese)
            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, COALESCE(?9, 0), ?10,
-                   ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
+                   ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)
            ON CONFLICT(slug) DO UPDATE SET name = excluded.name${u.sql}, updated_at = CURRENT_TIMESTAMP`,
           op.slug, op.name, n(op.nameJa), n(op.desc), n(op.descJa), n(op.about), n(op.aboutJa),
           n(op.locationUrl), n(op.isVerified), n(op.verifiedAt),
           n(op.region), n(op.regionJa), n(op.statLinesNote), n(op.statLinesNoteJa),
           n(op.statRidersValue), n(op.statRidersNote), n(op.statRidersNoteJa),
-          n(op.statOpenedValue), n(op.statOpenedNote), n(op.statOpenedNoteJa), ...u.params,
+          n(op.statOpenedValue), n(op.statOpenedNote), n(op.statOpenedNoteJa), n(op.address), n(op.addressJa), ...u.params,
         ),
       ];
     }

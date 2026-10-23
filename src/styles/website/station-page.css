@@ -811,3 +811,75 @@ html[data-lang="jp"] [data-station-en] {
     font-size: 9.5px;
   }
 }
+
+/* ---------- Overview: text + facts card ---------- */
+.sp-ov {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+.sp-ov-text {
+  display: grid;
+  gap: 14px;
+}
+
+.sp-ov-text .sp-text {
+  max-width: none;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.sp-ov-card {
+  padding: 8px 16px 16px;
+  border-radius: 14px;
+  background: var(--row-hover);
+}
+
+.sp-ov-card dl {
+  margin: 0;
+}
+
+.sp-ov-card dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--row-edge);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.sp-ov-card dt {
+  flex: 0 0 auto;
+  max-width: 38%;
+  color: var(--muted);
+}
+
+.sp-ov-card dd {
+  margin: 0;
+  text-align: right;
+}
+
+.sp-ov-map {
+  display: block;
+  margin-top: 14px;
+  padding: 11px 16px;
+  border-radius: 999px;
+  background: var(--sp-red);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.sp-ov-map:hover {
+  filter: brightness(1.08);
+}
+
+@media (min-width: 760px) {
+  .sp-ov:not(.sp-ov-single) {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 24px;
+  }
+}

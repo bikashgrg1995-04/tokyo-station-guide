@@ -11,6 +11,8 @@ export interface StationFormValues {
   /** Location label on the station page, e.g. "Chiyoda City · Tokyo". */
   region: string;
   regionJapanese: string;
+  address: string;
+  addressJapanese: string;
   statLinesNote: string;
   statLinesNoteJapanese: string;
   statRidersValue: string;
@@ -40,7 +42,9 @@ export function emptyStationErrors(): StationFormErrors {
     about: "",
     aboutJapanese: "",
     region: "",
+    address: "",
     regionJapanese: "",
+    addressJapanese: "",
     mainImage: "",
     statLinesNote: "",
     statLinesNoteJapanese: "",
@@ -73,7 +77,9 @@ export function validateStationForm(
     about,
     aboutJapanese,
     region,
+    address,
     regionJapanese,
+    addressJapanese,
   } = values;
   const errors = emptyStationErrors();
 
@@ -125,13 +131,13 @@ export function validateStationForm(
     }
   }
 
-  if (description.length > 1000) {
-    errors.description = "Description must be 1000 characters or less.";
+  if (description.length > 2500) {
+    errors.description = "Description must be 2500 characters or less.";
   }
 
-  if (descriptionJapanese.length > 1000) {
+  if (descriptionJapanese.length > 2500) {
     errors.descriptionJapanese =
-      "Japanese description must be 1000 characters or less.";
+      "Japanese description must be 2500 characters or less.";
   }
 
   if (about.length > 150) {
@@ -176,6 +182,14 @@ export function validateStationForm(
 
   if (regionJapanese.length > 100) {
     errors.regionJapanese = "Japanese location must be 100 characters or less.";
+  }
+
+  if (address.length > 200) {
+    errors.address = "Address must be 200 characters or less.";
+  }
+
+  if (addressJapanese.length > 200) {
+    errors.addressJapanese = "Japanese address must be 200 characters or less.";
   }
 
   if (aboutJapanese.length > 150) {

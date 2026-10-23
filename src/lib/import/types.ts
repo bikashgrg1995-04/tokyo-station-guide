@@ -84,7 +84,7 @@ export interface DeleteOp {
 export type UpsertOp =
   | { t: "operator"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; url: Opt<string> }
   | { t: "line"; slug: string; operatorSlug: string; name: string; nameJa: Opt<string>; code: Opt<string>; color: Opt<string>; lineType: Opt<string>; status: Opt<string>; desc: Opt<string>; descJa: Opt<string> }
-  | { t: "station"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; about: Opt<string>; aboutJa: Opt<string>; locationUrl: Opt<string>; isVerified: Opt<number>; verifiedAt: Opt<string>; region: Opt<string>; regionJa: Opt<string>; statLinesNote: Opt<string>; statLinesNoteJa: Opt<string>; statRidersValue: Opt<string>; statRidersNote: Opt<string>; statRidersNoteJa: Opt<string>; statOpenedValue: Opt<string>; statOpenedNote: Opt<string>; statOpenedNoteJa: Opt<string> }
+  | { t: "station"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; about: Opt<string>; aboutJa: Opt<string>; locationUrl: Opt<string>; isVerified: Opt<number>; verifiedAt: Opt<string>; region: Opt<string>; regionJa: Opt<string>; address: Opt<string>; addressJa: Opt<string>; statLinesNote: Opt<string>; statLinesNoteJa: Opt<string>; statRidersValue: Opt<string>; statRidersNote: Opt<string>; statRidersNoteJa: Opt<string>; statOpenedValue: Opt<string>; statOpenedNote: Opt<string>; statOpenedNoteJa: Opt<string> }
   | { t: "lineStation"; lineSlug: string; stationSlug: string; order: number; code: Opt<string> }
   | { t: "facility"; slug: string; name: string; nameJa: Opt<string>; sortOrder: Opt<number>; category: Opt<string> }
   | { t: "floor"; stationSlug: string; name: string; nameJa: Opt<string>; floorOrder: Opt<number> }

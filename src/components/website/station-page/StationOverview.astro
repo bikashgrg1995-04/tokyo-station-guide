@@ -1,0 +1,122 @@
+---
+// Overview: the description (left) and a facts card (right) built from data
+// the station already has: opened, operators, address, station codes, riders.
+import type { StationPageData } from "../../../lib/db/station-page";
+
+export interface Props {
+  station: StationPageData;
+}
+
+const { station } = Astro.props;
+
+const paragraphs = (value: string | null) =>
+  (value ?? "").split(/\n+/).map((p) => p.trim()).filter(Boolean);
+const en = paragraphs(station.description);
+const ja = paragraphs(station.description_japanese);
+const count = Math.max(en.length, ja.length);
+const texts = Array.from({ length: count }, (_, i) => ({
+  en: en[i] ?? ja[i] ?? "",
+  ja: ja[i] ?? "",
+}));
+
+// "Opened (Marunouchi building)" → "Marunouchi building"
+const inBrackets = (note: string | null) => {
+  if (!note) return "";
+  const m = note.match(/\(([^)]+)\)|（([^）]+)）/);
+  return m ? (m[1] ?? m[2]) : note;
+};
+const joinNote = (value: string | null, note: string | null) => {
+  if (!value) return "";
+  const extra = inBrackets(note);
+  return extra ? `${value} (${extra})` : value;
+};
+
+interface Fact {
+  key: string;
+  label: string;
+  en: string;
+  ja: string;
+}
+const facts: Fact[] = [];
+
+const opened = joinNote(station.stat_opened_value, station.stat_opened_note);
+const openedJa = joinNote(station.stat_opened_value, station.stat_opened_note_japanese);
+if (opened) facts.push({ key: "opened", label: "Opened", en: opened, ja: openedJa || opened });
+
+const operators: { en: string; ja: string }[] = [];
+for (const line of station.lines) {
+  if (line.operator_name && !operators.some((o) => o.en === line.operator_name)) {
+    operators.push({ en: line.operator_name, ja: line.operator_name_japanese ?? line.operator_name });
+  }
+}
+if (operators.length) {
+  facts.push({
+    key: "operators",
+    label: "Operators",
+    en: operators.map((o) => o.en).join(" · "),
+    ja: operators.map((o) => o.ja).join(" · "),
+  });
+}
+
+if (station.address) {
+  facts.push({
+    key: "address",
+    label: "Address",
+    en: station.address,
+    ja: station.address_japanese || station.address,
+  });
+}
+
+const coded = station.lines.filter((l) => l.station_code);
+if (coded.length) {
+  facts.push({
+    key: "codes",
+    label: "Station codes",
+    en: coded.map((l) => `${l.station_code} (${l.name})`).join(" · "),
+    ja: coded.map((l) => `${l.station_code}（${l.name_japanese || l.name}）`).join(" · "),
+  });
+}
+
+if (station.stat_riders_value) {
+  const note = station.stat_riders_note;
+  const noteJa = station.stat_riders_note_japanese || note;
+  facts.push({
+    key: "riders",
+    label: "Daily passengers",
+    en: note ? `${station.stat_riders_value} · ${note}` : station.stat_riders_value,
+    ja: noteJa ? `${station.stat_riders_value} · ${noteJa}` : station.stat_riders_value,
+  });
+}
+---
+
+<div class:list={["sp-ov", { "sp-ov-single": facts.length === 0 && !station.location_url }]}>
+  <div class="sp-ov-text">
+    {
+      texts.map((t) => (
+        <p class="sp-text" data-pick data-en={t.en} data-jp={t.ja}>{t.en}</p>
+      ))
+    }
+  </div>
+
+  {
+    (facts.length > 0 || station.location_url) && (
+      <aside class="sp-ov-card">
+        {facts.length > 0 && (
+          <dl>
+            {facts.map((f) => (
+              <div>
+                <dt data-i18n={`sp.ov.${f.key}`}>{f.label}</dt>
+                <dd data-pick data-en={f.en} data-jp={f.ja}>{f.en}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        {station.location_url && (
+          <a class="sp-ov-map" href={station.location_url} target="_blank" rel="noopener noreferrer">
+            <span data-i18n="sp.openMap">Open in Google Maps</span>
+          </a>
+        )}
+      </aside>
+    )
+  }
+</div>

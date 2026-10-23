@@ -44,6 +44,8 @@ export interface StationPageData {
   location_url: string | null;
   region: string | null;
   region_japanese: string | null;
+  address: string | null;
+  address_japanese: string | null;
   main_image: string | null;
   updated_at: string | null;
   stat_lines_note: string | null;
@@ -66,7 +68,7 @@ export async function getStationPage(
   const station = await db
     .prepare(
       `SELECT id, slug, name, name_japanese, description, description_japanese,
-              is_verified, verified_at, location_url, region, region_japanese,
+              is_verified, verified_at, location_url, region, region_japanese, address, address_japanese,
               main_image, updated_at,
               stat_lines_note, stat_lines_note_japanese,
               stat_riders_value, stat_riders_note, stat_riders_note_japanese,

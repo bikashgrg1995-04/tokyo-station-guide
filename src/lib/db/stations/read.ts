@@ -169,7 +169,9 @@ export async function getStationById(
           about,
           about_japanese,
           region,
+          address,
           region_japanese,
+          address_japanese,
           main_image,
           stat_lines_note,
           stat_lines_note_japanese,
@@ -195,7 +197,9 @@ export async function getStationById(
         about: string | null;
         about_japanese: string | null;
         region: string | null;
+        address: string | null;
         region_japanese: string | null;
+        address_japanese: string | null;
         main_image: string | null;
         stat_lines_note: string | null;
         stat_lines_note_japanese: string | null;
