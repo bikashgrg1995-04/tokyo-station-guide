@@ -187,7 +187,8 @@ export function buildImportPlan(
     const delOperators = gone("operator", "operators", (d) => d.slug);
     const delLines = gone("line", "lines", (d) => d.slug);
     const delStations = gone("station", "stations", (d) => d.slug);
-    const delFacilities = gone("facility", "facilities", (d) => d.slug);
+    // Facilities are managed in Admin > Facilities only; an import never changes or deletes them.
+    const delFacilities = new Set<string>();
     const delTopPicks = gone("topPick", "top_picks", (d) => d.slug);
 
     const stationKept = (st: string) => !delStations.has(st);
@@ -225,7 +226,6 @@ export function buildImportPlan(
       ["station", "stations", delStations],
       ["line", "lines", delLines],
       ["operator", "operators", delOperators],
-      ["facility", "facilities", delFacilities],
       ["topPick", "top_picks", delTopPicks],
       ["lineStation", "line_stations", delLineStations],
       ["floor", "floors", delFloors],
@@ -564,27 +564,11 @@ export function buildImportPlan(
   }
 
   // ---- facilities ------------------------------------------------------------
-  const facNameSeen = new Map<string, string>();
-  eachRow("facilities", (d) => d.slug, (d, err, dup) => {
-    const slug = slugField(d, "slug", err);
-    const name = text(d, "name", 150, err, true) ?? "";
-    const nameJa = text(d, "name_japanese", 150, err);
-    const sortOrder = intField(d, "sort_order", err);
-    const category = oneOf(d, "category", FACILITY_CATEGORY_IDS, err);
-
-    const owner = facilityNames.get(name.toLowerCase());
-    const sameName = facNameSeen.get(name.toLowerCase());
-    if (name && ((owner && owner !== slug) || (sameName && sameName !== slug))) {
-      err(`Another facility already uses the name "${name}".`);
-    }
-    facNameSeen.set(name.toLowerCase(), slug);
-    if (dup || !slug) return;
-
-    const exists = facilitySlugs.has(slug);
-    facilitySlugs.add(slug);
-    facilityNames.set(name.toLowerCase(), slug);
-    record("facilities", { t: "facility", slug, name, nameJa, sortOrder, category }, slug, exists);
-  });
+  // Never imported: facilities (icons, groups, names) are managed in Admin > Facilities.
+  // floor_facilities may only use facility slugs that already exist there.
+  if ((raw.facilities ?? []).length > 1) {
+    warnings.push("The facilities sheet is ignored: facilities are managed in Admin > Facilities, an import never changes or deletes them.");
+  }
 
   // ---- floors ----------------------------------------------------------------
   eachRow("floors", (d) => `${d.station_slug}|${d.name}`, (d, err, dup) => {

@@ -25,7 +25,6 @@ export const SHEET_ORDER: SheetName[] = [
   "lines",
   "stations",
   "line_stations",
-  "facilities",
   "floors",
   "floor_facilities",
   "exits",
