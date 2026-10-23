@@ -1,3 +1,4 @@
+import { FACILITY_CATEGORY_IDS } from "../facility-categories";
 import {
   COMMENT_PREFIX,
   FACILITY_LOCATIONS,
@@ -473,6 +474,16 @@ export function buildImportPlan(
     const about = text(d, "about", 150, err);
     const aboutJa = text(d, "about_japanese", 150, err);
     const locationUrl = urlField(d, "location_url", err);
+    const region = text(d, "region", 100, err);
+    const regionJa = text(d, "region_japanese", 100, err);
+    const statLinesNote = text(d, "stat_lines_note", 150, err);
+    const statLinesNoteJa = text(d, "stat_lines_note_japanese", 150, err);
+    const statRidersValue = text(d, "stat_riders_value", 60, err);
+    const statRidersNote = text(d, "stat_riders_note", 150, err);
+    const statRidersNoteJa = text(d, "stat_riders_note_japanese", 150, err);
+    const statOpenedValue = text(d, "stat_opened_value", 60, err);
+    const statOpenedNote = text(d, "stat_opened_note", 150, err);
+    const statOpenedNoteJa = text(d, "stat_opened_note_japanese", 150, err);
 
     let isVerified: Opt<number> = "is_verified" in d ? null : undefined;
     const rawVerified = (d.is_verified ?? "").toLowerCase();
@@ -496,7 +507,7 @@ export function buildImportPlan(
 
     const exists = stationSlugs.has(slug);
     stationSlugs.add(slug);
-    record("stations", { t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt }, slug, exists);
+    record("stations", { t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt, region, regionJa, statLinesNote, statLinesNoteJa, statRidersValue, statRidersNote, statRidersNoteJa, statOpenedValue, statOpenedNote, statOpenedNoteJa }, slug, exists);
   });
 
   // ---- line_stations ---------------------------------------------------------
@@ -552,6 +563,7 @@ export function buildImportPlan(
     const name = text(d, "name", 150, err, true) ?? "";
     const nameJa = text(d, "name_japanese", 150, err);
     const sortOrder = intField(d, "sort_order", err);
+    const category = oneOf(d, "category", FACILITY_CATEGORY_IDS, err);
 
     const owner = facilityNames.get(name.toLowerCase());
     const sameName = facNameSeen.get(name.toLowerCase());
@@ -564,7 +576,7 @@ export function buildImportPlan(
     const exists = facilitySlugs.has(slug);
     facilitySlugs.add(slug);
     facilityNames.set(name.toLowerCase(), slug);
-    record("facilities", { t: "facility", slug, name, nameJa, sortOrder }, slug, exists);
+    record("facilities", { t: "facility", slug, name, nameJa, sortOrder, category }, slug, exists);
   });
 
   // ---- floors ----------------------------------------------------------------
@@ -658,13 +670,15 @@ export function buildImportPlan(
     const destJa = text(d, "destinations_japanese", 500, err);
     const notes = text(d, "notes", 2000, err);
     const notesJa = text(d, "notes_japanese", 2000, err);
+    const group = text(d, "platform_group", 80, err);
+    const groupJa = text(d, "platform_group_japanese", 80, err);
     const sortOrder = intField(d, "sort_order", err);
     if (dup || !number || !stationSlugs.has(stationSlug)) return;
 
     const key = `${stationSlug}|${number}|${lineSlug ?? ""}`;
     const exists = platforms.has(key);
     platforms.add(key);
-    record("platforms", { t: "platform", stationSlug, lineSlug, floorName, number, dest, destJa, notes, notesJa, sortOrder }, key, exists);
+    record("platforms", { t: "platform", stationSlug, lineSlug, floorName, number, dest, destJa, notes, notesJa, group, groupJa, sortOrder }, key, exists);
   });
 
   // ---- top_picks -------------------------------------------------------------
