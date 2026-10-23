@@ -47,6 +47,8 @@ const formValues =
         destinationsJapanese: editPlatform.destinations_japanese ?? "",
         notes: editPlatform.notes ?? "",
         notesJapanese: editPlatform.notes_japanese ?? "",
+        group: editPlatform.platform_group ?? "",
+        groupJapanese: editPlatform.platform_group_japanese ?? "",
         sortOrder: String(editPlatform.sort_order),
       }
     : values;
@@ -166,6 +168,8 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
                         data-line-id={platform.line_id ?? ""}
                         data-notes={platform.notes ?? ""}
                         data-notes-japanese={platform.notes_japanese ?? ""}
+                        data-group={platform.platform_group ?? ""}
+                        data-group-japanese={platform.platform_group_japanese ?? ""}
                         data-sort-order={platform.sort_order}
                       >
                         Edit
@@ -335,6 +339,33 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
         />
         {errors.destinationsJapanese && (
           <small class="admin-field-error">{errors.destinationsJapanese}</small>
+        )}
+      </div>
+
+      <div class="admin-form-group">
+        <label for="platform_group">Map group (optional)</label>
+        <input
+          id="platform_group"
+          name="platform_group"
+          maxlength="80"
+          placeholder="e.g. Deep underground (blank = main diagram)"
+          value={formValues.group}
+        />
+        {errors.group && <small class="admin-field-error">{errors.group}</small>}
+      </div>
+
+      <div class="admin-form-group">
+        <label for="platform_group_japanese">Japanese map group (optional)</label>
+        <input
+          id="platform_group_japanese"
+          name="platform_group_japanese"
+          lang="ja"
+          maxlength="80"
+          placeholder="例: 地下深部"
+          value={formValues.groupJapanese}
+        />
+        {errors.groupJapanese && (
+          <small class="admin-field-error">{errors.groupJapanese}</small>
         )}
       </div>
 

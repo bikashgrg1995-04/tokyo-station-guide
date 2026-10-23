@@ -37,6 +37,8 @@ function emptyValues(): StationPlatformFormValues {
     destinationsJapanese: "",
     notes: "",
     notesJapanese: "",
+    group: "",
+    groupJapanese: "",
     sortOrder: "0",
   };
 }
@@ -49,6 +51,8 @@ function readPlatformForm(formData: FormData): StationPlatformFormValues {
     destinationsJapanese: readText(formData, "destinations_japanese"),
     notes: readText(formData, "notes"),
     notesJapanese: readText(formData, "notes_japanese"),
+    group: readText(formData, "platform_group"),
+    groupJapanese: readText(formData, "platform_group_japanese"),
     sortOrder: readText(formData, "sort_order"),
   };
 }
@@ -63,6 +67,8 @@ function toPlatformInput(
     destinationsJapanese: values.destinationsJapanese || null,
     notes: values.notes || null,
     notesJapanese: values.notesJapanese || null,
+    group: values.group || null,
+    groupJapanese: values.groupJapanese || null,
     sortOrder: Number(values.sortOrder),
   };
 }
@@ -103,6 +109,8 @@ export async function handleStationPlatforms(
         destinationsJapanese: platform.destinations_japanese ?? "",
         notes: platform.notes ?? "",
         notesJapanese: platform.notes_japanese ?? "",
+        group: platform.platform_group ?? "",
+        groupJapanese: platform.platform_group_japanese ?? "",
         sortOrder: String(platform.sort_order),
       };
     } else {

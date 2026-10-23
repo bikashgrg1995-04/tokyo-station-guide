@@ -1,6 +1,7 @@
 ---
 import type { StationPageData } from "../../../lib/db/station-page";
 import { ICONS, type StationSectionDef } from "./sections";
+import PlatformMap from "./PlatformMap.astro";
 
 export interface Props {
   section: StationSectionDef;
@@ -10,6 +11,7 @@ export interface Props {
 const { section, station } = Astro.props;
 const isLines = section.id === "lines";
 const isOverview = section.id === "overview";
+const isMap = section.id === "map" && station.platforms.length > 0;
 ---
 
 <section class="sp-section" id={section.id} data-section={section.id}>
@@ -20,7 +22,9 @@ const isOverview = section.id === "overview";
 
   <div class="sp-section-body">
     {
-      isOverview && (station.description || station.description_japanese) ? (
+      isMap ? (
+        <PlatformMap platforms={station.platforms} />
+      ) : isOverview && (station.description || station.description_japanese) ? (
         <p
           class="sp-text"
           data-pick
@@ -49,7 +53,7 @@ const isOverview = section.id === "overview";
     }
 
     {
-      !(isOverview || (isLines && station.lines.length > 0)) && (
+      !(isMap || isOverview || (isLines && station.lines.length > 0)) && (
         <p class="sp-soon" data-i18n="sp.soon">Content for this section is coming soon.</p>
       )
     }

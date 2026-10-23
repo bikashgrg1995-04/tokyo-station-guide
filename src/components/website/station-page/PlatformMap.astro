@@ -1,0 +1,145 @@
+---
+// Platform map: one coloured strip per platform island, drawn from the
+// station's platforms (Admin > Stations > Platforms). Platforms that share a
+// "Map group" become their own diagram (e.g. "Deep underground").
+import type { StationPagePlatform } from "../../../lib/db/station-page";
+
+export interface Props {
+  platforms: StationPagePlatform[];
+}
+
+const { platforms } = Astro.props;
+const FALLBACK = "#8a93a0";
+
+interface Strip {
+  numbers: string[];
+  raw: string;
+  color: string;
+  labelEn: string;
+  labelJa: string;
+  lineKey: string;
+  lineEn: string;
+  lineJa: string;
+}
+
+interface Group {
+  key: string;
+  en: string;
+  ja: string;
+  strips: Strip[];
+}
+
+// "1・2", "1/2", "3–4" → stacked numbers 1 / 2. A single "U 3" stays whole.
+function splitNumbers(value: string): string[] {
+  const parts = value
+    .split(/\s*[・/,、–—-]\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return parts.length ? parts : [value];
+}
+
+const groups: Group[] = [];
+
+for (const p of platforms) {
+  const key = (p.group ?? "").trim();
+  let group = groups.find((g) => g.key === key);
+  if (!group) {
+    group = { key, en: key, ja: p.group_japanese ?? "", strips: [] };
+    groups.push(group);
+  }
+  if (!group.ja && p.group_japanese) group.ja = p.group_japanese;
+
+  const lineEn = p.line_name ?? "";
+  const lineJa = p.line_name_japanese ?? lineEn;
+  const destEn = p.destinations ?? "";
+  const destJa = p.destinations_japanese ?? destEn;
+
+  group.strips.push({
+    numbers: splitNumbers(p.platform_number),
+    raw: p.platform_number,
+    color: p.line_color || FALLBACK,
+    labelEn: [lineEn, destEn && `to ${destEn}`].filter(Boolean).join(" · "),
+    labelJa: [lineJa, destJa].filter(Boolean).join(" · "),
+    lineKey: lineEn || "—",
+    lineEn,
+    lineJa,
+  });
+}
+
+// Main diagram first, grouped diagrams after it.
+groups.sort((a, b) => Number(a.key !== "") === Number(b.key !== "") ? 0 : a.key === "" ? -1 : 1);
+
+// Legend: one row per line in a diagram, with the platforms it uses.
+function legend(group: Group) {
+  const rows: { color: string; numbers: string[]; en: string; ja: string }[] = [];
+  for (const s of group.strips) {
+    let row = rows.find((r) => r.en === s.lineEn && r.color === s.color);
+    if (!row) {
+      row = { color: s.color, numbers: [], en: s.lineEn, ja: s.lineJa };
+      rows.push(row);
+    }
+    row.numbers.push(...s.numbers);
+  }
+  return rows.filter((r) => r.en);
+}
+
+// 1,2,9,10 → "1–2, 9–10" (plain numbers only; anything else is listed as typed).
+function span(numbers: string[]): string {
+  if (!numbers.every((n) => /^\d+$/.test(n))) return numbers.join(", ");
+  const nums = [...new Set(numbers.map(Number))].sort((a, b) => a - b);
+  const out: string[] = [];
+  for (let i = 0; i < nums.length; ) {
+    let j = i;
+    while (j + 1 < nums.length && nums[j + 1] === nums[j] + 1) j++;
+    out.push(j > i ? `${nums[i]}–${nums[j]}` : String(nums[i]));
+    i = j + 1;
+  }
+  return out.join(", ");
+}
+---
+
+<div class="sp-pm">
+  {
+    groups.map((group) => (
+      <figure class="sp-pm-block" style={`--n:${group.strips.length}`}>
+        {group.key && (
+          <figcaption class="sp-pm-group">
+            <b data-pick data-en={group.en} data-jp={group.ja}>{group.en}</b>
+          </figcaption>
+        )}
+
+        <div class="sp-pm-board" role="img" aria-label={group.key || "Platform map"}>
+          {group.strips.map((s) => (
+            <div class="sp-pm-strip" style={`--c:${s.color}`} title={s.labelEn}>
+              <span class="sp-pm-no">
+                {s.numbers.map((n) => <b>{n}</b>)}
+              </span>
+              <span class="sp-pm-bar">
+                <span class="sp-pm-label" data-pick data-en={s.labelEn} data-jp={s.labelJa}>
+                  {s.labelEn}
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <ul class="sp-pm-legend">
+          {legend(group).map((row) => (
+            <li style={`--c:${row.color}`}>
+              <i></i>
+              <span>
+                {span(row.numbers)} ·{" "}
+                <span data-pick data-en={row.en} data-jp={row.ja}>{row.en}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </figure>
+    ))
+  }
+
+  <p class="sp-pm-note" data-i18n="sp.pm.note">
+    Simplified diagram, not to scale. Platform numbers and directions follow the station's
+    own boards; trains can change platforms, so check the departure board.
+  </p>
+</div>

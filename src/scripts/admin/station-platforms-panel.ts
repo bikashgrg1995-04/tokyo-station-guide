@@ -45,6 +45,8 @@ function openModal(edit = false, button?: HTMLButtonElement) {
       line_id: button.dataset.lineId,
       notes: button.dataset.notes,
       notes_japanese: button.dataset.notesJapanese,
+      platform_group: button.dataset.group,
+      platform_group_japanese: button.dataset.groupJapanese,
       sort_order: button.dataset.sortOrder,
     };
 

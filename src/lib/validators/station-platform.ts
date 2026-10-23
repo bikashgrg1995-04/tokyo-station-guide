@@ -5,6 +5,8 @@ export interface StationPlatformFormValues {
   destinationsJapanese: string;
   notes: string;
   notesJapanese: string;
+  group: string;
+  groupJapanese: string;
   sortOrder: string;
 }
 
@@ -21,6 +23,8 @@ export function emptyStationPlatformErrors(): StationPlatformFormErrors {
     destinationsJapanese: "",
     notes: "",
     notesJapanese: "",
+    group: "",
+    groupJapanese: "",
     sortOrder: "",
   };
 }
@@ -50,6 +54,14 @@ export function validateStationPlatformForm(
 
   if (values.lineId && (!Number.isInteger(Number(values.lineId)) || Number(values.lineId) <= 0)) {
     errors.lineId = "Select a valid railway line.";
+  }
+
+  if (values.group.length > 80) {
+    errors.group = "Group name must be 80 characters or less.";
+  }
+
+  if (values.groupJapanese.length > 80) {
+    errors.groupJapanese = "Japanese group name must be 80 characters or less.";
   }
 
   if (values.notes.length > 2000) {
