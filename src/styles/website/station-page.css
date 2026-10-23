@@ -76,8 +76,12 @@ html[data-lang="jp"] body {
   display: none;
 }
 
-.sp-header .icon-moon {
+.sp-header .top-icon svg.icon-moon {
   display: block;
+  /* solid crescent, one colour (fill and edge the same) */
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1;
 }
 
 :root[data-theme="dark"] .sp-header .icon-sun {
