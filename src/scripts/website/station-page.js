@@ -48,7 +48,7 @@ function initScrollSpy() {
         });
       });
     },
-    { rootMargin: "-20% 0px -70% 0px" },
+    { rootMargin: "-80px 0px -65% 0px" },
   );
 
   sections.forEach(function (section) {
