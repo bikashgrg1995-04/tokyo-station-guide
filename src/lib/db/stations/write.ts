@@ -32,10 +32,18 @@ export async function createStation(
           region,
           region_japanese,
           main_image,
+          stat_lines_note,
+          stat_lines_note_japanese,
+          stat_riders_value,
+          stat_riders_note,
+          stat_riders_note_japanese,
+          stat_opened_value,
+          stat_opened_note,
+          stat_opened_note_japanese,
           is_verified,
           verified_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE
           WHEN ? = 1 THEN COALESCE(?, date('now'))
           ELSE NULL
         END)
@@ -53,6 +61,14 @@ export async function createStation(
       input.region?.trim() || null,
       input.regionJapanese?.trim() || null,
       input.mainImage || null,
+      input.statLinesNote?.trim() || null,
+      input.statLinesNoteJapanese?.trim() || null,
+      input.statRidersValue?.trim() || null,
+      input.statRidersNote?.trim() || null,
+      input.statRidersNoteJapanese?.trim() || null,
+      input.statOpenedValue?.trim() || null,
+      input.statOpenedNote?.trim() || null,
+      input.statOpenedNoteJapanese?.trim() || null,
       input.isVerified ? 1 : 0,
       input.isVerified ? 1 : 0,
       input.verifiedAt || null,
@@ -125,6 +141,14 @@ export async function updateStation(
           region = ?,
           region_japanese = ?,
           main_image = CASE WHEN ? = 1 THEN ? ELSE main_image END,
+          stat_lines_note = ?,
+          stat_lines_note_japanese = ?,
+          stat_riders_value = ?,
+          stat_riders_note = ?,
+          stat_riders_note_japanese = ?,
+          stat_opened_value = ?,
+          stat_opened_note = ?,
+          stat_opened_note_japanese = ?,
           is_verified = COALESCE(?, is_verified),
           verified_at = CASE
             WHEN ? = 0 THEN NULL
@@ -148,6 +172,14 @@ export async function updateStation(
       input.regionJapanese?.trim() || null,
       input.mainImage === undefined ? 0 : 1,
       input.mainImage ?? null,
+      input.statLinesNote?.trim() || null,
+      input.statLinesNoteJapanese?.trim() || null,
+      input.statRidersValue?.trim() || null,
+      input.statRidersNote?.trim() || null,
+      input.statRidersNoteJapanese?.trim() || null,
+      input.statOpenedValue?.trim() || null,
+      input.statOpenedNote?.trim() || null,
+      input.statOpenedNoteJapanese?.trim() || null,
       input.isVerified === undefined ? null : input.isVerified ? 1 : 0,
       input.isVerified === undefined ? null : input.isVerified ? 1 : 0,
       input.isVerified === undefined ? null : input.isVerified ? 1 : 0,

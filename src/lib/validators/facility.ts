@@ -1,3 +1,4 @@
+import { isFacilityCategory } from "../facility-categories";
 
 export interface FacilityFormValues {
   name: string;
@@ -5,6 +6,7 @@ export interface FacilityFormValues {
   slug: string;
   icon: string;
   sortOrder: string;
+  category: string;
 }
 
 export type FacilityFormErrors = Record<
@@ -21,13 +23,14 @@ export function emptyFacilityErrors(): FacilityFormErrors {
     iconFile: "",
     iconDarkFile: "",
     sortOrder: "",
+    category: "",
   };
 }
 
 export function validateFacilityForm(
   values: FacilityFormValues,
 ): FacilityFormErrors {
-  const { name, nameJapanese, slug, icon, sortOrder } = values;
+  const { name, nameJapanese, slug, icon, sortOrder, category } = values;
   const errors = emptyFacilityErrors();
 
   if (!name) {
@@ -53,6 +56,10 @@ export function validateFacilityForm(
     errors.icon = "Icon must be 100 characters or less.";
   } else if (icon.startsWith("facility-icons/")) {
     errors.icon = "That value is reserved for uploaded icon files.";
+  }
+
+  if (!isFacilityCategory(category)) {
+    errors.category = "Choose a group for this facility.";
   }
 
   if (sortOrder.trim() === "") {

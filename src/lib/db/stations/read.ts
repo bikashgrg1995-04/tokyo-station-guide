@@ -171,6 +171,14 @@ export async function getStationById(
           region,
           region_japanese,
           main_image,
+          stat_lines_note,
+          stat_lines_note_japanese,
+          stat_riders_value,
+          stat_riders_note,
+          stat_riders_note_japanese,
+          stat_opened_value,
+          stat_opened_note,
+          stat_opened_note_japanese,
           is_verified,
           verified_at,
           created_at,
@@ -189,6 +197,14 @@ export async function getStationById(
         region: string | null;
         region_japanese: string | null;
         main_image: string | null;
+        stat_lines_note: string | null;
+        stat_lines_note_japanese: string | null;
+        stat_riders_value: string | null;
+        stat_riders_note: string | null;
+        stat_riders_note_japanese: string | null;
+        stat_opened_value: string | null;
+        stat_opened_note: string | null;
+        stat_opened_note_japanese: string | null;
       }
     >();
 

@@ -2,6 +2,7 @@
 import { env } from "cloudflare:workers";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import StationPageHeader from "../../components/website/station-page/StationPageHeader.astro";
+import StationGlance from "../../components/website/station-page/StationGlance.astro";
 import StationQuickNav from "../../components/website/station-page/StationQuickNav.astro";
 import StationHero from "../../components/website/station-page/StationHero.astro";
 import StationSection from "../../components/website/station-page/StationSection.astro";
@@ -83,6 +84,8 @@ const description =
       }
 
       <StationQuickNav />
+
+      <StationGlance station={station} mediaBase={mediaBase} />
 
       <div class="sp-layout">
         <div class="sp-content">

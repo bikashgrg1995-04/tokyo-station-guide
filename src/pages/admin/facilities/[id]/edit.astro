@@ -1,4 +1,5 @@
 ---
+import { FACILITY_CATEGORIES } from "../../../../lib/facility-categories";
 import { iconBucket } from "../../../../lib/storage/facility-icons";
 import AdminLayout from "../../../../layouts/AdminLayout.astro";
 import "../../../../styles/admin/forms.css";
@@ -43,7 +44,7 @@ if (form.redirectTo) {
   return Astro.redirect(form.redirectTo);
 }
 
-const { name, nameJapanese, slug, icon, sortOrder } = form.values;
+const { name, nameJapanese, slug, icon, sortOrder, category } = form.values;
 const { errors, formError } = form;
 
 const admin = await Astro.session?.get<{
@@ -203,6 +204,19 @@ const admin = await Astro.session?.get<{
                     fileError={errors.iconFile}
                     darkFileError={errors.iconDarkFile}
                   />
+
+                  <!-- Group on the station page -->
+                  <div class="admin-form-group">
+                    <label for="category">Group <span class="admin-label-hint">colour on the station page</span></label>
+
+                    <select id="category" name="category" required>
+                      {FACILITY_CATEGORIES.map((item) => (
+                        <option value={item.id} selected={category === item.id}>{item.label}</option>
+                      ))}
+                    </select>
+
+                    {errors.category && <small class="admin-form-error">{errors.category}</small>}
+                  </div>
 
                   <!-- Sort Order -->
                   <div class="admin-form-group">

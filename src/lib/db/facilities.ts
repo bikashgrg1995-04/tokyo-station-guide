@@ -11,6 +11,7 @@ export interface Facility {
   icon: string | null;
   icon_dark: string | null;
   sort_order: number;
+  category: string;
 }
 
 
@@ -53,6 +54,7 @@ export interface FacilityInput {
   icon?: string | null;
   iconDark?: string | null;
   sortOrder?: number;
+  category?: string;
 }
 
 export interface PaginatedFacilities {
@@ -73,7 +75,7 @@ export async function getFacilities(
   const result = await db
     .prepare(
       `
-        SELECT id, name, name_japanese, slug, icon, icon_dark, sort_order
+        SELECT id, name, name_japanese, slug, icon, icon_dark, sort_order, category
         FROM facilities
         ORDER BY sort_order ASC, name ASC
       `,
@@ -124,7 +126,7 @@ export async function getFacilitiesPaginated(
   const result = await db
     .prepare(
       `
-        SELECT id, name, name_japanese, slug, icon, icon_dark, sort_order
+        SELECT id, name, name_japanese, slug, icon, icon_dark, sort_order, category
         FROM facilities
         WHERE
           ? = ''
@@ -167,7 +169,7 @@ export async function getFacilityById(
   const result = await db
     .prepare(
       `
-        SELECT id, name, name_japanese, slug, icon, icon_dark, sort_order
+        SELECT id, name, name_japanese, slug, icon, icon_dark, sort_order, category
         FROM facilities
         WHERE id = ?
         LIMIT 1
@@ -191,9 +193,9 @@ export async function createFacility(
     .prepare(
       `
         INSERT INTO facilities (
-          name, name_japanese, slug, icon, icon_dark, sort_order
+          name, name_japanese, slug, icon, icon_dark, sort_order, category
         )
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
     )
     .bind(
@@ -203,6 +205,7 @@ export async function createFacility(
       input.icon?.trim() || null,
       input.iconDark?.trim() || null,
       input.sortOrder ?? 0,
+      input.category ?? "other",
     )
     .run();
 
@@ -228,7 +231,8 @@ export async function updateFacility(
           slug = ?,
           icon = ?,
           icon_dark = ?,
-          sort_order = ?
+          sort_order = ?,
+          category = ?
         WHERE id = ?
       `,
     )
@@ -239,6 +243,7 @@ export async function updateFacility(
       input.icon?.trim() || null,
       input.iconDark?.trim() || null,
       input.sortOrder ?? 0,
+      input.category ?? "other",
       id,
     )
     .run();

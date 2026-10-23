@@ -11,6 +11,14 @@ export interface StationFormValues {
   /** Location label on the station page, e.g. "Chiyoda City · Tokyo". */
   region: string;
   regionJapanese: string;
+  statLinesNote: string;
+  statLinesNoteJapanese: string;
+  statRidersValue: string;
+  statRidersNote: string;
+  statRidersNoteJapanese: string;
+  statOpenedValue: string;
+  statOpenedNote: string;
+  statOpenedNoteJapanese: string;
   isVerified: boolean;
   /** Date the station was verified, as YYYY-MM-DD. */
   verifiedAt: string;
@@ -34,6 +42,14 @@ export function emptyStationErrors(): StationFormErrors {
     region: "",
     regionJapanese: "",
     mainImage: "",
+    statLinesNote: "",
+    statLinesNoteJapanese: "",
+    statRidersValue: "",
+    statRidersNote: "",
+    statRidersNoteJapanese: "",
+    statOpenedValue: "",
+    statOpenedNote: "",
+    statOpenedNoteJapanese: "",
     facilities: "",
     topPicks: "",
     isVerified: "",
@@ -120,6 +136,38 @@ export function validateStationForm(
 
   if (about.length > 150) {
     errors.about = "About must be 150 characters or less.";
+  }
+
+  if (values.statLinesNote.length > 120) {
+    errors.statLinesNote = "Must be 120 characters or less.";
+  }
+
+  if (values.statLinesNoteJapanese.length > 120) {
+    errors.statLinesNoteJapanese = "Must be 120 characters or less.";
+  }
+
+  if (values.statRidersValue.length > 120) {
+    errors.statRidersValue = "Must be 120 characters or less.";
+  }
+
+  if (values.statRidersNote.length > 120) {
+    errors.statRidersNote = "Must be 120 characters or less.";
+  }
+
+  if (values.statRidersNoteJapanese.length > 120) {
+    errors.statRidersNoteJapanese = "Must be 120 characters or less.";
+  }
+
+  if (values.statOpenedValue.length > 120) {
+    errors.statOpenedValue = "Must be 120 characters or less.";
+  }
+
+  if (values.statOpenedNote.length > 120) {
+    errors.statOpenedNote = "Must be 120 characters or less.";
+  }
+
+  if (values.statOpenedNoteJapanese.length > 120) {
+    errors.statOpenedNoteJapanese = "Must be 120 characters or less.";
   }
 
   if (region.length > 100) {

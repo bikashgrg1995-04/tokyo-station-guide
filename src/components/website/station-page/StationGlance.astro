@@ -1,0 +1,106 @@
+---
+import type { StationPageData } from "../../../lib/db/station-page";
+import { FACILITY_LINE_ICONS, lineIconFor } from "./facility-icons";
+
+export interface Props {
+  station: StationPageData;
+  mediaBase: string;
+}
+
+const { station, mediaBase } = Astro.props;
+
+const upload = (value: string | null) =>
+  value && value.startsWith("facility-icons/") ? `${mediaBase}/${value}` : "";
+
+const facilities = station.facilities.map((facility) => ({
+  ...facility,
+  src: upload(facility.icon),
+  srcDark: upload(facility.icon_dark),
+  line: FACILITY_LINE_ICONS[lineIconFor(facility.icon, facility.slug, facility.name)],
+}));
+
+const stats = [
+  {
+    key: "lines",
+    value: station.lines.length > 0 ? String(station.lines.length) : "",
+    suffixKey: "sp.glance.lines",
+    note: station.stat_lines_note,
+    noteJa: station.stat_lines_note_japanese,
+  },
+  {
+    key: "riders",
+    value: station.stat_riders_value ?? "",
+    note: station.stat_riders_note,
+    noteJa: station.stat_riders_note_japanese,
+  },
+  {
+    key: "opened",
+    value: station.stat_opened_value ?? "",
+    note: station.stat_opened_note,
+    noteJa: station.stat_opened_note_japanese,
+  },
+].filter((stat) => stat.value);
+---
+
+{
+  facilities.length > 0 && (
+    <section class="sp-glance" aria-labelledby="sp-glance-title">
+      <h2 id="sp-glance-title" class="sp-glance-title" data-i18n="sp.glance">At this station</h2>
+
+      <ul class="sp-facility-grid">
+        {facilities.map((facility) => (
+          <li class={`sp-facility sp-cat-${facility.category}`}>
+            <span class="sp-facility-icon">
+              {facility.src ? (
+                <>
+                  <img class="sp-ic-light" src={facility.src} alt="" loading="lazy" />
+                  <img class="sp-ic-dark" src={facility.srcDark || facility.src} alt="" loading="lazy" />
+                </>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d={facility.line}></path></svg>
+              )}
+            </span>
+            <span
+              class="sp-facility-name"
+              data-pick
+              data-en={facility.name}
+              data-jp={facility.name_japanese ?? ""}
+            >
+              {facility.name}
+            </span>
+            <i class="sp-facility-check" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"></path></svg>
+            </i>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+{
+  stats.length > 0 && (
+    <div class="sp-stat-cards">
+      {stats.map((stat) => (
+        <div class="sp-stat-card">
+          <strong>
+            {stat.value}
+            {stat.suffixKey && (
+              <span data-i18n-count={stat.suffixKey} data-count={stat.value}>{stat.value === "1" ? " line" : " lines"}</span>
+            )}
+          </strong>
+          {(stat.note || stat.noteJa) && (
+            <span
+              class="sp-stat-note"
+              data-pick
+              data-en={stat.note ?? ""}
+              data-jp={stat.noteJa ?? ""}
+            >
+              {stat.note}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}

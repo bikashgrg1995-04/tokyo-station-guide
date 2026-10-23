@@ -16,6 +16,13 @@ function applyPicks() {
 }
 
 /* "Last updated {date}": fixed text with a date inside. */
+function applyCounts() {
+  document.querySelectorAll("[data-i18n-count]").forEach(function (node) {
+    node.textContent =
+      " " + t(node.dataset.i18nCount + (node.dataset.count === "1" ? "1" : ""));
+  });
+}
+
 function applyDates() {
   document.querySelectorAll("[data-i18n-date]").forEach(function (node) {
     node.textContent = t(node.dataset.i18nDate, { date: node.dataset.date });
@@ -78,9 +85,11 @@ initLang();
 initTheme();
 applyPicks();
 applyDates();
+applyCounts();
 initScrollSpy();
 
 onLangChange(function () {
   applyPicks();
   applyDates();
+  applyCounts();
 });

@@ -31,6 +31,14 @@ const {
   aboutJapanese,
   region,
   regionJapanese,
+  statLinesNote,
+  statLinesNoteJapanese,
+  statRidersValue,
+  statRidersNote,
+  statRidersNoteJapanese,
+  statOpenedValue,
+  statOpenedNote,
+  statOpenedNoteJapanese,
   isVerified,
   verifiedAt,
 } = values;
@@ -272,6 +280,61 @@ const {
         </small>
       )
     }
+  </div>
+
+  <!-- Stat cards under "At this station" (the line count is automatic) -->
+  <p class="admin-station-subhead span-12">
+    Station page stat cards <span class="admin-label-hint">leave a card's value empty to hide it</span>
+  </p>
+
+  <div class="admin-form-group span-4">
+    <label for="stat_lines_note">Lines card note</label>
+    <input id="stat_lines_note" name="stat_lines_note" type="text" maxlength="120" placeholder="e.g. 22 JR lines + Tokyo Metro Marunouchi Line" value={statLinesNote} />
+    {errors.statLinesNote && <small class="admin-form-error">{errors.statLinesNote}</small>}
+  </div>
+
+  <div class="admin-form-group span-4">
+    <label for="stat_lines_note_japanese">Lines card note (Japanese)</label>
+    <input id="stat_lines_note_japanese" name="stat_lines_note_japanese" type="text" maxlength="120" placeholder="例: JR22路線＋東京メトロ丸ノ内線" lang="ja" value={statLinesNoteJapanese} />
+    {errors.statLinesNoteJapanese && <small class="admin-form-error">{errors.statLinesNoteJapanese}</small>}
+  </div>
+
+  <div class="span-4"></div>
+
+  <div class="admin-form-group span-4">
+    <label for="stat_riders_value">Passengers value</label>
+    <input id="stat_riders_value" name="stat_riders_value" type="text" maxlength="120" placeholder="e.g. 434,564 / day" value={statRidersValue} />
+    {errors.statRidersValue && <small class="admin-form-error">{errors.statRidersValue}</small>}
+  </div>
+
+  <div class="admin-form-group span-4">
+    <label for="stat_riders_note">Passengers note</label>
+    <input id="stat_riders_note" name="stat_riders_note" type="text" maxlength="120" placeholder="e.g. JR East boarding passengers, FY2024" value={statRidersNote} />
+    {errors.statRidersNote && <small class="admin-form-error">{errors.statRidersNote}</small>}
+  </div>
+
+  <div class="admin-form-group span-4">
+    <label for="stat_riders_note_japanese">Passengers note (Japanese)</label>
+    <input id="stat_riders_note_japanese" name="stat_riders_note_japanese" type="text" maxlength="120" placeholder="例: JR東日本 乗車人員（2024年度）" lang="ja" value={statRidersNoteJapanese} />
+    {errors.statRidersNoteJapanese && <small class="admin-form-error">{errors.statRidersNoteJapanese}</small>}
+  </div>
+
+  <div class="admin-form-group span-4">
+    <label for="stat_opened_value">Opened value</label>
+    <input id="stat_opened_value" name="stat_opened_value" type="text" maxlength="120" placeholder="e.g. 1914" value={statOpenedValue} />
+    {errors.statOpenedValue && <small class="admin-form-error">{errors.statOpenedValue}</small>}
+  </div>
+
+  <div class="admin-form-group span-4">
+    <label for="stat_opened_note">Opened note</label>
+    <input id="stat_opened_note" name="stat_opened_note" type="text" maxlength="120" placeholder="e.g. Opened (Marunouchi building)" value={statOpenedNote} />
+    {errors.statOpenedNote && <small class="admin-form-error">{errors.statOpenedNote}</small>}
+  </div>
+
+  <div class="admin-form-group span-4">
+    <label for="stat_opened_note_japanese">Opened note (Japanese)</label>
+    <input id="stat_opened_note_japanese" name="stat_opened_note_japanese" type="text" maxlength="120" placeholder="例: 開業（丸の内駅舎）" lang="ja" value={statOpenedNoteJapanese} />
+    {errors.statOpenedNoteJapanese && <small class="admin-form-error">{errors.statOpenedNoteJapanese}</small>}
   </div>
 
   <!-- About -->

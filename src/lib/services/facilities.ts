@@ -50,6 +50,7 @@ function readFacilityForm(formData: FormData): FacilityFormValues {
     slug: readText(formData, "slug"),
     icon: readText(formData, "icon"),
     sortOrder: readText(formData, "sort_order"),
+    category: readText(formData, "category") || "other",
   };
 }
 
@@ -246,6 +247,7 @@ export async function handleFacilityCreate(
       slug: "",
       icon: "",
       sortOrder: "0",
+      category: "other",
     },
     errors: emptyFacilityErrors(),
     formError: "",
@@ -269,6 +271,7 @@ export async function handleFacilityCreate(
         icon,
         iconDark,
         sortOrder: Number(values.sortOrder),
+        category: values.category,
       });
     },
   );
@@ -289,6 +292,7 @@ export async function handleFacilityUpdate(
       slug: facility?.slug ?? "",
       icon: facility?.icon ?? "",
       sortOrder: String(facility?.sort_order ?? 0),
+      category: facility?.category ?? "other",
     },
     errors: emptyFacilityErrors(),
     formError: "",
@@ -312,6 +316,7 @@ export async function handleFacilityUpdate(
         icon,
         iconDark,
         sortOrder: Number(values.sortOrder),
+        category: values.category,
       });
     },
   );

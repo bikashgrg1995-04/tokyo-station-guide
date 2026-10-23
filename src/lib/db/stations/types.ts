@@ -76,6 +76,14 @@ export interface StationEditItem extends StationAdminListItem {
   region: string | null;
   region_japanese: string | null;
   main_image: string | null;
+  stat_lines_note: string | null;
+  stat_lines_note_japanese: string | null;
+  stat_riders_value: string | null;
+  stat_riders_note: string | null;
+  stat_riders_note_japanese: string | null;
+  stat_opened_value: string | null;
+  stat_opened_note: string | null;
+  stat_opened_note_japanese: string | null;
   facilities: string | null;
   top_picks: string | null;
   connections: string | null;
@@ -107,6 +115,15 @@ export interface CreateStationInput {
   regionJapanese?: string | null;
   /** Main photo key. undefined = keep the saved one, null = remove it. */
   mainImage?: string | null;
+  /** Stat cards under "At this station". Blank hides the card. */
+  statLinesNote?: string | null;
+  statLinesNoteJapanese?: string | null;
+  statRidersValue?: string | null;
+  statRidersNote?: string | null;
+  statRidersNoteJapanese?: string | null;
+  statOpenedValue?: string | null;
+  statOpenedNote?: string | null;
+  statOpenedNoteJapanese?: string | null;
   facilities?: string | null;
   /** Floor-wise facility entries to save. */
   stationFacilities?: StationFacilityInput[];
@@ -134,6 +151,15 @@ export interface UpdateStationInput {
   regionJapanese?: string | null;
   /** Main photo key. undefined = keep the saved one, null = remove it. */
   mainImage?: string | null;
+  /** Stat cards under "At this station". Blank hides the card. */
+  statLinesNote?: string | null;
+  statLinesNoteJapanese?: string | null;
+  statRidersValue?: string | null;
+  statRidersNote?: string | null;
+  statRidersNoteJapanese?: string | null;
+  statOpenedValue?: string | null;
+  statOpenedNote?: string | null;
+  statOpenedNoteJapanese?: string | null;
   facilities?: string | null;
   /** Floor-wise facility entries to save. */
   stationFacilities?: StationFacilityInput[];

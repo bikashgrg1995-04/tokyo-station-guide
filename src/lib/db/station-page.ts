@@ -11,6 +11,16 @@ export interface StationPageLine {
   operator_name_japanese: string | null;
 }
 
+export interface StationPageFacility {
+  id: number;
+  name: string;
+  name_japanese: string | null;
+  slug: string;
+  icon: string | null;
+  icon_dark: string | null;
+  category: string;
+}
+
 export interface StationPageData {
   id: number;
   slug: string;
@@ -25,7 +35,16 @@ export interface StationPageData {
   region_japanese: string | null;
   main_image: string | null;
   updated_at: string | null;
+  stat_lines_note: string | null;
+  stat_lines_note_japanese: string | null;
+  stat_riders_value: string | null;
+  stat_riders_note: string | null;
+  stat_riders_note_japanese: string | null;
+  stat_opened_value: string | null;
+  stat_opened_note: string | null;
+  stat_opened_note_japanese: string | null;
   lines: StationPageLine[];
+  facilities: StationPageFacility[];
 }
 
 export async function getStationPage(
@@ -36,11 +55,14 @@ export async function getStationPage(
     .prepare(
       `SELECT id, slug, name, name_japanese, description, description_japanese,
               is_verified, verified_at, location_url, region, region_japanese,
-              main_image, updated_at
+              main_image, updated_at,
+              stat_lines_note, stat_lines_note_japanese,
+              stat_riders_value, stat_riders_note, stat_riders_note_japanese,
+              stat_opened_value, stat_opened_note, stat_opened_note_japanese
        FROM stations WHERE slug = ?`,
     )
     .bind(slug)
-    .first<Omit<StationPageData, "lines">>();
+    .first<Omit<StationPageData, "lines" | "facilities">>();
 
   if (!station) return null;
 
@@ -57,5 +79,28 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageLine>();
 
-  return { ...station, lines: lines.results ?? [] };
+  // Facilities this station has (each once), grouped by category.
+  const facilities = await db
+    .prepare(
+      `SELECT f.id, f.name, f.name_japanese, f.slug, f.icon, f.icon_dark, f.category
+       FROM facilities f
+       WHERE f.id IN (
+         SELECT sff.facility_id
+         FROM station_floor_facilities sff
+         JOIN station_floors sf ON sf.id = sff.floor_id
+         WHERE sf.station_id = ?
+       )
+       ORDER BY CASE f.category
+                  WHEN 'storage' THEN 1 WHEN 'tickets' THEN 2 WHEN 'access' THEN 3
+                  WHEN 'shops' THEN 4 WHEN 'transport' THEN 5 ELSE 6 END,
+                f.sort_order, f.name`,
+    )
+    .bind(station.id)
+    .all<StationPageFacility>();
+
+  return {
+    ...station,
+    lines: lines.results ?? [],
+    facilities: facilities.results ?? [],
+  };
 }

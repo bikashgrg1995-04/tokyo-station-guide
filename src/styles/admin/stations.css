@@ -1264,3 +1264,10 @@
     flex-wrap: wrap;
   }
 }
+
+.admin-station-subhead {
+  grid-column: 1 / -1;
+  margin: 6px 0 -4px;
+  font-size: 13px;
+  font-weight: 700;
+}
