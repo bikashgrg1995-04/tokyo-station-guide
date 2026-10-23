@@ -12,6 +12,7 @@ export const SECTIONS: StationSectionDef[] = [
   { id: "lines", title: "Lines & platforms", icon: "train" },
   { id: "hours", title: "Opening hours", icon: "clock" },
   { id: "access", title: "Getting around", icon: "walk" },
+  { id: "taxi", title: "Taxi & bus", icon: "taxi" },
   { id: "facilities", title: "Facilities", icon: "facility" },
   { id: "picks", title: "Top picks", icon: "star" },
   { id: "food", title: "Restaurants", icon: "food" },
@@ -35,4 +36,20 @@ export const ICONS: Record<string, string> = {
   pin: "M12 21s-6-5.6-6-10.5A6 6 0 0 1 18 10.5C18 15.4 12 21 12 21zM12 12.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",
   faq: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.7 9.5a2.4 2.4 0 1 1 3.4 2.2c-.7.4-1.1.8-1.1 1.6M12 16.5v.1",
   back: "M15 5l-7 7 7 7",
+  taxi: "M5 15l1.6-5.2A2 2 0 0 1 8.5 8.4h7a2 2 0 0 1 1.9 1.4L19 15M4 15h16v4H4zM7 19v1.5M17 19v1.5M7.5 17h.1M16.5 17h.1M10.5 8.4V6.5h3v1.9",
+  lockers: "M5 3.5h14v17H5zM12 3.5v17M9 10v1.5M15 10v1.5M5 12h14",
+  access: "M6 5.5a2.5 2.5 0 1 0 0 .1M18 18.5a2.5 2.5 0 1 0 0 .1M8.5 5.5H15a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h6.5",
+  exits: "M4 4.5h8M4 19.5h8M4 4.5v15M20 12H10M16.5 8.5L20 12l-3.5 3.5",
 };
+
+/** The eight buttons under the main photo: label key, target section, icon. */
+export const QUICK_LINKS = [
+  { key: "exit", target: "exit", icon: "exits", title: "Exits" },
+  { key: "lockers", target: "facilities", icon: "lockers", title: "Lockers" },
+  { key: "lines", target: "lines", icon: "train", title: "Train lines" },
+  { key: "access", target: "access", icon: "access", title: "Access" },
+  { key: "taxi", target: "taxi", icon: "taxi", title: "Taxi & bus" },
+  { key: "eat", target: "food", icon: "food", title: "Eat" },
+  { key: "hotels", target: "hotels", icon: "hotel", title: "Hotels" },
+  { key: "things", target: "picks", icon: "pin", title: "Things to do" },
+];
