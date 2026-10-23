@@ -1,6 +1,6 @@
 ---
 import type { StationPageData } from "../../../lib/db/station-page";
-import { FACILITY_LINE_ICONS, lineIconFor } from "./facility-icons";
+import { FACILITY_LINE_ICONS, facilityTarget, lineIconFor } from "./facility-icons";
 
 export interface Props {
   station: StationPageData;
@@ -16,6 +16,7 @@ const facilities = station.facilities.map((facility) => ({
   ...facility,
   src: upload(facility.icon),
   srcDark: upload(facility.icon_dark),
+  target: facilityTarget(facility.icon, facility.slug, facility.name),
   line: FACILITY_LINE_ICONS[lineIconFor(facility.icon, facility.slug, facility.name)],
 }));
 
@@ -50,6 +51,7 @@ const stats = [
       <ul class="sp-facility-grid">
         {facilities.map((facility) => (
           <li class={`sp-facility sp-cat-${facility.category}`}>
+            <a class="sp-facility-link" href={`#${facility.target}`} data-jump={facility.target}>
             <span class="sp-facility-icon">
               {facility.src ? (
                 <>
@@ -68,6 +70,7 @@ const stats = [
             >
               {facility.name}
             </span>
+            </a>
             <i class="sp-facility-check" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M6 12.5l4 4 8-9"></path></svg>
             </i>

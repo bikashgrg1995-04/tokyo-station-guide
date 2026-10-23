@@ -54,3 +54,18 @@ export function lineIconFor(icon: string | null, slug: string, name: string): st
   const hay = [direct, slug, name].join(" ").toLowerCase();
   return RULES.find(([re]) => re.test(hay))?.[1] ?? "pin";
 }
+
+/** Section a facility chip jumps to: taxi/bus, Shinkansen, airport, otherwise Facilities. */
+export function facilityTarget(icon: string | null, slug: string, name: string): string {
+  switch (lineIconFor(icon, slug, name)) {
+    case "taxi":
+    case "bus":
+      return "taxi";
+    case "shinkansen":
+      return "lines";
+    case "airport":
+      return "getting";
+    default:
+      return "facilities";
+  }
+}

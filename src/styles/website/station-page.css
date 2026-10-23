@@ -551,10 +551,7 @@ html[data-lang="jp"] [data-station-en] {
   --fg: #6b7280;
   --bg: #f3f4f6;
   position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  padding: 10px 6px 8px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
   border: 1px solid var(--fg);
   border-radius: 12px;
   background: var(--bg);
@@ -669,4 +666,22 @@ html[data-lang="jp"] [data-station-en] {
 .sp-stat-note {
   color: var(--muted);
   font-size: 13px;
+}
+
+.sp-facility:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.sp-facility:active {
+  transform: scale(0.97);
+}
+
+.sp-facility-link {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 10px 6px 8px;
+  border-radius: 12px;
+  color: inherit;
 }
