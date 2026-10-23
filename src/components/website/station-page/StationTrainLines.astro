@@ -1,0 +1,61 @@
+---
+// Train lines: colour dot, name, "station code · operator", and where to find
+// the platforms (built from the station's platforms, so nothing is typed twice).
+import type { StationPageData } from "../../../lib/db/station-page";
+
+export interface Props {
+  station: StationPageData;
+}
+
+const { station } = Astro.props;
+
+// "1・2" / "3-4" / "5" → platform numbers as plain strings
+const numbersOf = (value: string) =>
+  value.split(/\s*[・/,、–—-]\s*/).map((n) => n.trim()).filter(Boolean);
+
+function range(nums: string[]): string {
+  if (!nums.every((n) => /^\d+$/.test(n))) return nums.join(", ");
+  const sorted = [...new Set(nums.map(Number))].sort((a, b) => a - b);
+  const out: string[] = [];
+  for (let i = 0; i < sorted.length; ) {
+    let j = i;
+    while (j + 1 < sorted.length && sorted[j + 1] === sorted[j] + 1) j++;
+    out.push(j > i ? `${sorted[i]}–${sorted[j]}` : String(sorted[i]));
+    i = j + 1;
+  }
+  return out.join(", ");
+}
+
+const rows = station.lines.map((line) => {
+  const mine = station.platforms.filter((p) => p.line_id === line.id);
+  const nums = mine.flatMap((p) => numbersOf(p.platform_number));
+  const destEn = [...new Set(mine.map((p) => p.destinations).filter(Boolean))].join("; ");
+  const destJa = [...new Set(mine.map((p) => p.destinations_japanese || p.destinations).filter(Boolean))].join("；");
+  const label = nums.length ? range(nums) : "";
+  const plural = nums.length > 1;
+  const en = label
+    ? `${plural ? "Platforms" : "Platform"} ${label}${destEn ? `, for ${destEn}` : ""}`
+    : "";
+  const ja = label ? `${label}番線${destJa ? `（${destJa}方面）` : ""}` : "";
+  const tag = [line.station_code, line.operator_name].filter(Boolean).join(" · ");
+  const tagJa = [line.station_code, line.operator_name_japanese || line.operator_name].filter(Boolean).join(" · ");
+  return { line, en, ja, tag, tagJa };
+});
+---
+
+<ul class="sp-tl">
+  {
+    rows.map(({ line, en, ja, tag, tagJa }) => (
+      <li style={`--c:${line.color ?? "#8a93a0"}`}>
+        <i class="sp-tl-dot"></i>
+        <div class="sp-tl-body">
+          <div class="sp-tl-head">
+            <b data-pick data-en={line.name} data-jp={line.name_japanese ?? ""}>{line.name}</b>
+            {tag && <span data-pick data-en={tag} data-jp={tagJa}>{tag}</span>}
+          </div>
+          {en && <p data-pick data-en={en} data-jp={ja}>{en}</p>}
+        </div>
+      </li>
+    ))
+  }
+</ul>

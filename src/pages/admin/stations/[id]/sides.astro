@@ -1,0 +1,158 @@
+---
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import "../../../../styles/admin/forms.css";
+import "../../../../styles/admin/stations.css";
+import "../../../../styles/admin/station-sides.css";
+
+import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
+import Button from "../../../../components/common/Button.astro";
+
+import { getStationById } from "../../../../lib/db/stations";
+import { handleStationSides } from "../../../../lib/services/station-sides";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+const db = env.DB;
+const id = Number(Astro.params.id);
+
+if (!Number.isInteger(id) || id <= 0) return Astro.redirect("/admin/stations");
+const station = await getStationById(db, id);
+if (!station) return Astro.redirect("/admin/stations");
+
+const form = await handleStationSides(Astro.request, db, id);
+if (form.redirectTo) return Astro.redirect(form.redirectTo);
+
+const nextOrder = form.sides.reduce((max, s) => Math.max(max, s.sort_order), 0) + 1;
+---
+
+<AdminLayout title={`Manage Sides - ${station.name}`} activePath="/admin/stations">
+  <header class="admin-topbar">
+    <Breadcrumbs backHref="/admin/stations" parentLabel="Stations" current="Manage Sides" />
+  </header>
+
+  <div class="admin-content">
+    <div class="admin-page-header">
+      <div>
+        <h2>Manage Sides</h2>
+        <p>
+          The sides of <strong>{station.name}</strong> (for example Marunouchi / Yaesu) shown in
+          "Sides of the station" on the public page, plus one note about crossing between them.
+        </p>
+      </div>
+    </div>
+
+    {
+      form.sides.map((side) => (
+        <section class="admin-panel sides-panel">
+          <form method="POST" class="admin-panel-body">
+            <input type="hidden" name="side_id" value={side.id} />
+            <h3 class="sides-title">{side.name}</h3>
+            {form.errorFor === String(side.id) && <div class="admin-form-error" role="alert">{form.formError}</div>}
+            <div class="admin-form-grid">
+              <div class="admin-form-group">
+                <label>Name</label>
+                <input name="name" required maxlength="80" value={side.name} />
+              </div>
+              <div class="admin-form-group">
+                <label>Name (Japanese)</label>
+                <input name="name_japanese" lang="ja" maxlength="80" value={side.name_japanese ?? ""} />
+              </div>
+              <div class="admin-form-group">
+                <label>Red subtitle</label>
+                <input name="subtitle" maxlength="120" placeholder="West side · Red-brick historic front" value={side.subtitle ?? ""} />
+              </div>
+              <div class="admin-form-group">
+                <label>Red subtitle (Japanese)</label>
+                <input name="subtitle_japanese" lang="ja" maxlength="120" value={side.subtitle_japanese ?? ""} />
+              </div>
+              <div class="admin-form-group full-width">
+                <label>Description</label>
+                <textarea name="description" rows="4" maxlength="1500">{side.description ?? ""}</textarea>
+              </div>
+              <div class="admin-form-group full-width">
+                <label>Description (Japanese)</label>
+                <textarea name="description_japanese" lang="ja" rows="3" maxlength="1500">{side.description_japanese ?? ""}</textarea>
+              </div>
+              <div class="admin-form-group">
+                <label>Order</label>
+                <input name="sort_order" type="number" min="0" value={side.sort_order} />
+              </div>
+            </div>
+            <div class="admin-form-actions">
+              <button type="submit" name="side_action" value="update" class="common-button common-button-primary">Save</button>
+              <button
+                type="submit"
+                name="side_action"
+                value="delete"
+                class="common-button common-button-danger"
+                formnovalidate
+                onclick="return confirm('Delete this side?')"
+              >Delete</button>
+            </div>
+          </form>
+        </section>
+      ))
+    }
+
+    <section class="admin-panel sides-panel">
+      <form method="POST" class="admin-panel-body">
+        <h3 class="sides-title">Add a side</h3>
+        {form.errorFor === "new" && <div class="admin-form-error" role="alert">{form.formError}</div>}
+        <div class="admin-form-grid">
+          <div class="admin-form-group">
+            <label>Name</label>
+            <input name="name" required maxlength="80" placeholder="Marunouchi side" />
+          </div>
+          <div class="admin-form-group">
+            <label>Name (Japanese)</label>
+            <input name="name_japanese" lang="ja" maxlength="80" placeholder="丸の内" />
+          </div>
+          <div class="admin-form-group">
+            <label>Red subtitle</label>
+            <input name="subtitle" maxlength="120" placeholder="West side · Red-brick historic front" />
+          </div>
+          <div class="admin-form-group">
+            <label>Red subtitle (Japanese)</label>
+            <input name="subtitle_japanese" lang="ja" maxlength="120" />
+          </div>
+          <div class="admin-form-group full-width">
+            <label>Description</label>
+            <textarea name="description" rows="4" maxlength="1500"></textarea>
+          </div>
+          <div class="admin-form-group full-width">
+            <label>Description (Japanese)</label>
+            <textarea name="description_japanese" lang="ja" rows="3" maxlength="1500"></textarea>
+          </div>
+          <div class="admin-form-group">
+            <label>Order</label>
+            <input name="sort_order" type="number" min="0" value={nextOrder} />
+          </div>
+        </div>
+        <div class="admin-form-actions">
+          <button type="submit" name="side_action" value="create" class="common-button common-button-primary">Add side</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="admin-panel sides-panel">
+      <form method="POST" class="admin-panel-body">
+        <h3 class="sides-title">Note about crossing between the sides</h3>
+        {form.errorFor === "note" && <div class="admin-form-error" role="alert">{form.formError}</div>}
+        <div class="admin-form-grid">
+          <div class="admin-form-group full-width">
+            <label>Note</label>
+            <textarea name="sides_note" rows="3" maxlength="1500">{form.note}</textarea>
+          </div>
+          <div class="admin-form-group full-width">
+            <label>Note (Japanese)</label>
+            <textarea name="sides_note_japanese" lang="ja" rows="3" maxlength="1500">{form.noteJapanese}</textarea>
+          </div>
+        </div>
+        <div class="admin-form-actions">
+          <button type="submit" name="side_action" value="save_note" class="common-button common-button-primary">Save note</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</AdminLayout>

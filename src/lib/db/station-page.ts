@@ -22,6 +22,7 @@ export interface StationPageFacility {
 }
 
 export interface StationPagePlatform {
+  line_id: number | null;
   platform_number: string;
   destinations: string | null;
   destinations_japanese: string | null;
@@ -30,6 +31,15 @@ export interface StationPagePlatform {
   line_color: string | null;
   group: string | null;
   group_japanese: string | null;
+}
+
+export interface StationPageSide {
+  name: string;
+  name_japanese: string | null;
+  subtitle: string | null;
+  subtitle_japanese: string | null;
+  description: string | null;
+  description_japanese: string | null;
 }
 
 export interface StationPageData {
@@ -44,6 +54,8 @@ export interface StationPageData {
   location_url: string | null;
   region: string | null;
   region_japanese: string | null;
+  sides_note: string | null;
+  sides_note_japanese: string | null;
   address: string | null;
   address_japanese: string | null;
   main_image: string | null;
@@ -59,6 +71,7 @@ export interface StationPageData {
   lines: StationPageLine[];
   facilities: StationPageFacility[];
   platforms: StationPagePlatform[];
+  sides: StationPageSide[];
 }
 
 export async function getStationPage(
@@ -69,6 +82,7 @@ export async function getStationPage(
     .prepare(
       `SELECT id, slug, name, name_japanese, description, description_japanese,
               is_verified, verified_at, location_url, region, region_japanese, address, address_japanese,
+              sides_note, sides_note_japanese,
               main_image, updated_at,
               stat_lines_note, stat_lines_note_japanese,
               stat_riders_value, stat_riders_note, stat_riders_note_japanese,
@@ -76,7 +90,7 @@ export async function getStationPage(
        FROM stations WHERE slug = ?`,
     )
     .bind(slug)
-    .first<Omit<StationPageData, "lines" | "facilities" | "platforms">>();
+    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides">>();
 
   if (!station) return null;
 
@@ -114,7 +128,7 @@ export async function getStationPage(
 
   const platforms = await db
     .prepare(
-      `SELECT sp.platform_number, sp.destinations, sp.destinations_japanese,
+      `SELECT sp.line_id, sp.platform_number, sp.destinations, sp.destinations_japanese,
               l.name AS line_name, l.name_japanese AS line_name_japanese,
               l.color AS line_color,
               sp.platform_group AS "group",
@@ -127,8 +141,17 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPagePlatform>();
 
+  const sides = await db
+    .prepare(
+      `SELECT name, name_japanese, subtitle, subtitle_japanese, description, description_japanese
+       FROM station_sides WHERE station_id = ? ORDER BY sort_order, id`,
+    )
+    .bind(station.id)
+    .all<StationPageSide>();
+
   return {
     ...station,
+    sides: sides.results ?? [],
     platforms: platforms.results ?? [],
     lines: lines.results ?? [],
     facilities: facilities.results ?? [],

@@ -3,6 +3,8 @@ import type { StationPageData } from "../../../lib/db/station-page";
 import { ICONS, type StationSectionDef } from "./sections";
 import PlatformMap from "./PlatformMap.astro";
 import StationOverview from "./StationOverview.astro";
+import StationSides from "./StationSides.astro";
+import StationTrainLines from "./StationTrainLines.astro";
 
 export interface Props {
   section: StationSectionDef;
@@ -12,6 +14,7 @@ export interface Props {
 const { section, station } = Astro.props;
 const isLines = section.id === "lines";
 const isOverview = section.id === "overview";
+const isSides = section.id === "sides" && (station.sides.length > 0 || Boolean(station.sides_note));
 const isMap = section.id === "map" && station.platforms.length > 0;
 ---
 
@@ -27,16 +30,10 @@ const isMap = section.id === "map" && station.platforms.length > 0;
         <PlatformMap platforms={station.platforms} />
       ) : isOverview && (station.description || station.description_japanese) ? (
         <StationOverview station={station} />
+      ) : isSides ? (
+        <StationSides station={station} />
       ) : isLines && station.lines.length > 0 ? (
-        <ul class="sp-line-list">
-          {station.lines.map((line) => (
-            <li style={`--c:${line.color ?? "#8a93a0"}`}>
-              <i class="sp-chip-dot"></i>
-              <span data-pick data-en={line.name} data-jp={line.name_japanese ?? ""}>{line.name}</span>
-              {line.station_code && <b>{line.station_code}</b>}
-            </li>
-          ))}
-        </ul>
+        <StationTrainLines station={station} />
       ) : (
         <div class="sp-skeleton" aria-hidden="true">
           <i style="width:92%"></i>
@@ -47,7 +44,7 @@ const isMap = section.id === "map" && station.platforms.length > 0;
     }
 
     {
-      !(isMap || isOverview || (isLines && station.lines.length > 0)) && (
+      !(isMap || isSides || isOverview || (isLines && station.lines.length > 0)) && (
         <p class="sp-soon" data-i18n="sp.soon">Content for this section is coming soon.</p>
       )
     }

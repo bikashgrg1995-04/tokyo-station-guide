@@ -883,3 +883,124 @@ html[data-lang="jp"] [data-station-en] {
     gap: 24px;
   }
 }
+
+/* ---------- Sides of the station ---------- */
+.sp-sides {
+  display: grid;
+  gap: 12px;
+}
+
+.sp-sides-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.sp-side,
+.sp-sides-note {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--row-hover);
+}
+
+.sp-side h3 {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.sp-side-ja {
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+html[data-lang="jp"] .sp-side-ja {
+  display: none;
+}
+
+.sp-side-sub {
+  margin-top: 4px;
+  color: var(--sp-red);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sp-side-text,
+.sp-sides-note {
+  margin-top: 6px;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.sp-sides-note {
+  margin-top: 0;
+}
+
+@media (min-width: 640px) {
+  .sp-sides-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Train lines ---------- */
+.sp-tl {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  column-gap: 32px;
+}
+
+.sp-tl li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--row-edge);
+}
+
+.sp-tl-dot {
+  flex: 0 0 auto;
+  width: 11px;
+  height: 11px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.sp-tl-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.sp-tl-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sp-tl-head b {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sp-tl-head span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+}
+
+.sp-tl-body p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (min-width: 640px) {
+  .sp-tl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

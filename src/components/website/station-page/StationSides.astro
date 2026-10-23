@@ -1,0 +1,45 @@
+---
+// Sides of the station: one card per side, then a note about crossing between them.
+import type { StationPageData } from "../../../lib/db/station-page";
+
+export interface Props {
+  station: StationPageData;
+}
+
+const { station } = Astro.props;
+const note = station.sides_note;
+---
+
+<div class="sp-sides">
+  {
+    station.sides.length > 0 && (
+      <div class="sp-sides-grid">
+        {station.sides.map((side) => (
+          <article class="sp-side">
+            <h3>
+              <span data-pick data-en={side.name} data-jp={side.name_japanese ?? ""}>{side.name}</span>
+              {side.name_japanese && (
+                <small class="sp-side-ja">{side.name_japanese}</small>
+              )}
+            </h3>
+            {side.subtitle && (
+              <p class="sp-side-sub" data-pick data-en={side.subtitle} data-jp={side.subtitle_japanese ?? ""}>
+                {side.subtitle}
+              </p>
+            )}
+            {side.description && (
+              <p class="sp-side-text" data-pick data-en={side.description} data-jp={side.description_japanese ?? ""}>
+                {side.description}
+              </p>
+            )}
+          </article>
+        ))}
+      </div>
+    )
+  }
+  {
+    note && (
+      <p class="sp-sides-note" data-pick data-en={note} data-jp={station.sides_note_japanese ?? ""}>{note}</p>
+    )
+  }
+</div>
