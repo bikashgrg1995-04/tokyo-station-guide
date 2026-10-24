@@ -19,6 +19,7 @@ export type OpType =
   | "side"
   | "route"
   | "tip"
+  | "season"
   | "topPick"
   | "stationTopPick";
 
@@ -44,6 +45,8 @@ export interface ImportSnapshot {
   routes: string[];
   /** `stationSlug|tipText` */
   tips: string[];
+  /** `stationSlug|season` */
+  seasons: string[];
   /** `stationSlug|floorName|facilitySlug` */
   floorFacilities: string[];
   /** `stationSlug|topPickSlug` */
@@ -67,6 +70,7 @@ export const KEY_FIELDS: Record<OpType, string[]> = {
   side: ["stationSlug", "name"],
   route: ["stationSlug", "fromPlace", "route"],
   tip: ["stationSlug", "tip"],
+  season: ["stationSlug", "season"],
   topPick: ["slug"],
   stationTopPick: ["stationSlug", "topPickSlug"],
 };
@@ -85,6 +89,7 @@ export const NOT_NULL_FIELDS: Record<OpType, string[]> = {
   side: ["sortOrder"],
   route: ["sortOrder"],
   tip: ["sortOrder"],
+  season: [],
   topPick: ["name", "category"],
   stationTopPick: ["locationType", "sortOrder"],
 };
@@ -100,6 +105,7 @@ export type UpsertOp =
   | { t: "operator"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; url: Opt<string> }
   | { t: "line"; slug: string; operatorSlug: string; name: string; nameJa: Opt<string>; code: Opt<string>; color: Opt<string>; lineType: Opt<string>; status: Opt<string>; desc: Opt<string>; descJa: Opt<string> }
   | { t: "station"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; about: Opt<string>; aboutJa: Opt<string>; locationUrl: Opt<string>; isVerified: Opt<number>; verifiedAt: Opt<string>; region: Opt<string>; regionJa: Opt<string>; address: Opt<string>; addressJa: Opt<string>; statLinesNote: Opt<string>; statLinesNoteJa: Opt<string>; statRidersValue: Opt<string>; statRidersNote: Opt<string>; statRidersNoteJa: Opt<string>; statOpenedValue: Opt<string>; statOpenedNote: Opt<string>; statOpenedNoteJa: Opt<string>; sidesNote: Opt<string>; sidesNoteJa: Opt<string>; routesNote: Opt<string>; routesNoteJa: Opt<string>; exitsNote: Opt<string>; exitsNoteJa: Opt<string> }
+  | { t: "season"; stationSlug: string; season: string; months: Opt<string>; monthsJa: Opt<string>; desc: Opt<string>; descJa: Opt<string> }
   | { t: "tip"; stationSlug: string; tip: string; tipJa: Opt<string>; sortOrder: Opt<number> }
   | { t: "route"; stationSlug: string; fromPlace: string; fromPlaceJa: Opt<string>; route: string | null; routeJa: Opt<string>; time: Opt<string>; timeJa: Opt<string>; cost: Opt<string>; costJa: Opt<string>; sortOrder: Opt<number> }
   | { t: "side"; stationSlug: string; name: string; nameJa: Opt<string>; subtitle: Opt<string>; subtitleJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; sortOrder: Opt<number> }

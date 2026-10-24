@@ -74,6 +74,14 @@ export interface StationPageExit {
   photo_caption_japanese: string | null;
 }
 
+export interface StationPageSeason {
+  season: "spring" | "summer" | "autumn" | "winter";
+  months: string | null;
+  months_japanese: string | null;
+  description: string | null;
+  description_japanese: string | null;
+}
+
 export interface StationPageTip {
   tip: string;
   tip_japanese: string | null;
@@ -116,6 +124,7 @@ export interface StationPageData {
   routes: StationPageRoute[];
   exits: StationPageExit[];
   tips: StationPageTip[];
+  seasons: StationPageSeason[];
 }
 
 export async function getStationPage(
@@ -134,7 +143,7 @@ export async function getStationPage(
        FROM stations WHERE slug = ?`,
     )
     .bind(slug)
-    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips">>();
+    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips" | "seasons">>();
 
   if (!station) return null;
 
@@ -238,6 +247,14 @@ export async function getStationPage(
     .all<StationPageExit>();
 
 
+  const seasons = await db
+    .prepare(
+      `SELECT season, months, months_japanese, description, description_japanese
+       FROM station_seasons WHERE station_id = ?`,
+    )
+    .bind(station.id)
+    .all<StationPageSeason>();
+
   const tips = await db
     .prepare(`SELECT tip, tip_japanese FROM station_tips WHERE station_id = ? ORDER BY sort_order, id`)
     .bind(station.id)
@@ -247,6 +264,9 @@ export async function getStationPage(
     ...station,
     exits: exits.results ?? [],
     tips: tips.results ?? [],
+    seasons: (seasons.results ?? []).sort(
+      (a, b) => ["spring", "summer", "autumn", "winter"].indexOf(a.season) - ["spring", "summer", "autumn", "winter"].indexOf(b.season),
+    ),
     routes: routes.results ?? [],
     sides: sides.results ?? [],
     platforms: platforms.results ?? [],

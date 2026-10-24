@@ -5,7 +5,7 @@ export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot
   const all = async <T>(sql: string) =>
     (await db.prepare(sql).all<T>()).results ?? [];
 
-  const [operators, lines, stations, facilities, topPicks, floors, exits, platforms, sides, routes, tips, floorFacilities, stationTopPicks, lineStations] =
+  const [operators, lines, stations, facilities, topPicks, floors, exits, platforms, sides, routes, tips, floorFacilities, stationTopPicks, lineStations, seasons] =
     await Promise.all([
       all<{ slug: string; name: string }>("SELECT slug, name FROM operators"),
       all<{ slug: string }>("SELECT slug FROM lines"),
@@ -57,6 +57,10 @@ export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot
          JOIN lines l ON l.id = ls.line_id
          JOIN stations s ON s.id = ls.station_id`,
       ),
+      all<{ k: string }>(
+        `SELECT s.slug || '|' || x.season AS k
+         FROM station_seasons x JOIN stations s ON s.id = x.station_id`,
+      ),
     ]);
 
   const stored = await loadStoredRows(all);
@@ -74,6 +78,7 @@ export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot
     sides: sides.map((r) => r.k),
     routes: routes.map((r) => r.k),
     tips: tips.map((r) => r.k),
+    seasons: seasons.map((r) => r.k),
     floorFacilities: floorFacilities.map((r) => r.k),
     stationTopPicks: stationTopPicks.map((r) => r.k),
     lineStations,
@@ -91,7 +96,7 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
     return out;
   };
 
-  const [operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick] =
+  const [operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick, season] =
     await Promise.all([
       keyed(`SELECT slug AS k, name, name_japanese AS nameJa, description AS "desc",
                     description_japanese AS descJa, website_url AS url FROM operators`),
@@ -159,9 +164,12 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
                     stp.location_type AS locationType, stp.sort_order AS sortOrder
              FROM station_top_picks stp JOIN stations s ON s.id = stp.station_id
              JOIN top_picks t ON t.id = stp.top_pick_id`),
+      keyed(`SELECT s.slug || '|' || x.season AS k, x.months, x.months_japanese AS monthsJa,
+                    x.description AS "desc", x.description_japanese AS descJa
+             FROM station_seasons x JOIN stations s ON s.id = x.station_id`),
     ]);
 
-  return { operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick };
+  return { operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick, season };
 }
 
 /** Order in which operation types are applied (a type only needs the ones before it). */
@@ -179,6 +187,7 @@ const TYPE_ORDER: OpType[] = [
   "side",
   "route",
   "tip",
+  "season",
   "stationTopPick",
 ];
 
@@ -620,6 +629,28 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
       ];
     }
 
+    case "season": {
+      const u = sets(
+        [["months", op.months], ["months_japanese", op.monthsJa], ["description", op.desc], ["description_japanese", op.descJa]],
+        3,
+      );
+      return [
+        p(
+          `UPDATE station_seasons SET updated_at = CURRENT_TIMESTAMP${u.sql}
+           WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND season = ?2`,
+          op.stationSlug, op.season, ...u.params,
+        ),
+        p(
+          `INSERT INTO station_seasons (station_id, season, months, months_japanese, description, description_japanese)
+           SELECT s.id, ?2, ?3, ?4, ?5, ?6
+           FROM stations s
+           WHERE s.slug = ?1
+             AND NOT EXISTS (SELECT 1 FROM station_seasons x WHERE x.station_id = s.id AND x.season = ?2)`,
+          op.stationSlug, op.season, n(op.months), n(op.monthsJa), n(op.desc), n(op.descJa),
+        ),
+      ];
+    }
+
     case "stationTopPick": {
       const u = sets(
         [
@@ -712,6 +743,12 @@ function deleteStatement(db: D1Database, op: DeleteOp): D1PreparedStatement {
         `DELETE FROM station_tips
          WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND tip = ?2`,
         k[0], k.slice(1).join("|"),
+      );
+    case "season":
+      return p(
+        `DELETE FROM station_seasons
+         WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND season = ?2`,
+        k[0], k[1],
       );
     case "stationTopPick":
       return p(

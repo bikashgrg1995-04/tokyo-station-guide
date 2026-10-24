@@ -1390,3 +1390,33 @@ html[data-lang="jp"] .sp-side-ja {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ---------- When to visit ---------- */
+.sp-visit {
+  display: grid;
+  gap: 22px 40px;
+}
+
+@media (min-width: 640px) {
+  .sp-visit {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.sp-visit-months {
+  color: var(--sp-red);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sp-visit-title {
+  margin-top: 4px;
+  font-size: 15.5px;
+  font-weight: 700;
+}
+
+.sp-visit-text {
+  margin-top: 2px;
+  font-size: 14.5px;
+  line-height: 1.55;
+}

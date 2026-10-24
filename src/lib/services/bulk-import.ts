@@ -8,6 +8,7 @@ import {
   REQUIRED_COLUMNS,
   SHEET_ORDER,
   TOP_PICK_CATEGORIES,
+  SEASONS,
   TOP_PICK_LOCATIONS,
   WEBSITE_STATUSES,
   type ImportIssue,
@@ -158,6 +159,7 @@ export function buildImportPlan(
   const sides = new Set(snap.sides);
   const routes = new Set(snap.routes);
   const tips = new Set(snap.tips);
+  const seasons = new Set(snap.seasons);
   const floorFacilities = new Set(snap.floorFacilities);
   const stationTopPicks = new Set(snap.stationTopPicks);
 
@@ -208,6 +210,7 @@ export function buildImportPlan(
     const delSides = gone("side", "sides", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
     const delRoutes = gone("route", "routes", (d) => `${d.station_slug}|${d.from_place}|${d.route ?? ""}`, (k) => stationKept(part(k, 0)));
     const delTips = gone("tip", "tips", (d) => `${d.station_slug}|${d.tip}`, (k) => stationKept(part(k, 0)));
+    const delSeasons = gone("season", "seasons", (d) => `${d.station_slug}|${(d.season ?? "").toLowerCase()}`, (k) => stationKept(part(k, 0)));
     const delStationTopPicks = gone("stationTopPick", "station_top_picks",
       (d) => `${d.station_slug}|${d.top_pick_slug}`, (k) => stationKept(part(k, 0)) && !delTopPicks.has(part(k, 1)));
 
@@ -239,6 +242,7 @@ export function buildImportPlan(
       ["side", "sides", delSides],
       ["route", "routes", delRoutes],
       ["tip", "tips", delTips],
+      ["season", "seasons", delSeasons],
       ["stationTopPick", "station_top_picks", delStationTopPicks],
     ];
     for (const [type, sheet, set] of groups) {
@@ -738,6 +742,24 @@ export function buildImportPlan(
     const exists = tips.has(key);
     tips.add(key);
     record("tips", { t: "tip", stationSlug, tip, tipJa, sortOrder }, key, exists);
+  });
+
+  // ---- seasons ---------------------------------------------------------------
+  eachRow("seasons", (d) => `${d.station_slug}|${(d.season ?? "").toLowerCase()}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    const season = (d.season ?? "").toLowerCase();
+    if (!SEASONS.includes(season)) err(`"season" must be one of: ${SEASONS.join(", ")}.`);
+    const months = text(d, "months", 40, err);
+    const monthsJa = text(d, "months_japanese", 40, err);
+    const desc = text(d, "description", 600, err);
+    const descJa = text(d, "description_japanese", 600, err);
+    if (dup || !SEASONS.includes(season) || !stationSlugs.has(stationSlug)) return;
+
+    const key = `${stationSlug}|${season}`;
+    const exists = seasons.has(key);
+    seasons.add(key);
+    record("seasons", { t: "season", stationSlug, season, months, monthsJa, desc, descJa }, key, exists);
   });
 
   // ---- top_picks -------------------------------------------------------------

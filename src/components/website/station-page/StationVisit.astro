@@ -1,0 +1,31 @@
+---
+// When to visit: one block per season, two columns on wide screens.
+import type { StationPageData } from "../../../lib/db/station-page";
+
+export interface Props {
+  station: StationPageData;
+}
+
+const { station } = Astro.props;
+const TITLES = { spring: "Spring", summer: "Summer", autumn: "Autumn", winter: "Winter" };
+---
+
+<div class="sp-visit">
+  {
+    station.seasons.map((s) => (
+      <div class="sp-visit-item">
+        {(s.months || s.months_japanese) && (
+          <p class="sp-visit-months" data-pick data-en={s.months ?? ""} data-jp={s.months_japanese ?? ""}>
+            {s.months}
+          </p>
+        )}
+        <h3 class="sp-visit-title" data-i18n={`sp.vs.${s.season}`}>{TITLES[s.season]}</h3>
+        {(s.description || s.description_japanese) && (
+          <p class="sp-visit-text" data-pick data-en={s.description ?? ""} data-jp={s.description_japanese ?? ""}>
+            {s.description}
+          </p>
+        )}
+      </div>
+    ))
+  }
+</div>
