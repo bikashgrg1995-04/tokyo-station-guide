@@ -13,6 +13,7 @@ import type {
 } from "../../lib/validators/station-exit";
 
 interface Props {
+  mediaBase?: string;
   stationName: string;
   stationId: number;
   exits: StationExit[];
@@ -25,6 +26,7 @@ interface Props {
 }
 
 const {
+  mediaBase = "/media",
   stationName,
   stationId,
   exits,
@@ -55,6 +57,9 @@ const formValues =
         colorCode: editExit.color_code ?? "",
         description: editExit.description ?? "",
         descriptionJapanese: editExit.description_japanese ?? "",
+        photoCaption: editExit.photo_caption ?? "",
+        photoCaptionJapanese: editExit.photo_caption_japanese ?? "",
+        photo: "",
         sortOrder: String(editExit.sort_order),
       }
     : values;
@@ -200,6 +205,9 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
                         data-color-code={exit.color_code ?? ""}
                         data-description={exit.description ?? ""}
                         data-description-japanese={exit.description_japanese ?? ""}
+                        data-photo={exit.photo ? (/^https?:\/\//i.test(exit.photo) ? exit.photo : `${mediaBase}/${exit.photo}`) : ""}
+                        data-photo-caption={exit.photo_caption ?? ""}
+                        data-photo-caption-japanese={exit.photo_caption_japanese ?? ""}
                         data-sort-order={exit.sort_order}
                       >
                         Edit
@@ -297,7 +305,7 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
         </button>
       </div>
 
-      <form method="POST" class="admin-form" id="exit-form">
+      <form method="POST" enctype="multipart/form-data" class="admin-form" id="exit-form">
         <input
           type="hidden"
           name="exit_action"
@@ -461,6 +469,28 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
           {errors.descriptionJapanese && (
             <small class="admin-field-error">{errors.descriptionJapanese}</small>
           )}
+        </div>
+
+        <div class="admin-form-group">
+          <label for="exit-photo-file">Photo (optional, PNG, JPEG or WebP up to 2 MB)</label>
+          <div id="exit-photo-current" hidden>
+            <img id="exit-photo-preview" alt="" style="display:block;width:140px;max-width:100%;margin-bottom:8px;border-radius:8px" />
+            <label><input type="checkbox" name="remove_photo" /> Remove the current photo</label>
+          </div>
+          <input id="exit-photo-file" name="photo_file" type="file" accept="image/png,image/jpeg,image/webp" />
+          {errors.photo && <small class="admin-field-error">{errors.photo}</small>}
+        </div>
+
+        <div class="admin-form-group">
+          <label for="exit-photo-caption">Photo caption (optional)</label>
+          <textarea id="exit-photo-caption" name="photo_caption" rows="2" maxlength="400" placeholder="What you see on leaving: ...">{formValues.photoCaption}</textarea>
+          {errors.photoCaption && <small class="admin-field-error">{errors.photoCaption}</small>}
+        </div>
+
+        <div class="admin-form-group">
+          <label for="exit-photo-caption-japanese">Japanese photo caption (optional)</label>
+          <textarea id="exit-photo-caption-japanese" name="photo_caption_japanese" lang="ja" rows="2" maxlength="400">{formValues.photoCaptionJapanese}</textarea>
+          {errors.photoCaptionJapanese && <small class="admin-field-error">{errors.photoCaptionJapanese}</small>}
         </div>
 
         <div class="admin-form-actions">

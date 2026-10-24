@@ -19,28 +19,25 @@ if (!Number.isInteger(id) || id <= 0) return Astro.redirect("/admin/stations");
 const station = await getStationById(db, id);
 if (!station) return Astro.redirect("/admin/stations");
 
-const form = await handleStationTips(Astro.request, db, id, station.slug);
+const form = await handleStationTips(Astro.request, db, id);
 if (form.redirectTo) return Astro.redirect(form.redirectTo);
 
-const mediaBase =
-  String((env as { MEDIA_BASE_URL?: string }).MEDIA_BASE_URL ?? "").trim().replace(/\/+$/, "") || "/media";
-const nextPhoto = form.photos.reduce((max, p) => Math.max(max, p.sort_order), 0) + 1;
 const nextTip = form.tips.reduce((max, t) => Math.max(max, t.sort_order), 0) + 1;
 ---
 
-<AdminLayout title={`Exit photos & tips - ${station.name}`} activePath="/admin/stations">
+<AdminLayout title={`Station tips - ${station.name}`} activePath="/admin/stations">
   <header class="admin-topbar">
-    <Breadcrumbs backHref="/admin/stations" parentLabel="Stations" current="Exit photos & tips" />
+    <Breadcrumbs backHref="/admin/stations" parentLabel="Stations" current="Station tips" />
   </header>
 
   <div class="admin-content">
     <div class="admin-page-header">
       <div>
-        <h2>Exit photos &amp; tips</h2>
+        <h2>Station tips</h2>
         <p>
-          For <strong>{station.name}</strong>: the content under "Exits &amp; station tips" on the public
-          page. The exits table above it comes from <a href={`/admin/stations/${id}/exits`}>Manage Exits</a>
-          (name + description).
+          For <strong>{station.name}</strong>: the note and bullet tips under "Exits &amp; station tips" on the
+          public page. The exits table and the exit photos come from
+          <a href={`/admin/stations/${id}/exits`}>Manage Exits</a> (description, photo and caption of each exit).
         </p>
       </div>
     </div>
@@ -61,88 +58,6 @@ const nextTip = form.tips.reduce((max, t) => Math.max(max, t.sort_order), 0) + 1
         </div>
         <div class="admin-form-actions">
           <button type="submit" name="tips_action" value="save_note" class="common-button common-button-primary">Save note</button>
-        </div>
-      </form>
-    </section>
-
-    <h3 class="sides-heading">Exit photos</h3>
-    {
-      form.photos.map((photo) => (
-        <section class="admin-panel sides-panel">
-          <form method="POST" enctype="multipart/form-data" class="admin-panel-body">
-            <input type="hidden" name="item_id" value={photo.id} />
-            <h3 class="sides-title">{photo.title}</h3>
-            {photo.image && <img class="sides-thumb" src={`${mediaBase}/${photo.image}`} alt="" />}
-            {form.errorFor === `photo-${photo.id}` && <div class="admin-form-error" role="alert">{form.formError}</div>}
-            <div class="admin-form-grid">
-            <div class="admin-form-group">
-              <label>Title</label>
-              <input name="title" required maxlength="80" value={photo.title ?? ""} />
-            </div>
-            <div class="admin-form-group">
-              <label>Title (Japanese)</label>
-              <input name="title_japanese" lang="ja" maxlength="80" value={photo.title_japanese ?? ""} />
-            </div>
-            <div class="admin-form-group full-width">
-              <label>Caption</label>
-              <textarea name="caption" rows="2" maxlength="400">{photo.caption ?? ""}</textarea>
-            </div>
-            <div class="admin-form-group full-width">
-              <label>Caption (Japanese)</label>
-              <textarea name="caption_japanese" lang="ja" rows="2" maxlength="400">{photo.caption_japanese ?? ""}</textarea>
-            </div>
-            <div class="admin-form-group">
-              <label>Order</label>
-              <input name="sort_order" type="number" min="0" value={photo.sort_order} />
-            </div>
-            <div class="admin-form-group">
-              <label>Photo (PNG, JPEG or WebP, up to 2 MB)</label>
-              <input name="photo_file" type="file" accept="image/png,image/jpeg,image/webp" />
-            </div>
-              <div class="admin-form-group">
-                <label><input type="checkbox" name="remove_photo" /> Remove the current photo</label>
-              </div>
-            </div>
-            <div class="admin-form-actions">
-              <button type="submit" name="tips_action" value="photo_update" class="common-button common-button-primary">Save</button>
-              <button type="submit" name="tips_action" value="photo_delete" class="common-button common-button-danger" formnovalidate onclick="return confirm('Delete this photo?')">Delete</button>
-            </div>
-          </form>
-        </section>
-      ))
-    }
-    <section class="admin-panel sides-panel">
-      <form method="POST" enctype="multipart/form-data" class="admin-panel-body">
-        <h3 class="sides-title">Add an exit photo</h3>
-        {form.errorFor === "photo-new" && <div class="admin-form-error" role="alert">{form.formError}</div>}
-        <div class="admin-form-grid">
-            <div class="admin-form-group">
-              <label>Title</label>
-              <input name="title" required maxlength="80" placeholder="Marunouchi North Exit" />
-            </div>
-            <div class="admin-form-group">
-              <label>Title (Japanese)</label>
-              <input name="title_japanese" lang="ja" maxlength="80" />
-            </div>
-            <div class="admin-form-group full-width">
-              <label>Caption</label>
-              <textarea name="caption" rows="2" maxlength="400" placeholder="What you see on leaving: ..."></textarea>
-            </div>
-            <div class="admin-form-group full-width">
-              <label>Caption (Japanese)</label>
-              <textarea name="caption_japanese" lang="ja" rows="2" maxlength="400"></textarea>
-            </div>
-            <div class="admin-form-group">
-              <label>Order</label>
-              <input name="sort_order" type="number" min="0" value={nextPhoto} />
-            </div>
-            <div class="admin-form-group">
-              <label>Photo (PNG, JPEG or WebP, up to 2 MB)</label>
-              <input name="photo_file" type="file" accept="image/png,image/jpeg,image/webp" />
-            </div>
-        </div>
-        <div class="admin-form-actions">
-          <button type="submit" name="tips_action" value="photo_create" class="common-button common-button-primary">Add photo</button>
         </div>
       </form>
     </section>

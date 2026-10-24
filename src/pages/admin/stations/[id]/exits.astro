@@ -28,11 +28,14 @@ if (!station) {
   return Astro.redirect("/admin/stations");
 }
 
-const exitForm = await handleStationExits(Astro.request, db, id);
+const exitForm = await handleStationExits(Astro.request, db, id, station.slug);
 
 if (exitForm.redirectTo) {
   return Astro.redirect(exitForm.redirectTo);
 }
+
+const mediaBase =
+  String((env as { MEDIA_BASE_URL?: string }).MEDIA_BASE_URL ?? "").trim().replace(/\/+$/, "") || "/media";
 ---
 
 <AdminLayout
@@ -69,6 +72,7 @@ if (exitForm.redirectTo) {
       formError={exitForm.formError}
       editingId={exitForm.editingId}
       nextSortOrder={exitForm.nextSortOrder}
+      mediaBase={mediaBase}
     />
   </div>
 </AdminLayout>

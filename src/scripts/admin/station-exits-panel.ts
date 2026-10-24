@@ -69,6 +69,19 @@ function openModal(edit = false, button?: HTMLButtonElement): void {
     "description_japanese",
     edit ? (button?.dataset.descriptionJapanese ?? "") : "",
   );
+  setField("photo_caption", edit ? (button?.dataset.photoCaption ?? "") : "");
+  setField(
+    "photo_caption_japanese",
+    edit ? (button?.dataset.photoCaptionJapanese ?? "") : "",
+  );
+  const photoBox = document.getElementById("exit-photo-current");
+  const photoImg = document.getElementById("exit-photo-preview") as HTMLImageElement | null;
+  const photoUrl = edit ? (button?.dataset.photo ?? "") : "";
+  if (photoBox && photoImg) {
+    photoBox.hidden = !photoUrl;
+    photoImg.src = photoUrl;
+  }
+
   setField(
     "sort_order",
     edit

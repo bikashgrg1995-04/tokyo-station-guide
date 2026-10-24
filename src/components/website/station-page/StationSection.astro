@@ -20,7 +20,7 @@ const isOverview = section.id === "overview";
 const isSides = section.id === "sides" && (station.sides.length > 0 || Boolean(station.sides_note));
 const isTips =
   section.id === "tips" &&
-  (station.exits.length > 0 || station.exit_photos.length > 0 || station.tips.length > 0 || Boolean(station.exits_note));
+  (station.exits.length > 0 || station.tips.length > 0 || Boolean(station.exits_note));
 const isRoutes = section.id === "getting" && (station.routes.length > 0 || Boolean(station.routes_note));
 const isMap = section.id === "map" && station.platforms.length > 0;
 ---

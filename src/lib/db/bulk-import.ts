@@ -129,7 +129,8 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
              JOIN facilities fa ON fa.id = sff.facility_id`),
       keyed(`SELECT s.slug || '|' || e.name AS k, f.name AS floorName, e.name_japanese AS nameJa,
                     e.code, e.color_code AS colorCode, e.description AS "desc",
-                    e.description_japanese AS descJa, e.sort_order AS sortOrder
+                    e.description_japanese AS descJa, e.photo_caption AS photoCaption,
+                    e.photo_caption_japanese AS photoCaptionJa, e.sort_order AS sortOrder
              FROM station_exits e JOIN stations s ON s.id = e.station_id
              LEFT JOIN station_floors f ON f.id = e.floor_id`),
       keyed(`SELECT s.slug || '|' || p.platform_number || '|' || COALESCE(l.slug, '') AS k,
@@ -455,6 +456,8 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
           ["color_code", op.colorCode],
           ["description", op.desc],
           ["description_japanese", op.descJa],
+          ["photo_caption", op.photoCaption],
+          ["photo_caption_japanese", op.photoCaptionJa],
           ["sort_order", op.sortOrder, true],
         ],
         4,
@@ -469,13 +472,14 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
         ),
         p(
           `INSERT INTO station_exits
-             (station_id, floor_id, name, name_japanese, code, color_code, description, description_japanese, sort_order)
-           SELECT s.id, f.id, ?2, ?4, ?5, ?6, ?7, ?8, COALESCE(?9, 0)
+             (station_id, floor_id, name, name_japanese, code, color_code, description, description_japanese, sort_order,
+              photo_caption, photo_caption_japanese)
+           SELECT s.id, f.id, ?2, ?4, ?5, ?6, ?7, ?8, COALESCE(?9, 0), ?10, ?11
            FROM stations s JOIN station_floors f ON f.station_id = s.id AND f.name = ?3
            WHERE s.slug = ?1
              AND NOT EXISTS (SELECT 1 FROM station_exits e WHERE e.station_id = s.id AND e.name = ?2)`,
           op.stationSlug, op.name, op.floorName, n(op.nameJa), n(op.code), n(op.colorCode), n(op.desc),
-          n(op.descJa), n(op.sortOrder),
+          n(op.descJa), n(op.sortOrder), n(op.photoCaption), n(op.photoCaptionJa),
         ),
       ];
     }

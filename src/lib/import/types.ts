@@ -107,7 +107,7 @@ export type UpsertOp =
   | { t: "facility"; slug: string; name: string; nameJa: Opt<string>; sortOrder: Opt<number>; category: Opt<string> }
   | { t: "floor"; stationSlug: string; name: string; nameJa: Opt<string>; floorOrder: Opt<number> }
   | { t: "floorFacility"; stationSlug: string; floorName: string; facilitySlug: string; count: Opt<number>; note: Opt<string>; noteJa: Opt<string>; locationType: Opt<string>; sortOrder: Opt<number>; /** nearby exit names, sorted, joined with "|" */ exits: Opt<string> }
-  | { t: "exit"; stationSlug: string; floorName: string; name: string; nameJa: Opt<string>; code: Opt<string>; colorCode: Opt<string>; desc: Opt<string>; descJa: Opt<string>; sortOrder: Opt<number> }
+  | { t: "exit"; stationSlug: string; floorName: string; name: string; nameJa: Opt<string>; code: Opt<string>; colorCode: Opt<string>; desc: Opt<string>; descJa: Opt<string>; photoCaption: Opt<string>; photoCaptionJa: Opt<string>; sortOrder: Opt<number> }
   | { t: "platform"; stationSlug: string; lineSlug: string | null; floorName: Opt<string>; number: string; dest: Opt<string>; destJa: Opt<string>; notes: Opt<string>; notesJa: Opt<string>; group: Opt<string>; groupJa: Opt<string>; sortOrder: Opt<number> }
   | { t: "topPick"; slug: string; name: string; nameJa: Opt<string>; category: Opt<string>; desc: Opt<string>; descJa: Opt<string>; entryFee: Opt<string>; entryFeeJa: Opt<string>; notes: Opt<string>; notesJa: Opt<string>; mapUrl: Opt<string> }
   | { t: "stationTopPick"; stationSlug: string; topPickSlug: string; minutes: Opt<number>; locationType: Opt<string>; sortOrder: Opt<number> };

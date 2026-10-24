@@ -11,6 +11,13 @@ import {
 import { getStationFloors, type StationFloor } from "../db/station-floors";
 
 import { hasErrors, readText } from "./common";
+import { iconBucket } from "../storage/facility-icons";
+import {
+  checkStationImage,
+  deleteStationImage,
+  readStationImageFile,
+  saveStationImage,
+} from "../storage/station-images";
 
 import {
   emptyStationExitErrors,
@@ -44,6 +51,9 @@ function emptyValues(nextSortOrder: number): StationExitFormValues {
     colorCode: "",
     description: "",
     descriptionJapanese: "",
+    photoCaption: "",
+    photoCaptionJapanese: "",
+    photo: "",
     sortOrder: String(nextSortOrder),
   };
 }
@@ -57,6 +67,9 @@ function readExitForm(formData: FormData): StationExitFormValues {
     colorCode: readText(formData, "color_code").toUpperCase(),
     description: readText(formData, "description"),
     descriptionJapanese: readText(formData, "description_japanese"),
+    photoCaption: readText(formData, "photo_caption"),
+    photoCaptionJapanese: readText(formData, "photo_caption_japanese"),
+    photo: "",
     sortOrder: readText(formData, "sort_order"),
   };
 }
@@ -70,6 +83,8 @@ function toExitInput(values: StationExitFormValues): StationExitInput {
     description: values.description.trim() || null,
     descriptionJapanese: values.descriptionJapanese.trim() || null,
     colorCode: values.colorCode.trim() || null,
+    photoCaption: values.photoCaption.trim() || null,
+    photoCaptionJapanese: values.photoCaptionJapanese.trim() || null,
     sortOrder: Number(values.sortOrder),
   };
 }
@@ -82,6 +97,7 @@ export async function handleStationExits(
   request: Request,
   db: D1Database,
   stationId: number,
+  stationSlug = "station",
 ): Promise<StationExitFormResult> {
   const basePath = `/admin/stations/${stationId}/exits`;
 
@@ -122,6 +138,9 @@ export async function handleStationExits(
         colorCode: exit.color_code ?? "",
         description: exit.description ?? "",
         descriptionJapanese: exit.description_japanese ?? "",
+        photoCaption: exit.photo_caption ?? "",
+        photoCaptionJapanese: exit.photo_caption_japanese ?? "",
+        photo: "",
         sortOrder: String(exit.sort_order),
       };
     } else {
@@ -162,7 +181,10 @@ export async function handleStationExits(
     }
 
     try {
+      const { env } = await import("cloudflare:workers");
+      const photos = result.exits.filter((row) => ids.includes(row.id)).map((row) => row.photo);
       await deleteStationExits(db, stationId, ids);
+      for (const key of photos) await deleteStationImage(iconBucket(env), key);
       result.redirectTo = `${basePath}#station-exits`;
     } catch (error) {
       console.error("Failed to delete station exits:", error);
@@ -179,7 +201,10 @@ export async function handleStationExits(
     }
 
     try {
+      const { env } = await import("cloudflare:workers");
+      const photo = exits.find((exit) => exit.id === exitId)?.photo;
       await deleteStationExit(db, stationId, exitId);
+      await deleteStationImage(iconBucket(env), photo);
       result.redirectTo = `${basePath}#station-exits`;
     } catch (error) {
       console.error("Failed to delete station exit:", error);
@@ -206,6 +231,11 @@ export async function handleStationExits(
     result.errors.floorId = "Select a floor of this station.";
   }
 
+  // Optional photo: a new file replaces the old one; the checkbox removes it.
+  const file = readStationImageFile(formData, "photo_file");
+  const check = file ? await checkStationImage(file) : null;
+  if (check && !check.ok) result.errors.photo = check.error;
+
   if (hasErrors(result.errors)) {
     return result;
   }
@@ -217,11 +247,32 @@ export async function handleStationExits(
 
   try {
     const input = toExitInput(result.values);
+    const { env } = await import("cloudflare:workers");
+    const bucket = iconBucket(env);
+    let uploaded: string | null = null;
 
-    if (action === "create") {
-      await createStationExit(db, stationId, input);
-    } else {
-      await updateStationExit(db, stationId, exitId, input);
+    if (check?.ok) {
+      if (!bucket) {
+        result.errors.photo = "Image storage (R2) is not configured. Bind the ASSETS_BUCKET R2 bucket.";
+        return result;
+      }
+      uploaded = await saveStationImage(bucket, `${stationSlug}-exit`, check);
+      input.photo = uploaded;
+    } else if (action === "update" && formData.get("remove_photo") === "on") {
+      input.photo = null;
+    }
+
+    try {
+      if (action === "create") {
+        await createStationExit(db, stationId, input);
+      } else {
+        const old = exits.find((exit) => exit.id === exitId)?.photo;
+        await updateStationExit(db, stationId, exitId, input);
+        if (input.photo !== undefined) await deleteStationImage(bucket, old);
+      }
+    } catch (error) {
+      await deleteStationImage(bucket, uploaded);
+      throw error;
     }
 
     result.redirectTo = `${basePath}#station-exits`;

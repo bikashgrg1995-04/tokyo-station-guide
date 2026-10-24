@@ -9,6 +9,9 @@ export interface StationExit {
   description: string | null;
   description_japanese: string | null;
   color_code: string | null;
+  photo: string | null;
+  photo_caption: string | null;
+  photo_caption_japanese: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -22,6 +25,10 @@ export interface StationExitInput {
   description?: string | null;
   descriptionJapanese?: string | null;
   colorCode?: string | null;
+  photoCaption?: string | null;
+  photoCaptionJapanese?: string | null;
+  /** undefined = keep the saved photo, null = remove it, string = new R2 key. */
+  photo?: string | null;
   sortOrder?: number;
 }
 
@@ -46,6 +53,9 @@ export async function getStationExits(
           description,
           description_japanese,
           color_code,
+          photo,
+          photo_caption,
+          photo_caption_japanese,
           sort_order,
           created_at,
           updated_at
@@ -80,9 +90,12 @@ export async function createStationExit(
           description,
           description_japanese,
           color_code,
-          sort_order
+          sort_order,
+          photo,
+          photo_caption,
+          photo_caption_japanese
         )
-        SELECT ?, id, ?, ?, ?, ?, ?, ?, ?
+        SELECT ?, id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         FROM station_floors
         WHERE id = ? AND station_id = ?
       `,
@@ -96,6 +109,9 @@ export async function createStationExit(
       input.descriptionJapanese?.trim() || null,
       input.colorCode?.trim() || null,
       input.sortOrder ?? 0,
+      input.photo ?? null,
+      input.photoCaption?.trim() || null,
+      input.photoCaptionJapanese?.trim() || null,
       input.floorId,
       stationId,
     )
@@ -130,6 +146,9 @@ export async function updateStationExit(
           description_japanese = ?,
           color_code = ?,
           sort_order = ?,
+          photo_caption = ?,
+          photo_caption_japanese = ?,
+          ${input.photo === undefined ? "" : "photo = ?,"}
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
           AND station_id = ?
@@ -149,6 +168,9 @@ export async function updateStationExit(
       input.descriptionJapanese?.trim() || null,
       input.colorCode?.trim() || null,
       input.sortOrder ?? 0,
+      input.photoCaption?.trim() || null,
+      input.photoCaptionJapanese?.trim() || null,
+      ...(input.photo === undefined ? [] : [input.photo]),
       exitId,
       stationId,
       input.floorId,

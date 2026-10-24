@@ -58,14 +58,9 @@ export interface StationPageExit {
   name_japanese: string | null;
   description: string | null;
   description_japanese: string | null;
-}
-
-export interface StationPageExitPhoto {
-  title: string;
-  title_japanese: string | null;
-  caption: string | null;
-  caption_japanese: string | null;
-  image: string;
+  photo: string | null;
+  photo_caption: string | null;
+  photo_caption_japanese: string | null;
 }
 
 export interface StationPageTip {
@@ -109,7 +104,6 @@ export interface StationPageData {
   sides: StationPageSide[];
   routes: StationPageRoute[];
   exits: StationPageExit[];
-  exit_photos: StationPageExitPhoto[];
   tips: StationPageTip[];
 }
 
@@ -129,7 +123,7 @@ export async function getStationPage(
        FROM stations WHERE slug = ?`,
     )
     .bind(slug)
-    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "exit_photos" | "tips">>();
+    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips">>();
 
   if (!station) return null;
 
@@ -199,7 +193,8 @@ export async function getStationPage(
 
   const exits = await db
     .prepare(
-      `SELECT e.name, e.name_japanese, e.description, e.description_japanese
+      `SELECT e.name, e.name_japanese, e.description, e.description_japanese,
+              e.photo, e.photo_caption, e.photo_caption_japanese
        FROM station_exits e LEFT JOIN station_floors f ON f.id = e.floor_id
        WHERE e.station_id = ?
        ORDER BY COALESCE(f.floor_order, 0) DESC, e.sort_order, e.id`,
@@ -207,14 +202,6 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageExit>();
 
-  const exitPhotos = await db
-    .prepare(
-      `SELECT title, title_japanese, caption, caption_japanese, image
-       FROM station_exit_photos WHERE station_id = ? AND image IS NOT NULL
-       ORDER BY sort_order, id`,
-    )
-    .bind(station.id)
-    .all<StationPageExitPhoto>();
 
   const tips = await db
     .prepare(`SELECT tip, tip_japanese FROM station_tips WHERE station_id = ? ORDER BY sort_order, id`)
@@ -224,7 +211,6 @@ export async function getStationPage(
   return {
     ...station,
     exits: exits.results ?? [],
-    exit_photos: exitPhotos.results ?? [],
     tips: tips.results ?? [],
     routes: routes.results ?? [],
     sides: sides.results ?? [],

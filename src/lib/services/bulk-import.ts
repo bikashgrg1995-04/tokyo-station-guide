@@ -649,13 +649,15 @@ export function buildImportPlan(
     if (colorCode && !HEX_RE.test(colorCode)) err(`"color_code" must look like #FF3B30.`);
     const desc = text(d, "description", 500, err);
     const descJa = text(d, "description_japanese", 500, err);
+    const photoCaption = text(d, "photo_caption", 400, err);
+    const photoCaptionJa = text(d, "photo_caption_japanese", 400, err);
     const sortOrder = intField(d, "sort_order", err);
     if (dup || !name || !floors.has(`${stationSlug}|${floorName}`)) return;
 
     const key = `${stationSlug}|${name}`;
     const exists = exits.has(key);
     exits.add(key);
-    record("exits", { t: "exit", stationSlug, floorName, name, nameJa, code, colorCode, desc, descJa, sortOrder }, key, exists);
+    record("exits", { t: "exit", stationSlug, floorName, name, nameJa, code, colorCode, desc, descJa, photoCaption, photoCaptionJa, sortOrder }, key, exists);
   });
 
   // ---- platforms -------------------------------------------------------------

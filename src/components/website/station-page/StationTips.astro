@@ -8,6 +8,7 @@ export interface Props {
 }
 
 const { station, mediaBase } = Astro.props;
+const photos = station.exits.filter((e) => e.photo);
 const src = (key: string) => (/^https?:\/\//i.test(key) ? key : `${mediaBase}/${key}`);
 ---
 
@@ -44,15 +45,15 @@ const src = (key: string) => (/^https?:\/\//i.test(key) ? key : `${mediaBase}/${
   }
 
   {
-    station.exit_photos.length > 0 && (
+    photos.length > 0 && (
       <div class="sp-tips-photos">
-        {station.exit_photos.map((p) => (
+        {photos.map((p) => (
           <figure>
-            <img src={src(p.image)} alt={p.title} loading="lazy" decoding="async" />
+            <img src={src(p.photo ?? "")} alt={p.name} loading="lazy" decoding="async" />
             <figcaption>
-              <b data-pick data-en={p.title} data-jp={p.title_japanese ?? ""}>{p.title}</b>
-              {p.caption && (
-                <span data-pick data-en={p.caption} data-jp={p.caption_japanese ?? ""}>{p.caption}</span>
+              <b data-pick data-en={p.name} data-jp={p.name_japanese ?? ""}>{p.name}</b>
+              {p.photo_caption && (
+                <span data-pick data-en={p.photo_caption} data-jp={p.photo_caption_japanese ?? ""}>{p.photo_caption}</span>
               )}
             </figcaption>
           </figure>

@@ -6,6 +6,10 @@ export interface StationExitFormValues {
   colorCode: string;
   description: string;
   descriptionJapanese: string;
+  photoCaption: string;
+  photoCaptionJapanese: string;
+  /** Only used to show a photo upload error. */
+  photo: string;
   sortOrder: string;
 }
 
@@ -25,6 +29,9 @@ export function emptyStationExitErrors(): StationExitFormErrors {
     colorCode: "",
     description: "",
     descriptionJapanese: "",
+    photoCaption: "",
+    photoCaptionJapanese: "",
+    photo: "",
     sortOrder: "",
   };
 }
@@ -69,6 +76,14 @@ export function validateStationExitForm(
   if (values.descriptionJapanese.trim().length > 500) {
     errors.descriptionJapanese =
       "Japanese description must be 500 characters or less.";
+  }
+
+  if (values.photoCaption.trim().length > 400) {
+    errors.photoCaption = "Photo caption must be 400 characters or less.";
+  }
+
+  if (values.photoCaptionJapanese.trim().length > 400) {
+    errors.photoCaptionJapanese = "Japanese photo caption must be 400 characters or less.";
   }
 
   if (
