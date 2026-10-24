@@ -15,6 +15,17 @@ function applyPicks() {
   });
 }
 
+/* Notes with **bold** (already escaped on the server): [data-pick-html data-en data-jp] */
+function applyPickHtml() {
+  document.querySelectorAll("[data-pick-html]").forEach(function (node) {
+    var html = pick(node.dataset.en || "", node.dataset.jp || "");
+
+    if (html) {
+      node.innerHTML = html;
+    }
+  });
+}
+
 /* "Last updated {date}": fixed text with a date inside. */
 function applyCounts() {
   document.querySelectorAll("[data-i18n-count]").forEach(function (node) {
@@ -84,6 +95,7 @@ function initScrollSpy() {
 initLang();
 initTheme();
 applyPicks();
+applyPickHtml();
 applyDates();
 applyCounts();
 initScrollSpy();

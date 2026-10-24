@@ -121,6 +121,20 @@ export interface StationPageThing {
   photo: string | null;
 }
 
+export interface StationPagePlace {
+  name: string;
+  name_japanese: string | null;
+  kind: string | null;
+  kind_japanese: string | null;
+  location: string | null;
+  location_japanese: string | null;
+  description: string | null;
+  description_japanese: string | null;
+  map_url: string | null;
+  photo: string | null;
+  booking_url?: string | null;
+}
+
 export interface StationPageDayTrip {
   name: string;
   name_japanese: string | null;
@@ -162,6 +176,8 @@ export interface StationPageData {
   routes_note: string | null;
   exits_note: string | null;
   exits_note_japanese: string | null;
+  restaurants_note: string | null;
+  restaurants_note_japanese: string | null;
   routes_note_japanese: string | null;
   sides_note_japanese: string | null;
   address: string | null;
@@ -190,6 +206,8 @@ export interface StationPageData {
   facilityGuide: StationPageGuideItem[];
   transport: StationPageTransport[];
   things: StationPageThing[];
+  hotels: StationPagePlace[];
+  restaurants: StationPagePlace[];
 }
 
 export async function getStationPage(
@@ -200,7 +218,7 @@ export async function getStationPage(
     .prepare(
       `SELECT id, slug, name, name_japanese, description, description_japanese,
               is_verified, verified_at, location_url, region, region_japanese, address, address_japanese,
-              sides_note, sides_note_japanese, routes_note, routes_note_japanese, exits_note, exits_note_japanese,
+              sides_note, sides_note_japanese, routes_note, routes_note_japanese, exits_note, exits_note_japanese, restaurants_note, restaurants_note_japanese,
               main_image, updated_at,
               stat_lines_note, stat_lines_note_japanese,
               stat_riders_value, stat_riders_note, stat_riders_note_japanese,
@@ -208,7 +226,7 @@ export async function getStationPage(
        FROM stations WHERE slug = ?`,
     )
     .bind(slug)
-    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips" | "seasons" | "practical" | "faqs" | "dayTrips" | "facilityGuide" | "transport" | "things">>();
+    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips" | "seasons" | "practical" | "faqs" | "dayTrips" | "facilityGuide" | "transport" | "things" | "hotels" | "restaurants">>();
 
   if (!station) return null;
 
@@ -367,6 +385,17 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageThing>();
 
+  const placeCols = `name, name_japanese, kind, kind_japanese, location, location_japanese, description,
+              description_japanese, map_url, photo`;
+  const hotels = await db
+    .prepare(`SELECT ${placeCols}, booking_url FROM station_hotels WHERE station_id = ? ORDER BY sort_order, id`)
+    .bind(station.id)
+    .all<StationPagePlace>();
+  const restaurants = await db
+    .prepare(`SELECT ${placeCols} FROM station_restaurants WHERE station_id = ? ORDER BY sort_order, id`)
+    .bind(station.id)
+    .all<StationPagePlace>();
+
   const tips = await db
     .prepare(`SELECT tip, tip_japanese FROM station_tips WHERE station_id = ? ORDER BY sort_order, id`)
     .bind(station.id)
@@ -382,6 +411,8 @@ export async function getStationPage(
     facilityGuide: facilityGuide.results ?? [],
     transport: transport.results ?? [],
     things: things.results ?? [],
+    hotels: hotels.results ?? [],
+    restaurants: restaurants.results ?? [],
     seasons: (seasons.results ?? []).sort(
       (a, b) => ["spring", "summer", "autumn", "winter"].indexOf(a.season) - ["spring", "summer", "autumn", "winter"].indexOf(b.season),
     ),

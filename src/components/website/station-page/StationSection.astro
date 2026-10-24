@@ -13,6 +13,8 @@ import StationDayTrips from "./StationDayTrips.astro";
 import StationFacilities from "./StationFacilities.astro";
 import StationTransport from "./StationTransport.astro";
 import StationThings from "./StationThings.astro";
+import StationHotels from "./StationHotels.astro";
+import StationRestaurants from "./StationRestaurants.astro";
 import StationAlong from "./StationAlong.astro";
 import StationTrainLines from "./StationTrainLines.astro";
 
@@ -35,6 +37,8 @@ const isTrips = section.id === "trips" && station.dayTrips.length > 0;
 const isFacilities = section.id === "facilities" && station.facilityGuide.length > 0;
 const isTransport = section.id === "taxi" && station.transport.length > 0;
 const isThings = section.id === "things" && station.things.length > 0;
+const isHotels = section.id === "hotels" && station.hotels.length > 0;
+const isRestaurants = section.id === "food" && station.restaurants.length > 0;
 const isTips =
   section.id === "tips" &&
   (station.exits.length > 0 || station.tips.length > 0 || Boolean(station.exits_note));
@@ -68,6 +72,10 @@ const isMap = section.id === "map" && station.platforms.length > 0;
         <StationTransport station={station} mediaBase={mediaBase} />
       ) : isThings ? (
         <StationThings station={station} mediaBase={mediaBase} />
+      ) : isHotels ? (
+        <StationHotels station={station} mediaBase={mediaBase} />
+      ) : isRestaurants ? (
+        <StationRestaurants station={station} mediaBase={mediaBase} />
       ) : isAlong ? (
         <StationAlong station={station} lineId={lineId} />
       ) : isTips ? (
@@ -88,7 +96,7 @@ const isMap = section.id === "map" && station.platforms.length > 0;
     }
 
     {
-      !(isMap || isThings || isTransport || isFacilities || isTrips || isPractical || isFaq || isVisit || isAlong || isTips || isRoutes || isSides || isOverview || (isLines && station.lines.length > 0)) && (
+      !(isMap || isHotels || isRestaurants || isThings || isTransport || isFacilities || isTrips || isPractical || isFaq || isVisit || isAlong || isTips || isRoutes || isSides || isOverview || (isLines && station.lines.length > 0)) && (
         <p class="sp-soon" data-i18n="sp.soon">Content for this section is coming soon.</p>
       )
     }
