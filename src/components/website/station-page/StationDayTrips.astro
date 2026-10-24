@@ -1,0 +1,58 @@
+---
+// Day trips: a photo, the name, a Map link, travel time · how to get there, and a short text.
+import type { StationPageData } from "../../../lib/db/station-page";
+
+export interface Props {
+  station: StationPageData;
+  mediaBase: string;
+}
+
+const { station, mediaBase } = Astro.props;
+const src = (key: string) => (/^https?:\/\//i.test(key) ? key : `${mediaBase}/${key}`);
+---
+
+<div class="sp-trips">
+  {
+    station.dayTrips.map((t) => (
+      <article class="sp-trip">
+        <div class="sp-trip-photo">
+          {t.photo ? (
+            <img src={src(t.photo)} alt={t.name} loading="lazy" />
+          ) : (
+            <span data-pick data-en={t.name} data-jp={t.name_japanese ?? ""}>{t.name}</span>
+          )}
+        </div>
+
+        <div class="sp-trip-body">
+          <div class="sp-trip-head">
+            <h3 data-pick data-en={t.name} data-jp={t.name_japanese ?? ""}>{t.name}</h3>
+            {t.map_url && (
+              <a class="sp-trip-map" href={t.map_url} target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z"></path><circle cx="12" cy="11" r="2"></circle></svg>
+                <span data-i18n="sp.dt.map">Map</span>
+              </a>
+            )}
+          </div>
+
+          {(t.travel_time || t.transport) && (
+            <p class="sp-trip-meta">
+              {t.travel_time && (
+                <span data-pick data-en={t.travel_time} data-jp={t.travel_time_japanese ?? ""}>{t.travel_time}</span>
+              )}
+              {t.travel_time && t.transport && <span> · </span>}
+              {t.transport && (
+                <span data-pick data-en={t.transport} data-jp={t.transport_japanese ?? ""}>{t.transport}</span>
+              )}
+            </p>
+          )}
+
+          {t.description && (
+            <p class="sp-trip-text" data-pick data-en={t.description} data-jp={t.description_japanese ?? ""}>
+              {t.description}
+            </p>
+          )}
+        </div>
+      </article>
+    ))
+  }
+</div>

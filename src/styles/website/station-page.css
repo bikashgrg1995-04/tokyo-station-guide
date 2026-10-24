@@ -1477,3 +1477,93 @@ html[data-lang="jp"] .sp-side-ja {
   font-size: 14px;
   line-height: 1.6;
 }
+
+/* ---------- Day trips ---------- */
+.sp-trip {
+  display: grid;
+  grid-template-columns: 172px 1fr;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--row-edge);
+}
+
+.sp-trip:first-child {
+  padding-top: 0;
+}
+
+.sp-trip:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.sp-trip-photo {
+  display: grid;
+  place-items: center;
+  align-self: start;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--row-hover);
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.sp-trip-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sp-trip-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sp-trip-head h3 {
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.sp-trip-map {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(30, 110, 200, 0.12);
+  color: #1560b0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sp-trip-map svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sp-trip-meta {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.sp-trip-text {
+  margin-top: 6px;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+@media (max-width: 520px) {
+  .sp-trip {
+    grid-template-columns: 1fr;
+  }
+}
