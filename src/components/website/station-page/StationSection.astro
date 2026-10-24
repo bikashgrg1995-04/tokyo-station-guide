@@ -10,6 +10,7 @@ import StationVisit from "./StationVisit.astro";
 import StationPractical from "./StationPractical.astro";
 import StationFaq from "./StationFaq.astro";
 import StationDayTrips from "./StationDayTrips.astro";
+import StationFacilities from "./StationFacilities.astro";
 import StationAlong from "./StationAlong.astro";
 import StationTrainLines from "./StationTrainLines.astro";
 
@@ -29,6 +30,7 @@ const isVisit = section.id === "visit" && station.seasons.length > 0;
 const isPractical = section.id === "practical" && station.practical.length > 0;
 const isFaq = section.id === "faq" && station.faqs.length > 0;
 const isTrips = section.id === "trips" && station.dayTrips.length > 0;
+const isFacilities = section.id === "facilities" && station.facilityGuide.length > 0;
 const isTips =
   section.id === "tips" &&
   (station.exits.length > 0 || station.tips.length > 0 || Boolean(station.exits_note));
@@ -56,6 +58,8 @@ const isMap = section.id === "map" && station.platforms.length > 0;
         <StationFaq station={station} />
       ) : isTrips ? (
         <StationDayTrips station={station} mediaBase={mediaBase} />
+      ) : isFacilities ? (
+        <StationFacilities station={station} mediaBase={mediaBase} />
       ) : isAlong ? (
         <StationAlong station={station} lineId={lineId} />
       ) : isTips ? (
@@ -76,7 +80,7 @@ const isMap = section.id === "map" && station.platforms.length > 0;
     }
 
     {
-      !(isMap || isTrips || isPractical || isFaq || isVisit || isAlong || isTips || isRoutes || isSides || isOverview || (isLines && station.lines.length > 0)) && (
+      !(isMap || isFacilities || isTrips || isPractical || isFaq || isVisit || isAlong || isTips || isRoutes || isSides || isOverview || (isLines && station.lines.length > 0)) && (
         <p class="sp-soon" data-i18n="sp.soon">Content for this section is coming soon.</p>
       )
     }

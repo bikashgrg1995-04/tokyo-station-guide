@@ -163,6 +163,7 @@ export function buildImportPlan(
   const practicalTips = new Set(snap.practicalTips);
   const faqs = new Set(snap.faqs);
   const dayTrips = new Set(snap.dayTrips);
+  const facilityGuide = new Set(snap.facilityGuide);
   const floorFacilities = new Set(snap.floorFacilities);
   const stationTopPicks = new Set(snap.stationTopPicks);
 
@@ -217,6 +218,7 @@ export function buildImportPlan(
     const delPracticalTips = gone("practicalTip", "practical_tips", (d) => `${d.station_slug}|${d.tip}`, (k) => stationKept(part(k, 0)));
     const delFaqs = gone("faq", "faqs", (d) => `${d.station_slug}|${d.question}`, (k) => stationKept(part(k, 0)));
     const delDayTrips = gone("dayTrip", "day_trips", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
+    const delFacilityGuide = gone("facilityGuide", "facility_guide", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
     const delStationTopPicks = gone("stationTopPick", "station_top_picks",
       (d) => `${d.station_slug}|${d.top_pick_slug}`, (k) => stationKept(part(k, 0)) && !delTopPicks.has(part(k, 1)));
 
@@ -252,6 +254,7 @@ export function buildImportPlan(
       ["practicalTip", "practical_tips", delPracticalTips],
       ["faq", "faqs", delFaqs],
       ["dayTrip", "day_trips", delDayTrips],
+      ["facilityGuide", "facility_guide", delFacilityGuide],
       ["stationTopPick", "station_top_picks", delStationTopPicks],
     ];
     for (const [type, sheet, set] of groups) {
@@ -823,6 +826,25 @@ export function buildImportPlan(
     const exists = dayTrips.has(key);
     dayTrips.add(key);
     record("day_trips", { t: "dayTrip", stationSlug, name, nameJa, time, timeJa, transport, transportJa, desc, descJa, mapUrl, sortOrder }, key, exists);
+  });
+
+  // ---- facility_guide --------------------------------------------------------
+  eachRow("facility_guide", (d) => `${d.station_slug}|${d.name}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    const name = text(d, "name", 150, err, true) ?? "";
+    const nameJa = text(d, "name_japanese", 150, err);
+    const desc = text(d, "description", 1500, err);
+    const descJa = text(d, "description_japanese", 1500, err);
+    const photoCaption = text(d, "photo_caption", 400, err);
+    const photoCaptionJa = text(d, "photo_caption_japanese", 400, err);
+    const sortOrder = intField(d, "sort_order", err);
+    if (dup || !name || !stationSlugs.has(stationSlug)) return;
+
+    const key = `${stationSlug}|${name}`;
+    const exists = facilityGuide.has(key);
+    facilityGuide.add(key);
+    record("facility_guide", { t: "facilityGuide", stationSlug, name, nameJa, desc, descJa, photoCaption, photoCaptionJa, sortOrder }, key, exists);
   });
 
   // ---- top_picks -------------------------------------------------------------

@@ -5,7 +5,7 @@ export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot
   const all = async <T>(sql: string) =>
     (await db.prepare(sql).all<T>()).results ?? [];
 
-  const [operators, lines, stations, facilities, topPicks, floors, exits, platforms, sides, routes, tips, floorFacilities, stationTopPicks, lineStations, seasons, practicalTips, faqs, dayTrips] =
+  const [operators, lines, stations, facilities, topPicks, floors, exits, platforms, sides, routes, tips, floorFacilities, stationTopPicks, lineStations, seasons, practicalTips, faqs, dayTrips, facilityGuide] =
     await Promise.all([
       all<{ slug: string; name: string }>("SELECT slug, name FROM operators"),
       all<{ slug: string }>("SELECT slug FROM lines"),
@@ -73,6 +73,10 @@ export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot
         `SELECT s.slug || '|' || x.name AS k
          FROM station_day_trips x JOIN stations s ON s.id = x.station_id`,
       ),
+      all<{ k: string }>(
+        `SELECT s.slug || '|' || x.name AS k
+         FROM station_facility_guide x JOIN stations s ON s.id = x.station_id`,
+      ),
     ]);
 
   const stored = await loadStoredRows(all);
@@ -94,6 +98,7 @@ export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot
     practicalTips: practicalTips.map((r) => r.k),
     faqs: faqs.map((r) => r.k),
     dayTrips: dayTrips.map((r) => r.k),
+    facilityGuide: facilityGuide.map((r) => r.k),
     floorFacilities: floorFacilities.map((r) => r.k),
     stationTopPicks: stationTopPicks.map((r) => r.k),
     lineStations,
@@ -111,7 +116,7 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
     return out;
   };
 
-  const [operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick, season, practicalTip, faq, dayTrip] =
+  const [operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick, season, practicalTip, faq, dayTrip, facilityGuide] =
     await Promise.all([
       keyed(`SELECT slug AS k, name, name_japanese AS nameJa, description AS "desc",
                     description_japanese AS descJa, website_url AS url FROM operators`),
@@ -192,9 +197,13 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
                     x.description AS "desc", x.description_japanese AS descJa, x.map_url AS mapUrl,
                     x.sort_order AS sortOrder
              FROM station_day_trips x JOIN stations s ON s.id = x.station_id`),
+      keyed(`SELECT s.slug || '|' || x.name AS k, x.name_japanese AS nameJa, x.description AS "desc",
+                    x.description_japanese AS descJa, x.photo_caption AS photoCaption,
+                    x.photo_caption_japanese AS photoCaptionJa, x.sort_order AS sortOrder
+             FROM station_facility_guide x JOIN stations s ON s.id = x.station_id`),
     ]);
 
-  return { operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick, season, practicalTip, faq, dayTrip };
+  return { operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick, season, practicalTip, faq, dayTrip, facilityGuide };
 }
 
 /** Order in which operation types are applied (a type only needs the ones before it). */
@@ -216,6 +225,7 @@ const TYPE_ORDER: OpType[] = [
   "practicalTip",
   "faq",
   "dayTrip",
+  "facilityGuide",
   "stationTopPick",
 ];
 
@@ -676,6 +686,35 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
       ];
     }
 
+    case "facilityGuide": {
+      const u = sets(
+        [
+          ["name_japanese", op.nameJa], ["description", op.desc], ["description_japanese", op.descJa],
+          ["photo_caption", op.photoCaption], ["photo_caption_japanese", op.photoCaptionJa],
+          ["sort_order", op.sortOrder, true],
+        ],
+        3,
+      );
+      return [
+        p(
+          `UPDATE station_facility_guide SET updated_at = CURRENT_TIMESTAMP${u.sql}
+           WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND name = ?2`,
+          op.stationSlug, op.name, ...u.params,
+        ),
+        p(
+          `INSERT INTO station_facility_guide
+             (station_id, name, name_japanese, description, description_japanese, photo_caption,
+              photo_caption_japanese, sort_order)
+           SELECT s.id, ?2, ?3, ?4, ?5, ?6, ?7, COALESCE(?8, 0)
+           FROM stations s
+           WHERE s.slug = ?1
+             AND NOT EXISTS (SELECT 1 FROM station_facility_guide x WHERE x.station_id = s.id AND x.name = ?2)`,
+          op.stationSlug, op.name, n(op.nameJa), n(op.desc), n(op.descJa), n(op.photoCaption),
+          n(op.photoCaptionJa), n(op.sortOrder),
+        ),
+      ];
+    }
+
     case "dayTrip": {
       const u = sets(
         [
@@ -846,6 +885,12 @@ function deleteStatement(db: D1Database, op: DeleteOp): D1PreparedStatement {
       return p(
         `DELETE FROM station_practical_tips
          WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND tip = ?2`,
+        k[0], k.slice(1).join("|"),
+      );
+    case "facilityGuide":
+      return p(
+        `DELETE FROM station_facility_guide
+         WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND name = ?2`,
         k[0], k.slice(1).join("|"),
       );
     case "dayTrip":

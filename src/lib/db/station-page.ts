@@ -82,6 +82,16 @@ export interface StationPageSeason {
   description_japanese: string | null;
 }
 
+export interface StationPageGuideItem {
+  name: string;
+  name_japanese: string | null;
+  description: string | null;
+  description_japanese: string | null;
+  photo: string | null;
+  photo_caption: string | null;
+  photo_caption_japanese: string | null;
+}
+
 export interface StationPageDayTrip {
   name: string;
   name_japanese: string | null;
@@ -148,6 +158,7 @@ export interface StationPageData {
   practical: StationPageTip[];
   faqs: StationPageFaq[];
   dayTrips: StationPageDayTrip[];
+  facilityGuide: StationPageGuideItem[];
 }
 
 export async function getStationPage(
@@ -166,7 +177,7 @@ export async function getStationPage(
        FROM stations WHERE slug = ?`,
     )
     .bind(slug)
-    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips" | "seasons" | "practical" | "faqs" | "dayTrips">>();
+    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips" | "seasons" | "practical" | "faqs" | "dayTrips" | "facilityGuide">>();
 
   if (!station) return null;
 
@@ -299,6 +310,14 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageDayTrip>();
 
+  const facilityGuide = await db
+    .prepare(
+      `SELECT name, name_japanese, description, description_japanese, photo, photo_caption, photo_caption_japanese
+       FROM station_facility_guide WHERE station_id = ? ORDER BY sort_order, id`,
+    )
+    .bind(station.id)
+    .all<StationPageGuideItem>();
+
   const tips = await db
     .prepare(`SELECT tip, tip_japanese FROM station_tips WHERE station_id = ? ORDER BY sort_order, id`)
     .bind(station.id)
@@ -311,6 +330,7 @@ export async function getStationPage(
     practical: practical.results ?? [],
     faqs: faqs.results ?? [],
     dayTrips: dayTrips.results ?? [],
+    facilityGuide: facilityGuide.results ?? [],
     seasons: (seasons.results ?? []).sort(
       (a, b) => ["spring", "summer", "autumn", "winter"].indexOf(a.season) - ["spring", "summer", "autumn", "winter"].indexOf(b.season),
     ),

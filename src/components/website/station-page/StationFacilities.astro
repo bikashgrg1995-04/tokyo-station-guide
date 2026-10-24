@@ -1,0 +1,57 @@
+---
+// Facilities: a table (facility / what to know) and, below it, photo cards for the entries that have a photo.
+import type { StationPageData } from "../../../lib/db/station-page";
+
+export interface Props {
+  station: StationPageData;
+  mediaBase: string;
+}
+
+const { station, mediaBase } = Astro.props;
+const src = (key: string) => (/^https?:\/\//i.test(key) ? key : `${mediaBase}/${key}`);
+const rows = station.facilityGuide.filter((f) => f.description || f.description_japanese);
+const photos = station.facilityGuide.filter((f) => f.photo);
+---
+
+<div class="sp-fac">
+  {
+    rows.length > 0 && (
+      <table class="sp-fac-table">
+        <thead>
+          <tr>
+            <th data-i18n="sp.fc.facility">Facility</th>
+            <th data-i18n="sp.fc.know">Where and what to know</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((f) => (
+            <tr>
+              <th scope="row" data-pick data-en={f.name} data-jp={f.name_japanese ?? ""}>{f.name}</th>
+              <td data-pick data-en={f.description ?? ""} data-jp={f.description_japanese ?? ""}>{f.description}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  {
+    photos.length > 0 && (
+      <div class="sp-fac-photos">
+        {photos.map((f) => (
+          <figure class="sp-fac-photo">
+            <img src={src(f.photo!)} alt={f.name} loading="lazy" />
+            <figcaption>
+              <strong data-pick data-en={f.name} data-jp={f.name_japanese ?? ""}>{f.name}</strong>
+              {(f.photo_caption || f.photo_caption_japanese) && (
+                <span data-pick data-en={f.photo_caption ?? ""} data-jp={f.photo_caption_japanese ?? ""}>
+                  {f.photo_caption}
+                </span>
+              )}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    )
+  }
+</div>
