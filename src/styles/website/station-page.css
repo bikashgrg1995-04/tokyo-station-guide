@@ -388,18 +388,210 @@ html[data-lang="jp"] [data-station-en] {
 /* ---------- Footer ---------- */
 .sp-footer {
   margin-top: auto;
-  padding: 20px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--row-edge);
+  padding: 22px 16px calc(28px + env(safe-area-inset-bottom, 0px));
+}
+
+.sp-footer-inner {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.sp-footer-copy,
+.sp-footer-note {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.sp-footer-note {
+  margin-top: 12px;
+}
+
+/* ---------- Back to top ---------- */
+.sp-top {
+  position: fixed;
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--row-edge);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+  color: var(--sp-red);
+  cursor: pointer;
+}
+
+.sp-top[hidden] {
+  display: none;
+}
+
+.sp-top svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--sp-red);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sp-top:hover {
+  background: var(--row-hover);
+}
+
+/* ---------- Along the line (station sign) ---------- */
+.sp-along {
+  display: grid;
+  gap: 16px;
+}
+
+.sp-sign {
+  --pad: 12px;
+  display: grid;
+  justify-items: center;
+  padding: 18px var(--pad) var(--pad);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
-.sp-footer-link {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
+.sp-sign-pill {
+  padding: 2px 14px;
+  border: 1px solid var(--c);
+  border-radius: 999px;
+  color: var(--c);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 
-.sp-footer-link:hover {
-  color: var(--ink);
+.sp-sign-ja {
+  margin-top: 6px;
+  font-size: clamp(40px, 9vw, 60px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+}
+
+.sp-sign-en {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.sp-sign-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 10px;
+  border-radius: 24px;
+  background: var(--c);
+  color: #fff;
+  text-align: left;
+}
+
+.sp-sign-chev {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sp-sign-side {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: inherit;
+}
+
+.sp-sign-next {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+a.sp-sign-side:hover {
+  opacity: 0.9;
+}
+
+.sp-sign-code {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  min-width: 48px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--c);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.sp-sign-names {
+  display: grid;
+  min-width: 0;
+}
+
+.sp-sign-names strong {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.sp-sign-names small {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.sp-sign-div {
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+@media (max-width: 520px) {
+  .sp-sign-bar {
+    gap: 6px;
+    padding: 10px 6px;
+  }
+
+  .sp-sign-code {
+    min-width: 40px;
+    padding: 5px 6px;
+    font-size: 12.5px;
+  }
+
+  .sp-sign-names strong {
+    font-size: 14px;
+  }
+
+  .sp-sign-names small {
+    font-size: 9px;
+    letter-spacing: 0.06em;
+  }
 }
 
 /* ---------- Hero details ---------- */

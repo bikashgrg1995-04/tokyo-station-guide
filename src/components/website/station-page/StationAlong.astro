@@ -1,0 +1,70 @@
+---
+// Along the line: a station sign per line, with the stations before and after.
+import type { StationPageData } from "../../../lib/db/station-page";
+
+export interface Props {
+  station: StationPageData;
+}
+
+const { station } = Astro.props;
+
+// "JY01" → "JY" / "01"; anything else is shown as one piece.
+const splitCode = (code: string | null) => {
+  const m = (code ?? "").match(/^([A-Za-z]+)\s*(\d+)$/);
+  return m ? { a: m[1].toUpperCase(), b: m[2] } : { a: code ?? "", b: "" };
+};
+
+const signs = station.lines
+  .filter((l) => l.prev || l.next || l.station_code)
+  .map((line) => ({ line, code: splitCode(line.station_code) }));
+---
+
+<div class="sp-along">
+  {
+    signs.map(({ line, code }) => (
+      <div class="sp-sign" style={`--c:${line.color ?? "#8a93a0"}`}>
+        {line.station_code && (
+          <span class="sp-sign-pill">{code.b ? `${code.a} ${code.b}` : code.a}</span>
+        )}
+        <p class="sp-sign-ja" lang="ja">
+          {station.name_japanese || station.name}
+        </p>
+        <p class="sp-sign-en">{station.name}</p>
+
+        {(line.prev || line.next) && (
+          <div class="sp-sign-bar">
+            <svg class="sp-sign-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+
+            {line.prev ? (
+              <a class="sp-sign-side sp-sign-prev" href={line.prev.verified ? `/station/${line.prev.slug}` : undefined}>
+                <span class="sp-sign-code">
+                  {splitCode(line.prev.code).a}<b>{splitCode(line.prev.code).b}</b>
+                </span>
+                <span class="sp-sign-names">
+                  <strong>{line.prev.name_japanese || line.prev.name}</strong>
+                  <small>{line.prev.name}</small>
+                </span>
+              </a>
+            ) : <span class="sp-sign-side"></span>}
+
+            <i class="sp-sign-div"></i>
+
+            {line.next ? (
+              <a class="sp-sign-side sp-sign-next" href={line.next.verified ? `/station/${line.next.slug}` : undefined}>
+                <span class="sp-sign-names">
+                  <strong>{line.next.name_japanese || line.next.name}</strong>
+                  <small>{line.next.name}</small>
+                </span>
+                <span class="sp-sign-code">
+                  {splitCode(line.next.code).a}<b>{splitCode(line.next.code).b}</b>
+                </span>
+              </a>
+            ) : <span class="sp-sign-side"></span>}
+
+            <svg class="sp-sign-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+          </div>
+        )}
+      </div>
+    ))
+  }
+</div>

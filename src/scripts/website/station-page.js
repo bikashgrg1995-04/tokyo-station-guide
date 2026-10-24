@@ -88,6 +88,27 @@ applyDates();
 applyCounts();
 initScrollSpy();
 
+/* Round "back to top" button: appears after the first screen, scrolls up on click. */
+function initBackToTop() {
+  var btn = document.getElementById("sp-top");
+
+  if (!btn) return;
+
+  function sync() {
+    btn.hidden = window.scrollY < 400;
+  }
+
+  btn.addEventListener("click", function () {
+    var calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    window.scrollTo({ top: 0, behavior: calm ? "auto" : "smooth" });
+  });
+  window.addEventListener("scroll", sync, { passive: true });
+  sync();
+}
+
+initBackToTop();
+
 onLangChange(function () {
   applyPicks();
   applyDates();

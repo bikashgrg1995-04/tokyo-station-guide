@@ -108,8 +108,18 @@ const description =
     </main>
 
     <footer class="sp-footer">
-      <a href="/" class="sp-footer-link" data-i18n="sp.backToMap">Back to the map</a>
+      <div class="sp-footer-inner">
+        <p class="sp-footer-copy">© {new Date().getFullYear()} TokyoGuide.jp</p>
+        <p class="sp-footer-note" data-i18n="sp.disclosure">
+          Disclosure: some links are affiliate links; we may earn a commission at no extra cost to you.
+          Hours, prices and exits change; please check signage on arrival.
+        </p>
+      </div>
     </footer>
+
+    <button type="button" class="sp-top" id="sp-top" aria-label="Back to top" data-i18n-attr="aria-label:sp.top" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>
+    </button>
   </div>
 
   <script>

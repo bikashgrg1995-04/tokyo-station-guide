@@ -9,6 +9,17 @@ export interface StationPageLine {
   station_code: string | null;
   operator_name: string | null;
   operator_name_japanese: string | null;
+  prev: StationPageNeighbor | null;
+  next: StationPageNeighbor | null;
+}
+
+export interface StationPageNeighbor {
+  slug: string;
+  name: string;
+  name_japanese: string | null;
+  code: string | null;
+  /** Has a public page (/station/<slug>). */
+  verified: boolean;
 }
 
 export interface StationPageFacility {
@@ -138,7 +149,31 @@ export async function getStationPage(
        ORDER BY ls.id`,
     )
     .bind(station.id)
-    .all<StationPageLine>();
+    .all<Omit<StationPageLine, "prev" | "next">>();
+
+  // Previous / next station on each line (a loop line wraps around).
+  const withNeighbors: StationPageLine[] = [];
+  for (const line of lines.results ?? []) {
+    const rows = await db
+      .prepare(
+        `SELECT s.id, s.slug, s.name, s.name_japanese, s.is_verified, ls.station_code AS code
+         FROM line_stations ls JOIN stations s ON s.id = ls.station_id
+         WHERE ls.line_id = ? ORDER BY ls.station_order`,
+      )
+      .bind(line.id)
+      .all<{ id: number; slug: string; name: string; name_japanese: string | null; is_verified: number; code: string | null }>();
+    const list = rows.results ?? [];
+    const at = list.findIndex((r) => r.id === station.id);
+    const isLoop = line.code === "JY" || /yamanote/i.test(line.name);
+    const pick = (i: number): StationPageNeighbor | null => {
+      if (at < 0 || list.length < 2) return null;
+      const j = isLoop ? (i + list.length) % list.length : i;
+      const r = list[j];
+      if (!r || r.id === station.id) return null;
+      return { slug: r.slug, name: r.name, name_japanese: r.name_japanese, code: r.code, verified: Number(r.is_verified) === 1 };
+    };
+    withNeighbors.push({ ...line, prev: pick(at - 1), next: pick(at + 1) });
+  }
 
   // Facilities this station has (each once), grouped by category.
   const facilities = await db
@@ -215,7 +250,7 @@ export async function getStationPage(
     routes: routes.results ?? [],
     sides: sides.results ?? [],
     platforms: platforms.results ?? [],
-    lines: lines.results ?? [],
+    lines: withNeighbors,
     facilities: facilities.results ?? [],
   };
 }
