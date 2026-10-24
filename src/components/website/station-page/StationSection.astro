@@ -5,17 +5,22 @@ import PlatformMap from "./PlatformMap.astro";
 import StationOverview from "./StationOverview.astro";
 import StationSides from "./StationSides.astro";
 import StationRoutes from "./StationRoutes.astro";
+import StationTips from "./StationTips.astro";
 import StationTrainLines from "./StationTrainLines.astro";
 
 export interface Props {
   section: StationSectionDef;
   station: StationPageData;
+  mediaBase: string;
 }
 
-const { section, station } = Astro.props;
+const { section, station, mediaBase } = Astro.props;
 const isLines = section.id === "lines";
 const isOverview = section.id === "overview";
 const isSides = section.id === "sides" && (station.sides.length > 0 || Boolean(station.sides_note));
+const isTips =
+  section.id === "tips" &&
+  (station.exits.length > 0 || station.exit_photos.length > 0 || station.tips.length > 0 || Boolean(station.exits_note));
 const isRoutes = section.id === "getting" && (station.routes.length > 0 || Boolean(station.routes_note));
 const isMap = section.id === "map" && station.platforms.length > 0;
 ---
@@ -32,6 +37,8 @@ const isMap = section.id === "map" && station.platforms.length > 0;
         <PlatformMap platforms={station.platforms} />
       ) : isOverview && (station.description || station.description_japanese) ? (
         <StationOverview station={station} />
+      ) : isTips ? (
+        <StationTips station={station} mediaBase={mediaBase} />
       ) : isRoutes ? (
         <StationRoutes station={station} />
       ) : isSides ? (
@@ -48,7 +55,7 @@ const isMap = section.id === "map" && station.platforms.length > 0;
     }
 
     {
-      !(isMap || isRoutes || isSides || isOverview || (isLines && station.lines.length > 0)) && (
+      !(isMap || isTips || isRoutes || isSides || isOverview || (isLines && station.lines.length > 0)) && (
         <p class="sp-soon" data-i18n="sp.soon">Content for this section is coming soon.</p>
       )
     }

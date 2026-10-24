@@ -53,6 +53,26 @@ export interface StationPageRoute {
   cost_japanese: string | null;
 }
 
+export interface StationPageExit {
+  name: string;
+  name_japanese: string | null;
+  description: string | null;
+  description_japanese: string | null;
+}
+
+export interface StationPageExitPhoto {
+  title: string;
+  title_japanese: string | null;
+  caption: string | null;
+  caption_japanese: string | null;
+  image: string;
+}
+
+export interface StationPageTip {
+  tip: string;
+  tip_japanese: string | null;
+}
+
 export interface StationPageData {
   id: number;
   slug: string;
@@ -67,6 +87,8 @@ export interface StationPageData {
   region_japanese: string | null;
   sides_note: string | null;
   routes_note: string | null;
+  exits_note: string | null;
+  exits_note_japanese: string | null;
   routes_note_japanese: string | null;
   sides_note_japanese: string | null;
   address: string | null;
@@ -86,6 +108,9 @@ export interface StationPageData {
   platforms: StationPagePlatform[];
   sides: StationPageSide[];
   routes: StationPageRoute[];
+  exits: StationPageExit[];
+  exit_photos: StationPageExitPhoto[];
+  tips: StationPageTip[];
 }
 
 export async function getStationPage(
@@ -96,7 +121,7 @@ export async function getStationPage(
     .prepare(
       `SELECT id, slug, name, name_japanese, description, description_japanese,
               is_verified, verified_at, location_url, region, region_japanese, address, address_japanese,
-              sides_note, sides_note_japanese, routes_note, routes_note_japanese,
+              sides_note, sides_note_japanese, routes_note, routes_note_japanese, exits_note, exits_note_japanese,
               main_image, updated_at,
               stat_lines_note, stat_lines_note_japanese,
               stat_riders_value, stat_riders_note, stat_riders_note_japanese,
@@ -104,7 +129,7 @@ export async function getStationPage(
        FROM stations WHERE slug = ?`,
     )
     .bind(slug)
-    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes">>();
+    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "exit_photos" | "tips">>();
 
   if (!station) return null;
 
@@ -172,8 +197,35 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageRoute>();
 
+  const exits = await db
+    .prepare(
+      `SELECT e.name, e.name_japanese, e.description, e.description_japanese
+       FROM station_exits e LEFT JOIN station_floors f ON f.id = e.floor_id
+       WHERE e.station_id = ?
+       ORDER BY COALESCE(f.floor_order, 0) DESC, e.sort_order, e.id`,
+    )
+    .bind(station.id)
+    .all<StationPageExit>();
+
+  const exitPhotos = await db
+    .prepare(
+      `SELECT title, title_japanese, caption, caption_japanese, image
+       FROM station_exit_photos WHERE station_id = ? AND image IS NOT NULL
+       ORDER BY sort_order, id`,
+    )
+    .bind(station.id)
+    .all<StationPageExitPhoto>();
+
+  const tips = await db
+    .prepare(`SELECT tip, tip_japanese FROM station_tips WHERE station_id = ? ORDER BY sort_order, id`)
+    .bind(station.id)
+    .all<StationPageTip>();
+
   return {
     ...station,
+    exits: exits.results ?? [],
+    exit_photos: exitPhotos.results ?? [],
+    tips: tips.results ?? [],
     routes: routes.results ?? [],
     sides: sides.results ?? [],
     platforms: platforms.results ?? [],

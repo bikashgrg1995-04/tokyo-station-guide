@@ -1057,3 +1057,98 @@ html[data-lang="jp"] .sp-side-ja {
   color: var(--muted);
   font-size: 12px;
 }
+
+/* ---------- Exits & station tips ---------- */
+.sp-tips {
+  display: grid;
+  gap: 14px;
+}
+
+.sp-tips-scroll {
+  overflow-x: auto;
+}
+
+.sp-tips-table {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.sp-tips-table thead th {
+  padding: 4px 12px 8px 0;
+  border-bottom: 1px solid var(--row-edge);
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.sp-tips-table tbody th,
+.sp-tips-table td {
+  padding: 12px 12px 12px 0;
+  border-bottom: 1px solid var(--row-edge);
+  vertical-align: top;
+  text-align: left;
+}
+
+.sp-tips-table tbody th {
+  width: 130px;
+  font-weight: 700;
+}
+
+.sp-tips-note {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.sp-tips-photos {
+  display: grid;
+  gap: 18px 14px;
+  margin-top: 4px;
+}
+
+.sp-tips-photos figure {
+  margin: 0;
+}
+
+.sp-tips-photos img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: 12px;
+  background: var(--row-hover);
+}
+
+.sp-tips-photos figcaption {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.sp-tips-photos figcaption b {
+  font-size: 13.5px;
+}
+
+.sp-tips-photos figcaption span {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.sp-tips-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+@media (min-width: 640px) {
+  .sp-tips-photos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

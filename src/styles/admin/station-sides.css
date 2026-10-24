@@ -7,3 +7,17 @@
   font-size: 15px;
   font-weight: 700;
 }
+
+.sides-heading {
+  margin: 24px 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.sides-thumb {
+  display: block;
+  width: 160px;
+  max-width: 100%;
+  margin-bottom: 12px;
+  border-radius: 8px;
+}

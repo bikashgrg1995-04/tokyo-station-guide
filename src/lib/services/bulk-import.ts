@@ -157,6 +157,7 @@ export function buildImportPlan(
   const platforms = new Set(snap.platforms);
   const sides = new Set(snap.sides);
   const routes = new Set(snap.routes);
+  const tips = new Set(snap.tips);
   const floorFacilities = new Set(snap.floorFacilities);
   const stationTopPicks = new Set(snap.stationTopPicks);
 
@@ -206,6 +207,7 @@ export function buildImportPlan(
       (d) => `${d.station_slug}|${d.platform_number}|${d.line_slug ?? ""}`, (k) => stationKept(part(k, 0)));
     const delSides = gone("side", "sides", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
     const delRoutes = gone("route", "routes", (d) => `${d.station_slug}|${d.from_place}|${d.route ?? ""}`, (k) => stationKept(part(k, 0)));
+    const delTips = gone("tip", "tips", (d) => `${d.station_slug}|${d.tip}`, (k) => stationKept(part(k, 0)));
     const delStationTopPicks = gone("stationTopPick", "station_top_picks",
       (d) => `${d.station_slug}|${d.top_pick_slug}`, (k) => stationKept(part(k, 0)) && !delTopPicks.has(part(k, 1)));
 
@@ -236,6 +238,7 @@ export function buildImportPlan(
       ["platform", "platforms", delPlatforms],
       ["side", "sides", delSides],
       ["route", "routes", delRoutes],
+      ["tip", "tips", delTips],
       ["stationTopPick", "station_top_picks", delStationTopPicks],
     ];
     for (const [type, sheet, set] of groups) {
@@ -484,6 +487,8 @@ export function buildImportPlan(
     const regionJa = text(d, "region_japanese", 100, err);
     const address = text(d, "address", 200, err);
     const addressJa = text(d, "address_japanese", 200, err);
+    const exitsNote = text(d, "exits_note", 1000, err);
+    const exitsNoteJa = text(d, "exits_note_japanese", 1000, err);
     const routesNote = text(d, "routes_note", 1000, err);
     const routesNoteJa = text(d, "routes_note_japanese", 1000, err);
     const sidesNote = text(d, "sides_note", 1500, err);
@@ -519,7 +524,7 @@ export function buildImportPlan(
 
     const exists = stationSlugs.has(slug);
     stationSlugs.add(slug);
-    record("stations", { t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt, region, regionJa, address, addressJa, statLinesNote, statLinesNoteJa, statRidersValue, statRidersNote, statRidersNoteJa, statOpenedValue, statOpenedNote, statOpenedNoteJa, sidesNote, sidesNoteJa, routesNote, routesNoteJa }, slug, exists);
+    record("stations", { t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt, region, regionJa, address, addressJa, statLinesNote, statLinesNoteJa, statRidersValue, statRidersNote, statRidersNoteJa, statOpenedValue, statOpenedNote, statOpenedNoteJa, sidesNote, sidesNoteJa, routesNote, routesNoteJa, exitsNote, exitsNoteJa }, slug, exists);
   });
 
   // ---- line_stations ---------------------------------------------------------
@@ -642,8 +647,8 @@ export function buildImportPlan(
     const code = text(d, "code", 50, err);
     const colorCode = optCol(d, "color_code");
     if (colorCode && !HEX_RE.test(colorCode)) err(`"color_code" must look like #FF3B30.`);
-    const desc = text(d, "description", 200, err);
-    const descJa = text(d, "description_japanese", 200, err);
+    const desc = text(d, "description", 500, err);
+    const descJa = text(d, "description_japanese", 500, err);
     const sortOrder = intField(d, "sort_order", err);
     if (dup || !name || !floors.has(`${stationSlug}|${floorName}`)) return;
 
@@ -716,6 +721,21 @@ export function buildImportPlan(
     const exists = routes.has(key);
     routes.add(key);
     record("routes", { t: "route", stationSlug, fromPlace, fromPlaceJa, route, routeJa, time, timeJa, cost, costJa, sortOrder }, key, exists);
+  });
+
+  // ---- tips ------------------------------------------------------------------
+  eachRow("tips", (d) => `${d.station_slug}|${d.tip}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    const tip = text(d, "tip", 600, err, true) ?? "";
+    const tipJa = text(d, "tip_japanese", 600, err);
+    const sortOrder = intField(d, "sort_order", err);
+    if (dup || !tip || !stationSlugs.has(stationSlug)) return;
+
+    const key = `${stationSlug}|${tip}`;
+    const exists = tips.has(key);
+    tips.add(key);
+    record("tips", { t: "tip", stationSlug, tip, tipJa, sortOrder }, key, exists);
   });
 
   // ---- top_picks -------------------------------------------------------------
