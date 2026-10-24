@@ -287,6 +287,25 @@ html[data-lang="jp"] [data-station-en] {
   margin-top: 12px;
 }
 
+/* Along the line is just the sign card: no box or heading around it. */
+.sp-section[data-section="along"] {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.sp-section[data-section="along"] > .sp-section-head {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.sp-section[data-section="along"] > .sp-section-body {
+  margin-top: 0;
+}
+
 .sp-text {
   max-width: 68ch;
   font-size: 14.5px;
@@ -450,6 +469,33 @@ html[data-lang="jp"] [data-station-en] {
 .sp-along {
   display: grid;
   gap: 16px;
+}
+
+.sp-sign[hidden] {
+  display: none;
+}
+
+.sp-along-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sp-along-tab {
+  padding: 6px 14px;
+  border: 1px solid var(--c);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--c);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sp-along-tab[aria-selected="true"] {
+  background: var(--c);
+  color: #fff;
 }
 
 .sp-sign {

@@ -5,6 +5,7 @@ import StationPageHeader from "../../components/website/station-page/StationPage
 import StationGlance from "../../components/website/station-page/StationGlance.astro";
 import StationQuickNav from "../../components/website/station-page/StationQuickNav.astro";
 import StationHero from "../../components/website/station-page/StationHero.astro";
+import ComingSoonDialog from "../../components/website/ComingSoonDialog.astro";
 import StationSection from "../../components/website/station-page/StationSection.astro";
 import { getStationPage } from "../../lib/db/station-page";
 import { SECTIONS } from "../../components/website/station-page/sections";
@@ -14,6 +15,7 @@ import "@fontsource-variable/noto-sans-jp";
 import "../../styles/website/global.css";
 import "../../styles/website/theme.css";
 import "../../styles/website/header.css";
+import "../../styles/website/lines-dialog.css";
 import "../../styles/website/station-page.css";
 
 export const prerender = false;
@@ -106,6 +108,8 @@ const description =
         </aside>
       </div>
     </main>
+
+    <ComingSoonDialog />
 
     <footer class="sp-footer">
       <div class="sp-footer-inner">

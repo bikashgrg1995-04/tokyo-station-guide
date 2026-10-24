@@ -114,3 +114,62 @@ onLangChange(function () {
   applyDates();
   applyCounts();
 });
+
+/* Along the line: switch line, and open neighbours (or say "not verified"). */
+function initAlong() {
+  var root = document.querySelector("[data-along]");
+  var dialog = document.getElementById("soon-dialog");
+
+  if (!root) {
+    return;
+  }
+
+  root.querySelectorAll("[data-along-tab]").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      root.querySelectorAll("[data-along-tab]").forEach(function (b) {
+        b.setAttribute("aria-selected", String(b === tab));
+      });
+      root.querySelectorAll("[data-along-card]").forEach(function (card) {
+        card.hidden = card.dataset.alongCard !== tab.dataset.alongTab;
+      });
+    });
+  });
+
+  if (!dialog) {
+    return;
+  }
+
+  var title = document.getElementById("soon-title");
+  var body = dialog.querySelector("p");
+  var ok = document.getElementById("soon-close");
+
+  function close() {
+    dialog.hidden = true;
+  }
+
+  root.addEventListener("click", function (e) {
+    var link = e.target.closest("a[data-verified='0']");
+
+    if (!link) {
+      return;
+    }
+
+    e.preventDefault();
+    title.dataset.i18n = "soon.unverifiedTitle";
+    body.dataset.i18n = "soon.unverifiedBody";
+    title.textContent = t("soon.unverifiedTitle");
+    body.textContent = t("soon.unverifiedBody");
+    dialog.hidden = false;
+    ok.focus();
+  });
+
+  ok.addEventListener("click", close);
+  document.getElementById("soon-backdrop").addEventListener("click", close);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      close();
+    }
+  });
+}
+
+initAlong();
