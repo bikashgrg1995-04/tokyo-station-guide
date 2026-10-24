@@ -17,6 +17,7 @@ export type OpType =
   | "exit"
   | "platform"
   | "side"
+  | "route"
   | "topPick"
   | "stationTopPick";
 
@@ -38,6 +39,8 @@ export interface ImportSnapshot {
   platforms: string[];
   /** `stationSlug|sideName` */
   sides: string[];
+  /** `stationSlug|fromPlace|route` */
+  routes: string[];
   /** `stationSlug|floorName|facilitySlug` */
   floorFacilities: string[];
   /** `stationSlug|topPickSlug` */
@@ -59,6 +62,7 @@ export const KEY_FIELDS: Record<OpType, string[]> = {
   exit: ["stationSlug", "name"],
   platform: ["stationSlug", "lineSlug", "number"],
   side: ["stationSlug", "name"],
+  route: ["stationSlug", "fromPlace", "route"],
   topPick: ["slug"],
   stationTopPick: ["stationSlug", "topPickSlug"],
 };
@@ -75,6 +79,7 @@ export const NOT_NULL_FIELDS: Record<OpType, string[]> = {
   exit: ["floorName", "sortOrder"],
   platform: ["sortOrder"],
   side: ["sortOrder"],
+  route: ["sortOrder"],
   topPick: ["name", "category"],
   stationTopPick: ["locationType", "sortOrder"],
 };
@@ -89,7 +94,8 @@ export interface DeleteOp {
 export type UpsertOp =
   | { t: "operator"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; url: Opt<string> }
   | { t: "line"; slug: string; operatorSlug: string; name: string; nameJa: Opt<string>; code: Opt<string>; color: Opt<string>; lineType: Opt<string>; status: Opt<string>; desc: Opt<string>; descJa: Opt<string> }
-  | { t: "station"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; about: Opt<string>; aboutJa: Opt<string>; locationUrl: Opt<string>; isVerified: Opt<number>; verifiedAt: Opt<string>; region: Opt<string>; regionJa: Opt<string>; address: Opt<string>; addressJa: Opt<string>; statLinesNote: Opt<string>; statLinesNoteJa: Opt<string>; statRidersValue: Opt<string>; statRidersNote: Opt<string>; statRidersNoteJa: Opt<string>; statOpenedValue: Opt<string>; statOpenedNote: Opt<string>; statOpenedNoteJa: Opt<string>; sidesNote: Opt<string>; sidesNoteJa: Opt<string> }
+  | { t: "station"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; about: Opt<string>; aboutJa: Opt<string>; locationUrl: Opt<string>; isVerified: Opt<number>; verifiedAt: Opt<string>; region: Opt<string>; regionJa: Opt<string>; address: Opt<string>; addressJa: Opt<string>; statLinesNote: Opt<string>; statLinesNoteJa: Opt<string>; statRidersValue: Opt<string>; statRidersNote: Opt<string>; statRidersNoteJa: Opt<string>; statOpenedValue: Opt<string>; statOpenedNote: Opt<string>; statOpenedNoteJa: Opt<string>; sidesNote: Opt<string>; sidesNoteJa: Opt<string>; routesNote: Opt<string>; routesNoteJa: Opt<string> }
+  | { t: "route"; stationSlug: string; fromPlace: string; fromPlaceJa: Opt<string>; route: string | null; routeJa: Opt<string>; time: Opt<string>; timeJa: Opt<string>; cost: Opt<string>; costJa: Opt<string>; sortOrder: Opt<number> }
   | { t: "side"; stationSlug: string; name: string; nameJa: Opt<string>; subtitle: Opt<string>; subtitleJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; sortOrder: Opt<number> }
   | { t: "lineStation"; lineSlug: string; stationSlug: string; order: number; code: Opt<string> }
   | { t: "facility"; slug: string; name: string; nameJa: Opt<string>; sortOrder: Opt<number>; category: Opt<string> }

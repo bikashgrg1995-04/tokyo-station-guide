@@ -1,0 +1,45 @@
+---
+// Getting there: a table of routes (from / route / time / cost) and a footnote.
+import type { StationPageData } from "../../../lib/db/station-page";
+
+export interface Props {
+  station: StationPageData;
+}
+
+const { station } = Astro.props;
+const note = station.routes_note;
+---
+
+<div class="sp-routes">
+  {
+    station.routes.length > 0 && (
+      <div class="sp-routes-scroll">
+        <table class="sp-routes-table">
+          <thead>
+            <tr>
+              <th data-i18n="sp.rt.from">From</th>
+              <th data-i18n="sp.rt.route">Route</th>
+              <th data-i18n="sp.rt.time">Time</th>
+              <th data-i18n="sp.rt.cost">Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            {station.routes.map((r) => (
+              <tr>
+                <th scope="row" data-pick data-en={r.from_place} data-jp={r.from_place_japanese ?? ""}>{r.from_place}</th>
+                <td data-pick data-en={r.route ?? ""} data-jp={r.route_japanese ?? ""}>{r.route}</td>
+                <td class="sp-rt-nowrap" data-pick data-en={r.travel_time ?? ""} data-jp={r.travel_time_japanese ?? ""}>{r.travel_time}</td>
+                <td data-pick data-en={r.cost ?? ""} data-jp={r.cost_japanese ?? ""}>{r.cost}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+  {
+    note && (
+      <p class="sp-routes-note" data-pick data-en={note} data-jp={station.routes_note_japanese ?? ""}>{note}</p>
+    )
+  }
+</div>

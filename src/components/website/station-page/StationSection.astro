@@ -4,6 +4,7 @@ import { ICONS, type StationSectionDef } from "./sections";
 import PlatformMap from "./PlatformMap.astro";
 import StationOverview from "./StationOverview.astro";
 import StationSides from "./StationSides.astro";
+import StationRoutes from "./StationRoutes.astro";
 import StationTrainLines from "./StationTrainLines.astro";
 
 export interface Props {
@@ -15,6 +16,7 @@ const { section, station } = Astro.props;
 const isLines = section.id === "lines";
 const isOverview = section.id === "overview";
 const isSides = section.id === "sides" && (station.sides.length > 0 || Boolean(station.sides_note));
+const isRoutes = section.id === "getting" && (station.routes.length > 0 || Boolean(station.routes_note));
 const isMap = section.id === "map" && station.platforms.length > 0;
 ---
 
@@ -30,6 +32,8 @@ const isMap = section.id === "map" && station.platforms.length > 0;
         <PlatformMap platforms={station.platforms} />
       ) : isOverview && (station.description || station.description_japanese) ? (
         <StationOverview station={station} />
+      ) : isRoutes ? (
+        <StationRoutes station={station} />
       ) : isSides ? (
         <StationSides station={station} />
       ) : isLines && station.lines.length > 0 ? (
@@ -44,7 +48,7 @@ const isMap = section.id === "map" && station.platforms.length > 0;
     }
 
     {
-      !(isMap || isSides || isOverview || (isLines && station.lines.length > 0)) && (
+      !(isMap || isRoutes || isSides || isOverview || (isLines && station.lines.length > 0)) && (
         <p class="sp-soon" data-i18n="sp.soon">Content for this section is coming soon.</p>
       )
     }

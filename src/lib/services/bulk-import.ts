@@ -156,6 +156,7 @@ export function buildImportPlan(
   const exits = new Set(snap.exits);
   const platforms = new Set(snap.platforms);
   const sides = new Set(snap.sides);
+  const routes = new Set(snap.routes);
   const floorFacilities = new Set(snap.floorFacilities);
   const stationTopPicks = new Set(snap.stationTopPicks);
 
@@ -204,6 +205,7 @@ export function buildImportPlan(
     const delPlatforms = gone("platform", "platforms",
       (d) => `${d.station_slug}|${d.platform_number}|${d.line_slug ?? ""}`, (k) => stationKept(part(k, 0)));
     const delSides = gone("side", "sides", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
+    const delRoutes = gone("route", "routes", (d) => `${d.station_slug}|${d.from_place}|${d.route ?? ""}`, (k) => stationKept(part(k, 0)));
     const delStationTopPicks = gone("stationTopPick", "station_top_picks",
       (d) => `${d.station_slug}|${d.top_pick_slug}`, (k) => stationKept(part(k, 0)) && !delTopPicks.has(part(k, 1)));
 
@@ -233,6 +235,7 @@ export function buildImportPlan(
       ["exit", "exits", delExits],
       ["platform", "platforms", delPlatforms],
       ["side", "sides", delSides],
+      ["route", "routes", delRoutes],
       ["stationTopPick", "station_top_picks", delStationTopPicks],
     ];
     for (const [type, sheet, set] of groups) {
@@ -481,6 +484,8 @@ export function buildImportPlan(
     const regionJa = text(d, "region_japanese", 100, err);
     const address = text(d, "address", 200, err);
     const addressJa = text(d, "address_japanese", 200, err);
+    const routesNote = text(d, "routes_note", 1000, err);
+    const routesNoteJa = text(d, "routes_note_japanese", 1000, err);
     const sidesNote = text(d, "sides_note", 1500, err);
     const sidesNoteJa = text(d, "sides_note_japanese", 1500, err);
     const statLinesNote = text(d, "stat_lines_note", 150, err);
@@ -514,7 +519,7 @@ export function buildImportPlan(
 
     const exists = stationSlugs.has(slug);
     stationSlugs.add(slug);
-    record("stations", { t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt, region, regionJa, address, addressJa, statLinesNote, statLinesNoteJa, statRidersValue, statRidersNote, statRidersNoteJa, statOpenedValue, statOpenedNote, statOpenedNoteJa, sidesNote, sidesNoteJa }, slug, exists);
+    record("stations", { t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt, region, regionJa, address, addressJa, statLinesNote, statLinesNoteJa, statRidersValue, statRidersNote, statRidersNoteJa, statOpenedValue, statOpenedNote, statOpenedNoteJa, sidesNote, sidesNoteJa, routesNote, routesNoteJa }, slug, exists);
   });
 
   // ---- line_stations ---------------------------------------------------------
@@ -689,6 +694,28 @@ export function buildImportPlan(
     const exists = sides.has(key);
     sides.add(key);
     record("sides", { t: "side", stationSlug, name, nameJa, subtitle, subtitleJa, desc, descJa, sortOrder }, key, exists);
+  });
+
+  // ---- routes ----------------------------------------------------------------
+  eachRow("routes", (d) => `${d.station_slug}|${d.from_place}|${d.route ?? ""}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    const fromPlace = text(d, "from_place", 80, err, true) ?? "";
+    const fromPlaceJa = text(d, "from_place_japanese", 80, err);
+    const route = opt(d.route ?? "");
+    if ((d.route ?? "").length > 500) err(`"route" must be 500 characters or less.`);
+    const routeJa = text(d, "route_japanese", 500, err);
+    const time = text(d, "travel_time", 60, err);
+    const timeJa = text(d, "travel_time_japanese", 60, err);
+    const cost = text(d, "cost", 120, err);
+    const costJa = text(d, "cost_japanese", 120, err);
+    const sortOrder = intField(d, "sort_order", err);
+    if (dup || !fromPlace || !stationSlugs.has(stationSlug)) return;
+
+    const key = `${stationSlug}|${fromPlace}|${route ?? ""}`;
+    const exists = routes.has(key);
+    routes.add(key);
+    record("routes", { t: "route", stationSlug, fromPlace, fromPlaceJa, route, routeJa, time, timeJa, cost, costJa, sortOrder }, key, exists);
   });
 
   // ---- top_picks -------------------------------------------------------------

@@ -16,6 +16,7 @@ export type SheetName =
   | "exits"
   | "platforms"
   | "sides"
+  | "routes"
   | "top_picks"
   | "station_top_picks";
 
@@ -30,6 +31,7 @@ export const SHEET_ORDER: SheetName[] = [
   "exits",
   "platforms",
   "sides",
+  "routes",
   "top_picks",
   "station_top_picks",
 ];
@@ -46,6 +48,7 @@ export const REQUIRED_COLUMNS: Record<SheetName, string[]> = {
   exits: ["station_slug", "floor_name", "name"],
   platforms: ["station_slug", "platform_number"],
   sides: ["station_slug", "name"],
+  routes: ["station_slug", "from_place"],
   top_picks: ["slug", "name"],
   station_top_picks: ["station_slug", "top_pick_slug"],
 };

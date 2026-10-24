@@ -42,6 +42,17 @@ export interface StationPageSide {
   description_japanese: string | null;
 }
 
+export interface StationPageRoute {
+  from_place: string;
+  from_place_japanese: string | null;
+  route: string | null;
+  route_japanese: string | null;
+  travel_time: string | null;
+  travel_time_japanese: string | null;
+  cost: string | null;
+  cost_japanese: string | null;
+}
+
 export interface StationPageData {
   id: number;
   slug: string;
@@ -55,6 +66,8 @@ export interface StationPageData {
   region: string | null;
   region_japanese: string | null;
   sides_note: string | null;
+  routes_note: string | null;
+  routes_note_japanese: string | null;
   sides_note_japanese: string | null;
   address: string | null;
   address_japanese: string | null;
@@ -72,6 +85,7 @@ export interface StationPageData {
   facilities: StationPageFacility[];
   platforms: StationPagePlatform[];
   sides: StationPageSide[];
+  routes: StationPageRoute[];
 }
 
 export async function getStationPage(
@@ -82,7 +96,7 @@ export async function getStationPage(
     .prepare(
       `SELECT id, slug, name, name_japanese, description, description_japanese,
               is_verified, verified_at, location_url, region, region_japanese, address, address_japanese,
-              sides_note, sides_note_japanese,
+              sides_note, sides_note_japanese, routes_note, routes_note_japanese,
               main_image, updated_at,
               stat_lines_note, stat_lines_note_japanese,
               stat_riders_value, stat_riders_note, stat_riders_note_japanese,
@@ -90,7 +104,7 @@ export async function getStationPage(
        FROM stations WHERE slug = ?`,
     )
     .bind(slug)
-    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides">>();
+    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes">>();
 
   if (!station) return null;
 
@@ -149,8 +163,18 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageSide>();
 
+  const routes = await db
+    .prepare(
+      `SELECT from_place, from_place_japanese, route, route_japanese, travel_time,
+              travel_time_japanese, cost, cost_japanese
+       FROM station_routes WHERE station_id = ? ORDER BY sort_order, id`,
+    )
+    .bind(station.id)
+    .all<StationPageRoute>();
+
   return {
     ...station,
+    routes: routes.results ?? [],
     sides: sides.results ?? [],
     platforms: platforms.results ?? [],
     lines: lines.results ?? [],
