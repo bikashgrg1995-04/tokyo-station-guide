@@ -13,9 +13,10 @@ export interface Props {
   section: StationSectionDef;
   station: StationPageData;
   mediaBase: string;
+  lineId?: number | null;
 }
 
-const { section, station, mediaBase } = Astro.props;
+const { section, station, mediaBase, lineId = null } = Astro.props;
 const isLines = section.id === "lines";
 const isOverview = section.id === "overview";
 const isSides = section.id === "sides" && (station.sides.length > 0 || Boolean(station.sides_note));
@@ -40,7 +41,7 @@ const isMap = section.id === "map" && station.platforms.length > 0;
       ) : isOverview && (station.description || station.description_japanese) ? (
         <StationOverview station={station} />
       ) : isAlong ? (
-        <StationAlong station={station} />
+        <StationAlong station={station} lineId={lineId} />
       ) : isTips ? (
         <StationTips station={station} mediaBase={mediaBase} />
       ) : isRoutes ? (

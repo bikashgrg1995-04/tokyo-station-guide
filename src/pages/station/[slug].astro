@@ -20,6 +20,8 @@ import "../../styles/website/station-page.css";
 
 export const prerender = false;
 
+const lineParam = Number(Astro.url.searchParams.get("line"));
+const lineId = Number.isInteger(lineParam) && lineParam > 0 ? lineParam : null;
 const station = await getStationPage(env.DB, Astro.params.slug ?? "");
 
 // Only verified stations have a public page.
@@ -92,7 +94,7 @@ const description =
       <div class="sp-layout">
         <div class="sp-content">
           {SECTIONS.map((section) => (
-            <StationSection section={section} station={station} mediaBase={mediaBase} />
+            <StationSection section={section} station={station} mediaBase={mediaBase} lineId={lineId} />
           ))}
         </div>
 

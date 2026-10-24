@@ -4,9 +4,10 @@ import type { StationPageData } from "../../../lib/db/station-page";
 
 export interface Props {
   station: StationPageData;
+  lineId?: number | null; // the line the visitor came from (?line=)
 }
 
-const { station } = Astro.props;
+const { station, lineId = null } = Astro.props;
 
 // "JY01" → "JY" / "01"; anything else is shown as one piece.
 const splitCode = (code: string | null) => {
@@ -14,34 +15,18 @@ const splitCode = (code: string | null) => {
   return m ? { a: m[1].toUpperCase(), b: m[2] } : { a: code ?? "", b: "" };
 };
 
-// Lines that have neighbours; if none do, fall back to the lines with a code.
-const linked = station.lines.filter((l) => l.prev || l.next);
-const signs = (linked.length ? linked : station.lines.filter((l) => l.station_code))
-  .map((line) => ({ line, code: splitCode(line.station_code) }));
+// Only the line the visitor came from; otherwise the first line with neighbours.
+const chosen =
+  station.lines.find((l) => lineId !== null && l.id === lineId) ??
+  station.lines.find((l) => l.prev || l.next) ??
+  station.lines.find((l) => l.station_code);
+const signs = chosen ? [{ line: chosen, code: splitCode(chosen.station_code) }] : [];
 ---
 
 <div class="sp-along" data-along>
   {
-    signs.length > 1 && (
-      <div class="sp-along-tabs" role="tablist">
-        {signs.map(({ line }, i) => (
-          <button
-            type="button"
-            role="tab"
-            class="sp-along-tab"
-            aria-selected={i === 0 ? "true" : "false"}
-            data-along-tab={i}
-            style={`--c:${line.color ?? "#8a93a0"}`}
-          >
-            {line.name}
-          </button>
-        ))}
-      </div>
-    )
-  }
-  {
-    signs.map(({ line, code }, i) => (
-      <div class="sp-sign" data-along-card={i} hidden={i > 0} style={`--c:${line.color ?? "#8a93a0"}`}>
+    signs.map(({ line, code }) => (
+      <div class="sp-sign" style={`--c:${line.color ?? "#8a93a0"}`}>
         {line.station_code && (
           <span class="sp-sign-pill">{code.b ? `${code.a} ${code.b}` : code.a}</span>
         )}
@@ -55,7 +40,7 @@ const signs = (linked.length ? linked : station.lines.filter((l) => l.station_co
             <svg class="sp-sign-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
 
             {line.prev ? (
-              <a class="sp-sign-side sp-sign-prev" href={line.prev.verified ? `/station/${line.prev.slug}` : "#"} data-verified={line.prev.verified ? "1" : "0"}>
+              <a class="sp-sign-side sp-sign-prev" href={line.prev.verified ? `/station/${line.prev.slug}?line=${line.id}` : "#"} data-verified={line.prev.verified ? "1" : "0"}>
                 <span class="sp-sign-code">
                   {splitCode(line.prev.code).a}<b>{splitCode(line.prev.code).b}</b>
                 </span>
@@ -69,7 +54,7 @@ const signs = (linked.length ? linked : station.lines.filter((l) => l.station_co
             <i class="sp-sign-div"></i>
 
             {line.next ? (
-              <a class="sp-sign-side sp-sign-next" href={line.next.verified ? `/station/${line.next.slug}` : "#"} data-verified={line.next.verified ? "1" : "0"}>
+              <a class="sp-sign-side sp-sign-next" href={line.next.verified ? `/station/${line.next.slug}?line=${line.id}` : "#"} data-verified={line.next.verified ? "1" : "0"}>
                 <span class="sp-sign-names">
                   <strong>{line.next.name_japanese || line.next.name}</strong>
                   <small>{line.next.name}</small>

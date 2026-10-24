@@ -1,7 +1,7 @@
 // The line picker popover (opens above the board card) and the
 // "Coming soon" dialog behind the Page button.
 
-import { list } from "./current-line.js";
+import { line, list } from "./current-line.js";
 import { data } from "./data.js";
 import { dlg, toggle } from "./dom.js";
 import { applyStatic, pick, t } from "./i18n.js";
@@ -108,7 +108,8 @@ export function openStationPage() {
   var cur = list()[state.idx];
 
   if (cur && Number(cur.is_verified) === 1 && cur.slug) {
-    window.location.href = "/station/" + encodeURIComponent(cur.slug);
+    window.location.href =
+      "/station/" + encodeURIComponent(cur.slug) + "?line=" + encodeURIComponent(line().id);
 
     return;
   }

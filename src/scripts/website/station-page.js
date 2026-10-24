@@ -124,17 +124,6 @@ function initAlong() {
     return;
   }
 
-  root.querySelectorAll("[data-along-tab]").forEach(function (tab) {
-    tab.addEventListener("click", function () {
-      root.querySelectorAll("[data-along-tab]").forEach(function (b) {
-        b.setAttribute("aria-selected", String(b === tab));
-      });
-      root.querySelectorAll("[data-along-card]").forEach(function (card) {
-        card.hidden = card.dataset.alongCard !== tab.dataset.alongTab;
-      });
-    });
-  });
-
   if (!dialog) {
     return;
   }
