@@ -92,6 +92,20 @@ export interface StationPageGuideItem {
   photo_caption_japanese: string | null;
 }
 
+export interface StationPageTransport {
+  place: string;
+  place_japanese: string | null;
+  service: string | null;
+  service_japanese: string | null;
+  notes: string | null;
+  notes_japanese: string | null;
+  photo: string | null;
+  photo_title: string | null;
+  photo_title_japanese: string | null;
+  photo_caption: string | null;
+  photo_caption_japanese: string | null;
+}
+
 export interface StationPageDayTrip {
   name: string;
   name_japanese: string | null;
@@ -159,6 +173,7 @@ export interface StationPageData {
   faqs: StationPageFaq[];
   dayTrips: StationPageDayTrip[];
   facilityGuide: StationPageGuideItem[];
+  transport: StationPageTransport[];
 }
 
 export async function getStationPage(
@@ -177,7 +192,7 @@ export async function getStationPage(
        FROM stations WHERE slug = ?`,
     )
     .bind(slug)
-    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips" | "seasons" | "practical" | "faqs" | "dayTrips" | "facilityGuide">>();
+    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips" | "seasons" | "practical" | "faqs" | "dayTrips" | "facilityGuide" | "transport">>();
 
   if (!station) return null;
 
@@ -318,6 +333,15 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageGuideItem>();
 
+  const transport = await db
+    .prepare(
+      `SELECT place, place_japanese, service, service_japanese, notes, notes_japanese, photo, photo_title,
+              photo_title_japanese, photo_caption, photo_caption_japanese
+       FROM station_transport WHERE station_id = ? ORDER BY sort_order, id`,
+    )
+    .bind(station.id)
+    .all<StationPageTransport>();
+
   const tips = await db
     .prepare(`SELECT tip, tip_japanese FROM station_tips WHERE station_id = ? ORDER BY sort_order, id`)
     .bind(station.id)
@@ -331,6 +355,7 @@ export async function getStationPage(
     faqs: faqs.results ?? [],
     dayTrips: dayTrips.results ?? [],
     facilityGuide: facilityGuide.results ?? [],
+    transport: transport.results ?? [],
     seasons: (seasons.results ?? []).sort(
       (a, b) => ["spring", "summer", "autumn", "winter"].indexOf(a.season) - ["spring", "summer", "autumn", "winter"].indexOf(b.season),
     ),

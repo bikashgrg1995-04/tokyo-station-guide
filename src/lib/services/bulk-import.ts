@@ -164,6 +164,7 @@ export function buildImportPlan(
   const faqs = new Set(snap.faqs);
   const dayTrips = new Set(snap.dayTrips);
   const facilityGuide = new Set(snap.facilityGuide);
+  const transport = new Set(snap.transport);
   const floorFacilities = new Set(snap.floorFacilities);
   const stationTopPicks = new Set(snap.stationTopPicks);
 
@@ -219,6 +220,7 @@ export function buildImportPlan(
     const delFaqs = gone("faq", "faqs", (d) => `${d.station_slug}|${d.question}`, (k) => stationKept(part(k, 0)));
     const delDayTrips = gone("dayTrip", "day_trips", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
     const delFacilityGuide = gone("facilityGuide", "facility_guide", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
+    const delTransport = gone("transport", "buses_taxis", (d) => `${d.station_slug}|${d.place}`, (k) => stationKept(part(k, 0)));
     const delStationTopPicks = gone("stationTopPick", "station_top_picks",
       (d) => `${d.station_slug}|${d.top_pick_slug}`, (k) => stationKept(part(k, 0)) && !delTopPicks.has(part(k, 1)));
 
@@ -255,6 +257,7 @@ export function buildImportPlan(
       ["faq", "faqs", delFaqs],
       ["dayTrip", "day_trips", delDayTrips],
       ["facilityGuide", "facility_guide", delFacilityGuide],
+      ["transport", "buses_taxis", delTransport],
       ["stationTopPick", "station_top_picks", delStationTopPicks],
     ];
     for (const [type, sheet, set] of groups) {
@@ -845,6 +848,29 @@ export function buildImportPlan(
     const exists = facilityGuide.has(key);
     facilityGuide.add(key);
     record("facility_guide", { t: "facilityGuide", stationSlug, name, nameJa, desc, descJa, photoCaption, photoCaptionJa, sortOrder }, key, exists);
+  });
+
+  // ---- buses_taxis -----------------------------------------------------------
+  eachRow("buses_taxis", (d) => `${d.station_slug}|${d.place}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    const place = text(d, "place", 150, err, true) ?? "";
+    const placeJa = text(d, "place_japanese", 150, err);
+    const service = text(d, "service", 400, err);
+    const serviceJa = text(d, "service_japanese", 400, err);
+    const notes = text(d, "notes", 800, err);
+    const notesJa = text(d, "notes_japanese", 800, err);
+    const photoTitle = text(d, "photo_title", 150, err);
+    const photoTitleJa = text(d, "photo_title_japanese", 150, err);
+    const photoCaption = text(d, "photo_caption", 400, err);
+    const photoCaptionJa = text(d, "photo_caption_japanese", 400, err);
+    const sortOrder = intField(d, "sort_order", err);
+    if (dup || !place || !stationSlugs.has(stationSlug)) return;
+
+    const key = `${stationSlug}|${place}`;
+    const exists = transport.has(key);
+    transport.add(key);
+    record("buses_taxis", { t: "transport", stationSlug, place, placeJa, service, serviceJa, notes, notesJa, photoTitle, photoTitleJa, photoCaption, photoCaptionJa, sortOrder }, key, exists);
   });
 
   // ---- top_picks -------------------------------------------------------------

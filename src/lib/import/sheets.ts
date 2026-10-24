@@ -23,6 +23,7 @@ export type SheetName =
   | "faqs"
   | "day_trips"
   | "facility_guide"
+  | "buses_taxis"
   | "top_picks"
   | "station_top_picks";
 
@@ -44,6 +45,7 @@ export const SHEET_ORDER: SheetName[] = [
   "faqs",
   "day_trips",
   "facility_guide",
+  "buses_taxis",
   "top_picks",
   "station_top_picks",
 ];
@@ -67,6 +69,7 @@ export const REQUIRED_COLUMNS: Record<SheetName, string[]> = {
   faqs: ["station_slug", "question"],
   day_trips: ["station_slug", "name"],
   facility_guide: ["station_slug", "name"],
+  buses_taxis: ["station_slug", "place"],
   top_picks: ["slug", "name"],
   station_top_picks: ["station_slug", "top_pick_slug"],
 };

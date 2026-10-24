@@ -1,0 +1,65 @@
+---
+// Buses & taxis: a table (where / service / notes) and photo cards for the rows that have a photo.
+import type { StationPageData } from "../../../lib/db/station-page";
+
+export interface Props {
+  station: StationPageData;
+  mediaBase: string;
+}
+
+const { station, mediaBase } = Astro.props;
+const src = (key: string) => (/^https?:\/\//i.test(key) ? key : `${mediaBase}/${key}`);
+const rows = station.transport.filter((r) => r.service || r.service_japanese || r.notes || r.notes_japanese);
+const photos = station.transport.filter((r) => r.photo);
+---
+
+<div class="sp-fac sp-bt">
+  {
+    rows.length > 0 && (
+      <table class="sp-fac-table sp-bt-table">
+        <thead>
+          <tr>
+            <th data-i18n="sp.bt.where">Where</th>
+            <th data-i18n="sp.bt.service">Service</th>
+            <th data-i18n="sp.bt.notes">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr>
+              <th scope="row" data-pick data-en={r.place} data-jp={r.place_japanese ?? ""}>{r.place}</th>
+              <td data-pick data-en={r.service ?? ""} data-jp={r.service_japanese ?? ""}>{r.service}</td>
+              <td data-pick data-en={r.notes ?? ""} data-jp={r.notes_japanese ?? ""}>{r.notes}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  {
+    photos.length > 0 && (
+      <div class="sp-fac-photos">
+        {photos.map((r) => (
+          <figure class="sp-fac-photo">
+            <img src={src(r.photo!)} alt={r.photo_title || r.place} loading="lazy" />
+            <figcaption>
+              <strong
+                data-pick
+                data-en={r.photo_title || r.place}
+                data-jp={r.photo_title_japanese || (r.photo_title ? "" : r.place_japanese) || ""}
+              >
+                {r.photo_title || r.place}
+              </strong>
+              {(r.photo_caption || r.photo_caption_japanese) && (
+                <span data-pick data-en={r.photo_caption ?? ""} data-jp={r.photo_caption_japanese ?? ""}>
+                  {r.photo_caption}
+                </span>
+              )}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    )
+  }
+</div>

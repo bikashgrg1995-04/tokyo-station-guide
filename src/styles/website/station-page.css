@@ -1647,3 +1647,29 @@ html[data-lang="jp"] .sp-side-ja {
     width: calc(50% - 7px);
   }
 }
+
+/* Buses & taxis: three columns */
+.sp-bt-table tbody th {
+  width: 17%;
+}
+
+.sp-bt-table td:nth-child(2) {
+  width: 27%;
+  padding-right: 14px;
+}
+
+@media (max-width: 640px) {
+  .sp-bt-table {
+    font-size: 12.5px;
+  }
+
+  .sp-bt-table tbody th {
+    width: 24%;
+    min-width: 0;
+    padding-right: 8px;
+  }
+
+  .sp-bt-table td:nth-child(2) {
+    padding-right: 8px;
+  }
+}
