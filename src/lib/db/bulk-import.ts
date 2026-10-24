@@ -5,7 +5,7 @@ export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot
   const all = async <T>(sql: string) =>
     (await db.prepare(sql).all<T>()).results ?? [];
 
-  const [operators, lines, stations, facilities, topPicks, floors, exits, platforms, sides, routes, tips, floorFacilities, stationTopPicks, lineStations, seasons] =
+  const [operators, lines, stations, facilities, topPicks, floors, exits, platforms, sides, routes, tips, floorFacilities, stationTopPicks, lineStations, seasons, practicalTips, faqs] =
     await Promise.all([
       all<{ slug: string; name: string }>("SELECT slug, name FROM operators"),
       all<{ slug: string }>("SELECT slug FROM lines"),
@@ -61,6 +61,14 @@ export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot
         `SELECT s.slug || '|' || x.season AS k
          FROM station_seasons x JOIN stations s ON s.id = x.station_id`,
       ),
+      all<{ k: string }>(
+        `SELECT s.slug || '|' || x.tip AS k
+         FROM station_practical_tips x JOIN stations s ON s.id = x.station_id`,
+      ),
+      all<{ k: string }>(
+        `SELECT s.slug || '|' || x.question AS k
+         FROM station_faqs x JOIN stations s ON s.id = x.station_id`,
+      ),
     ]);
 
   const stored = await loadStoredRows(all);
@@ -79,6 +87,8 @@ export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot
     routes: routes.map((r) => r.k),
     tips: tips.map((r) => r.k),
     seasons: seasons.map((r) => r.k),
+    practicalTips: practicalTips.map((r) => r.k),
+    faqs: faqs.map((r) => r.k),
     floorFacilities: floorFacilities.map((r) => r.k),
     stationTopPicks: stationTopPicks.map((r) => r.k),
     lineStations,
@@ -96,7 +106,7 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
     return out;
   };
 
-  const [operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick, season] =
+  const [operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick, season, practicalTip, faq] =
     await Promise.all([
       keyed(`SELECT slug AS k, name, name_japanese AS nameJa, description AS "desc",
                     description_japanese AS descJa, website_url AS url FROM operators`),
@@ -167,9 +177,14 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
       keyed(`SELECT s.slug || '|' || x.season AS k, x.months, x.months_japanese AS monthsJa,
                     x.description AS "desc", x.description_japanese AS descJa
              FROM station_seasons x JOIN stations s ON s.id = x.station_id`),
+      keyed(`SELECT s.slug || '|' || x.tip AS k, x.tip_japanese AS tipJa, x.sort_order AS sortOrder
+             FROM station_practical_tips x JOIN stations s ON s.id = x.station_id`),
+      keyed(`SELECT s.slug || '|' || x.question AS k, x.question_japanese AS questionJa,
+                    x.answer, x.answer_japanese AS answerJa, x.sort_order AS sortOrder
+             FROM station_faqs x JOIN stations s ON s.id = x.station_id`),
     ]);
 
-  return { operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick, season };
+  return { operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick, season, practicalTip, faq };
 }
 
 /** Order in which operation types are applied (a type only needs the ones before it). */
@@ -188,6 +203,8 @@ const TYPE_ORDER: OpType[] = [
   "route",
   "tip",
   "season",
+  "practicalTip",
+  "faq",
   "stationTopPick",
 ];
 
@@ -629,6 +646,47 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
       ];
     }
 
+    case "practicalTip": {
+      const u = sets([["tip_japanese", op.tipJa], ["sort_order", op.sortOrder, true]], 3);
+      return [
+        p(
+          `UPDATE station_practical_tips SET updated_at = CURRENT_TIMESTAMP${u.sql}
+           WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND tip = ?2`,
+          op.stationSlug, op.tip, ...u.params,
+        ),
+        p(
+          `INSERT INTO station_practical_tips (station_id, tip, tip_japanese, sort_order)
+           SELECT s.id, ?2, ?3, COALESCE(?4, 0)
+           FROM stations s
+           WHERE s.slug = ?1
+             AND NOT EXISTS (SELECT 1 FROM station_practical_tips x WHERE x.station_id = s.id AND x.tip = ?2)`,
+          op.stationSlug, op.tip, n(op.tipJa), n(op.sortOrder),
+        ),
+      ];
+    }
+
+    case "faq": {
+      const u = sets(
+        [["question_japanese", op.questionJa], ["answer", op.answer, true], ["answer_japanese", op.answerJa], ["sort_order", op.sortOrder, true]],
+        3,
+      );
+      return [
+        p(
+          `UPDATE station_faqs SET updated_at = CURRENT_TIMESTAMP${u.sql}
+           WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND question = ?2`,
+          op.stationSlug, op.question, ...u.params,
+        ),
+        p(
+          `INSERT INTO station_faqs (station_id, question, question_japanese, answer, answer_japanese, sort_order)
+           SELECT s.id, ?2, ?3, COALESCE(?4, ''), ?5, COALESCE(?6, 0)
+           FROM stations s
+           WHERE s.slug = ?1
+             AND NOT EXISTS (SELECT 1 FROM station_faqs x WHERE x.station_id = s.id AND x.question = ?2)`,
+          op.stationSlug, op.question, n(op.questionJa), n(op.answer), n(op.answerJa), n(op.sortOrder),
+        ),
+      ];
+    }
+
     case "season": {
       const u = sets(
         [["months", op.months], ["months_japanese", op.monthsJa], ["description", op.desc], ["description_japanese", op.descJa]],
@@ -742,6 +800,18 @@ function deleteStatement(db: D1Database, op: DeleteOp): D1PreparedStatement {
       return p(
         `DELETE FROM station_tips
          WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND tip = ?2`,
+        k[0], k.slice(1).join("|"),
+      );
+    case "practicalTip":
+      return p(
+        `DELETE FROM station_practical_tips
+         WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND tip = ?2`,
+        k[0], k.slice(1).join("|"),
+      );
+    case "faq":
+      return p(
+        `DELETE FROM station_faqs
+         WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND question = ?2`,
         k[0], k.slice(1).join("|"),
       );
     case "season":

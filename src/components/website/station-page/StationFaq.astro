@@ -1,0 +1,24 @@
+---
+// FAQ: question rows that open to show the answer.
+import type { StationPageData } from "../../../lib/db/station-page";
+
+export interface Props {
+  station: StationPageData;
+}
+
+const { station } = Astro.props;
+---
+
+<div class="sp-faq">
+  {
+    station.faqs.map((f) => (
+      <details class="sp-faq-item">
+        <summary>
+          <span data-pick data-en={f.question} data-jp={f.question_japanese ?? ""}>{f.question}</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+        </summary>
+        <p data-pick data-en={f.answer} data-jp={f.answer_japanese ?? ""}>{f.answer}</p>
+      </details>
+    ))
+  }
+</div>

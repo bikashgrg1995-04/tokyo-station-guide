@@ -1,0 +1,18 @@
+---
+// Practical tips: a plain bullet list.
+import type { StationPageData } from "../../../lib/db/station-page";
+
+export interface Props {
+  station: StationPageData;
+}
+
+const { station } = Astro.props;
+---
+
+<ul class="sp-practical">
+  {
+    station.practical.map((t) => (
+      <li data-pick data-en={t.tip} data-jp={t.tip_japanese ?? ""}>{t.tip}</li>
+    ))
+  }
+</ul>

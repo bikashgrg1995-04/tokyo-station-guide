@@ -82,6 +82,13 @@ export interface StationPageSeason {
   description_japanese: string | null;
 }
 
+export interface StationPageFaq {
+  question: string;
+  question_japanese: string | null;
+  answer: string;
+  answer_japanese: string | null;
+}
+
 export interface StationPageTip {
   tip: string;
   tip_japanese: string | null;
@@ -125,6 +132,8 @@ export interface StationPageData {
   exits: StationPageExit[];
   tips: StationPageTip[];
   seasons: StationPageSeason[];
+  practical: StationPageTip[];
+  faqs: StationPageFaq[];
 }
 
 export async function getStationPage(
@@ -143,7 +152,7 @@ export async function getStationPage(
        FROM stations WHERE slug = ?`,
     )
     .bind(slug)
-    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips" | "seasons">>();
+    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips" | "seasons" | "practical" | "faqs">>();
 
   if (!station) return null;
 
@@ -255,6 +264,18 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageSeason>();
 
+  const practical = await db
+    .prepare(`SELECT tip, tip_japanese FROM station_practical_tips WHERE station_id = ? ORDER BY sort_order, id`)
+    .bind(station.id)
+    .all<StationPageTip>();
+  const faqs = await db
+    .prepare(
+      `SELECT question, question_japanese, answer, answer_japanese
+       FROM station_faqs WHERE station_id = ? ORDER BY sort_order, id`,
+    )
+    .bind(station.id)
+    .all<StationPageFaq>();
+
   const tips = await db
     .prepare(`SELECT tip, tip_japanese FROM station_tips WHERE station_id = ? ORDER BY sort_order, id`)
     .bind(station.id)
@@ -264,6 +285,8 @@ export async function getStationPage(
     ...station,
     exits: exits.results ?? [],
     tips: tips.results ?? [],
+    practical: practical.results ?? [],
+    faqs: faqs.results ?? [],
     seasons: (seasons.results ?? []).sort(
       (a, b) => ["spring", "summer", "autumn", "winter"].indexOf(a.season) - ["spring", "summer", "autumn", "winter"].indexOf(b.season),
     ),

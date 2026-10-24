@@ -160,6 +160,8 @@ export function buildImportPlan(
   const routes = new Set(snap.routes);
   const tips = new Set(snap.tips);
   const seasons = new Set(snap.seasons);
+  const practicalTips = new Set(snap.practicalTips);
+  const faqs = new Set(snap.faqs);
   const floorFacilities = new Set(snap.floorFacilities);
   const stationTopPicks = new Set(snap.stationTopPicks);
 
@@ -211,6 +213,8 @@ export function buildImportPlan(
     const delRoutes = gone("route", "routes", (d) => `${d.station_slug}|${d.from_place}|${d.route ?? ""}`, (k) => stationKept(part(k, 0)));
     const delTips = gone("tip", "tips", (d) => `${d.station_slug}|${d.tip}`, (k) => stationKept(part(k, 0)));
     const delSeasons = gone("season", "seasons", (d) => `${d.station_slug}|${(d.season ?? "").toLowerCase()}`, (k) => stationKept(part(k, 0)));
+    const delPracticalTips = gone("practicalTip", "practical_tips", (d) => `${d.station_slug}|${d.tip}`, (k) => stationKept(part(k, 0)));
+    const delFaqs = gone("faq", "faqs", (d) => `${d.station_slug}|${d.question}`, (k) => stationKept(part(k, 0)));
     const delStationTopPicks = gone("stationTopPick", "station_top_picks",
       (d) => `${d.station_slug}|${d.top_pick_slug}`, (k) => stationKept(part(k, 0)) && !delTopPicks.has(part(k, 1)));
 
@@ -243,6 +247,8 @@ export function buildImportPlan(
       ["route", "routes", delRoutes],
       ["tip", "tips", delTips],
       ["season", "seasons", delSeasons],
+      ["practicalTip", "practical_tips", delPracticalTips],
+      ["faq", "faqs", delFaqs],
       ["stationTopPick", "station_top_picks", delStationTopPicks],
     ];
     for (const [type, sheet, set] of groups) {
@@ -760,6 +766,38 @@ export function buildImportPlan(
     const exists = seasons.has(key);
     seasons.add(key);
     record("seasons", { t: "season", stationSlug, season, months, monthsJa, desc, descJa }, key, exists);
+  });
+
+  // ---- practical_tips --------------------------------------------------------
+  eachRow("practical_tips", (d) => `${d.station_slug}|${d.tip}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    const tip = text(d, "tip", 800, err, true) ?? "";
+    const tipJa = text(d, "tip_japanese", 800, err);
+    const sortOrder = intField(d, "sort_order", err);
+    if (dup || !tip || !stationSlugs.has(stationSlug)) return;
+
+    const key = `${stationSlug}|${tip}`;
+    const exists = practicalTips.has(key);
+    practicalTips.add(key);
+    record("practical_tips", { t: "practicalTip", stationSlug, tip, tipJa, sortOrder }, key, exists);
+  });
+
+  // ---- faqs ------------------------------------------------------------------
+  eachRow("faqs", (d) => `${d.station_slug}|${d.question}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    const question = text(d, "question", 300, err, true) ?? "";
+    const questionJa = text(d, "question_japanese", 300, err);
+    const answer = text(d, "answer", 1500, err, true);
+    const answerJa = text(d, "answer_japanese", 1500, err);
+    const sortOrder = intField(d, "sort_order", err);
+    if (dup || !question || !stationSlugs.has(stationSlug)) return;
+
+    const key = `${stationSlug}|${question}`;
+    const exists = faqs.has(key);
+    faqs.add(key);
+    record("faqs", { t: "faq", stationSlug, question, questionJa, answer, answerJa, sortOrder }, key, exists);
   });
 
   // ---- top_picks -------------------------------------------------------------

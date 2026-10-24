@@ -7,6 +7,8 @@ import StationSides from "./StationSides.astro";
 import StationRoutes from "./StationRoutes.astro";
 import StationTips from "./StationTips.astro";
 import StationVisit from "./StationVisit.astro";
+import StationPractical from "./StationPractical.astro";
+import StationFaq from "./StationFaq.astro";
 import StationAlong from "./StationAlong.astro";
 import StationTrainLines from "./StationTrainLines.astro";
 
@@ -23,6 +25,8 @@ const isOverview = section.id === "overview";
 const isSides = section.id === "sides" && (station.sides.length > 0 || Boolean(station.sides_note));
 const isAlong = section.id === "along" && station.lines.some((l) => l.prev || l.next || l.station_code);
 const isVisit = section.id === "visit" && station.seasons.length > 0;
+const isPractical = section.id === "practical" && station.practical.length > 0;
+const isFaq = section.id === "faq" && station.faqs.length > 0;
 const isTips =
   section.id === "tips" &&
   (station.exits.length > 0 || station.tips.length > 0 || Boolean(station.exits_note));
@@ -44,6 +48,10 @@ const isMap = section.id === "map" && station.platforms.length > 0;
         <StationOverview station={station} />
       ) : isVisit ? (
         <StationVisit station={station} />
+      ) : isPractical ? (
+        <StationPractical station={station} />
+      ) : isFaq ? (
+        <StationFaq station={station} />
       ) : isAlong ? (
         <StationAlong station={station} lineId={lineId} />
       ) : isTips ? (
@@ -64,7 +72,7 @@ const isMap = section.id === "map" && station.platforms.length > 0;
     }
 
     {
-      !(isMap || isVisit || isAlong || isTips || isRoutes || isSides || isOverview || (isLines && station.lines.length > 0)) && (
+      !(isMap || isPractical || isFaq || isVisit || isAlong || isTips || isRoutes || isSides || isOverview || (isLines && station.lines.length > 0)) && (
         <p class="sp-soon" data-i18n="sp.soon">Content for this section is coming soon.</p>
       )
     }
