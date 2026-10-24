@@ -1,0 +1,138 @@
+---
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import "../../../../styles/admin/forms.css";
+import "../../../../styles/admin/stations.css";
+import "../../../../styles/admin/station-sides.css";
+
+import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
+
+import { getStationById } from "../../../../lib/db/stations";
+import { handleThings } from "../../../../lib/services/station-things";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+const db = env.DB;
+const id = Number(Astro.params.id);
+
+if (!Number.isInteger(id) || id <= 0) return Astro.redirect("/admin/stations");
+const station = await getStationById(db, id);
+if (!station) return Astro.redirect("/admin/stations");
+
+const form = await handleThings(Astro.request, db, id, station.slug);
+if (form.redirectTo) return Astro.redirect(form.redirectTo);
+
+const mediaBase =
+  String((env as { MEDIA_BASE_URL?: string }).MEDIA_BASE_URL ?? "")
+    .trim()
+    .replace(/\/+$/, "") || "/media";
+const src = (k: string) => (/^https?:\/\//i.test(k) ? k : `${mediaBase}/${k}`);
+const nextOrder = form.things.reduce((max, t) => Math.max(max, t.sort_order), 0) + 1;
+
+const blank = {
+  id: 0, name: "", name_japanese: "", kind: "", kind_japanese: "", location: "", location_japanese: "",
+  cost: "", cost_japanese: "", description: "", description_japanese: "", map_url: "", photo: null as string | null,
+  sort_order: nextOrder,
+};
+const forms = [...form.things.map((t) => ({ t, scope: `thing-${t.id}`, isNew: false })), { t: blank, scope: "thing-new", isNew: true }];
+---
+
+<AdminLayout title={`Things to do - ${station.name}`} activePath="/admin/stations">
+  <header class="admin-topbar">
+    <Breadcrumbs backHref="/admin/stations" parentLabel="Stations" current="Things to do" />
+  </header>
+
+  <div class="admin-content">
+    <div class="admin-page-header">
+      <div>
+        <h2>Things to do</h2>
+        <p>
+          For <strong>{station.name}</strong>: places to see near the station, shown under "Things to do" with a photo.
+          The grey line under the name is: kind · location · cost.
+        </p>
+      </div>
+    </div>
+
+    {
+      forms.map(({ t, scope, isNew }) => (
+        <section class="admin-panel sides-panel">
+          <form method="POST" enctype="multipart/form-data" class="admin-panel-body">
+            <h3 class="sides-title">{isNew ? "Add a place" : t.name}</h3>
+            {!isNew && <input type="hidden" name="item_id" value={t.id} />}
+            {form.errorFor === scope && <div class="admin-form-error" role="alert">{form.formError}</div>}
+            <div class="admin-form-grid">
+              <div class="admin-form-group">
+                <label>Name</label>
+                <input name="name" required maxlength="150" value={t.name} placeholder="Imperial Palace East Gardens" />
+              </div>
+              <div class="admin-form-group">
+                <label>Name (Japanese)</label>
+                <input name="name_japanese" lang="ja" maxlength="150" value={t.name_japanese ?? ""} />
+              </div>
+              <div class="admin-form-group">
+                <label>Kind</label>
+                <input name="kind" maxlength="60" value={t.kind ?? ""} placeholder="Garden" />
+              </div>
+              <div class="admin-form-group">
+                <label>Kind (Japanese)</label>
+                <input name="kind_japanese" lang="ja" maxlength="60" value={t.kind_japanese ?? ""} />
+              </div>
+              <div class="admin-form-group">
+                <label>Location</label>
+                <input name="location" maxlength="150" value={t.location ?? ""} placeholder="Marunouchi North Exit, about 13 min" />
+              </div>
+              <div class="admin-form-group">
+                <label>Location (Japanese)</label>
+                <input name="location_japanese" lang="ja" maxlength="150" value={t.location_japanese ?? ""} />
+              </div>
+              <div class="admin-form-group">
+                <label>Cost</label>
+                <input name="cost" maxlength="100" value={t.cost ?? ""} placeholder="Free" />
+              </div>
+              <div class="admin-form-group">
+                <label>Cost (Japanese)</label>
+                <input name="cost_japanese" lang="ja" maxlength="100" value={t.cost_japanese ?? ""} />
+              </div>
+              <div class="admin-form-group full-width">
+                <label>Description</label>
+                <textarea name="description" rows="3" maxlength="800">{t.description ?? ""}</textarea>
+              </div>
+              <div class="admin-form-group full-width">
+                <label>Description (Japanese)</label>
+                <textarea name="description_japanese" lang="ja" rows="3" maxlength="800">{t.description_japanese ?? ""}</textarea>
+              </div>
+              <div class="admin-form-group">
+                <label>Map link</label>
+                <input name="map_url" type="url" maxlength="500" value={t.map_url ?? ""} placeholder="https://maps.google.com/..." />
+              </div>
+              <div class="admin-form-group">
+                <label>Order</label>
+                <input name="sort_order" type="number" min="0" value={t.sort_order} />
+              </div>
+              <div class="admin-form-group full-width">
+                <label>Photo (optional, PNG, JPEG or WebP up to 2 MB)</label>
+                {t.photo && (
+                  <div>
+                    <img src={src(t.photo)} alt="" style="display:block;width:160px;max-width:100%;margin-bottom:8px;border-radius:8px" />
+                    <label><input type="checkbox" name="remove_photo" /> Remove the current photo</label>
+                  </div>
+                )}
+                <input name="photo_file" type="file" accept="image/png,image/jpeg,image/webp" />
+              </div>
+            </div>
+            <div class="admin-form-actions">
+              {isNew ? (
+                <button type="submit" name="trip_action" value="trip_create" class="common-button common-button-primary">Add place</button>
+              ) : (
+                <>
+                  <button type="submit" name="trip_action" value="trip_update" class="common-button common-button-primary">Save</button>
+                  <button type="submit" name="trip_action" value="trip_delete" class="common-button common-button-danger" formnovalidate onclick="return confirm('Delete this place?')">Delete</button>
+                </>
+              )}
+            </div>
+          </form>
+        </section>
+      ))
+    }
+  </div>
+</AdminLayout>

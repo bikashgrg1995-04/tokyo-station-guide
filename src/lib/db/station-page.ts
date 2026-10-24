@@ -106,6 +106,21 @@ export interface StationPageTransport {
   photo_caption_japanese: string | null;
 }
 
+export interface StationPageThing {
+  name: string;
+  name_japanese: string | null;
+  kind: string | null;
+  kind_japanese: string | null;
+  location: string | null;
+  location_japanese: string | null;
+  cost: string | null;
+  cost_japanese: string | null;
+  description: string | null;
+  description_japanese: string | null;
+  map_url: string | null;
+  photo: string | null;
+}
+
 export interface StationPageDayTrip {
   name: string;
   name_japanese: string | null;
@@ -174,6 +189,7 @@ export interface StationPageData {
   dayTrips: StationPageDayTrip[];
   facilityGuide: StationPageGuideItem[];
   transport: StationPageTransport[];
+  things: StationPageThing[];
 }
 
 export async function getStationPage(
@@ -192,7 +208,7 @@ export async function getStationPage(
        FROM stations WHERE slug = ?`,
     )
     .bind(slug)
-    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips" | "seasons" | "practical" | "faqs" | "dayTrips" | "facilityGuide" | "transport">>();
+    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips" | "seasons" | "practical" | "faqs" | "dayTrips" | "facilityGuide" | "transport" | "things">>();
 
   if (!station) return null;
 
@@ -342,6 +358,15 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageTransport>();
 
+  const things = await db
+    .prepare(
+      `SELECT name, name_japanese, kind, kind_japanese, location, location_japanese, cost, cost_japanese,
+              description, description_japanese, map_url, photo
+       FROM station_things WHERE station_id = ? ORDER BY sort_order, id`,
+    )
+    .bind(station.id)
+    .all<StationPageThing>();
+
   const tips = await db
     .prepare(`SELECT tip, tip_japanese FROM station_tips WHERE station_id = ? ORDER BY sort_order, id`)
     .bind(station.id)
@@ -356,6 +381,7 @@ export async function getStationPage(
     dayTrips: dayTrips.results ?? [],
     facilityGuide: facilityGuide.results ?? [],
     transport: transport.results ?? [],
+    things: things.results ?? [],
     seasons: (seasons.results ?? []).sort(
       (a, b) => ["spring", "summer", "autumn", "winter"].indexOf(a.season) - ["spring", "summer", "autumn", "winter"].indexOf(b.season),
     ),
