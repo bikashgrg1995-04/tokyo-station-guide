@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import StationSectionNav from "../../../../components/admin/StationSectionNav.astro";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/stations.css";
 import "../../../../styles/admin/station-sides.css";
@@ -42,6 +43,8 @@ const forms = [...form.trips.map((t) => ({ t, scope: `trip-${t.id}`, isNew: fals
     <Breadcrumbs backHref="/admin/stations" parentLabel="Stations" current="Day trips" />
   </header>
 
+  <div class="station-admin-frame">
+    <StationSectionNav stationId={id} stationName={station.name} active="day-trips" />
   <div class="admin-content">
     <div class="admin-page-header">
       <div>
@@ -126,5 +129,6 @@ const forms = [...form.trips.map((t) => ({ t, scope: `trip-${t.id}`, isNew: fals
         </section>
       ))
     }
+  </div>
   </div>
 </AdminLayout>

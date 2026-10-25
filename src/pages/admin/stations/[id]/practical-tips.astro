@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import StationSectionNav from "../../../../components/admin/StationSectionNav.astro";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/stations.css";
 import "../../../../styles/admin/station-sides.css";
@@ -30,6 +31,8 @@ const nextTip = form.tips.reduce((max, t) => Math.max(max, t.sort_order), 0) + 1
     <Breadcrumbs backHref="/admin/stations" parentLabel="Stations" current="Practical tips" />
   </header>
 
+  <div class="station-admin-frame">
+    <StationSectionNav stationId={id} stationName={station.name} active="practical-tips" />
   <div class="admin-content">
     <div class="admin-page-header">
       <div>
@@ -92,5 +95,6 @@ const nextTip = form.tips.reduce((max, t) => Math.max(max, t.sort_order), 0) + 1
         </div>
       </form>
     </section>
+  </div>
   </div>
 </AdminLayout>

@@ -1,0 +1,87 @@
+---
+import "../../styles/admin/station-section-nav.css";
+
+export interface Props {
+  stationId: number;
+  stationName: string;
+  /** Key of the current section (see GROUPS below). */
+  active: string;
+}
+
+const { stationId, stationName, active } = Astro.props;
+const base = `/admin/stations/${stationId}`;
+
+const GROUPS: { title: string; items: { key: string; label: string; href: string }[] }[] = [
+  {
+    title: "Station",
+    items: [
+      { key: "details", label: "Station Details", href: `${base}/edit` },
+      { key: "stats", label: "Page stat cards", href: `${base}/edit#stats` },
+      { key: "restaurants-note", label: "Restaurants note", href: `${base}/edit#restaurants-note` },
+    ],
+  },
+  {
+    title: "Layout",
+    items: [
+      { key: "platforms", label: "Platforms", href: `${base}/platforms` },
+      { key: "floors", label: "Floors", href: `${base}/floors` },
+      { key: "exits", label: "Exits", href: `${base}/exits` },
+      { key: "tips", label: "Exit tips", href: `${base}/tips` },
+      { key: "sides", label: "Sides of the station", href: `${base}/sides` },
+      { key: "routes", label: "Routes (getting there)", href: `${base}/routes` },
+    ],
+  },
+  {
+    title: "Page sections",
+    items: [
+      { key: "facilities", label: "Facilities", href: `${base}/edit#facilities` },
+      { key: "facility-guide", label: "Facilities guide", href: `${base}/facility-guide` },
+      { key: "buses-taxis", label: "Buses & taxis", href: `${base}/buses-taxis` },
+      { key: "things-to-do", label: "Things to do", href: `${base}/things-to-do` },
+      { key: "day-trips", label: "Day trips", href: `${base}/day-trips` },
+      { key: "seasons", label: "When to visit", href: `${base}/seasons` },
+      { key: "practical-tips", label: "Practical tips", href: `${base}/practical-tips` },
+      { key: "faqs", label: "FAQ", href: `${base}/faqs` },
+    ],
+  },
+];
+---
+
+<nav class="station-section-nav" aria-label={`${stationName} sections`}>
+  <p class="station-section-nav-title">{stationName}</p>
+  {
+    GROUPS.map((g) => (
+      <>
+        <p class="station-section-nav-group">{g.title}</p>
+        <ul>
+          {g.items.map((i) => (
+            <li>
+              <a href={i.href} class:list={[{ "is-active": i.key === active }]} aria-current={i.key === active ? "page" : undefined}>
+                {i.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </>
+    ))
+  }
+  <p class="station-section-nav-group">Global catalogs</p>
+  <ul>
+    <li><a href="/admin/hotels">Hotels</a></li>
+    <li><a href="/admin/restaurants">Restaurants</a></li>
+    <li><a href="/admin/top-picks">Top picks</a></li>
+  </ul>
+</nav>
+
+<script>
+  // Highlight the in-page section (Stat cards, Facilities, Restaurants note) while scrolling or after a click.
+  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>(".station-section-nav a[href*='#']"));
+  const mark = () => {
+    const h = location.hash;
+    if (!h) return;
+    document.querySelectorAll(".station-section-nav a.is-active").forEach((a) => a.classList.remove("is-active"));
+    links.find((a) => a.getAttribute("href")?.endsWith(h))?.classList.add("is-active");
+  };
+  window.addEventListener("hashchange", mark);
+  mark();
+</script>

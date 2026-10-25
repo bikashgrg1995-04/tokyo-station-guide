@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import StationSectionNav from "../../../../components/admin/StationSectionNav.astro";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/stations.css";
 import "../../../../styles/admin/tables.css";
@@ -65,69 +66,12 @@ const noteJaValue = form.restaurantsNoteJapanese ?? savedNote.noteJapanese;
       parentLabel="Stations"
       current="Edit Station"
     />
-
-    <div class="admin-topbar-actions">
-      <Button href={`/admin/stations/${id}/platforms`} variant="secondary">
-        Manage Platforms
-      </Button>
-
-      <Button href={`/admin/stations/${id}/tips`} variant="secondary">
-        Exit tips
-      </Button>
-
-      <Button href={`/admin/stations/${id}/practical-tips`} variant="secondary">
-        Practical tips
-      </Button>
-
-      <Button href={`/admin/stations/${id}/faqs`} variant="secondary">
-        FAQs
-      </Button>
-
-      <Button href={`/admin/stations/${id}/seasons`} variant="secondary">
-        When to visit
-      </Button>
-
-      <Button href={`/admin/stations/${id}/facility-guide`} variant="secondary">
-        Facilities guide
-      </Button>
-
-      <Button href={`/admin/stations/${id}/buses-taxis`} variant="secondary">
-        Buses &amp; taxis
-      </Button>
-
-      <Button href={`/admin/stations/${id}/things-to-do`} variant="secondary">
-        Things to do
-      </Button>
-
-      <Button href={`/admin/stations/${id}/day-trips`} variant="secondary">
-        Day trips
-      </Button>
-
-      <Button href={`/admin/stations/${id}/routes`} variant="secondary">
-        Manage Routes
-      </Button>
-
-      <Button href={`/admin/stations/${id}/sides`} variant="secondary">
-        Manage Sides
-      </Button>
-
-      <Button href={`/admin/stations/${id}/floors`} variant="secondary">
-        Manage Floors
-      </Button>
-
-      <Button href={`/admin/stations/${id}/exits`} variant="secondary">
-        Manage Exits
-      </Button>
-    </div>
   </header>
 
+  <div class="station-admin-frame">
+    <StationSectionNav stationId={id} stationName={station.name} active="details" />
   <div class="admin-content admin-station-page">
     <h2>Edit Station</h2>
-
-    <p>
-      Update <strong>{station.name}</strong>: its details, facilities and top
-      picks. Floors, platforms and exits have their own pages.
-    </p>
 
     <form method="POST" enctype="multipart/form-data" class="admin-form" id="edit-station-form">
       <input type="hidden" name="action" value="update" />
@@ -143,7 +87,7 @@ const noteJaValue = form.restaurantsNoteJapanese ?? savedNote.noteJapanese;
 
           <StationFormFields values={form.values} errors={errors} mainImage={station.main_image} />
 
-          <div class="admin-form-grid" style="margin-top:1rem">
+          <div class="admin-form-grid" id="restaurants-note" style="margin-top:1rem">
             <div class="admin-form-group full-width">
               <label for="restaurants_note">
                 Restaurants note <span class="admin-label-hint">shown above the restaurants list, use **text** for bold</span>
@@ -159,6 +103,7 @@ const noteJaValue = form.restaurantsNoteJapanese ?? savedNote.noteJapanese;
       </section>
 
       <!-- Facilities -->
+      <div id="facilities"></div>
       <StationFacilitiesPanel
         assigned={stationFacilities}
         canAdd={stationFloors.length > 0 && availableFacilities.length > 0}
@@ -180,6 +125,7 @@ const noteJaValue = form.restaurantsNoteJapanese ?? savedNote.noteJapanese;
     </form>
   </div>
 
+  </div>
   <Fragment slot="after">
     <!-- Add Facilities Modal -->
     <FacilityModal

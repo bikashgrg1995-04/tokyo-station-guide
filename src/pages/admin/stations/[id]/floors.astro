@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import StationSectionNav from "../../../../components/admin/StationSectionNav.astro";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/stations.css";
 import "../../../../styles/admin/tables.css";
@@ -51,6 +52,8 @@ if (floorForm.redirectTo) {
     />
   </header>
 
+  <div class="station-admin-frame">
+    <StationSectionNav stationId={id} stationName={station.name} active="floors" />
   <div class="admin-content">
     <div class="admin-page-header">
       <div>
@@ -71,5 +74,6 @@ if (floorForm.redirectTo) {
       formError={floorForm.formError}
       editingId={floorForm.editingId}
     />
+  </div>
   </div>
 </AdminLayout>

@@ -1,0 +1,85 @@
+.station-admin-frame {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  align-items: start;
+  gap: 0;
+}
+
+.station-section-nav {
+  position: sticky;
+  top: 64px;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  padding: 18px 12px 24px 16px;
+  border-right: 1px solid var(--admin-border);
+  font-size: 0.875rem;
+}
+
+.station-section-nav ul {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+}
+
+.station-section-nav-title {
+  margin: 0 0 8px;
+  padding: 0 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.station-section-nav-group {
+  margin: 14px 0 4px;
+  padding: 0 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a8a96;
+}
+
+.station-section-nav a {
+  display: block;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: #3c3c46;
+  text-decoration: none;
+}
+
+.station-section-nav a:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.station-section-nav a.is-active {
+  background: #b3202a;
+  color: #fff;
+  font-weight: 700;
+}
+
+.station-admin-frame > .admin-content {
+  min-width: 0;
+}
+
+/* Compact station admin content */
+.station-admin-frame .admin-content {
+  padding-top: 18px;
+}
+.station-admin-frame .admin-page-header { margin-bottom: 10px; }
+.station-admin-frame .admin-panel-body { padding: 14px 16px; }
+.station-admin-frame .sides-panel { margin-bottom: 10px; }
+.station-admin-frame .admin-form-group { margin-bottom: 0; }
+.station-admin-frame .admin-form-group label { font-size: 0.8rem; margin-bottom: 3px; }
+.station-admin-frame .admin-form-group input,
+.station-admin-frame .admin-form-group select,
+.station-admin-frame .admin-form-group textarea { padding: 6px 9px; font-size: 0.875rem; }
+.station-admin-frame [id] { scroll-margin-top: 80px; }
+
+@media (max-width: 900px) {
+  .station-admin-frame { grid-template-columns: 1fr; }
+  .station-section-nav {
+    position: static;
+    max-height: none;
+    border-right: 0;
+    border-bottom: 1px solid var(--admin-border);
+  }
+}
