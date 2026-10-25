@@ -82,7 +82,7 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
     )}
 
     <div class="admin-list-toolbar">
-      <form
+      <form action="?s=exits"
         class="admin-search-form"
         role="search"
         onsubmit="return false;"
@@ -125,7 +125,7 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
       >
         <a
           class="admin-table-action"
-          href={`/admin/stations/${stationId}/floors`}
+          href="#floors"
         >
           Manage Floors
         </a>
@@ -305,7 +305,7 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
         </button>
       </div>
 
-      <form method="POST" enctype="multipart/form-data" class="admin-form" id="exit-form">
+      <form action="?s=exits" method="POST" enctype="multipart/form-data" class="admin-form" id="exit-form">
         <input
           type="hidden"
           name="exit_action"
@@ -511,7 +511,7 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
 <form
   method="POST"
   id="delete-exit-form"
-  action={`/admin/stations/${stationId}/exits`}
+  action={`/admin/stations/${stationId}/edit?s=exits`}
   hidden
 >
   <input type="hidden" name="exit_action" value="delete" />
@@ -533,7 +533,7 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
 <form
   method="POST"
   id="bulk-delete-exit-form"
-  action={`/admin/stations/${stationId}/exits`}
+  action={`/admin/stations/${stationId}/edit?s=exits`}
   hidden
 >
   <input type="hidden" name="exit_action" value="delete_many" />

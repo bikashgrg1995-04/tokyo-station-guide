@@ -19,8 +19,33 @@ import { getStationFloors } from "../../../../lib/db/station-floors";
 import { getStationById } from "../../../../lib/db/stations";
 import { handleStationUpdate } from "../../../../lib/services/stations";
 import { getRestaurantsNote } from "../../../../lib/db/places";
+
+
 import FacilityGuideSection from "../../../../components/admin/FacilityGuideSection.astro";
 import { handleFacilityGuide } from "../../../../lib/services/station-facility-guide";
+import StationPlatformsSection from "../../../../components/admin/sections/StationPlatformsSection.astro";
+import StationFloorsSection from "../../../../components/admin/sections/StationFloorsSection.astro";
+import StationSidesSection from "../../../../components/admin/sections/StationSidesSection.astro";
+import StationRoutesSection from "../../../../components/admin/sections/StationRoutesSection.astro";
+import StationExitsSection from "../../../../components/admin/sections/StationExitsSection.astro";
+import StationBusesSection from "../../../../components/admin/sections/StationBusesSection.astro";
+import StationThingsSection from "../../../../components/admin/sections/StationThingsSection.astro";
+import StationDayTripsSection from "../../../../components/admin/sections/StationDayTripsSection.astro";
+import StationSeasonsSection from "../../../../components/admin/sections/StationSeasonsSection.astro";
+import StationPracticalSection from "../../../../components/admin/sections/StationPracticalSection.astro";
+import StationFaqSection from "../../../../components/admin/sections/StationFaqSection.astro";
+import { handleStationPlatforms } from "../../../../lib/services/station-platforms";
+import { handleStationFloors } from "../../../../lib/services/station-floors";
+import { handleStationSides } from "../../../../lib/services/station-sides";
+import { handleStationRoutes } from "../../../../lib/services/station-routes";
+import { handleStationExits } from "../../../../lib/services/station-exits";
+import { handleStationTips } from "../../../../lib/services/station-tips";
+import { handleTransport } from "../../../../lib/services/station-transport";
+import { handleThings } from "../../../../lib/services/station-things";
+import { handleDayTrips } from "../../../../lib/services/station-day-trips";
+import { handleStationSeasons } from "../../../../lib/services/station-seasons";
+import { handlePracticalTips } from "../../../../lib/services/station-practical-tips";
+import { handleStationFaqs } from "../../../../lib/services/station-faqs";
 
 export const prerender = false;
 
@@ -41,16 +66,49 @@ if (!station) {
 
 const stationFloors = await getStationFloors(db, id);
 
-const form = await handleStationUpdate(Astro.request.clone(), db, id, station);
+// Every section posts here with ?s=<section>; only that section's handler gets the POST.
+const posted = Astro.request.method === "POST";
+const part = Astro.url.searchParams.get("s");
+const getReq = () => new Request(Astro.url, { method: "GET" });
+const reqFor = (key: string) => (!posted ? Astro.request : part === key ? Astro.request.clone() : getReq());
 
+const form = await handleStationUpdate(!posted || part ? (posted ? getReq() : Astro.request) : Astro.request.clone(), db, id, station);
 if (form.redirectTo) {
   return Astro.redirect(form.redirectTo);
 }
 
-const guideForm = await handleFacilityGuide(Astro.request.clone(), db, id, station.slug);
-if (guideForm.redirectTo) {
-  return Astro.redirect(guideForm.redirectTo);
+const platformForm = await handleStationPlatforms(reqFor("platforms"), db, id);
+const floorForm = await handleStationFloors(reqFor("floors"), db, id);
+const sidesForm = await handleStationSides(reqFor("sides"), db, id);
+const routesForm = await handleStationRoutes(reqFor("routes"), db, id);
+const exitForm = await handleStationExits(reqFor("exits"), db, id, station.slug);
+const tipsForm = await handleStationTips(reqFor("exits"), db, id);
+const guideForm = await handleFacilityGuide(reqFor("facility-guide"), db, id, station.slug);
+const busesForm = await handleTransport(reqFor("buses-taxis"), db, id, station.slug);
+const thingsForm = await handleThings(reqFor("things-to-do"), db, id, station.slug);
+const tripsForm = await handleDayTrips(reqFor("day-trips"), db, id, station.slug);
+const seasonsForm = await handleStationSeasons(reqFor("seasons"), db, id);
+const practicalForm = await handlePracticalTips(reqFor("practical-tips"), db, id);
+const faqForm = await handleStationFaqs(reqFor("faqs"), db, id);
+
+const done: [string, string | null][] = [
+  ["platforms", platformForm.redirectTo],
+  ["floors", floorForm.redirectTo],
+  ["sides", sidesForm.redirectTo],
+  ["routes", routesForm.redirectTo],
+  ["exits", exitForm.redirectTo ?? tipsForm.redirectTo],
+  ["facilities", guideForm.redirectTo],
+  ["buses-taxis", busesForm.redirectTo],
+  ["things-to-do", thingsForm.redirectTo],
+  ["day-trips", tripsForm.redirectTo],
+  ["seasons", seasonsForm.redirectTo],
+  ["practical-tips", practicalForm.redirectTo],
+  ["faqs", faqForm.redirectTo],
+];
+for (const [anchor, target] of done) {
+  if (target) return Astro.redirect(`/admin/stations/${id}/edit#${anchor}`);
 }
+
 const mediaBase =
   String((env as { MEDIA_BASE_URL?: string }).MEDIA_BASE_URL ?? "").trim().replace(/\/+$/, "") || "/media";
 const mediaSrc = (k: string) => (/^https?:\/\//i.test(k) ? k : `${mediaBase}/${k}`);
@@ -67,77 +125,86 @@ const facilityError = errors.facilities;
 const savedNote = await getRestaurantsNote(db, id);
 const noteValue = form.restaurantsNote ?? savedNote.note;
 const noteJaValue = form.restaurantsNoteJapanese ?? savedNote.noteJapanese;
+const shared = { station, id, mediaBase };
 ---
 
 <AdminLayout title={`Edit ${station.name}`} activePath="/admin/stations">
   <header class="admin-topbar">
-    <Breadcrumbs
-      backHref="/admin/stations"
-      parentLabel="Stations"
-      current="Edit Station"
-    />
+    <Breadcrumbs backHref="/admin/stations" parentLabel="Stations" current="Edit Station" />
   </header>
 
   <div class="station-admin-frame">
-    <StationSectionNav stationId={id} stationName={station.name} active="details" />
-  <div class="admin-content admin-station-page">
-    <h2>Edit Station</h2>
+    <StationSectionNav stationName={station.name} />
 
-    <form method="POST" enctype="multipart/form-data" class="admin-form" id="edit-station-form">
-      <input type="hidden" name="action" value="update" />
+    <div class="admin-content admin-station-page">
+      <div class="station-sections">
+        <form method="POST" enctype="multipart/form-data" class="admin-form station-main-form" id="edit-station-form">
+          <input type="hidden" name="action" value="update" />
 
-      <!-- Station Details -->
-      <section class="admin-panel">
-        <div class="admin-panel-body">
-          <div class="admin-station-form-header">
-            <h3>Station Details</h3>
+          <section class="station-section admin-panel" id="details" data-nav="details" style="order:10">
+            <div class="admin-panel-body">
+              <div class="admin-station-form-header">
+                <h3>Station Details</h3>
+              </div>
+
+              {formError && <Alert>{formError}</Alert>}
+
+              <StationFormFields values={form.values} errors={errors} mainImage={station.main_image} />
+            </div>
+          </section>
+
+          <section class="station-section admin-panel" id="restaurants-note" data-nav="restaurants-note" style="order:100">
+            <div class="admin-panel-body">
+              <h3 style="margin:0 0 8px">Restaurants note</h3>
+              <div class="admin-form-grid">
+                <div class="admin-form-group full-width">
+                  <label for="restaurants_note">
+                    Note <span class="admin-label-hint">shown above the restaurants list, use **text** for bold</span>
+                  </label>
+                  <textarea id="restaurants_note" name="restaurants_note" rows="2" maxlength="1000">{noteValue}</textarea>
+                </div>
+                <div class="admin-form-group full-width">
+                  <label for="restaurants_note_japanese">Note (Japanese)</label>
+                  <textarea id="restaurants_note_japanese" name="restaurants_note_japanese" lang="ja" rows="2" maxlength="1000">{noteJaValue}</textarea>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="station-section" id="facilities" data-nav="facilities" style="order:70">
+            <StationFacilitiesPanel
+              assigned={stationFacilities}
+              canAdd={stationFloors.length > 0 && availableFacilities.length > 0}
+              error={facilityError}
+              allAddedMessage="No facilities are available in the master list."
+            >
+              Floor, quantity, nearby exits and an optional note for each facility at
+              <strong>{station.name}</strong>.
+            </StationFacilitiesPanel>
           </div>
 
-          {formError && <Alert>{formError}</Alert>}
-
-          <StationFormFields values={form.values} errors={errors} mainImage={station.main_image} />
-
-          <div class="admin-form-grid" id="restaurants-note" style="margin-top:1rem">
-            <div class="admin-form-group full-width">
-              <label for="restaurants_note">
-                Restaurants note <span class="admin-label-hint">shown above the restaurants list, use **text** for bold</span>
-              </label>
-              <textarea id="restaurants_note" name="restaurants_note" rows="2" maxlength="1000">{noteValue}</textarea>
-            </div>
-            <div class="admin-form-group full-width">
-              <label for="restaurants_note_japanese">Restaurants note (Japanese)</label>
-              <textarea id="restaurants_note_japanese" name="restaurants_note_japanese" lang="ja" rows="2" maxlength="1000">{noteJaValue}</textarea>
-            </div>
+          <div class="station-save-bar">
+            <Button href="/admin/stations" variant="secondary"> Cancel </Button>
+            <Button type="submit" variant="primary" id="save-station-button">Save Station &amp; Facilities</Button>
           </div>
-        </div>
-      </section>
+        </form>
 
-      <!-- Facilities -->
-      <div id="facilities"></div>
-      <StationFacilitiesPanel
-        assigned={stationFacilities}
-        canAdd={stationFloors.length > 0 && availableFacilities.length > 0}
-        error={facilityError}
-        allAddedMessage="No facilities are available in the master list."
-      >
-        Floor, quantity, nearby exits and an optional note for each facility at
-        <strong>{station.name}</strong>.
-      </StationFacilitiesPanel>
-
-      <!-- Form Actions -->
-      <div class="admin-form-actions">
-        <Button href="/admin/stations" variant="secondary"> Cancel </Button>
-
-        <Button type="submit" variant="primary" id="save-station-button">
-          Save Changes
-        </Button>
+        <div style="order:20"><StationPlatformsSection {...shared} form={platformForm} /></div>
+        <div style="order:30"><StationFloorsSection {...shared} form={floorForm} /></div>
+        <div style="order:40"><StationSidesSection {...shared} form={sidesForm} /></div>
+        <div style="order:50"><StationRoutesSection {...shared} form={routesForm} /></div>
+        <div style="order:60"><StationExitsSection {...shared} form={exitForm} tipsForm={tipsForm} /></div>
+        <div style="order:75"><FacilityGuideSection stationName={station.name} form={guideForm} src={mediaSrc} /></div>
+        <div style="order:80"><StationBusesSection {...shared} form={busesForm} /></div>
+        <div style="order:90"><StationThingsSection {...shared} form={thingsForm} /></div>
+        <div style="order:110"><StationDayTripsSection {...shared} form={tripsForm} /></div>
+        <div style="order:120"><StationSeasonsSection {...shared} form={seasonsForm} /></div>
+        <div style="order:130"><StationPracticalSection {...shared} form={practicalForm} /></div>
+        <div style="order:140"><StationFaqSection {...shared} form={faqForm} /></div>
       </div>
-    </form>
-
-    <FacilityGuideSection stationName={station.name} form={guideForm} src={mediaSrc} />
+    </div>
   </div>
 
-  </div>
   <Fragment slot="after">
     <!-- Add Facilities Modal -->
     <FacilityModal
@@ -151,7 +218,7 @@ const noteJaValue = form.restaurantsNoteJapanese ?? savedNote.noteJapanese;
     <FacilityExitPickerModal
       exits={stationExits}
       floors={stationFloors}
-      manageExitsHref={`/admin/stations/${id}/exits`}
+      manageExitsHref="#exits"
     />
 
     <!-- Remove Facility Confirmation -->

@@ -1,0 +1,46 @@
+---
+import "../../../styles/admin/forms.css";
+import "../../../styles/admin/stations.css";
+import "../../../styles/admin/tables.css";
+import "../../../styles/admin/lines.css";
+import StationPlatformsPanel from "../../../components/admin/StationPlatformsPanel.astro";
+import { handleStationPlatforms } from "../../../lib/services/station-platforms";
+import { getStationById } from "../../../lib/db/stations";
+
+export interface Props {
+  station: NonNullable<Awaited<ReturnType<typeof getStationById>>>;
+  id: number;
+  form: Awaited<ReturnType<typeof handleStationPlatforms>>;
+  mediaBase: string;
+}
+
+const { station, id, form: __form, mediaBase } = Astro.props;
+const platformForm = __form;
+
+
+---
+
+<section class="station-section" id="platforms" data-nav="platforms">
+    <div class="admin-page-header">
+      <div>
+        <h2>Manage Platforms</h2>
+        <p>
+          Manage platform numbers, destinations, railway lines, and walking
+          guidance for <strong>{station.name}</strong>.
+        </p>
+      </div>
+
+    
+    </div>
+
+    <StationPlatformsPanel
+      stationName={station.name}
+      stationId={station.id}
+      platforms={platformForm.platforms}
+      lines={platformForm.lines}
+      values={platformForm.values}
+      errors={platformForm.errors}
+      formError={platformForm.formError}
+      editingId={platformForm.editingId}
+    />
+  </section>

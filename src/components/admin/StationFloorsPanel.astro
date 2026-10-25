@@ -57,7 +57,7 @@ const showDeleteError =
     )}
 
     <div class="admin-list-toolbar">
-      <form
+      <form action="?s=floors"
         class="admin-search-form"
         role="search"
         onsubmit="return false;"
@@ -235,7 +235,7 @@ const showDeleteError =
       </button>
     </div>
 
-    <form method="POST" class="admin-form" id="floor-form">
+    <form action="?s=floors" method="POST" class="admin-form" id="floor-form">
       <input
         type="hidden"
         name="floor_action"
@@ -318,7 +318,7 @@ const showDeleteError =
 <form
   method="POST"
   id="delete-floor-form"
-  action={`/admin/stations/${stationId}/floors`}
+  action={`/admin/stations/${stationId}/edit?s=floors`}
   hidden
 >
   <input type="hidden" name="floor_action" value="delete" />
@@ -340,7 +340,7 @@ const showDeleteError =
 <form
   method="POST"
   id="bulk-delete-floor-form"
-  action={`/admin/stations/${stationId}/floors`}
+  action={`/admin/stations/${stationId}/edit?s=floors`}
   hidden
 >
   <input type="hidden" name="floor_action" value="delete_many" />

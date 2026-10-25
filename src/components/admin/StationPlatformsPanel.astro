@@ -65,7 +65,7 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
     )}
 
     <div class="admin-list-toolbar">
-      <form
+      <form action="?s=platforms"
         id="platform-search-form"
         class="admin-search-form"
         role="search"
@@ -278,7 +278,7 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
       </button>
     </div>
 
-    <form method="POST" class="admin-form" id="platform-form">
+    <form action="?s=platforms" method="POST" class="admin-form" id="platform-form">
       <input
         type="hidden"
         name="platform_action"
@@ -449,7 +449,7 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
 <form
   method="POST"
   id="delete-platform-form"
-  action={`/admin/stations/${stationId}/platforms`}
+  action={`/admin/stations/${stationId}/edit?s=platforms`}
   hidden
 >
   <input type="hidden" name="platform_action" value="delete" />
@@ -471,7 +471,7 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
 <form
   method="POST"
   id="bulk-delete-platform-form"
-  action={`/admin/stations/${stationId}/platforms`}
+  action={`/admin/stations/${stationId}/edit?s=platforms`}
   hidden
 >
   <input type="hidden" name="platform_action" value="delete_many" />

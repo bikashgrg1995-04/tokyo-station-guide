@@ -16,6 +16,7 @@ const reopen = form.posted
   : "";
 ---
 
+<div data-sim-root>
 <section class="admin-panel" id="tips" style="margin-top:14px">
   <div class="admin-panel-body">
     <h3 style="margin:0 0 4px">Note &amp; station tips</h3>
@@ -23,7 +24,7 @@ const reopen = form.posted
       Shown with the exits on the {stationName} page. Each exit's own description, photo and caption come from the exits table above.
     </p>
 
-    <form method="POST" class="admin-form" style="margin-bottom:14px">
+    <form method="POST" action="?s=exits" class="admin-form" style="margin-bottom:14px">
       {form.errorFor === "note" && <div class="admin-form-error" role="alert">{form.formError}</div>}
       <div class="sim-grid2">
         <div class="admin-form-group">
@@ -43,8 +44,8 @@ const reopen = form.posted
     {form.formError && form.errorFor !== "note" && !form.posted && <div class="admin-form-error" role="alert">{form.formError}</div>}
 
     <div class="sim-toolbar">
-      <input id="sim-search" type="search" placeholder="Search tips..." aria-label="Search tips" />
-      <button type="button" id="sim-add" class="sim-add" data-next-order={nextOrder}>+ Add tip</button>
+      <input data-sim="search" type="search" placeholder="Search tips..." aria-label="Search tips" />
+      <button type="button" data-sim="add" class="sim-add" data-next-order={nextOrder}>+ Add tip</button>
     </div>
 
     {
@@ -76,7 +77,7 @@ const reopen = form.posted
                       >
                         Edit
                       </button>
-                      <form method="POST" onsubmit="return confirm('Delete this tip?')">
+                      <form method="POST" action="?s=exits" onsubmit="return confirm('Delete this tip?')">
                         <input type="hidden" name="item_id" value={t.id} />
                         <input type="hidden" name="tips_action" value="tip_delete" />
                         <button type="submit" class="admin-table-action admin-table-action-delete">Delete</button>
@@ -87,7 +88,7 @@ const reopen = form.posted
               ))}
             </tbody>
           </table>
-          <p id="sim-empty-search" class="sim-empty-search" hidden>No matching tips.</p>
+          <p data-sim="empty" class="sim-empty-search" hidden>No matching tips.</p>
         </div>
       )
     }
@@ -95,7 +96,7 @@ const reopen = form.posted
 </section>
 
 <div
-  id="sim-modal"
+  data-sim="modal"
   class="sim-modal"
   hidden
   data-create-action="tip_create"
@@ -106,21 +107,22 @@ const reopen = form.posted
   data-reopen={reopen}
 >
   <div class="sim-backdrop" data-close></div>
-  <section class="sim-dialog" role="dialog" aria-modal="true" aria-labelledby="sim-title">
-    <h2 id="sim-title">Add tip</h2>
+  <section class="sim-dialog" role="dialog" aria-modal="true">
+    <h2 data-sim="title">Add tip</h2>
     {form.formError && form.posted && <div class="admin-form-error" role="alert">{form.formError}</div>}
-    <form id="sim-form" method="POST" class="admin-form">
+    <form data-sim="form" method="POST" action="?s=exits" class="admin-form">
       <input type="hidden" name="tips_action" value="tip_create" />
       <input type="hidden" name="item_id" value="" />
-      <div class="admin-form-group"><label for="sim-t">Tip</label><textarea id="sim-t" name="tip" required rows="3" maxlength="600"></textarea></div>
-      <div class="admin-form-group"><label for="sim-tj">Tip (Japanese)</label><textarea id="sim-tj" name="tip_japanese" lang="ja" rows="3" maxlength="600"></textarea></div>
-      <div class="admin-form-group"><label for="sim-o">Order</label><input id="sim-o" name="sort_order" type="number" min="0" value="0" /></div>
+      <div class="admin-form-group"><label for="et-t">Tip</label><textarea id="et-t" name="tip" required rows="3" maxlength="600"></textarea></div>
+      <div class="admin-form-group"><label for="et-tj">Tip (Japanese)</label><textarea id="et-tj" name="tip_japanese" lang="ja" rows="3" maxlength="600"></textarea></div>
+      <div class="admin-form-group"><label for="et-o">Order</label><input id="et-o" name="sort_order" type="number" min="0" value="0" /></div>
       <div class="sim-foot">
         <button type="button" class="common-button common-button-secondary" data-close>Cancel</button>
-        <button type="submit" id="sim-submit" class="common-button common-button-primary">Add tip</button>
+        <button type="submit" data-sim="submit" class="common-button common-button-primary">Add tip</button>
       </div>
     </form>
   </section>
+</div>
 </div>
 
 <script>

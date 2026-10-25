@@ -1,6 +1,6 @@
 ---
 export const prerender = false;
-// The facilities guide now lives inside the Facilities section of the station edit page.
+// This section now lives on the station edit page.
 const id = Number(Astro.params.id);
 return Astro.redirect(Number.isInteger(id) && id > 0 ? `/admin/stations/${id}/edit#facilities` : "/admin/stations");
 ---

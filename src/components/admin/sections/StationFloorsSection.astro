@@ -1,0 +1,43 @@
+---
+import "../../../styles/admin/forms.css";
+import "../../../styles/admin/stations.css";
+import "../../../styles/admin/tables.css";
+import "../../../styles/admin/lines.css";
+import StationFloorsPanel from "../../../components/admin/StationFloorsPanel.astro";
+import { handleStationFloors } from "../../../lib/services/station-floors";
+import { getStationById } from "../../../lib/db/stations";
+
+export interface Props {
+  station: NonNullable<Awaited<ReturnType<typeof getStationById>>>;
+  id: number;
+  form: Awaited<ReturnType<typeof handleStationFloors>>;
+  mediaBase: string;
+}
+
+const { station, id, form: __form, mediaBase } = Astro.props;
+const floorForm = __form;
+
+
+---
+
+<section class="station-section" id="floors" data-nav="floors">
+    <div class="admin-page-header">
+      <div>
+        <h2>Manage Floors</h2>
+        <p>
+          Manage floors and their display order for
+          <strong>{station.name}</strong>.
+        </p>
+      </div>
+    </div>
+
+    <StationFloorsPanel
+      stationName={station.name}
+      stationId={station.id}
+      floors={floorForm.floors}
+      values={floorForm.values}
+      errors={floorForm.errors}
+      formError={floorForm.formError}
+      editingId={floorForm.editingId}
+    />
+  </section>

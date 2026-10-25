@@ -2,67 +2,42 @@
 import "../../styles/admin/station-section-nav.css";
 
 export interface Props {
-  stationId: number;
   stationName: string;
-  /** Key of the current section (see GROUPS below). */
-  active: string;
 }
 
-const { stationId, stationName, active } = Astro.props;
-const base = `/admin/stations/${stationId}`;
+const { stationName } = Astro.props;
 
-const GROUPS: { title: string; items: { key: string; label: string; href: string }[] }[] = [
-  {
-    title: "Station",
-    items: [
-      { key: "details", label: "Station Details", href: `${base}/edit` },
-      { key: "stats", label: "Page stat cards", href: `${base}/edit#stats` },
-      { key: "restaurants-note", label: "Restaurants note", href: `${base}/edit#restaurants-note` },
-    ],
-  },
-  {
-    title: "Layout",
-    items: [
-      { key: "platforms", label: "Platforms", href: `${base}/platforms` },
-      { key: "floors", label: "Floors", href: `${base}/floors` },
-      { key: "exits", label: "Exits & tips", href: `${base}/exits` },
-      { key: "sides", label: "Sides of the station", href: `${base}/sides` },
-      { key: "routes", label: "Routes (getting there)", href: `${base}/routes` },
-    ],
-  },
-  {
-    title: "Page sections",
-    items: [
-      { key: "facilities", label: "Facilities & guide", href: `${base}/edit#facilities` },
-      { key: "buses-taxis", label: "Buses & taxis", href: `${base}/buses-taxis` },
-      { key: "things-to-do", label: "Things to do", href: `${base}/things-to-do` },
-      { key: "day-trips", label: "Day trips", href: `${base}/day-trips` },
-      { key: "seasons", label: "When to visit", href: `${base}/seasons` },
-      { key: "practical-tips", label: "Practical tips", href: `${base}/practical-tips` },
-      { key: "faqs", label: "FAQ", href: `${base}/faqs` },
-    ],
-  },
+// Same order as the public station page.
+const ITEMS: { key: string; label: string }[] = [
+  { key: "details", label: "Station Details" },
+  { key: "stats", label: "Page stat cards" },
+  { key: "platforms", label: "Platforms" },
+  { key: "floors", label: "Floors" },
+  { key: "sides", label: "Sides of the station" },
+  { key: "routes", label: "Getting there" },
+  { key: "exits", label: "Exits & station tips" },
+  { key: "facilities", label: "Facilities" },
+  { key: "buses-taxis", label: "Buses & taxis" },
+  { key: "things-to-do", label: "Things to do" },
+  { key: "restaurants-note", label: "Restaurants note" },
+  { key: "day-trips", label: "Day trips" },
+  { key: "seasons", label: "When to visit" },
+  { key: "practical-tips", label: "Practical tips" },
+  { key: "faqs", label: "FAQ" },
 ];
 ---
 
 <nav class="station-section-nav" aria-label={`${stationName} sections`}>
   <p class="station-section-nav-title">{stationName}</p>
-  {
-    GROUPS.map((g) => (
-      <>
-        <p class="station-section-nav-group">{g.title}</p>
-        <ul>
-          {g.items.map((i) => (
-            <li>
-              <a href={i.href} class:list={[{ "is-active": i.key === active }]} aria-current={i.key === active ? "page" : undefined}>
-                {i.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </>
-    ))
-  }
+  <ul>
+    {
+      ITEMS.map((i) => (
+        <li>
+          <a href={`#${i.key}`} data-nav-link={i.key}>{i.label}</a>
+        </li>
+      ))
+    }
+  </ul>
   <p class="station-section-nav-group">Global catalogs</p>
   <ul>
     <li><a href="/admin/hotels">Hotels</a></li>
@@ -72,14 +47,45 @@ const GROUPS: { title: string; items: { key: string; label: string; href: string
 </nav>
 
 <script>
-  // Highlight the in-page section (Stat cards, Facilities, Restaurants note) while scrolling or after a click.
-  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>(".station-section-nav a[href*='#']"));
-  const mark = () => {
-    const h = location.hash;
-    if (!h) return;
-    document.querySelectorAll(".station-section-nav a.is-active").forEach((a) => a.classList.remove("is-active"));
-    links.find((a) => a.getAttribute("href")?.endsWith(h))?.classList.add("is-active");
-  };
-  window.addEventListener("hashchange", mark);
-  mark();
+  // Highlight the section being read, like the quick nav on the public page.
+  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>("[data-nav-link]"));
+  const targets = links
+    .map((a) => document.getElementById(a.dataset.navLink ?? ""))
+    .filter((el): el is HTMLElement => !!el);
+
+  function setActive(key: string) {
+    links.forEach((a) => {
+      const on = a.dataset.navLink === key;
+      a.classList.toggle("is-active", on);
+      if (on) a.setAttribute("aria-current", "true");
+      else a.removeAttribute("aria-current");
+    });
+    // keep the active link visible inside the sticky menu
+    const active = links.find((a) => a.dataset.navLink === key);
+    active?.scrollIntoView({ block: "nearest" });
+  }
+
+  let lock = 0;
+  function update() {
+    if (Date.now() < lock) return;
+    const line = 130;
+    let current = targets[0];
+    for (const t of targets) {
+      if (t.getBoundingClientRect().top <= line) current = t;
+    }
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
+      current = targets[targets.length - 1];
+    }
+    if (current) setActive(current.id);
+  }
+
+  links.forEach((a) =>
+    a.addEventListener("click", () => {
+      lock = Date.now() + 700; // keep the clicked item highlighted while smooth-scrolling
+      setActive(a.dataset.navLink ?? "");
+    }),
+  );
+  window.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update);
+  update();
 </script>

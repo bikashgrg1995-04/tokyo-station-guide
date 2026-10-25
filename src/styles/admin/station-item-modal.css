@@ -27,3 +27,10 @@
 #station-facilities-table .facility-note-fields { display:grid; grid-template-columns:1fr 1fr; gap:4px; min-width:260px; }
 #station-facilities-table .facility-note-fields textarea { height:30px; min-height:0; padding:4px 6px; font-size:.78rem; resize:none; overflow:hidden; }
 #station-facilities-table .facility-note-fields textarea:focus { height:64px; position:relative; z-index:2; }
+.sim-table { width:100%; table-layout:fixed; min-width:0 !important; }
+.sim-table th:first-child { width:64px; }
+.sim-table th:last-child { width:150px; }
+.sim-table th.sim-narrow { width:72px; }
+.sim-table td { overflow:hidden; vertical-align:middle; }
+.sim-table .sim-clip { max-width:100%; }
+.sim-table td { white-space:normal; }

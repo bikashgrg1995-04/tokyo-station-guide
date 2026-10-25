@@ -1,0 +1,65 @@
+---
+import "../../../styles/admin/forms.css";
+import "../../../styles/admin/stations.css";
+import "../../../styles/admin/station-sides.css";
+import { SEASONS } from "../../../lib/db/station-seasons";
+import { handleStationSeasons } from "../../../lib/services/station-seasons";
+import { getStationById } from "../../../lib/db/stations";
+
+export interface Props {
+  station: NonNullable<Awaited<ReturnType<typeof getStationById>>>;
+  id: number;
+  form: Awaited<ReturnType<typeof handleStationSeasons>>;
+  mediaBase: string;
+}
+
+const { station, id, form: __form, mediaBase } = Astro.props;
+const form = __form;
+
+const label = (s: string) => s[0].toUpperCase() + s.slice(1);
+---
+
+<section class="station-section" id="seasons" data-nav="seasons">
+    <div class="admin-page-header">
+      <div>
+        <h2>When to visit</h2>
+        <p>
+          For <strong>{station.name}</strong>: one block per season on the public page. Leave a season empty and
+          save to remove it.
+        </p>
+      </div>
+    </div>
+
+    {
+      SEASONS.map((s) => (
+        <section class="admin-panel sides-panel">
+          <form action="?s=seasons" method="POST" class="admin-panel-body">
+            <input type="hidden" name="season" value={s} />
+            <h3 class="sides-title">{label(s)}</h3>
+            {form.errorFor === s && <div class="admin-form-error" role="alert">{form.formError}</div>}
+            <div class="admin-form-grid">
+              <div class="admin-form-group">
+                <label>Months</label>
+                <input name="months" maxlength="40" placeholder="Mar – May" value={form.seasons[s]?.months ?? ""} />
+              </div>
+              <div class="admin-form-group">
+                <label>Months (Japanese)</label>
+                <input name="months_japanese" lang="ja" maxlength="40" placeholder="3月〜5月" value={form.seasons[s]?.months_japanese ?? ""} />
+              </div>
+              <div class="admin-form-group full-width">
+                <label>Text</label>
+                <textarea name="description" rows="3" maxlength="600">{form.seasons[s]?.description ?? ""}</textarea>
+              </div>
+              <div class="admin-form-group full-width">
+                <label>Text (Japanese)</label>
+                <textarea name="description_japanese" lang="ja" rows="3" maxlength="600">{form.seasons[s]?.description_japanese ?? ""}</textarea>
+              </div>
+            </div>
+            <div class="admin-form-actions">
+              <button type="submit" class="common-button common-button-primary">Save {s}</button>
+            </div>
+          </form>
+        </section>
+      ))
+    }
+  </section>

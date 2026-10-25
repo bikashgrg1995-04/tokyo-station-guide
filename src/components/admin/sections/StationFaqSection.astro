@@ -1,0 +1,127 @@
+---
+import "../../../styles/admin/forms.css";
+import "../../../styles/admin/stations.css";
+import "../../../styles/admin/tables.css";
+import "../../../styles/admin/station-item-modal.css";
+import EmptyState from "../../common/EmptyState.astro";
+import { handleStationFaqs } from "../../../lib/services/station-faqs";
+import { getStationById } from "../../../lib/db/stations";
+
+export interface Props {
+  station: NonNullable<Awaited<ReturnType<typeof getStationById>>>;
+  id: number;
+  form: Awaited<ReturnType<typeof handleStationFaqs>>;
+  mediaBase: string;
+}
+
+const { station, form } = Astro.props;
+const nextOrder = form.faqs.reduce((max, f) => Math.max(max, f.sort_order), 0) + 1;
+const reopen = form.posted
+  ? JSON.stringify({ mode: form.errorFor === "faq-new" ? "create" : "update", values: form.posted })
+  : "";
+---
+
+<section class="station-section" id="faqs" data-nav="faqs" data-sim-root>
+  <div class="station-section-head">
+    <div>
+      <h2>FAQ</h2>
+      <p>Questions and answers shown under "FAQ" on the {station.name} page.</p>
+    </div>
+    <button type="button" data-sim="add" class="sim-add" data-next-order={nextOrder}>+ Add FAQ</button>
+  </div>
+
+  {form.formError && !form.posted && <div class="admin-form-error" role="alert">{form.formError}</div>}
+
+  <div class="sim-toolbar">
+    <input data-sim="search" type="search" placeholder="Search questions..." aria-label="Search FAQs" />
+  </div>
+
+  <div class="admin-panel">
+    <div class="admin-panel-body admin-table-panel-body">
+      {
+        form.faqs.length === 0 ? (
+          <EmptyState icon="?" title="No FAQs yet" description="Click Add FAQ to write the first one." />
+        ) : (
+          <div class="admin-table-wrapper">
+            <table class="admin-table sim-table">
+              <thead>
+                <tr><th>Order</th><th>Question</th><th>Answer</th><th>Actions</th></tr>
+              </thead>
+              <tbody>
+                {form.faqs.map((f) => (
+                  <tr class="sim-row" data-search={`${f.question} ${f.question_japanese ?? ""} ${f.answer} ${f.answer_japanese ?? ""}`.toLowerCase()}>
+                    <td>{f.sort_order}</td>
+                    <td>
+                      <strong>{f.question || f.question_japanese}</strong>
+                      {f.question && f.question_japanese && <div class="sim-sub" lang="ja">{f.question_japanese}</div>}
+                    </td>
+                    <td><div class="sim-clip">{f.answer}</div></td>
+                    <td>
+                      <div class="sim-actions">
+                        <button
+                          type="button"
+                          class="admin-table-action admin-table-action-edit sim-edit"
+                          data-item={JSON.stringify({
+                            item_id: String(f.id),
+                            question: f.question,
+                            question_japanese: f.question_japanese ?? "",
+                            answer: f.answer,
+                            answer_japanese: f.answer_japanese ?? "",
+                            sort_order: String(f.sort_order),
+                          })}
+                        >
+                          Edit
+                        </button>
+                        <form method="POST" action="?s=faqs" onsubmit="return confirm('Delete this FAQ?')">
+                          <input type="hidden" name="item_id" value={f.id} />
+                          <input type="hidden" name="faq_action" value="faq_delete" />
+                          <button type="submit" class="admin-table-action admin-table-action-delete">Delete</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p data-sim="empty" class="sim-empty-search" hidden>No matching FAQs.</p>
+          </div>
+        )
+      }
+    </div>
+  </div>
+
+  <div
+    data-sim="modal"
+    class="sim-modal"
+    hidden
+    data-create-action="faq_create"
+    data-update-action="faq_update"
+    data-add-title="Add FAQ"
+    data-edit-title="Edit FAQ"
+    data-add-label="Add FAQ"
+    data-reopen={reopen}
+  >
+    <div class="sim-backdrop" data-close></div>
+    <div class="sim-dialog" role="dialog" aria-modal="true">
+      <h2 data-sim="title">Add FAQ</h2>
+      {form.formError && form.posted && <div class="admin-form-error" role="alert">{form.formError}</div>}
+      <form data-sim="form" method="POST" action="?s=faqs" class="admin-form">
+        <input type="hidden" name="faq_action" value="faq_create" />
+        <input type="hidden" name="item_id" value="" />
+        <div class="admin-form-group"><label for="faq-q">Question</label><input id="faq-q" name="question" required maxlength="300" /></div>
+        <div class="admin-form-group"><label for="faq-qj">Question (Japanese)</label><input id="faq-qj" name="question_japanese" lang="ja" maxlength="300" /></div>
+        <div class="admin-form-group"><label for="faq-a">Answer</label><textarea id="faq-a" name="answer" required rows="3" maxlength="1500"></textarea></div>
+        <div class="admin-form-group"><label for="faq-aj">Answer (Japanese)</label><textarea id="faq-aj" name="answer_japanese" lang="ja" rows="3" maxlength="1500"></textarea></div>
+        <div class="admin-form-group"><label for="faq-o">Order</label><input id="faq-o" name="sort_order" type="number" min="0" value="0" /></div>
+        <div class="sim-foot">
+          <button type="button" class="common-button common-button-secondary" data-close>Cancel</button>
+          <button type="submit" data-sim="submit" class="common-button common-button-primary">Add FAQ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+  import "../../../scripts/admin/station-item-modal";
+</script>

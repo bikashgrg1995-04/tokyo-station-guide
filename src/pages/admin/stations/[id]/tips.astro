@@ -1,6 +1,6 @@
 ---
 export const prerender = false;
-// Exit tips now live on the Exits page.
+// This section now lives on the station edit page.
 const id = Number(Astro.params.id);
-return Astro.redirect(Number.isInteger(id) && id > 0 ? `/admin/stations/${id}/exits#tips` : "/admin/stations");
+return Astro.redirect(Number.isInteger(id) && id > 0 ? `/admin/stations/${id}/edit#exits` : "/admin/stations");
 ---
