@@ -62,7 +62,14 @@ const ITEMS: { key: string; label: string }[] = [
     });
     // keep the active link visible inside the sticky menu
     const active = links.find((a) => a.dataset.navLink === key);
-    active?.scrollIntoView({ block: "nearest" });
+    const row = active?.closest("ul");
+    if (active && row && row.scrollWidth > row.clientWidth + 2) {
+      row.scrollTo({ left: active.offsetLeft - (row.clientWidth - active.offsetWidth) / 2, behavior: "smooth" });
+    } else if (active) {
+      // desktop: the menu is a tall sticky column
+      const nav = active.closest("nav");
+      if (nav && nav.scrollHeight > nav.clientHeight) active.scrollIntoView({ block: "nearest" });
+    }
   }
 
   let lock = 0;

@@ -56,6 +56,18 @@ function initScrollSpy() {
   }
 
   var ticking = false;
+  var lastShown = "";
+
+  var header = document.querySelector(".sp-header");
+
+  function syncHead() {
+    if (header) {
+      document.documentElement.style.setProperty("--sp-head", header.offsetHeight + "px");
+    }
+  }
+
+  syncHead();
+  window.addEventListener("resize", syncHead);
 
   function update() {
     ticking = false;
@@ -63,7 +75,7 @@ function initScrollSpy() {
     var active = sections[0];
 
     sections.forEach(function (section) {
-      if (section.getBoundingClientRect().top <= 110) {
+      if (section.getBoundingClientRect().top <= (header ? header.offsetHeight : 56) + 70) {
         active = section;
       }
     });
@@ -76,6 +88,18 @@ function initScrollSpy() {
     Object.keys(links).forEach(function (id) {
       links[id].classList.toggle("is-active", id === active.dataset.section);
     });
+
+    /* One-row menu on small screens: keep the active item centred. */
+    var on = links[active.dataset.section];
+    var row = on && on.parentElement;
+
+    if (row && row.scrollWidth > row.clientWidth + 2 && lastShown !== active.dataset.section) {
+      lastShown = active.dataset.section;
+      row.scrollTo({
+        left: on.offsetLeft - (row.clientWidth - on.offsetWidth) / 2,
+        behavior: "smooth",
+      });
+    }
   }
 
   window.addEventListener(

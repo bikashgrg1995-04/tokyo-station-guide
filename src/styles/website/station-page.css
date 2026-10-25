@@ -356,32 +356,89 @@ html[data-lang="jp"] [data-station-en] {
 }
 
 /* ---------- Table of contents (desktop) ---------- */
+/* Phones and tablets: the same list becomes one sticky row under the header that scrolls sideways and follows the section being read. */
 .sp-toc {
+  position: sticky;
+  top: var(--sp-head, 56px);
+  z-index: 20;
+  order: -1;
+  margin: 0 -16px 8px;
+  background: color-mix(in srgb, var(--page) 92%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--row-edge);
+}
+
+.sp-toc-title {
   display: none;
+}
+
+.sp-toc nav {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  padding: 6px 12px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sp-toc nav::-webkit-scrollbar {
+  display: none;
+}
+
+.sp-toc a {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.sp-toc a.is-active {
+  background: var(--sp-red);
+  color: #fff;
+  font-weight: 600;
+}
+
+.sp-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+[data-section] {
+  scroll-margin-top: calc(var(--sp-head, 56px) + 56px);
 }
 
 @media (min-width: 960px) {
   .sp-layout {
+    display: grid;
     grid-template-columns: minmax(0, 1fr) 200px;
     align-items: start;
   }
 
+  [data-section] {
+    scroll-margin-top: 80px;
+  }
+
   .sp-toc {
-    position: sticky;
     top: 76px;
-    display: block;
+    order: 0;
+    margin: 0;
     max-height: calc(100dvh - 96px);
     overflow-y: auto;
     padding: 4px 0;
-  }
-
-  .sp-toc-title {
-    display: none;
+    background: none;
+    backdrop-filter: none;
+    border-bottom: 0;
   }
 
   .sp-toc nav {
     display: grid;
     gap: 1px;
+    overflow: visible;
+    padding: 0;
   }
 
   .sp-toc a {
