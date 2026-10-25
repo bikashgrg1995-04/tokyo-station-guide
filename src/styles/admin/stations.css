@@ -144,7 +144,7 @@
 ======================================== */
 
 .admin-station-description {
-  min-height: 160px !important;
+  min-height: 64px !important;
   resize: vertical;
 }
 
@@ -507,7 +507,7 @@
   }
 
   .admin-station-description {
-    min-height: 140px !important;
+    min-height: 64px !important;
   }
 
   .admin-station-facilities-card {

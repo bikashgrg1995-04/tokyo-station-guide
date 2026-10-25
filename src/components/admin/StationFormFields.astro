@@ -191,7 +191,7 @@ const {
     <textarea
       id="description"
       name="description"
-      rows="3"
+      rows="2"
       class="admin-station-description"
       placeholder="Brief description of this station..."
       aria-invalid={errors.description ? "true" : "false"}
@@ -203,6 +203,31 @@ const {
       errors.description && (
         <small id="description-error" class="admin-form-error">
           {errors.description}
+        </small>
+      )
+    }
+  </div>
+
+  <!-- Japanese Description -->
+  <div class="admin-form-group span-6">
+    <label for="description_japanese">Japanese Description</label>
+
+    <textarea
+      id="description_japanese"
+      name="description_japanese"
+      rows="2"
+      lang="ja"
+      class="admin-station-description"
+      placeholder="この駅の簡単な説明..."
+      aria-invalid={errors.descriptionJapanese ? "true" : "false"}
+      aria-describedby={errors.descriptionJapanese ? "description-japanese-error" : undefined}
+      >{descriptionJapanese}</textarea
+    >
+
+    {
+      errors.descriptionJapanese && (
+        <small id="description-japanese-error" class="admin-form-error">
+          {errors.descriptionJapanese}
         </small>
       )
     }
@@ -381,7 +406,7 @@ const {
       id="about"
       name="about"
       maxlength="150"
-      rows="3"
+      rows="2"
       class="admin-station-description"
       placeholder="Short text shown in the About section of the station popup..."
       aria-invalid={errors.about ? "true" : "false"}
@@ -398,31 +423,6 @@ const {
     }
   </div>
 
-  <!-- Japanese Description -->
-  <div class="admin-form-group span-6">
-    <label for="description_japanese">Japanese Description</label>
-
-    <textarea
-      id="description_japanese"
-      name="description_japanese"
-      rows="3"
-      lang="ja"
-      class="admin-station-description"
-      placeholder="この駅の簡単な説明..."
-      aria-invalid={errors.descriptionJapanese ? "true" : "false"}
-      aria-describedby={errors.descriptionJapanese ? "description-japanese-error" : undefined}
-      >{descriptionJapanese}</textarea
-    >
-
-    {
-      errors.descriptionJapanese && (
-        <small id="description-japanese-error" class="admin-form-error">
-          {errors.descriptionJapanese}
-        </small>
-      )
-    }
-  </div>
-
   <!-- Japanese About -->
   <div class="admin-form-group span-6">
     <label for="about_japanese">
@@ -433,7 +433,7 @@ const {
       id="about_japanese"
       name="about_japanese"
       maxlength="150"
-      rows="3"
+      rows="2"
       lang="ja"
       class="admin-station-description"
       placeholder="駅ポップアップの「概要」に表示される短い文章..."
@@ -450,6 +450,8 @@ const {
       )
     }
   </div>
+
+
 </div>
 
 <script>
