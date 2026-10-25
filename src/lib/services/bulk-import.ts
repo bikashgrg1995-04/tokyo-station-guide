@@ -8,6 +8,7 @@ import {
   REQUIRED_COLUMNS,
   SHEET_ORDER,
   TOP_PICK_CATEGORIES,
+  EXIT_PLACE_CATEGORIES,
   SEASONS,
   TOP_PICK_LOCATIONS,
   WEBSITE_STATUSES,
@@ -157,6 +158,7 @@ export function buildImportPlan(
   const exits = new Set(snap.exits);
   const platforms = new Set(snap.platforms);
   const sides = new Set(snap.sides);
+  const exitPlaces = new Set(snap.exitPlaces);
   const routes = new Set(snap.routes);
   const tips = new Set(snap.tips);
   const seasons = new Set(snap.seasons);
@@ -218,6 +220,7 @@ export function buildImportPlan(
     const delPlatforms = gone("platform", "platforms",
       (d) => `${d.station_slug}|${d.platform_number}|${d.line_slug ?? ""}`, (k) => stationKept(part(k, 0)));
     const delSides = gone("side", "sides", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
+    const delExitPlaces = gone("exitPlace", "exit_places", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
     const delRoutes = gone("route", "routes", (d) => `${d.station_slug}|${d.from_place}|${d.route ?? ""}`, (k) => stationKept(part(k, 0)));
     const delTips = gone("tip", "tips", (d) => `${d.station_slug}|${d.tip}`, (k) => stationKept(part(k, 0)));
     const delSeasons = gone("season", "seasons", (d) => `${d.station_slug}|${(d.season ?? "").toLowerCase()}`, (k) => stationKept(part(k, 0)));
@@ -262,6 +265,7 @@ export function buildImportPlan(
       ["exit", "exits", delExits],
       ["platform", "platforms", delPlatforms],
       ["side", "sides", delSides],
+      ["exitPlace", "exit_places", delExitPlaces],
       ["route", "routes", delRoutes],
       ["tip", "tips", delTips],
       ["season", "seasons", delSeasons],
@@ -735,12 +739,70 @@ export function buildImportPlan(
     const desc = text(d, "description", 1500, err);
     const descJa = text(d, "description_japanese", 1500, err);
     const sortOrder = intField(d, "sort_order", err);
+
+    // Exits of this side ("Which exit?"): names separated by "|", commas, semicolons or line breaks.
+    let exitsValue: Opt<string> = undefined;
+    if ("exits" in d) {
+      const names = [...new Set((d.exits ?? "").split(/[|,;\n]/).map((x) => x.trim()).filter(Boolean))];
+      for (const exitName of names) {
+        if (!knownExit(stationSlug, exitName)) {
+          err(`Exit "${exitName}" does not exist for station "${stationSlug}" (add it in the exits sheet).`);
+        }
+      }
+      exitsValue = names.length > 0 ? names.sort().join("|") : null;
+    }
     if (dup || !name || !stationSlugs.has(stationSlug)) return;
 
     const key = `${stationSlug}|${name}`;
     const exists = sides.has(key);
     sides.add(key);
-    record("sides", { t: "side", stationSlug, name, nameJa, subtitle, subtitleJa, desc, descJa, sortOrder }, key, exists);
+    record("sides", { t: "side", stationSlug, name, nameJa, subtitle, subtitleJa, desc, descJa, sortOrder, exits: exitsValue }, key, exists);
+  });
+
+  // ---- exit_places ("Which exit?": a place and the exits that lead to it) ---------
+  eachRow("exit_places", (d) => `${d.station_slug}|${d.name}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    const name = text(d, "name", 150, err, true) ?? "";
+    const nameJa = text(d, "name_japanese", 150, err);
+    const category = oneOf(d, "category", EXIT_PLACE_CATEGORIES, err);
+    const sortOrder = intField(d, "sort_order", err);
+
+    // exits: "Exit name=short note" separated by "|" or line breaks; exit_notes_japanese: "Exit name=メモ".
+    const parse = (col: string) => {
+      const map = new Map<string, string>();
+      for (const piece of (d[col] ?? "").split(/[|\n]/)) {
+        const at = piece.indexOf("=");
+        const exitName = (at === -1 ? piece : piece.slice(0, at)).trim();
+        const note = at === -1 ? "" : piece.slice(at + 1).trim();
+        if (!exitName) continue;
+        if (note.length > 120) err(`The note for exit "${exitName}" must be 120 characters or less.`);
+        if (note.includes("=")) err(`The note for exit "${exitName}" cannot contain "=".`);
+        map.set(exitName, note);
+      }
+      return map;
+    };
+    let exitsValue: Opt<string> = undefined;
+    if ("exits" in d) {
+      const en = parse("exits");
+      const ja = parse("exit_notes_japanese");
+      for (const exitName of [...en.keys(), ...ja.keys()]) {
+        if (!knownExit(stationSlug, exitName)) {
+          err(`Exit "${exitName}" does not exist for station "${stationSlug}" (add it in the exits sheet).`);
+        }
+      }
+      for (const exitName of ja.keys()) {
+        if (!en.has(exitName)) err(`Exit "${exitName}" has a Japanese note but is not listed in "exits".`);
+      }
+      const list = [...en.keys()].sort().map((x) => `${x}=${en.get(x) ?? ""}=${ja.get(x) ?? ""}`);
+      exitsValue = list.length > 0 ? list.join("|") : null;
+    }
+    if (dup || !name || !stationSlugs.has(stationSlug)) return;
+
+    const key = `${stationSlug}|${name}`;
+    const exists = exitPlaces.has(key);
+    exitPlaces.add(key);
+    record("exit_places", { t: "exitPlace", stationSlug, name, nameJa, category, sortOrder, exits: exitsValue }, key, exists);
   });
 
   // ---- routes ----------------------------------------------------------------

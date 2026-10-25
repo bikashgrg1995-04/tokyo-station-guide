@@ -1,0 +1,135 @@
+---
+// "Which exit?": pick a side, tap an exit to see what is near it, or pick a kind of place to see which exit to use.
+// Everything is rendered here; station-page.js only shows and hides it.
+import type { StationPageData } from "../../../lib/db/station-page";
+
+export interface Props {
+  station: StationPageData;
+}
+
+const { station } = Astro.props;
+
+const CATS: { key: string; label: string }[] = [
+  { key: "sights", label: "Sights" },
+  { key: "food", label: "Food & shops" },
+  { key: "hotels", label: "Hotels" },
+  { key: "transport", label: "Transport" },
+  { key: "help", label: "Help" },
+];
+const usedCats = CATS.filter((c) => station.exitPlaces.some((p) => p.category === c.key));
+
+const exitById = new Map(station.exits.map((e) => [e.id, e]));
+const allExitIds = station.exits.map((e) => e.id);
+
+// A side without linked exits lists every exit; stations without sides get one group.
+const groups = (station.sides.length > 0
+  ? station.sides.map((s) => ({
+      id: s.id,
+      name: s.name,
+      nameJa: s.name_japanese,
+      exitIds: s.exit_ids.length > 0 ? s.exit_ids : allExitIds,
+      underground: /underground|\bb\d\b|地下/i.test(`${s.name} ${s.name_japanese ?? ""} ${s.subtitle ?? ""}`),
+    }))
+  : [{ id: 0, name: "", nameJa: null as string | null, exitIds: allExitIds, underground: false }]
+);
+
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const verified = station.verified_at ? station.verified_at.slice(0, 10) : "";
+const [vy, vm, vd] = verified ? verified.split("-").map(Number) : [0, 0, 0];
+const dateEn = verified ? `${vd} ${MONTHS[vm - 1]} ${vy}` : "";
+const dateJa = verified ? `${vy}年${vm}月${vd}日` : "";
+
+const op = station.operatorSite;
+const color = (c: string | null) => (c && /^#[0-9a-f]{3,8}$/i.test(c) ? c : "");
+---
+
+<div class="sp-wx" data-wx>
+  <p class="sp-wx-intro" data-i18n="sp.wx.intro">
+    Pick a side, then tap an exit to see what is near it. Or pick a kind of place to see which exit to use.
+  </p>
+
+  {
+    groups.length > 1 && (
+      <div class="sp-wx-sides" role="group" aria-label="Side of the station">
+        {groups.map((g, i) => (
+          <button type="button" data-wx-side={g.id} aria-pressed={i === 0 ? "true" : "false"}>
+            <span data-pick data-en={g.name} data-jp={g.nameJa ?? ""}>{g.name}</span>
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  {
+    groups.map((g, i) => (
+      <div class="sp-wx-chips" data-wx-chips={g.id} hidden={i !== 0}>
+        {g.exitIds.map((id) => {
+          const e = exitById.get(id);
+          if (!e) return null;
+          const c = color(e.color_code);
+          return (
+            <button type="button" class="sp-wx-chip" data-wx-exit={id} aria-pressed="false" style={c ? `--wx:${c}` : undefined}>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                {g.underground ? <path d="M12 5v14M6 13l6 6 6-6" /> : <path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9" />}
+              </svg>
+              <span data-pick data-en={e.name} data-jp={e.name_japanese ?? ""}>{e.name}</span>
+            </button>
+          );
+        })}
+      </div>
+    ))
+  }
+
+  {
+    station.exits.filter((e) => e.description).map((e) => (
+      <p class="sp-wx-note" data-wx-note={e.id} hidden data-pick data-en={e.description ?? ""} data-jp={e.description_japanese ?? ""}>
+        {e.description}
+      </p>
+    ))
+  }
+
+  <div class="sp-wx-cats" role="group" aria-label="Kind of place">
+    <button type="button" data-wx-cat="all" aria-pressed="true"><span data-i18n="sp.wx.all">All</span></button>
+    {usedCats.map((c) => (
+      <button type="button" data-wx-cat={c.key} aria-pressed="false"><span data-i18n={`sp.wx.${c.key}`}>{c.label}</span></button>
+    ))}
+  </div>
+
+  <ul class="sp-wx-list">
+    {station.exitPlaces.map((p) => (
+      <li data-wx-place data-cat={p.category} data-exits={p.exits.map((x) => x.exit_id).join(",")}>
+        <span class="sp-wx-name" data-pick data-en={p.name} data-jp={p.name_japanese ?? ""}>{p.name}</span>
+        <span class="sp-wx-links">
+          {p.exits.map((x) => {
+            const e = exitById.get(x.exit_id);
+            if (!e) return null;
+            const c = color(e.color_code);
+            return (
+              <span class="sp-wx-link" data-wx-link={x.exit_id}>
+                <b class="sp-wx-badge" style={c ? `background:${c}` : undefined} data-pick data-en={e.name} data-jp={e.name_japanese ?? ""}>{e.name}</b>
+                {x.note && <small data-pick data-en={x.note} data-jp={x.note_japanese ?? ""}>{x.note}</small>}
+              </span>
+            );
+          })}
+        </span>
+      </li>
+    ))}
+  </ul>
+  <p class="sp-wx-empty" data-wx-empty hidden data-i18n="sp.wx.empty">Nothing listed here yet.</p>
+
+  {
+    op && (
+      <a class="sp-wx-map" href={op.url} target="_blank" rel="noopener noreferrer"
+        data-pick data-en={`Full station map (${op.name})`} data-jp={`駅構内図（${op.name_japanese ?? op.name}）`}>
+        Full station map ({op.name})
+      </a>
+    )
+  }
+
+  <p class="sp-wx-foot">
+    {verified && (
+      <span data-pick data-en={`Checked on site on ${dateEn}. `} data-jp={`${dateJa}に現地確認済み。`}>Checked on site on {dateEn}. </span>
+    )}
+    <span data-i18n="sp.wx.method">Times shown were walked by us or are the venue's own figure; where no time is shown, the exit is the one the operator's station signs give.</span>
+  </p>
+</div>

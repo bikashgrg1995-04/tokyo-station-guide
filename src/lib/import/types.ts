@@ -17,6 +17,7 @@ export type OpType =
   | "exit"
   | "platform"
   | "side"
+  | "exitPlace"
   | "route"
   | "tip"
   | "season"
@@ -51,6 +52,8 @@ export interface ImportSnapshot {
   platforms: string[];
   /** `stationSlug|sideName` */
   sides: string[];
+  /** `stationSlug|placeName` */
+  exitPlaces: string[];
   /** `stationSlug|fromPlace|route` */
   routes: string[];
   /** `stationSlug|tipText` */
@@ -96,6 +99,7 @@ export const KEY_FIELDS: Record<OpType, string[]> = {
   exit: ["stationSlug", "name"],
   platform: ["stationSlug", "lineSlug", "number"],
   side: ["stationSlug", "name"],
+  exitPlace: ["stationSlug", "name"],
   route: ["stationSlug", "fromPlace", "route"],
   tip: ["stationSlug", "tip"],
   season: ["stationSlug", "season"],
@@ -125,6 +129,7 @@ export const NOT_NULL_FIELDS: Record<OpType, string[]> = {
   exit: ["floorName", "sortOrder"],
   platform: ["sortOrder"],
   side: ["sortOrder"],
+  exitPlace: ["category", "sortOrder"],
   route: ["sortOrder"],
   tip: ["sortOrder"],
   season: [],
@@ -166,7 +171,8 @@ export type UpsertOp =
   | { t: "season"; stationSlug: string; season: string; months: Opt<string>; monthsJa: Opt<string>; desc: Opt<string>; descJa: Opt<string> }
   | { t: "tip"; stationSlug: string; tip: string; tipJa: Opt<string>; sortOrder: Opt<number> }
   | { t: "route"; stationSlug: string; fromPlace: string; fromPlaceJa: Opt<string>; route: string | null; routeJa: Opt<string>; time: Opt<string>; timeJa: Opt<string>; cost: Opt<string>; costJa: Opt<string>; sortOrder: Opt<number> }
-  | { t: "side"; stationSlug: string; name: string; nameJa: Opt<string>; subtitle: Opt<string>; subtitleJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; sortOrder: Opt<number> }
+  | { t: "side"; stationSlug: string; name: string; nameJa: Opt<string>; subtitle: Opt<string>; subtitleJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; sortOrder: Opt<number>; /** exit names on this side, sorted, joined with "|" */ exits: Opt<string> }
+  | { t: "exitPlace"; stationSlug: string; name: string; nameJa: Opt<string>; category: Opt<string>; sortOrder: Opt<number>; /** "exit=note=noteJa" per exit, sorted by exit, joined with "|" */ exits: Opt<string> }
   | { t: "lineStation"; lineSlug: string; stationSlug: string; order: number; code: Opt<string> }
   | { t: "facility"; slug: string; name: string; nameJa: Opt<string>; sortOrder: Opt<number>; category: Opt<string> }
   | { t: "floor"; stationSlug: string; name: string; nameJa: Opt<string>; floorOrder: Opt<number> }

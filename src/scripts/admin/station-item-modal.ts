@@ -13,7 +13,9 @@ function init(root: HTMLElement) {
     form?.reset();
     for (const [k, v] of Object.entries(values)) {
       const el = form?.elements.namedItem(k) as HTMLInputElement | null;
-      if (el && "value" in el && el.type !== "file" && el.type !== "checkbox") el.value = v;
+      if (!el || !("value" in el) || el.type === "file") continue;
+      if (el.type === "checkbox") el.checked = v === "on" || v === "1";
+      else el.value = v;
     }
   }
 

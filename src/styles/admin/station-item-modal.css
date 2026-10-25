@@ -34,3 +34,16 @@
 .sim-table td { overflow:hidden; vertical-align:middle; }
 .sim-table .sim-clip { max-width:100%; }
 .sim-table td { white-space:normal; }
+
+/* Exit checkboxes (sides) and the exit picker of "Which exit?" places */
+.side-exit-checks { display:flex; flex-wrap:wrap; gap:6px 14px; }
+.side-exit-check { display:inline-flex; align-items:center; gap:6px; font-weight:500; font-size:.85rem; }
+.side-exit-check input { width:auto; }
+.sim-exitpick { display:grid; gap:6px; max-height:260px; overflow:auto; padding:2px; }
+.sim-exitrow { display:grid; grid-template-columns:minmax(120px,1fr) 1fr 1fr; gap:6px; align-items:center; padding:6px 8px; border:1px solid var(--admin-border); border-radius:8px; }
+.sim-exitrow > label { display:flex; align-items:center; gap:6px; font-weight:600; font-size:.85rem; margin:0; }
+.sim-exitrow input[type="text"] { padding:5px 8px; font-size:.8rem; }
+.sim-exitrow input[type="checkbox"] { width:auto; }
+.sim-exitrow:not(:has(input[type="checkbox"]:checked)) input[type="text"] { opacity:.45; }
+.sim-badge { display:inline-block; padding:1px 8px; border-radius:999px; background:#b3202a; color:#fff; font-size:.72rem; font-weight:700; margin:1px 3px 1px 0; }
+@media (max-width:640px) { .sim-exitrow { grid-template-columns:1fr; } }

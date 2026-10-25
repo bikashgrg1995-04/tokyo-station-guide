@@ -62,6 +62,18 @@ const nextOrder = form.sides.reduce((max, s) => Math.max(max, s.sort_order), 0) 
                 <label>Description (Japanese)</label>
                 <textarea name="description_japanese" lang="ja" rows="3" maxlength="1500">{side.description_japanese ?? ""}</textarea>
               </div>
+              <div class="admin-form-group full-width">
+                <label>Exits on this side <span class="admin-label-hint">used by "Which exit?" on the public page</span></label>
+                <div class="side-exit-checks">
+                  {form.exits.length === 0 && <span class="admin-table-muted">Add exits first (Exits section).</span>}
+                  {form.exits.map((e) => (
+                    <label class="side-exit-check">
+                      <input type="checkbox" name="exit_ids" value={e.id} checked={(form.sideExitIds[side.id] ?? []).includes(e.id)} />
+                      {e.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
               <div class="admin-form-group">
                 <label>Order</label>
                 <input name="sort_order" type="number" min="0" value={side.sort_order} />
@@ -112,6 +124,18 @@ const nextOrder = form.sides.reduce((max, s) => Math.max(max, s.sort_order), 0) 
             <label>Description (Japanese)</label>
             <textarea name="description_japanese" lang="ja" rows="3" maxlength="1500"></textarea>
           </div>
+          <div class="admin-form-group full-width">
+            <label>Exits on this side <span class="admin-label-hint">used by "Which exit?" on the public page</span></label>
+            <div class="side-exit-checks">
+              {form.exits.length === 0 && <span class="admin-table-muted">Add exits first (Exits section).</span>}
+              {form.exits.map((e) => (
+                <label class="side-exit-check">
+                  <input type="checkbox" name="exit_ids" value={e.id} checked={false} />
+                  {e.name}
+                </label>
+              ))}
+            </div>
+              </div>
           <div class="admin-form-group">
             <label>Order</label>
             <input name="sort_order" type="number" min="0" value={nextOrder} />

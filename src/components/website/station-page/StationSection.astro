@@ -6,6 +6,7 @@ import StationOverview from "./StationOverview.astro";
 import StationSides from "./StationSides.astro";
 import StationRoutes from "./StationRoutes.astro";
 import StationTips from "./StationTips.astro";
+import StationWhichExit from "./StationWhichExit.astro";
 import StationVisit from "./StationVisit.astro";
 import StationPractical from "./StationPractical.astro";
 import StationFaq from "./StationFaq.astro";
@@ -39,6 +40,7 @@ const isTransport = section.id === "taxi" && station.transport.length > 0;
 const isThings = section.id === "things" && station.things.length > 0;
 const isHotels = section.id === "hotels" && station.hotels.length > 0;
 const isRestaurants = section.id === "food" && station.restaurants.length > 0;
+const isWhichExit = section.id === "exit" && station.exitPlaces.length > 0;
 const isTips =
   section.id === "tips" &&
   (station.exits.length > 0 || station.tips.length > 0 || Boolean(station.exits_note));
@@ -56,6 +58,8 @@ const isMap = section.id === "map" && station.platforms.length > 0;
     {
       isMap ? (
         <PlatformMap platforms={station.platforms} />
+      ) : isWhichExit ? (
+        <StationWhichExit station={station} />
       ) : isOverview && (station.description || station.description_japanese) ? (
         <StationOverview station={station} />
       ) : isVisit ? (
@@ -96,7 +100,7 @@ const isMap = section.id === "map" && station.platforms.length > 0;
     }
 
     {
-      !(isMap || isHotels || isRestaurants || isThings || isTransport || isFacilities || isTrips || isPractical || isFaq || isVisit || isAlong || isTips || isRoutes || isSides || isOverview || (isLines && station.lines.length > 0)) && (
+      !(isMap || isWhichExit || isHotels || isRestaurants || isThings || isTransport || isFacilities || isTrips || isPractical || isFaq || isVisit || isAlong || isTips || isRoutes || isSides || isOverview || (isLines && station.lines.length > 0)) && (
         <p class="sp-soon" data-i18n="sp.soon">Content for this section is coming soon.</p>
       )
     }

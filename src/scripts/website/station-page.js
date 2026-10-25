@@ -116,6 +116,99 @@ function initScrollSpy() {
   update();
 }
 
+/* "Which exit?": side tabs, exit chips and kind-of-place filter. All content is already in the page. */
+function initWhichExit() {
+  var root = document.querySelector("[data-wx]");
+
+  if (!root) return;
+
+  var sideBtns = Array.prototype.slice.call(root.querySelectorAll("[data-wx-side]"));
+  var catBtns = Array.prototype.slice.call(root.querySelectorAll("[data-wx-cat]"));
+  var places = Array.prototype.slice.call(root.querySelectorAll("[data-wx-place]"));
+  var empty = root.querySelector("[data-wx-empty]");
+  var state = { side: sideBtns.length ? sideBtns[0].dataset.wxSide : "0", exit: "", cat: "all" };
+
+  function groupExits() {
+    var group = root.querySelector('[data-wx-chips="' + state.side + '"]');
+    var ids = [];
+
+    if (group) {
+      group.querySelectorAll("[data-wx-exit]").forEach(function (b) {
+        ids.push(b.dataset.wxExit);
+      });
+    }
+
+    return ids;
+  }
+
+  function render() {
+    var sideExits = groupExits();
+    var allowed = state.exit ? [state.exit] : sideExits;
+    var shown = 0;
+
+    sideBtns.forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.wxSide === state.side));
+    });
+
+    root.querySelectorAll("[data-wx-chips]").forEach(function (g) {
+      g.hidden = g.dataset.wxChips !== state.side;
+    });
+
+    root.querySelectorAll("[data-wx-exit]").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.wxExit === state.exit));
+    });
+
+    root.querySelectorAll("[data-wx-note]").forEach(function (n) {
+      n.hidden = n.dataset.wxNote !== state.exit;
+    });
+
+    catBtns.forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.wxCat === state.cat));
+    });
+
+    places.forEach(function (li) {
+      var ids = (li.dataset.exits || "").split(",");
+      var catOk = state.cat === "all" || li.dataset.cat === state.cat;
+      var hit = ids.some(function (id) {
+        return allowed.indexOf(id) !== -1;
+      });
+      var show = catOk && hit;
+
+      li.hidden = !show;
+
+      if (show) {
+        shown++;
+        li.querySelectorAll("[data-wx-link]").forEach(function (l) {
+          l.hidden = allowed.indexOf(l.dataset.wxLink) === -1;
+        });
+      }
+    });
+
+    if (empty) empty.hidden = shown > 0;
+  }
+
+  root.addEventListener("click", function (e) {
+    var side = e.target.closest("[data-wx-side]");
+    var exit = e.target.closest("[data-wx-exit]");
+    var cat = e.target.closest("[data-wx-cat]");
+
+    if (side) {
+      state.side = side.dataset.wxSide;
+      state.exit = "";
+    } else if (exit) {
+      state.exit = state.exit === exit.dataset.wxExit ? "" : exit.dataset.wxExit;
+    } else if (cat) {
+      state.cat = cat.dataset.wxCat;
+    } else {
+      return;
+    }
+
+    render();
+  });
+
+  render();
+}
+
 initLang();
 initTheme();
 applyPicks();
@@ -123,6 +216,7 @@ applyPickHtml();
 applyDates();
 applyCounts();
 initScrollSpy();
+initWhichExit();
 
 /* Round "back to top" button: appears after the first screen, scrolls up on click. */
 function initBackToTop() {

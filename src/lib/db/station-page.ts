@@ -45,6 +45,9 @@ export interface StationPagePlatform {
 }
 
 export interface StationPageSide {
+  id: number;
+  /** Exits listed under this side in "Which exit?" (station_side_exits). */
+  exit_ids: number[];
   name: string;
   name_japanese: string | null;
   subtitle: string | null;
@@ -65,6 +68,9 @@ export interface StationPageRoute {
 }
 
 export interface StationPageExit {
+  id: number;
+  color_code: string | null;
+  code: string | null;
   name: string;
   name_japanese: string | null;
   description: string | null;
@@ -72,6 +78,21 @@ export interface StationPageExit {
   photo: string | null;
   photo_caption: string | null;
   photo_caption_japanese: string | null;
+}
+
+/** A place in "Which exit?" and the exits that lead to it. */
+export interface StationPageExitPlace {
+  name: string;
+  name_japanese: string | null;
+  category: string;
+  exits: { exit_id: number; note: string | null; note_japanese: string | null }[];
+}
+
+/** Operator of the station used for the "Full station map" link. */
+export interface StationPageOperatorSite {
+  name: string;
+  name_japanese: string | null;
+  url: string;
 }
 
 export interface StationPageSeason {
@@ -208,6 +229,8 @@ export interface StationPageData {
   things: StationPageThing[];
   hotels: StationPagePlace[];
   restaurants: StationPagePlace[];
+  exitPlaces: StationPageExitPlace[];
+  operatorSite: StationPageOperatorSite | null;
 }
 
 export async function getStationPage(
@@ -226,7 +249,7 @@ export async function getStationPage(
        FROM stations WHERE slug = ?`,
     )
     .bind(slug)
-    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips" | "seasons" | "practical" | "faqs" | "dayTrips" | "facilityGuide" | "transport" | "things" | "hotels" | "restaurants">>();
+    .first<Omit<StationPageData, "lines" | "facilities" | "platforms" | "sides" | "routes" | "exits" | "tips" | "seasons" | "practical" | "faqs" | "dayTrips" | "facilityGuide" | "transport" | "things" | "hotels" | "restaurants" | "exitPlaces" | "operatorSite">>();
 
   if (!station) return null;
 
@@ -303,11 +326,47 @@ export async function getStationPage(
 
   const sides = await db
     .prepare(
-      `SELECT name, name_japanese, subtitle, subtitle_japanese, description, description_japanese
+      `SELECT id, name, name_japanese, subtitle, subtitle_japanese, description, description_japanese
        FROM station_sides WHERE station_id = ? ORDER BY sort_order, id`,
     )
     .bind(station.id)
-    .all<StationPageSide>();
+    .all<Omit<StationPageSide, "exit_ids">>();
+
+  const sideLinks = await db
+    .prepare(
+      `SELECT se.side_id, se.exit_id FROM station_side_exits se
+       JOIN station_sides s ON s.id = se.side_id WHERE s.station_id = ?`,
+    )
+    .bind(station.id)
+    .all<{ side_id: number; exit_id: number }>();
+  const exitIdsBySide = new Map<number, number[]>();
+  for (const l of sideLinks.results ?? []) {
+    exitIdsBySide.set(l.side_id, [...(exitIdsBySide.get(l.side_id) ?? []), l.exit_id]);
+  }
+
+  const exitPlaceRows = await db
+    .prepare(
+      `SELECT id, name, name_japanese, category FROM station_exit_places
+       WHERE station_id = ? ORDER BY sort_order, id`,
+    )
+    .bind(station.id)
+    .all<{ id: number; name: string; name_japanese: string | null; category: string }>();
+  const exitPlaceLinks = await db
+    .prepare(
+      `SELECT pe.place_id, pe.exit_id, pe.note, pe.note_japanese
+       FROM station_exit_place_exits pe JOIN station_exit_places p ON p.id = pe.place_id
+       WHERE p.station_id = ?`,
+    )
+    .bind(station.id)
+    .all<{ place_id: number; exit_id: number; note: string | null; note_japanese: string | null }>();
+  const exitPlaces: StationPageExitPlace[] = (exitPlaceRows.results ?? []).map((p) => ({
+    name: p.name,
+    name_japanese: p.name_japanese,
+    category: p.category,
+    exits: (exitPlaceLinks.results ?? [])
+      .filter((l) => l.place_id === p.id)
+      .map((l) => ({ exit_id: l.exit_id, note: l.note, note_japanese: l.note_japanese })),
+  }));
 
   const routes = await db
     .prepare(
@@ -320,7 +379,7 @@ export async function getStationPage(
 
   const exits = await db
     .prepare(
-      `SELECT e.name, e.name_japanese, e.description, e.description_japanese,
+      `SELECT e.id, e.color_code, e.code, e.name, e.name_japanese, e.description, e.description_japanese,
               e.photo, e.photo_caption, e.photo_caption_japanese
        FROM station_exits e LEFT JOIN station_floors f ON f.id = e.floor_id
        WHERE e.station_id = ?
@@ -404,6 +463,20 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPagePlace>();
 
+  // The operator with the most lines here (and a website) is the one the "Full station map" button opens.
+  const opRows = await db
+    .prepare(
+      `SELECT o.name, o.name_japanese, o.website_url AS url, COUNT(*) AS n
+       FROM line_stations ls
+       JOIN lines l ON l.id = ls.line_id
+       JOIN operators o ON o.id = l.operator_id
+       WHERE ls.station_id = ? AND l.website_status != 'hidden' AND o.website_url IS NOT NULL AND o.website_url != ''
+       GROUP BY o.id ORDER BY n DESC, o.name LIMIT 1`,
+    )
+    .bind(station.id)
+    .first<StationPageOperatorSite>();
+  const operatorSite = opRows && /^https?:\/\//i.test(opRows.url) ? opRows : null;
+
   const tips = await db
     .prepare(`SELECT tip, tip_japanese FROM station_tips WHERE station_id = ? ORDER BY sort_order, id`)
     .bind(station.id)
@@ -412,6 +485,8 @@ export async function getStationPage(
   return {
     ...station,
     exits: exits.results ?? [],
+    exitPlaces,
+    operatorSite,
     tips: tips.results ?? [],
     practical: practical.results ?? [],
     faqs: faqs.results ?? [],
@@ -425,7 +500,7 @@ export async function getStationPage(
       (a, b) => ["spring", "summer", "autumn", "winter"].indexOf(a.season) - ["spring", "summer", "autumn", "winter"].indexOf(b.season),
     ),
     routes: routes.results ?? [],
-    sides: sides.results ?? [],
+    sides: (sides.results ?? []).map((sd) => ({ ...sd, exit_ids: exitIdsBySide.get(sd.id) ?? [] })),
     platforms: platforms.results ?? [],
     lines: withNeighbors,
     facilities: facilities.results ?? [],

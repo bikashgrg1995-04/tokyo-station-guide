@@ -16,6 +16,7 @@ export type SheetName =
   | "exits"
   | "platforms"
   | "sides"
+  | "exit_places"
   | "routes"
   | "tips"
   | "seasons"
@@ -43,6 +44,7 @@ export const SHEET_ORDER: SheetName[] = [
   "exits",
   "platforms",
   "sides",
+  "exit_places",
   "routes",
   "tips",
   "seasons",
@@ -72,6 +74,7 @@ export const REQUIRED_COLUMNS: Record<SheetName, string[]> = {
   exits: ["station_slug", "floor_name", "name"],
   platforms: ["station_slug", "platform_number"],
   sides: ["station_slug", "name"],
+  exit_places: ["station_slug", "name"],
   routes: ["station_slug", "from_place"],
   tips: ["station_slug", "tip"],
   seasons: ["station_slug", "season"],
@@ -93,6 +96,7 @@ export const SEASONS = ["spring", "summer", "autumn", "winter"];
 export const LINE_TYPES = ["jr", "subway", "private", "shinkansen", "express"];
 export const WEBSITE_STATUSES = ["live", "coming_soon", "hidden"];
 export const FACILITY_LOCATIONS = ["inside", "outside"];
+export const EXIT_PLACE_CATEGORIES = ["sights", "food", "hotels", "transport", "help"];
 export const TOP_PICK_LOCATIONS = ["inside", "outside", "inside_outside"];
 export const TOP_PICK_CATEGORIES = [
   "landmark",

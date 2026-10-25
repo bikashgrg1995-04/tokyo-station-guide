@@ -1,0 +1,163 @@
+---
+import "../../../styles/admin/forms.css";
+import "../../../styles/admin/stations.css";
+import "../../../styles/admin/tables.css";
+import "../../../styles/admin/station-item-modal.css";
+import EmptyState from "../../common/EmptyState.astro";
+import { EXIT_PLACE_CATEGORIES, EXIT_PLACE_CATEGORY_LABELS } from "../../../lib/db/station-exit-finder";
+import type { handleStationExitPlaces } from "../../../lib/services/station-exit-places";
+import type { getStationById } from "../../../lib/db/stations";
+
+export interface Props {
+  station: NonNullable<Awaited<ReturnType<typeof getStationById>>>;
+  id: number;
+  form: Awaited<ReturnType<typeof handleStationExitPlaces>>;
+  mediaBase: string;
+}
+
+const { station, form } = Astro.props;
+const nextOrder = form.places.reduce((max, p) => Math.max(max, p.sort_order), 0) + 1;
+const exitById = new Map(form.exits.map((e) => [e.id, e]));
+const reopen = form.posted
+  ? JSON.stringify({ mode: form.errorFor === "place-new" ? "create" : "update", values: form.posted })
+  : "";
+---
+
+<section class="station-section" id="exit" data-nav="exit" data-sim-root>
+  <div class="station-section-head">
+    <div>
+      <h2>Which exit?</h2>
+      <p>
+        Places near {station.name} and the exit to use for each, shown by side and category under "Which exit?".
+        Put exits on a side in <a href="#sides">Sides</a>; an exit's own description comes from <a href="#exits">Exits</a>.
+      </p>
+    </div>
+    <button type="button" data-sim="add" class="sim-add" data-next-order={nextOrder}>+ Add place</button>
+  </div>
+
+  {form.formError && !form.posted && <div class="admin-form-error" role="alert">{form.formError}</div>}
+
+  <div class="sim-toolbar">
+    <input data-sim="search" type="search" placeholder="Search places or exits..." aria-label="Search places" />
+  </div>
+
+  <div class="admin-panel">
+    <div class="admin-panel-body admin-table-panel-body">
+      {
+        form.places.length === 0 ? (
+          <EmptyState icon="🚪" title="No places yet" description="Add a place and tick the exits that lead to it." />
+        ) : (
+          <div class="admin-table-wrapper">
+            <table class="admin-table sim-table">
+              <thead>
+                <tr><th>Order</th><th>Place</th><th>Category</th><th>Exits</th><th>Actions</th></tr>
+              </thead>
+              <tbody>
+                {form.places.map((p) => {
+                  const values: Record<string, string> = {
+                    item_id: String(p.id),
+                    name: p.name,
+                    name_japanese: p.name_japanese ?? "",
+                    category: p.category,
+                    sort_order: String(p.sort_order),
+                  };
+                  for (const x of p.exits) {
+                    values[`exit_${x.exit_id}`] = "on";
+                    values[`note_${x.exit_id}`] = x.note ?? "";
+                    values[`note_japanese_${x.exit_id}`] = x.note_japanese ?? "";
+                  }
+                  const exitNames = p.exits.map((x) => exitById.get(x.exit_id)?.name ?? "").join(" ");
+                  return (
+                    <tr class="sim-row" data-search={`${p.name} ${p.name_japanese ?? ""} ${exitNames} ${EXIT_PLACE_CATEGORY_LABELS[p.category]}`.toLowerCase()}>
+                      <td>{p.sort_order}</td>
+                      <td>
+                        <strong>{p.name || p.name_japanese}</strong>
+                        {p.name && p.name_japanese && <div class="sim-sub" lang="ja">{p.name_japanese}</div>}
+                      </td>
+                      <td>{EXIT_PLACE_CATEGORY_LABELS[p.category]}</td>
+                      <td>
+                        {p.exits.map((x) => {
+                          const e = exitById.get(x.exit_id);
+                          return e ? (
+                            <span class="sim-badge" style={e.color_code ? `background:${e.color_code}` : undefined} title={x.note ?? ""}>
+                              {e.name}{x.note ? ` · ${x.note}` : ""}
+                            </span>
+                          ) : null;
+                        })}
+                      </td>
+                      <td>
+                        <div class="sim-actions">
+                          <button type="button" class="admin-table-action admin-table-action-edit sim-edit" data-item={JSON.stringify(values)}>Edit</button>
+                          <form method="POST" action="?s=exit" onsubmit="return confirm('Delete this place?')">
+                            <input type="hidden" name="item_id" value={p.id} />
+                            <input type="hidden" name="place_action" value="place_delete" />
+                            <button type="submit" class="admin-table-action admin-table-action-delete">Delete</button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <p data-sim="empty" class="sim-empty-search" hidden>No matching places.</p>
+          </div>
+        )
+      }
+    </div>
+  </div>
+
+  <div
+    data-sim="modal"
+    class="sim-modal"
+    hidden
+    data-create-action="place_create"
+    data-update-action="place_update"
+    data-add-title="Add place"
+    data-edit-title="Edit place"
+    data-add-label="Add place"
+    data-reopen={reopen}
+  >
+    <div class="sim-backdrop" data-close></div>
+    <div class="sim-dialog" role="dialog" aria-modal="true">
+      <h2 data-sim="title">Add place</h2>
+      {form.formError && form.posted && <div class="admin-form-error" role="alert">{form.formError}</div>}
+      <form data-sim="form" method="POST" action="?s=exit" class="admin-form">
+        <input type="hidden" name="place_action" value="place_create" />
+        <input type="hidden" name="item_id" value="" />
+        <div class="sim-grid2">
+          <div class="admin-form-group"><label for="xp-n">Name</label><input id="xp-n" name="name" required maxlength="150" placeholder="KITTE & KITTE Garden" /></div>
+          <div class="admin-form-group"><label for="xp-nj">Name (Japanese)</label><input id="xp-nj" name="name_japanese" lang="ja" maxlength="150" /></div>
+          <div class="admin-form-group">
+            <label for="xp-c">Category</label>
+            <select id="xp-c" name="category">
+              {EXIT_PLACE_CATEGORIES.map((c) => <option value={c}>{EXIT_PLACE_CATEGORY_LABELS[c]}</option>)}
+            </select>
+          </div>
+          <div class="admin-form-group"><label for="xp-o">Order</label><input id="xp-o" name="sort_order" type="number" min="0" value="0" /></div>
+        </div>
+        <div class="admin-form-group">
+          <label>Exits that lead here <span class="admin-label-hint">tick an exit, then add a short note like "1 min" or "underground" (optional)</span></label>
+          {form.exits.length === 0 && <p class="admin-table-muted">Add exits first (Exits section).</p>}
+          <div class="sim-exitpick">
+            {form.exits.map((e) => (
+              <div class="sim-exitrow">
+                <label><input type="checkbox" name={`exit_${e.id}`} value="on" />{e.name}</label>
+                <input type="text" name={`note_${e.id}`} maxlength="120" placeholder="1 min" aria-label={`Note for ${e.name}`} />
+                <input type="text" name={`note_japanese_${e.id}`} lang="ja" maxlength="120" placeholder="徒歩1分" aria-label={`Japanese note for ${e.name}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div class="sim-foot">
+          <button type="button" class="common-button common-button-secondary" data-close>Cancel</button>
+          <button type="submit" data-sim="submit" class="common-button common-button-primary">Add place</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+  import "../../../scripts/admin/station-item-modal";
+</script>

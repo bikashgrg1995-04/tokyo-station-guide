@@ -32,8 +32,8 @@ export async function getStationSides(db: D1Database, stationId: number): Promis
   return result.results ?? [];
 }
 
-export async function createStationSide(db: D1Database, stationId: number, i: StationSideInput) {
-  await db
+export async function createStationSide(db: D1Database, stationId: number, i: StationSideInput): Promise<number> {
+  const r = await db
     .prepare(
       `INSERT INTO station_sides (station_id, name, name_japanese, subtitle, subtitle_japanese,
                                   description, description_japanese, sort_order)
@@ -41,6 +41,7 @@ export async function createStationSide(db: D1Database, stationId: number, i: St
     )
     .bind(stationId, i.name, i.nameJapanese, i.subtitle, i.subtitleJapanese, i.description, i.descriptionJapanese, i.sortOrder)
     .run();
+  return Number(r.meta.last_row_id);
 }
 
 export async function updateStationSide(db: D1Database, stationId: number, id: number, i: StationSideInput) {

@@ -1761,3 +1761,107 @@ html[data-lang="jp"] .sp-side-ja {
 .sp-trip-book:hover {
   background: rgba(180, 30, 40, 0.2);
 }
+
+/* ---------- Which exit? ---------- */
+.sp-wx { display: grid; gap: 12px; }
+.sp-wx-intro { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+.sp-wx [hidden] { display: none !important; }
+
+.sp-wx-sides {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border: 1px solid var(--row-edge);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.sp-wx-sides button {
+  padding: 9px 8px;
+  background: var(--row-hover);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  border-left: 1px solid var(--row-edge) !important;
+  cursor: pointer;
+}
+.sp-wx-sides button:first-child { border-left: 0 !important; }
+.sp-wx-sides button[aria-pressed="true"] { background: var(--sp-red); color: #fff; }
+
+.sp-wx-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sp-wx-chip {
+  --wx: var(--sp-red);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid var(--row-edge) !important;
+  border-radius: 999px;
+  background: var(--surface, transparent);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sp-wx-chip svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.sp-wx-chip[aria-pressed="true"] { background: var(--wx); border-color: var(--wx) !important; color: #fff; }
+
+.sp-wx-note {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--sp-red);
+  background: var(--row-hover);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sp-wx-cats { display: flex; flex-wrap: wrap; gap: 6px; }
+.sp-wx-cats button {
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: var(--row-hover);
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+.sp-wx-cats button[aria-pressed="true"] { background: var(--sp-red); color: #fff; font-weight: 600; }
+
+.sp-wx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  border-top: 1px solid var(--row-edge);
+}
+.sp-wx-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--row-edge);
+}
+.sp-wx-name { font-size: 14px; font-weight: 700; }
+.sp-wx-links { display: grid; justify-items: end; gap: 5px; flex-shrink: 0; }
+.sp-wx-link { display: grid; justify-items: end; gap: 2px; }
+.sp-wx-badge {
+  padding: 2px 9px;
+  border-radius: 8px;
+  background: var(--sp-red);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.sp-wx-link small { color: var(--muted); font-size: 11.5px; text-align: right; }
+.sp-wx-empty { margin: 0; color: var(--muted); font-size: 13px; }
+
+.sp-wx-map {
+  justify-self: start;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sp-red) 14%, transparent);
+  color: var(--sp-red);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.sp-wx-foot { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }

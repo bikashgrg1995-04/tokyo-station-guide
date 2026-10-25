@@ -33,6 +33,7 @@ import StationThingsSection from "../../../../components/admin/sections/StationT
 import StationDayTripsSection from "../../../../components/admin/sections/StationDayTripsSection.astro";
 import StationSeasonsSection from "../../../../components/admin/sections/StationSeasonsSection.astro";
 import StationPracticalSection from "../../../../components/admin/sections/StationPracticalSection.astro";
+import StationExitPlacesSection from "../../../../components/admin/sections/StationExitPlacesSection.astro";
 import StationFaqSection from "../../../../components/admin/sections/StationFaqSection.astro";
 import { handleStationPlatforms } from "../../../../lib/services/station-platforms";
 import { handleStationFloors } from "../../../../lib/services/station-floors";
@@ -45,6 +46,7 @@ import { handleThings } from "../../../../lib/services/station-things";
 import { handleDayTrips } from "../../../../lib/services/station-day-trips";
 import { handleStationSeasons } from "../../../../lib/services/station-seasons";
 import { handlePracticalTips } from "../../../../lib/services/station-practical-tips";
+import { handleStationExitPlaces } from "../../../../lib/services/station-exit-places";
 import { handleStationFaqs } from "../../../../lib/services/station-faqs";
 
 export const prerender = false;
@@ -90,6 +92,7 @@ const tripsForm = await handleDayTrips(reqFor("day-trips"), db, id, station.slug
 const seasonsForm = await handleStationSeasons(reqFor("seasons"), db, id);
 const practicalForm = await handlePracticalTips(reqFor("practical-tips"), db, id);
 const faqForm = await handleStationFaqs(reqFor("faqs"), db, id);
+const exitPlacesForm = await handleStationExitPlaces(reqFor("exit"), db, id);
 
 const done: [string, string | null][] = [
   ["platforms", platformForm.redirectTo],
@@ -104,6 +107,7 @@ const done: [string, string | null][] = [
   ["seasons", seasonsForm.redirectTo],
   ["practical-tips", practicalForm.redirectTo],
   ["faqs", faqForm.redirectTo],
+  ["exit", exitPlacesForm.redirectTo],
 ];
 for (const [anchor, target] of done) {
   if (target) return Astro.redirect(`/admin/stations/${id}/edit#${anchor}`);
@@ -189,6 +193,7 @@ const shared = { station, id, mediaBase };
           </div>
         </form>
 
+        <div style="order:25"><StationExitPlacesSection {...shared} form={exitPlacesForm} /></div>
         <div style="order:20"><StationPlatformsSection {...shared} form={platformForm} /></div>
         <div style="order:30"><StationFloorsSection {...shared} form={floorForm} /></div>
         <div style="order:40"><StationSidesSection {...shared} form={sidesForm} /></div>

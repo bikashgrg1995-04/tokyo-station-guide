@@ -8,11 +8,16 @@ import {
   type StationSide,
   type StationSideInput,
 } from "../db/station-sides";
+import { getSideExitIds, setSideExits } from "../db/station-exit-finder";
+import { getStationExits } from "../db/station-exits";
 import { readText } from "./common";
 
 export interface StationSidesResult {
   redirectTo: string | null;
   sides: StationSide[];
+  /** The station's exits and which ones each side lists in "Which exit?". */
+  exits: { id: number; name: string; name_japanese: string | null; color_code: string | null }[];
+  sideExitIds: Record<number, number[]>;
   note: string;
   noteJapanese: string;
   formError: string;
@@ -51,6 +56,13 @@ export async function handleStationSides(
   const result: StationSidesResult = {
     redirectTo: null,
     sides: await getStationSides(db, stationId),
+    exits: (await getStationExits(db, stationId)).map((e) => ({
+      id: e.id,
+      name: e.name,
+      name_japanese: e.name_japanese ?? null,
+      color_code: e.color_code ?? null,
+    })),
+    sideExitIds: await getSideExitIds(db, stationId),
     ...(await getSidesNote(db, stationId)),
     formError: "",
     errorFor: "",
@@ -79,8 +91,14 @@ export async function handleStationSides(
         result.errorFor = action === "create" ? "new" : String(id);
         return result;
       }
-      if (action === "create") await createStationSide(db, stationId, input);
-      else if (owned) await updateStationSide(db, stationId, id, input);
+      const exitIds = formData.getAll("exit_ids").map(Number).filter((n) => Number.isInteger(n) && n > 0);
+      if (action === "create") {
+        const newId = await createStationSide(db, stationId, input);
+        await setSideExits(db, stationId, newId, exitIds);
+      } else if (owned) {
+        await updateStationSide(db, stationId, id, input);
+        await setSideExits(db, stationId, id, exitIds);
+      }
     } else if (action === "delete") {
       if (owned) await deleteStationSide(db, stationId, id);
     } else {
