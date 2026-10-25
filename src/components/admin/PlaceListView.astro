@@ -34,7 +34,7 @@ const img = (v: string) => (/^https?:\/\//i.test(v) ? v : `/media/${v}`);
     <div>
       <h2>{info.plural}</h2>
       <p>
-        Manage {info.plural.toLowerCase()} once, then assign them to stations (Stations → Edit → {info.plural}).
+        Manage {info.plural.toLowerCase()} once, then use the Station action to choose where each one appears.
       </p>
     </div>
   </div>
@@ -74,49 +74,52 @@ const img = (v: string) => (/^https?:\/\//i.test(v) ? v : `/media/${v}`);
               <table class="admin-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
+                    <th>Photo</th>
                     <th>{info.label}</th>
-                    <th>Japanese Name</th>
-                    <th>Slug</th>
                     <th>Kind</th>
                     <th>Stations</th>
-                    <th>Image</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {list.items.map((p) => (
-                    <tr>
-                      <td class="admin-table-id">{p.id}</td>
-                      <td><div class="admin-operator-name">{p.name}</div></td>
-                      <td>{p.name_japanese ? <span>{p.name_japanese}</span> : <span class="admin-table-muted">—</span>}</td>
-                      <td class="admin-table-code">{p.slug}</td>
-                      <td>{p.kind ?? <span class="admin-table-muted">—</span>}</td>
-                      <td>{p.station_count}</td>
-                      <td>
-                        {p.photo ? (
-                          <a href={img(p.photo)} target="_blank" rel="noopener noreferrer" class="admin-photo-thumb-link">
-                            <img class="admin-photo-thumb" src={img(p.photo)} alt={`Photo of ${p.name}`} loading="lazy" />
-                          </a>
-                        ) : (
-                          <span class="admin-table-muted">—</span>
-                        )}
-                      </td>
-                      <td>
-                        <div class="admin-table-actions">
-                          <a href={`/admin/${info.route}/${p.id}/edit`} class="admin-table-action admin-table-action-edit">Edit</a>
-                          <button
-                            type="button"
-                            class="admin-table-action admin-table-action-delete js-delete-place"
-                            data-place-id={p.id}
-                            data-place-name={p.name}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {list.items.map((p) => {
+                    const main = p.name || p.name_japanese;
+                    const second = p.name && p.name_japanese ? p.name_japanese : null;
+                    const kind = p.kind || p.kind_japanese;
+                    return (
+                      <tr>
+                        <td>
+                          {p.photo ? (
+                            <a href={img(p.photo)} target="_blank" rel="noopener noreferrer" class="admin-photo-thumb-link">
+                              <img class="admin-photo-thumb" src={img(p.photo)} alt="" loading="lazy" />
+                            </a>
+                          ) : (
+                            <span class="admin-table-muted">—</span>
+                          )}
+                        </td>
+                        <td>
+                          <div class="admin-operator-name">{main}</div>
+                          {second && <div class="admin-table-muted" lang="ja">{second}</div>}
+                        </td>
+                        <td>{kind ?? <span class="admin-table-muted">—</span>}</td>
+                        <td>{p.station_count}</td>
+                        <td>
+                          <div class="admin-table-actions">
+                            <a href={`/admin/${info.route}/${p.id}/stations`} class="admin-table-action">Station</a>
+                            <a href={`/admin/${info.route}/${p.id}/edit`} class="admin-table-action admin-table-action-edit">Edit</a>
+                            <button
+                              type="button"
+                              class="admin-table-action admin-table-action-delete js-delete-place"
+                              data-place-id={p.id}
+                              data-place-name={main}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

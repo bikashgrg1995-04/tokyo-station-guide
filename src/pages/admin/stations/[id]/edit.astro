@@ -17,6 +17,7 @@ import FacilityExitPickerModal from "../../../../components/admin/FacilityExitPi
 import { getStationFloors } from "../../../../lib/db/station-floors";
 import { getStationById } from "../../../../lib/db/stations";
 import { handleStationUpdate } from "../../../../lib/services/stations";
+import { getRestaurantsNote } from "../../../../lib/db/places";
 
 export const prerender = false;
 
@@ -52,6 +53,9 @@ const {
 } = form;
 
 const facilityError = errors.facilities;
+const savedNote = await getRestaurantsNote(db, id);
+const noteValue = form.restaurantsNote ?? savedNote.note;
+const noteJaValue = form.restaurantsNoteJapanese ?? savedNote.noteJapanese;
 ---
 
 <AdminLayout title={`Edit ${station.name}`} activePath="/admin/stations">
@@ -89,14 +93,6 @@ const facilityError = errors.facilities;
 
       <Button href={`/admin/stations/${id}/buses-taxis`} variant="secondary">
         Buses &amp; taxis
-      </Button>
-
-      <Button href={`/admin/stations/${id}/restaurants`} variant="secondary">
-        Restaurants
-      </Button>
-
-      <Button href={`/admin/stations/${id}/hotels`} variant="secondary">
-        Hotels
       </Button>
 
       <Button href={`/admin/stations/${id}/things-to-do`} variant="secondary">
@@ -146,6 +142,19 @@ const facilityError = errors.facilities;
           {formError && <Alert>{formError}</Alert>}
 
           <StationFormFields values={form.values} errors={errors} mainImage={station.main_image} />
+
+          <div class="admin-form-grid" style="margin-top:1rem">
+            <div class="admin-form-group full-width">
+              <label for="restaurants_note">
+                Restaurants note <span class="admin-label-hint">shown above the restaurants list, use **text** for bold</span>
+              </label>
+              <textarea id="restaurants_note" name="restaurants_note" rows="2" maxlength="1000">{noteValue}</textarea>
+            </div>
+            <div class="admin-form-group full-width">
+              <label for="restaurants_note_japanese">Restaurants note (Japanese)</label>
+              <textarea id="restaurants_note_japanese" name="restaurants_note_japanese" lang="ja" rows="2" maxlength="1000">{noteJaValue}</textarea>
+            </div>
+          </div>
         </div>
       </section>
 

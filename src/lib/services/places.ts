@@ -2,13 +2,10 @@ import {
   assignPlace,
   createPlace,
   deletePlace,
-  getAllPlaces,
   getPlaceById,
+  getPlaceStationAssignments,
   getPlacesPaginated,
-  getRestaurantsNote,
-  getStationPlaces,
   hasPlaceAssignments,
-  saveRestaurantsNote,
   unassignPlace,
   updatePlace,
   type Place,
@@ -196,74 +193,74 @@ export async function handlePlaceForm(
 
 /* ---- assigning to a station ---- */
 
-export interface StationPlacesResult {
-  redirectTo: string | null;
-  assigned: StationPlace[];
-  available: { id: number; name: string }[];
-  note: string;
-  noteJapanese: string;
-  formError: string;
-  /** "new", "<placeId>" or "note" */
-  errorFor: string;
-}
+/* ---- place-side station assignment page (like Top Pick → Stations) ---- */
 
-export async function handleStationPlaces(
+export async function loadPlaceStationsPage(
   request: Request,
+  url: URL,
   db: D1Database,
   k: PlaceKindInfo,
-  stationId: number,
-): Promise<StationPlacesResult> {
-  const load = async () => {
-    const assigned = await getStationPlaces(db, k, stationId);
-    const all = await getAllPlaces(db, k);
-    const have = new Set(assigned.map((a) => a.place_id));
-    return { assigned, available: all.filter((p) => !have.has(p.id)) };
-  };
-  const result: StationPlacesResult = {
-    redirectTo: null,
-    ...(await load()),
-    ...(k.kind === "restaurant" ? await getRestaurantsNote(db, stationId) : { note: "", noteJapanese: "" }),
-    formError: "",
-    errorFor: "",
-  };
-  if (request.method !== "POST") return result;
+  placeId: number,
+) {
+  let error = "";
+  let redirectTo: string | null = null;
 
-  const fd = await request.formData();
-  const action = readText(fd, "place_action");
-  const placeId = Number(readText(fd, "place_id"));
-  const fail = (scope: string, m: string) => {
-    result.errorFor = scope;
-    result.formError = m;
-    return result;
-  };
+  if (request.method === "POST") {
+    const fd = await request.formData();
+    const action = readText(fd, "action");
+    const stationId = Number(readText(fd, "station_id"));
+    const location = readText(fd, "location");
+    const locationJa = readText(fd, "location_japanese");
+    const order = Number(readText(fd, "sort_order") || "0");
 
-  try {
-    if (action === "note_save" && k.kind === "restaurant") {
-      const note = readText(fd, "restaurants_note");
-      const noteJa = readText(fd, "restaurants_note_japanese");
-      if (note.length > 1000 || noteJa.length > 1000) return fail("note", "The note must be 1000 characters or less.");
-      await saveRestaurantsNote(db, stationId, note || null, noteJa || null);
-    } else if (action === "assign" || action === "update") {
-      const scope = action === "assign" ? "new" : String(placeId);
-      const location = readText(fd, "location");
-      const locationJa = readText(fd, "location_japanese");
-      const order = Number(readText(fd, "sort_order") || "0");
-      if (!Number.isInteger(placeId) || placeId <= 0) return fail(scope, `Choose a ${k.label.toLowerCase()}.`);
-      if (location.length > 200 || locationJa.length > 200) return fail(scope, "The location must be 200 characters or less.");
-      if (!Number.isInteger(order) || order < 0) return fail(scope, "Order must be a whole number, 0 or more.");
-      const exists = result.assigned.some((a) => a.place_id === placeId);
-      const known = exists || result.available.some((a) => a.id === placeId);
-      if (!known || (action === "assign" && exists) || (action === "update" && !exists)) return result;
-      await assignPlace(db, k, stationId, placeId, { location: location || null, locationJapanese: locationJa || null, sortOrder: order });
-    } else if (action === "unassign") {
-      await unassignPlace(db, k, stationId, placeId);
+    if (!Number.isInteger(stationId) || stationId <= 0) {
+      error = "Please select a valid station.";
+    } else if (action === "save") {
+      if (location.length > 200 || locationJa.length > 200) error = "The location must be 200 characters or less.";
+      else if (!Number.isInteger(order) || order < 0) error = "Order must be a whole number, 0 or more.";
+      else {
+        try {
+          const exists = await db.prepare(`SELECT 1 FROM stations WHERE id = ?`).bind(stationId).first();
+          if (!exists) error = "Please select a valid station.";
+          else {
+            await assignPlace(db, k, stationId, placeId, {
+              location: location || null, locationJapanese: locationJa || null, sortOrder: order,
+            });
+            redirectTo = `/admin/${k.route}/${placeId}/stations?success=save`;
+          }
+        } catch (e) {
+          console.error("Failed to assign station:", e);
+          error = "Unable to update the station assignment.";
+        }
+      }
+    } else if (action === "remove") {
+      try {
+        await unassignPlace(db, k, stationId, placeId);
+        redirectTo = `/admin/${k.route}/${placeId}/stations?success=remove`;
+      } catch (e) {
+        console.error("Failed to remove station:", e);
+        error = "Unable to update the station assignment.";
+      }
     } else {
-      return result;
+      error = "Invalid assignment action.";
     }
-    result.redirectTo = `/admin/stations/${stationId}/${k.route}#saved`;
-  } catch (err) {
-    console.error(`Failed to save station ${k.plural}:`, err);
-    result.formError = "Unable to save. Please try again.";
   }
-  return result;
+
+  const place = await getPlaceById(db, k, placeId);
+  const assignments = await getPlaceStationAssignments(db, k, placeId);
+  const stationsRes = await db
+    .prepare(`SELECT id, name, name_japanese FROM stations ORDER BY name`)
+    .all<{ id: number; name: string; name_japanese: string | null }>();
+  const success = url.searchParams.get("success");
+
+  return {
+    redirectTo,
+    error,
+    place,
+    assignments,
+    stations: stationsRes.results ?? [],
+    assignedStationIds: new Set(assignments.map((a) => a.station_id)),
+    successMessage:
+      success === "save" ? "Station assignment saved." : success === "remove" ? "Station removed." : "",
+  };
 }

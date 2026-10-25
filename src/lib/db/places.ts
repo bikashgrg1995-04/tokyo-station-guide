@@ -197,3 +197,30 @@ export async function saveRestaurantsNote(db: D1Database, stationId: number, not
     .bind(note, noteJa, stationId)
     .run();
 }
+
+/* ---- place-side: stations a place is assigned to ---- */
+
+export interface PlaceStationAssignment {
+  station_id: number;
+  station_name: string;
+  station_name_japanese: string | null;
+  station_slug: string;
+  location: string | null;
+  location_japanese: string | null;
+  sort_order: number;
+}
+
+export async function getPlaceStationAssignments(
+  db: D1Database, k: PlaceKindInfo, placeId: number,
+): Promise<PlaceStationAssignment[]> {
+  const r = await db
+    .prepare(
+      `SELECT s.id AS station_id, s.name AS station_name, s.name_japanese AS station_name_japanese,
+              s.slug AS station_slug, l.location, l.location_japanese, l.sort_order
+       FROM ${k.link} l JOIN stations s ON s.id = l.station_id
+       WHERE l.${k.linkCol} = ? ORDER BY s.name`,
+    )
+    .bind(placeId)
+    .all<PlaceStationAssignment>();
+  return r.results ?? [];
+}

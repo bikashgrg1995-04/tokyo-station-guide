@@ -1,0 +1,26 @@
+---
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
+import PlaceStationsView from "../../../../components/admin/PlaceStationsView.astro";
+import { PLACE_KINDS } from "../../../../lib/db/places";
+import { loadPlaceStationsPage } from "../../../../lib/services/places";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+const info = PLACE_KINDS.restaurant;
+const id = Number(Astro.params.id);
+
+if (!Number.isInteger(id) || id <= 0) return Astro.redirect("/admin/restaurants");
+
+const page = await loadPlaceStationsPage(Astro.request, Astro.url, env.DB, info, id);
+if (page.redirectTo) return Astro.redirect(page.redirectTo);
+if (!page.place) Astro.response.status = 404;
+---
+
+<AdminLayout title="Restaurant Stations" activePath="/admin/restaurants">
+  <header class="admin-topbar">
+    <Breadcrumbs backHref="/admin/restaurants" parentLabel="Restaurants" current="Station Assignments" />
+  </header>
+  <PlaceStationsView info={info} page={page} />
+</AdminLayout>

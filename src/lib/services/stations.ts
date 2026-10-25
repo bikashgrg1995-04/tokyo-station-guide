@@ -23,6 +23,7 @@ import {
 } from "../db/top-picks";
 
 import { getLines } from "../db/lines";
+import { saveRestaurantsNote } from "../db/places";
 import { iconBucket } from "../storage/facility-icons";
 import {
   checkStationImage,
@@ -65,6 +66,8 @@ export interface StationEditResult extends StationFormBase {
   stationTopPicks: StationTopPick[];
   availableTopPicks: TopPick[];
   stationExits: StationExit[];
+  restaurantsNote?: string;
+  restaurantsNoteJapanese?: string;
 }
 
 interface ParsedStationFacilities {
@@ -534,6 +537,12 @@ export async function handleStationUpdate(
   const existingExitIds = new Set(existingExits.map((exit) => exit.id));
 
   result.values = values;
+  const noteEn = String(formData.get("restaurants_note") ?? "").trim();
+  const noteJa = String(
+    formData.get("restaurants_note_japanese") ?? "",
+  ).trim();
+  result.restaurantsNote = noteEn;
+  result.restaurantsNoteJapanese = noteJa;
 
   result.errors = validateStationSelections(
     values,
@@ -546,6 +555,10 @@ export async function handleStationUpdate(
 
   if (stationFacilitiesError) {
     result.errors.facilities = stationFacilitiesError;
+  }
+
+  if (noteEn.length > 1000 || noteJa.length > 1000) {
+    result.formError = "The restaurants note must be 1000 characters or less.";
   }
 
   if (stationFacilities.some((entry) => !validFloorIds.has(entry.floorId))) {
@@ -597,6 +610,13 @@ export async function handleStationUpdate(
       if (mainImage !== undefined) {
         await deleteStationImage(bucket, station.main_image);
       }
+
+      await saveRestaurantsNote(
+        db,
+        id,
+        noteEn || null,
+        noteJa || null,
+      );
 
       result.redirectTo = LIST_PATH;
       return result;
