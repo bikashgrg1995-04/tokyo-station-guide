@@ -21,6 +21,7 @@ export interface FacilityGuideResult {
   formError: string;
   /** "item-<id>" or "item-new" */
   errorFor: string;
+  posted: Record<string, string> | null;
 }
 
 const text = (fd: FormData, key: string, max: number) => {
@@ -39,6 +40,7 @@ export async function handleFacilityGuide(
     items: await getFacilityGuide(db, stationId),
     formError: "",
     errorFor: "",
+    posted: null,
   };
   if (request.method !== "POST") return result;
 
@@ -46,8 +48,11 @@ export async function handleFacilityGuide(
   const action = readText(fd, "guide_action");
   const id = Number(readText(fd, "item_id"));
   const existing = result.items.find((t) => t.id === id);
+  const posted: Record<string, string> = { item_id: String(id || "") };
+  for (const [k, v] of fd.entries()) if (typeof v === "string" && k !== "guide_action") posted[k] = v;
   const fail = (scope: string, message: string) => {
     result.errorFor = scope;
+    result.posted = posted;
     result.formError = message;
     return result;
   };
@@ -117,7 +122,7 @@ export async function handleFacilityGuide(
     } else {
       return result;
     }
-    result.redirectTo = `/admin/stations/${stationId}/facility-guide#saved`;
+    result.redirectTo = `/admin/stations/${stationId}/edit#facilities`;
   } catch (err) {
     console.error("Failed to save facility guide:", err);
     result.formError = "Unable to save. Please try again.";

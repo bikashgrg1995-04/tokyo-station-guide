@@ -15,3 +15,15 @@
 .sim-dialog input, .sim-dialog textarea { width:100%; }
 .sim-foot { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
 .sim-empty-search[hidden] { display:none; }
+.sim-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 12px; }
+@media (max-width:640px) { .sim-grid2 { grid-template-columns:1fr; } }
+.sim-dialog input[type="checkbox"], .sim-dialog input[type="file"] { width:auto; }
+.sim-dialog [hidden] { display:none; }
+
+/* Compact assigned-facilities table on the station edit page */
+#station-facilities-table th, #station-facilities-table td { padding:6px 8px; font-size:.8rem; vertical-align:middle; }
+#station-facilities-table input[type="number"] { width:64px; }
+#station-facilities-table select { padding:3px 6px; font-size:.8rem; }
+#station-facilities-table .facility-note-fields { display:grid; grid-template-columns:1fr 1fr; gap:4px; min-width:260px; }
+#station-facilities-table .facility-note-fields textarea { height:30px; min-height:0; padding:4px 6px; font-size:.78rem; resize:none; overflow:hidden; }
+#station-facilities-table .facility-note-fields textarea:focus { height:64px; position:relative; z-index:2; }

@@ -19,6 +19,8 @@ import { getStationFloors } from "../../../../lib/db/station-floors";
 import { getStationById } from "../../../../lib/db/stations";
 import { handleStationUpdate } from "../../../../lib/services/stations";
 import { getRestaurantsNote } from "../../../../lib/db/places";
+import FacilityGuideSection from "../../../../components/admin/FacilityGuideSection.astro";
+import { handleFacilityGuide } from "../../../../lib/services/station-facility-guide";
 
 export const prerender = false;
 
@@ -39,11 +41,19 @@ if (!station) {
 
 const stationFloors = await getStationFloors(db, id);
 
-const form = await handleStationUpdate(Astro.request, db, id, station);
+const form = await handleStationUpdate(Astro.request.clone(), db, id, station);
 
 if (form.redirectTo) {
   return Astro.redirect(form.redirectTo);
 }
+
+const guideForm = await handleFacilityGuide(Astro.request.clone(), db, id, station.slug);
+if (guideForm.redirectTo) {
+  return Astro.redirect(guideForm.redirectTo);
+}
+const mediaBase =
+  String((env as { MEDIA_BASE_URL?: string }).MEDIA_BASE_URL ?? "").trim().replace(/\/+$/, "") || "/media";
+const mediaSrc = (k: string) => (/^https?:\/\//i.test(k) ? k : `${mediaBase}/${k}`);
 
 const {
   errors,
@@ -123,6 +133,8 @@ const noteJaValue = form.restaurantsNoteJapanese ?? savedNote.noteJapanese;
         </Button>
       </div>
     </form>
+
+    <FacilityGuideSection stationName={station.name} form={guideForm} src={mediaSrc} />
   </div>
 
   </div>

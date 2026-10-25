@@ -2,7 +2,7 @@ const modal = document.getElementById("sim-modal") as HTMLElement | null;
 const form = document.getElementById("sim-form") as HTMLFormElement | null;
 const title = document.getElementById("sim-title");
 const submit = document.getElementById("sim-submit");
-const actionInput = form?.querySelector<HTMLInputElement>("input[name='faq_action']") ?? form?.querySelector<HTMLInputElement>("input[data-action]");
+const actionInput = form?.querySelector<HTMLInputElement>("input[name$='_action']");
 
 function fill(values: Record<string, string>) {
   form?.reset();
@@ -19,6 +19,12 @@ function open(mode: "create" | "update", values: Record<string, string> = {}) {
   if (title) title.textContent = (mode === "create" ? d.addTitle : d.editTitle) ?? "";
   if (submit) submit.textContent = mode === "create" ? d.addLabel ?? "Add" : "Save changes";
   fill(values);
+  const prev = document.getElementById("sim-photo-preview") as HTMLElement | null;
+  if (prev) {
+    prev.hidden = !values.photo_url;
+    const img = prev.querySelector("img");
+    if (img) img.src = values.photo_url ?? "";
+  }
   modal.hidden = false;
   form.querySelector<HTMLElement>("input[type='text'], input:not([type]), textarea")?.focus();
 }
