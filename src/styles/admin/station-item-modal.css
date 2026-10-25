@@ -1,0 +1,17 @@
+/* Generic table + popup editor used by station sections (FAQ, ...). */
+.sim-toolbar { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.sim-toolbar input[type="search"] { flex:1; max-width:340px; padding:7px 10px; border:1px solid var(--admin-border); border-radius:8px; font-size:.875rem; }
+.sim-add { padding:8px 14px; border:0; border-radius:8px; background:#b3202a; color:#fff; font-weight:600; cursor:pointer; }
+.sim-table .sim-clip { max-width:360px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.sim-sub { color:#8a8a96; font-size:.8rem; }
+.sim-actions { display:flex; gap:6px; align-items:center; }
+.sim-actions form { margin:0; }
+.sim-modal[hidden] { display:none; }
+.sim-modal { position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; padding:16px; }
+.sim-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.45); }
+.sim-dialog { position:relative; width:min(640px,100%); max-height:92vh; overflow:auto; background:#fff; border-radius:14px; padding:18px 20px; box-shadow:0 20px 50px rgba(0,0,0,.25); }
+.sim-dialog h2 { margin:0 0 12px; font-size:1.1rem; }
+.sim-dialog .admin-form-group { margin-bottom:10px; }
+.sim-dialog input, .sim-dialog textarea { width:100%; }
+.sim-foot { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+.sim-empty-search[hidden] { display:none; }

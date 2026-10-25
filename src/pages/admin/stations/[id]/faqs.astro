@@ -1,11 +1,13 @@
 ---
 import AdminLayout from "../../../../layouts/AdminLayout.astro";
-import StationSectionNav from "../../../../components/admin/StationSectionNav.astro";
 import "../../../../styles/admin/forms.css";
 import "../../../../styles/admin/stations.css";
-import "../../../../styles/admin/station-sides.css";
+import "../../../../styles/admin/tables.css";
+import "../../../../styles/admin/station-item-modal.css";
 
 import Breadcrumbs from "../../../../components/common/Breadcrumbs.astro";
+import StationSectionNav from "../../../../components/admin/StationSectionNav.astro";
+import EmptyState from "../../../../components/common/EmptyState.astro";
 
 import { getStationById } from "../../../../lib/db/stations";
 import { handleStationFaqs } from "../../../../lib/services/station-faqs";
@@ -24,91 +26,142 @@ const form = await handleStationFaqs(Astro.request, db, id);
 if (form.redirectTo) return Astro.redirect(form.redirectTo);
 
 const nextOrder = form.faqs.reduce((max, f) => Math.max(max, f.sort_order), 0) + 1;
+const reopen = form.posted
+  ? JSON.stringify({ mode: form.errorFor === "faq-new" ? "create" : "update", values: form.posted })
+  : "";
 ---
 
-<AdminLayout title={`FAQs - ${station.name}`} activePath="/admin/stations">
+<AdminLayout title={`FAQ - ${station.name}`} activePath="/admin/stations">
   <header class="admin-topbar">
-    <Breadcrumbs backHref="/admin/stations" parentLabel="Stations" current="FAQs" />
+    <Breadcrumbs backHref="/admin/stations" parentLabel="Stations" current="FAQ" />
   </header>
 
   <div class="station-admin-frame">
     <StationSectionNav stationId={id} stationName={station.name} active="faqs" />
-  <div class="admin-content">
-    <div class="admin-page-header">
-      <div>
-        <h2>FAQs</h2>
-        <p>For <strong>{station.name}</strong>: the question and answer list under "FAQ" on the public page.</p>
+    <div class="admin-content">
+      <div class="admin-page-header">
+        <div>
+          <h2>FAQ</h2>
+          <p>Questions and answers shown under "FAQ" on the {station.name} page.</p>
+        </div>
       </div>
+
+      {form.formError && !form.posted && <div class="admin-form-error" role="alert">{form.formError}</div>}
+
+      <div class="sim-toolbar">
+        <input id="sim-search" type="search" placeholder="Search questions..." aria-label="Search FAQs" />
+        <button type="button" id="sim-add" class="sim-add" data-next-order={nextOrder}>+ Add FAQ</button>
+      </div>
+
+      <section class="admin-panel">
+        <div class="admin-panel-body admin-table-panel-body">
+          {
+            form.faqs.length === 0 ? (
+              <EmptyState icon="?" title="No FAQs yet" description="Click Add FAQ to write the first one." />
+            ) : (
+              <div class="admin-table-wrapper">
+                <table class="admin-table sim-table">
+                  <thead>
+                    <tr>
+                      <th>Order</th>
+                      <th>Question</th>
+                      <th>Answer</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {form.faqs.map((f) => (
+                      <tr class="sim-row" data-search={`${f.question} ${f.question_japanese ?? ""} ${f.answer} ${f.answer_japanese ?? ""}`.toLowerCase()}>
+                        <td>{f.sort_order}</td>
+                        <td>
+                          <strong>{f.question || f.question_japanese}</strong>
+                          {f.question && f.question_japanese && <div class="sim-sub" lang="ja">{f.question_japanese}</div>}
+                        </td>
+                        <td><div class="sim-clip">{f.answer}</div></td>
+                        <td>
+                          <div class="sim-actions">
+                            <button
+                              type="button"
+                              class="admin-table-action admin-table-action-edit sim-edit"
+                              data-item={JSON.stringify({
+                                item_id: String(f.id),
+                                question: f.question,
+                                question_japanese: f.question_japanese ?? "",
+                                answer: f.answer,
+                                answer_japanese: f.answer_japanese ?? "",
+                                sort_order: String(f.sort_order),
+                              })}
+                            >
+                              Edit
+                            </button>
+                            <form method="POST" onsubmit="return confirm('Delete this FAQ?')">
+                              <input type="hidden" name="item_id" value={f.id} />
+                              <input type="hidden" name="faq_action" value="faq_delete" />
+                              <button type="submit" class="admin-table-action admin-table-action-delete">Delete</button>
+                            </form>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p id="sim-empty-search" class="sim-empty-search" hidden>No matching FAQs.</p>
+              </div>
+            )
+          }
+        </div>
+      </section>
     </div>
+  </div>
 
-    {
-      form.faqs.map((faq) => (
-        <section class="admin-panel sides-panel">
-          <form method="POST" class="admin-panel-body">
-            <input type="hidden" name="item_id" value={faq.id} />
-            {form.errorFor === `faq-${faq.id}` && <div class="admin-form-error" role="alert">{form.formError}</div>}
-            <div class="admin-form-grid">
-              <div class="admin-form-group full-width">
-                <label>Question</label>
-                <input name="question" required maxlength="300" value={faq.question} />
-              </div>
-              <div class="admin-form-group full-width">
-                <label>Question (Japanese)</label>
-                <input name="question_japanese" lang="ja" maxlength="300" value={faq.question_japanese ?? ""} />
-              </div>
-              <div class="admin-form-group full-width">
-                <label>Answer</label>
-                <textarea name="answer" required rows="3" maxlength="1500">{faq.answer}</textarea>
-              </div>
-              <div class="admin-form-group full-width">
-                <label>Answer (Japanese)</label>
-                <textarea name="answer_japanese" lang="ja" rows="3" maxlength="1500">{faq.answer_japanese ?? ""}</textarea>
-              </div>
-              <div class="admin-form-group">
-                <label>Order</label>
-                <input name="sort_order" type="number" min="0" value={faq.sort_order} />
-              </div>
-            </div>
-            <div class="admin-form-actions">
-              <button type="submit" name="faq_action" value="faq_update" class="common-button common-button-primary">Save</button>
-              <button type="submit" name="faq_action" value="faq_delete" class="common-button common-button-danger" formnovalidate onclick="return confirm('Delete this FAQ?')">Delete</button>
-            </div>
-          </form>
-        </section>
-      ))
-    }
-
-    <section class="admin-panel sides-panel">
-      <form method="POST" class="admin-panel-body">
-        <h3 class="sides-title">Add a FAQ</h3>
-        {form.errorFor === "faq-new" && <div class="admin-form-error" role="alert">{form.formError}</div>}
-        <div class="admin-form-grid">
-          <div class="admin-form-group full-width">
-            <label>Question</label>
-            <input name="question" required maxlength="300" />
-          </div>
-          <div class="admin-form-group full-width">
-            <label>Question (Japanese)</label>
-            <input name="question_japanese" lang="ja" maxlength="300" />
-          </div>
-          <div class="admin-form-group full-width">
-            <label>Answer</label>
-            <textarea name="answer" required rows="3" maxlength="1500"></textarea>
-          </div>
-          <div class="admin-form-group full-width">
-            <label>Answer (Japanese)</label>
-            <textarea name="answer_japanese" lang="ja" rows="3" maxlength="1500"></textarea>
+  <Fragment slot="after">
+    <div
+      id="sim-modal"
+      class="sim-modal"
+      hidden
+      data-create-action="faq_create"
+      data-update-action="faq_update"
+      data-add-title="Add FAQ"
+      data-edit-title="Edit FAQ"
+      data-add-label="Add FAQ"
+      data-reopen={reopen}
+    >
+      <div class="sim-backdrop" data-close></div>
+      <section class="sim-dialog" role="dialog" aria-modal="true" aria-labelledby="sim-title">
+        <h2 id="sim-title">Add FAQ</h2>
+        {form.formError && form.posted && <div class="admin-form-error" role="alert">{form.formError}</div>}
+        <form id="sim-form" method="POST" class="admin-form">
+          <input type="hidden" name="faq_action" value="faq_create" />
+          <input type="hidden" name="item_id" value="" />
+          <div class="admin-form-group">
+            <label for="sim-q">Question</label>
+            <input id="sim-q" name="question" required maxlength="300" />
           </div>
           <div class="admin-form-group">
-            <label>Order</label>
-            <input name="sort_order" type="number" min="0" value={nextOrder} />
+            <label for="sim-qj">Question (Japanese)</label>
+            <input id="sim-qj" name="question_japanese" lang="ja" maxlength="300" />
           </div>
-        </div>
-        <div class="admin-form-actions">
-          <button type="submit" name="faq_action" value="faq_create" class="common-button common-button-primary">Add FAQ</button>
-        </div>
-      </form>
-    </section>
-  </div>
-  </div>
+          <div class="admin-form-group">
+            <label for="sim-a">Answer</label>
+            <textarea id="sim-a" name="answer" required rows="3" maxlength="1500"></textarea>
+          </div>
+          <div class="admin-form-group">
+            <label for="sim-aj">Answer (Japanese)</label>
+            <textarea id="sim-aj" name="answer_japanese" lang="ja" rows="3" maxlength="1500"></textarea>
+          </div>
+          <div class="admin-form-group">
+            <label for="sim-o">Order</label>
+            <input id="sim-o" name="sort_order" type="number" min="0" value="0" />
+          </div>
+          <div class="sim-foot">
+            <button type="button" class="common-button common-button-secondary" data-close>Cancel</button>
+            <button type="submit" id="sim-submit" class="common-button common-button-primary">Add FAQ</button>
+          </div>
+        </form>
+      </section>
+    </div>
+    <script>
+      import "../../../../scripts/admin/station-item-modal";
+    </script>
+  </Fragment>
 </AdminLayout>
