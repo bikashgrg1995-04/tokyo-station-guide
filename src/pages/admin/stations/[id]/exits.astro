@@ -11,6 +11,8 @@ import StationExitsPanel from "../../../../components/admin/StationExitsPanel.as
 
 import { getStationById } from "../../../../lib/db/stations";
 import { handleStationExits } from "../../../../lib/services/station-exits";
+import ExitTipsSection from "../../../../components/admin/ExitTipsSection.astro";
+import { handleStationTips } from "../../../../lib/services/station-tips";
 
 export const prerender = false;
 
@@ -29,10 +31,15 @@ if (!station) {
   return Astro.redirect("/admin/stations");
 }
 
-const exitForm = await handleStationExits(Astro.request, db, id, station.slug);
+const exitForm = await handleStationExits(Astro.request.clone(), db, id, station.slug);
 
 if (exitForm.redirectTo) {
   return Astro.redirect(exitForm.redirectTo);
+}
+
+const tipsForm = await handleStationTips(Astro.request.clone(), db, id);
+if (tipsForm.redirectTo) {
+  return Astro.redirect(tipsForm.redirectTo);
 }
 
 const mediaBase =
@@ -56,10 +63,9 @@ const mediaBase =
   <div class="admin-content">
     <div class="admin-page-header">
       <div>
-        <h2>Manage Exits</h2>
+        <h2>Exits &amp; tips</h2>
         <p>
-          Manage the exits of <strong>{station.name}</strong>, including their
-          floor, code, color and directions. Facilities pick their nearby exits
+          Manage the exits of <strong>{station.name}</strong> (floor, code, color, directions, photo), then the note and tips shown with them on the public page. Facilities pick their nearby exits
           from this list on the Edit Station page.
         </p>
       </div>
@@ -77,6 +83,8 @@ const mediaBase =
       nextSortOrder={exitForm.nextSortOrder}
       mediaBase={mediaBase}
     />
+
+    <ExitTipsSection stationName={station.name} form={tipsForm} />
   </div>
   </div>
 </AdminLayout>

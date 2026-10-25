@@ -17,6 +17,7 @@ export interface StationTipsResult {
   formError: string;
   /** Which form the error belongs to: "photo-<id>", "tip-<id>", "tip-new" or "note". */
   errorFor: string;
+  posted: Record<string, string> | null;
 }
 
 const text = (fd: FormData, key: string) => readText(fd, key) || null;
@@ -33,14 +34,18 @@ export async function handleStationTips(
     ...(await getExitsNote(db, stationId)),
     formError: "",
     errorFor: "",
+    posted: null,
   };
   if (request.method !== "POST") return result;
 
   const fd = await request.formData();
   const action = readText(fd, "tips_action");
   const id = Number(readText(fd, "item_id"));
+  const posted: Record<string, string> = { item_id: String(id || "") };
+  for (const [k, v] of fd.entries()) if (typeof v === "string" && k !== "tips_action") posted[k] = v;
   const fail = (scope: string, message: string) => {
     result.errorFor = scope;
+    if (scope !== "note") result.posted = posted;
     result.formError = message;
     return result;
   };
@@ -68,7 +73,7 @@ export async function handleStationTips(
     } else {
       return result;
     }
-    result.redirectTo = `/admin/stations/${stationId}/tips#saved`;
+    result.redirectTo = `/admin/stations/${stationId}/exits#tips`;
   } catch (err) {
     console.error("Failed to save station tips:", err);
     result.formError = "Unable to save. Please try again.";

@@ -1,0 +1,128 @@
+---
+import "../../styles/admin/tables.css";
+import "../../styles/admin/station-item-modal.css";
+import EmptyState from "../common/EmptyState.astro";
+import type { StationTipsResult } from "../../lib/services/station-tips";
+
+export interface Props {
+  stationName: string;
+  form: StationTipsResult;
+}
+
+const { stationName, form } = Astro.props;
+const nextOrder = form.tips.reduce((m, t) => Math.max(m, t.sort_order), 0) + 1;
+const reopen = form.posted
+  ? JSON.stringify({ mode: form.errorFor === "tip-new" ? "create" : "update", values: form.posted })
+  : "";
+---
+
+<section class="admin-panel" id="tips" style="margin-top:14px">
+  <div class="admin-panel-body">
+    <h3 style="margin:0 0 4px">Note &amp; station tips</h3>
+    <p class="sim-sub" style="margin:0 0 10px">
+      Shown with the exits on the {stationName} page. Each exit's own description, photo and caption come from the exits table above.
+    </p>
+
+    <form method="POST" class="admin-form" style="margin-bottom:14px">
+      {form.errorFor === "note" && <div class="admin-form-error" role="alert">{form.formError}</div>}
+      <div class="sim-grid2">
+        <div class="admin-form-group">
+          <label for="exits_note">Note under the exits table</label>
+          <textarea id="exits_note" name="exits_note" rows="2" maxlength="1000" placeholder='Signs inside the station say "Exit"...'>{form.note}</textarea>
+        </div>
+        <div class="admin-form-group">
+          <label for="exits_note_japanese">Note (Japanese)</label>
+          <textarea id="exits_note_japanese" name="exits_note_japanese" lang="ja" rows="2" maxlength="1000">{form.noteJapanese}</textarea>
+        </div>
+      </div>
+      <div class="sim-foot" style="margin-top:6px">
+        <button type="submit" name="tips_action" value="save_note" class="common-button common-button-primary">Save note</button>
+      </div>
+    </form>
+
+    {form.formError && form.errorFor !== "note" && !form.posted && <div class="admin-form-error" role="alert">{form.formError}</div>}
+
+    <div class="sim-toolbar">
+      <input id="sim-search" type="search" placeholder="Search tips..." aria-label="Search tips" />
+      <button type="button" id="sim-add" class="sim-add" data-next-order={nextOrder}>+ Add tip</button>
+    </div>
+
+    {
+      form.tips.length === 0 ? (
+        <EmptyState icon="💡" title="No tips yet" description="Click Add tip to write the first one." />
+      ) : (
+        <div class="admin-table-wrapper">
+          <table class="admin-table sim-table">
+            <thead><tr><th>Order</th><th>Tip</th><th>Actions</th></tr></thead>
+            <tbody>
+              {form.tips.map((t) => (
+                <tr class="sim-row" data-search={`${t.tip} ${t.tip_japanese ?? ""}`.toLowerCase()}>
+                  <td>{t.sort_order}</td>
+                  <td>
+                    <div class="sim-clip">{t.tip}</div>
+                    {t.tip_japanese && <div class="sim-sub sim-clip" lang="ja">{t.tip_japanese}</div>}
+                  </td>
+                  <td>
+                    <div class="sim-actions">
+                      <button
+                        type="button"
+                        class="admin-table-action admin-table-action-edit sim-edit"
+                        data-item={JSON.stringify({
+                          item_id: String(t.id),
+                          tip: t.tip,
+                          tip_japanese: t.tip_japanese ?? "",
+                          sort_order: String(t.sort_order),
+                        })}
+                      >
+                        Edit
+                      </button>
+                      <form method="POST" onsubmit="return confirm('Delete this tip?')">
+                        <input type="hidden" name="item_id" value={t.id} />
+                        <input type="hidden" name="tips_action" value="tip_delete" />
+                        <button type="submit" class="admin-table-action admin-table-action-delete">Delete</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p id="sim-empty-search" class="sim-empty-search" hidden>No matching tips.</p>
+        </div>
+      )
+    }
+  </div>
+</section>
+
+<div
+  id="sim-modal"
+  class="sim-modal"
+  hidden
+  data-create-action="tip_create"
+  data-update-action="tip_update"
+  data-add-title="Add tip"
+  data-edit-title="Edit tip"
+  data-add-label="Add tip"
+  data-reopen={reopen}
+>
+  <div class="sim-backdrop" data-close></div>
+  <section class="sim-dialog" role="dialog" aria-modal="true" aria-labelledby="sim-title">
+    <h2 id="sim-title">Add tip</h2>
+    {form.formError && form.posted && <div class="admin-form-error" role="alert">{form.formError}</div>}
+    <form id="sim-form" method="POST" class="admin-form">
+      <input type="hidden" name="tips_action" value="tip_create" />
+      <input type="hidden" name="item_id" value="" />
+      <div class="admin-form-group"><label for="sim-t">Tip</label><textarea id="sim-t" name="tip" required rows="3" maxlength="600"></textarea></div>
+      <div class="admin-form-group"><label for="sim-tj">Tip (Japanese)</label><textarea id="sim-tj" name="tip_japanese" lang="ja" rows="3" maxlength="600"></textarea></div>
+      <div class="admin-form-group"><label for="sim-o">Order</label><input id="sim-o" name="sort_order" type="number" min="0" value="0" /></div>
+      <div class="sim-foot">
+        <button type="button" class="common-button common-button-secondary" data-close>Cancel</button>
+        <button type="submit" id="sim-submit" class="common-button common-button-primary">Add tip</button>
+      </div>
+    </form>
+  </section>
+</div>
+
+<script>
+  import "../../scripts/admin/station-item-modal";
+</script>
