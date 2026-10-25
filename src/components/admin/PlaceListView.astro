@@ -1,0 +1,161 @@
+---
+import "../../styles/admin/tables.css";
+import "../../styles/admin/operators.css";
+
+import EmptyState from "../common/EmptyState.astro";
+import Button from "../common/Button.astro";
+import SearchInput from "../common/SearchInput.astro";
+import ConfirmDialog from "../common/ConfirmDialog.astro";
+import Pagination from "../common/Pagination.astro";
+import { topPickImageSrc } from "../../lib/storage/top-pick-images";
+import type { PlaceKindInfo } from "../../lib/db/places";
+
+export interface Props {
+  info: PlaceKindInfo;
+  list: {
+    items: any[];
+    totalItems: number;
+    currentPage: number;
+    totalPages: number;
+    perPage: number;
+    searchParam: string;
+    paginationUrl: URL;
+  };
+  deleteError: string | null;
+}
+
+const { info, list, deleteError } = Astro.props;
+const lower = info.label.toLowerCase();
+const img = (v: string) => (/^https?:\/\//i.test(v) ? v : `/media/${v}`);
+---
+
+<div class="admin-content">
+  <div class="admin-page-header">
+    <div>
+      <h2>{info.plural}</h2>
+      <p>
+        Manage {info.plural.toLowerCase()} once, then assign them to stations (Stations → Edit → {info.plural}).
+      </p>
+    </div>
+  </div>
+
+  {
+    deleteError === "assigned" ? (
+      <div class="admin-form-error" role="alert">
+        This {lower} is assigned to one or more stations. Remove its station assignments before deleting it.
+      </div>
+    ) : deleteError === "delete" ? (
+      <div class="admin-form-error" role="alert">Unable to delete this {lower}. Please try again.</div>
+    ) : null
+  }
+
+  <div class="admin-list-toolbar">
+    <form id="place-search-form" class="admin-search-form" method="GET" action={`/admin/${info.route}`} role="search">
+      <SearchInput
+        id="place-search"
+        name="search"
+        value={list.searchParam}
+        placeholder={`Search ${info.plural.toLowerCase()}...`}
+        ariaLabel={`Search ${info.plural.toLowerCase()}`}
+      />
+    </form>
+
+    <Button href={`/admin/${info.route}/new`} variant="primary">+ Add {info.label}</Button>
+  </div>
+
+  <section class="admin-panel">
+    <div id="places-table-content" class="admin-panel-body admin-table-panel-body">
+      <div class="admin-table-meta"><span>{list.totalItems} • Total {info.plural}</span></div>
+
+      {
+        list.items.length > 0 ? (
+          <>
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>{info.label}</th>
+                    <th>Japanese Name</th>
+                    <th>Slug</th>
+                    <th>Kind</th>
+                    <th>Stations</th>
+                    <th>Image</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.items.map((p) => (
+                    <tr>
+                      <td class="admin-table-id">{p.id}</td>
+                      <td><div class="admin-operator-name">{p.name}</div></td>
+                      <td>{p.name_japanese ? <span>{p.name_japanese}</span> : <span class="admin-table-muted">—</span>}</td>
+                      <td class="admin-table-code">{p.slug}</td>
+                      <td>{p.kind ?? <span class="admin-table-muted">—</span>}</td>
+                      <td>{p.station_count}</td>
+                      <td>
+                        {p.photo ? (
+                          <a href={img(p.photo)} target="_blank" rel="noopener noreferrer" class="admin-photo-thumb-link">
+                            <img class="admin-photo-thumb" src={img(p.photo)} alt={`Photo of ${p.name}`} loading="lazy" />
+                          </a>
+                        ) : (
+                          <span class="admin-table-muted">—</span>
+                        )}
+                      </td>
+                      <td>
+                        <div class="admin-table-actions">
+                          <a href={`/admin/${info.route}/${p.id}/edit`} class="admin-table-action admin-table-action-edit">Edit</a>
+                          <button
+                            type="button"
+                            class="admin-table-action admin-table-action-delete js-delete-place"
+                            data-place-id={p.id}
+                            data-place-name={p.name}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="admin-table-footer">
+              <span>{`Page ${list.currentPage} of ${list.totalPages}`}</span>
+              <Pagination
+                currentPage={list.currentPage}
+                totalPages={list.totalPages}
+                baseUrl={`${list.paginationUrl.pathname}${list.paginationUrl.search}`}
+                totalItems={list.totalItems}
+                perPage={list.perPage}
+              />
+            </div>
+          </>
+        ) : (
+          <EmptyState
+            icon="◉"
+            title={list.searchParam ? `No ${info.plural.toLowerCase()} found` : `No ${info.plural.toLowerCase()} yet`}
+            description={list.searchParam ? "Try a different search term." : `Add your first ${lower} to get started.`}
+          />
+        )
+      }
+    </div>
+  </section>
+</div>
+
+<Fragment slot="after">
+  <ConfirmDialog
+    id="delete-place-dialog"
+    title={`Delete ${info.label}`}
+    description={`Are you sure you want to delete this ${lower}?`}
+    confirmText={`Delete ${info.label}`}
+    cancelText="Cancel"
+    variant="danger"
+    warning={`A ${lower} assigned to a station cannot be deleted.`}
+  />
+  <form method="POST" id="delete-place-form" data-route={info.route} hidden></form>
+  <script>
+    import "../../scripts/admin/places-list.ts";
+  </script>
+</Fragment>

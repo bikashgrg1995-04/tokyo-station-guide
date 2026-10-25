@@ -107,6 +107,30 @@ const isActive = (path: string) => {
       <span> Top Picks </span>
     </a>
 
+        <a
+      href="/admin/hotels"
+      class:list={{
+        active: isActive("/admin/hotels"),
+      }}
+      aria-current={isActive("/admin/hotels") ? "page" : undefined}
+    >
+      <span class="admin-nav-icon" aria-hidden="true"> 🏨 </span>
+
+      <span> Hotels </span>
+    </a>
+
+        <a
+      href="/admin/restaurants"
+      class:list={{
+        active: isActive("/admin/restaurants"),
+      }}
+      aria-current={isActive("/admin/restaurants") ? "page" : undefined}
+    >
+      <span class="admin-nav-icon" aria-hidden="true"> 🍴 </span>
+
+      <span> Restaurants </span>
+    </a>
+
     <a
       href="/admin/featured-stations"
       class:list={{

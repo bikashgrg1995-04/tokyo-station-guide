@@ -25,10 +25,12 @@ export type SheetName =
   | "facility_guide"
   | "buses_taxis"
   | "things_to_do"
+  | "top_picks"
+  | "station_top_picks"
   | "hotels"
   | "restaurants"
-  | "top_picks"
-  | "station_top_picks";
+  | "station_hotels"
+  | "station_restaurants";
 
 /** Import order: a sheet may only refer to sheets above it. */
 export const SHEET_ORDER: SheetName[] = [
@@ -50,10 +52,12 @@ export const SHEET_ORDER: SheetName[] = [
   "facility_guide",
   "buses_taxis",
   "things_to_do",
-  "hotels",
-  "restaurants",
   "top_picks",
   "station_top_picks",
+  "hotels",
+  "restaurants",
+  "station_hotels",
+  "station_restaurants",
 ];
 
 /** Columns every sheet must have (extra columns are ignored). */
@@ -77,10 +81,12 @@ export const REQUIRED_COLUMNS: Record<SheetName, string[]> = {
   facility_guide: ["station_slug", "name"],
   buses_taxis: ["station_slug", "place"],
   things_to_do: ["station_slug", "name"],
-  hotels: ["station_slug", "name"],
-  restaurants: ["station_slug", "name"],
   top_picks: ["slug", "name"],
   station_top_picks: ["station_slug", "top_pick_slug"],
+  hotels: ["slug", "name"],
+  restaurants: ["slug", "name"],
+  station_hotels: ["station_slug", "hotel_slug"],
+  station_restaurants: ["station_slug", "restaurant_slug"],
 };
 
 export const SEASONS = ["spring", "summer", "autumn", "winter"];

@@ -5,7 +5,7 @@ export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot
   const all = async <T>(sql: string) =>
     (await db.prepare(sql).all<T>()).results ?? [];
 
-  const [operators, lines, stations, facilities, topPicks, floors, exits, platforms, sides, routes, tips, floorFacilities, stationTopPicks, lineStations, seasons, practicalTips, faqs, dayTrips, facilityGuide, transport, things, hotels, restaurants] =
+  const [operators, lines, stations, facilities, topPicks, floors, exits, platforms, sides, routes, tips, floorFacilities, stationTopPicks, lineStations, seasons, practicalTips, faqs, dayTrips, facilityGuide, transport, things, hotels, restaurants, stationHotels, stationRestaurants] =
     await Promise.all([
       all<{ slug: string; name: string }>("SELECT slug, name FROM operators"),
       all<{ slug: string }>("SELECT slug FROM lines"),
@@ -85,13 +85,15 @@ export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot
         `SELECT s.slug || '|' || x.name AS k
          FROM station_things x JOIN stations s ON s.id = x.station_id`,
       ),
+      all<{ slug: string }>("SELECT slug FROM hotels"),
+      all<{ slug: string }>("SELECT slug FROM restaurants"),
       all<{ k: string }>(
-        `SELECT s.slug || '|' || x.name AS k
-         FROM station_hotels x JOIN stations s ON s.id = x.station_id`,
+        `SELECT s.slug || '|' || h.slug AS k
+         FROM station_hotels x JOIN stations s ON s.id = x.station_id JOIN hotels h ON h.id = x.hotel_id`,
       ),
       all<{ k: string }>(
-        `SELECT s.slug || '|' || x.name AS k
-         FROM station_restaurants x JOIN stations s ON s.id = x.station_id`,
+        `SELECT s.slug || '|' || r.slug AS k
+         FROM station_restaurants x JOIN stations s ON s.id = x.station_id JOIN restaurants r ON r.id = x.restaurant_id`,
       ),
     ]);
 
@@ -117,8 +119,10 @@ export async function loadImportSnapshot(db: D1Database): Promise<ImportSnapshot
     facilityGuide: facilityGuide.map((r) => r.k),
     transport: transport.map((r) => r.k),
     things: things.map((r) => r.k),
-    hotels: hotels.map((r) => r.k),
-    restaurants: restaurants.map((r) => r.k),
+    hotels,
+    restaurants,
+    stationHotels: stationHotels.map((r) => r.k),
+    stationRestaurants: stationRestaurants.map((r) => r.k),
     floorFacilities: floorFacilities.map((r) => r.k),
     stationTopPicks: stationTopPicks.map((r) => r.k),
     lineStations,
@@ -136,7 +140,7 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
     return out;
   };
 
-  const [operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick, season, practicalTip, faq, dayTrip, facilityGuide, transport, thing, hotel, restaurant] =
+  const [operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick, season, practicalTip, faq, dayTrip, facilityGuide, transport, thing, hotel, restaurant, stationHotel, stationRestaurant] =
     await Promise.all([
       keyed(`SELECT slug AS k, name, name_japanese AS nameJa, description AS "desc",
                     description_japanese AS descJa, website_url AS url FROM operators`),
@@ -232,17 +236,18 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
                     x.description AS "desc", x.description_japanese AS descJa, x.map_url AS mapUrl,
                     x.sort_order AS sortOrder
              FROM station_things x JOIN stations s ON s.id = x.station_id`),
-      keyed(`SELECT s.slug || '|' || x.name AS k, x.name_japanese AS nameJa, x.kind, x.kind_japanese AS kindJa, x.location, x.location_japanese AS locationJa,
-                    x.description AS "desc", x.description_japanese AS descJa, x.map_url AS mapUrl,
-                    x.booking_url AS bookingUrl, x.sort_order AS sortOrder
-             FROM station_hotels x JOIN stations s ON s.id = x.station_id`),
-      keyed(`SELECT s.slug || '|' || x.name AS k, x.name_japanese AS nameJa, x.kind, x.kind_japanese AS kindJa, x.location, x.location_japanese AS locationJa,
-                    x.description AS "desc", x.description_japanese AS descJa, x.map_url AS mapUrl,
-                    x.sort_order AS sortOrder
-             FROM station_restaurants x JOIN stations s ON s.id = x.station_id`),
+      keyed(`SELECT slug AS k, name, name_japanese AS nameJa, kind, kind_japanese AS kindJa,
+                    description AS "desc", description_japanese AS descJa, map_url AS mapUrl,
+                    booking_url AS bookingUrl FROM hotels`),
+      keyed(`SELECT slug AS k, name, name_japanese AS nameJa, kind, kind_japanese AS kindJa,
+                    description AS "desc", description_japanese AS descJa, map_url AS mapUrl FROM restaurants`),
+      keyed(`SELECT s.slug || '|' || h.slug AS k, x.location, x.location_japanese AS locationJa, x.sort_order AS sortOrder
+             FROM station_hotels x JOIN stations s ON s.id = x.station_id JOIN hotels h ON h.id = x.hotel_id`),
+      keyed(`SELECT s.slug || '|' || r.slug AS k, x.location, x.location_japanese AS locationJa, x.sort_order AS sortOrder
+             FROM station_restaurants x JOIN stations s ON s.id = x.station_id JOIN restaurants r ON r.id = x.restaurant_id`),
     ]);
 
-  return { operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick, season, practicalTip, faq, dayTrip, facilityGuide, transport, thing, hotel, restaurant };
+  return { operator, line, station, lineStation, facility, floor, floorFacility, exit, platform, side, route, tip, topPick, stationTopPick, season, practicalTip, faq, dayTrip, facilityGuide, transport, thing, hotel, restaurant, stationHotel, stationRestaurant };
 }
 
 /** Order in which operation types are applied (a type only needs the ones before it). */
@@ -269,6 +274,8 @@ const TYPE_ORDER: OpType[] = [
   "thing",
   "hotel",
   "restaurant",
+  "stationHotel",
+  "stationRestaurant",
   "stationTopPick",
 ];
 
@@ -734,48 +741,62 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
 
     case "hotel": {
       const u = sets(
-        [["name_japanese", op.nameJa], ["kind", op.kind], ["kind_japanese", op.kindJa], ["location", op.location], ["location_japanese", op.locationJa], ["description", op.desc], ["description_japanese", op.descJa], ["map_url", op.mapUrl], ["booking_url", op.bookingUrl], ["sort_order", op.sortOrder, true]],
-        3,
+        [
+          ["name_japanese", op.nameJa], ["kind", op.kind], ["kind_japanese", op.kindJa], ["description", op.desc],
+          ["description_japanese", op.descJa], ["map_url", op.mapUrl], ["booking_url", op.bookingUrl],
+        ],
+        10,
       );
       return [
         p(
-          `UPDATE station_hotels SET updated_at = CURRENT_TIMESTAMP${u.sql}
-           WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND name = ?2`,
-          op.stationSlug, op.name, ...u.params,
-        ),
-        p(
-          `INSERT INTO station_hotels
-             (station_id, name, name_japanese, kind, kind_japanese, location, location_japanese, description, description_japanese, map_url, booking_url, sort_order)
-           SELECT s.id, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, COALESCE(?12, 0)
-           FROM stations s
-           WHERE s.slug = ?1
-             AND NOT EXISTS (SELECT 1 FROM station_hotels x WHERE x.station_id = s.id AND x.name = ?2)`,
-          op.stationSlug, op.name, n(op.nameJa), n(op.kind), n(op.kindJa), n(op.location), n(op.locationJa),
-          n(op.desc), n(op.descJa), n(op.mapUrl), n(op.bookingUrl), n(op.sortOrder),
+          `INSERT INTO hotels (slug, name, name_japanese, kind, kind_japanese, description, description_japanese, map_url, booking_url)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+           ON CONFLICT(slug) DO UPDATE SET name = excluded.name${u.sql}, updated_at = CURRENT_TIMESTAMP`,
+          op.slug, op.name, n(op.nameJa), n(op.kind), n(op.kindJa), n(op.desc), n(op.descJa), n(op.mapUrl), n(op.bookingUrl), ...u.params,
         ),
       ];
     }
 
     case "restaurant": {
       const u = sets(
-        [["name_japanese", op.nameJa], ["kind", op.kind], ["kind_japanese", op.kindJa], ["location", op.location], ["location_japanese", op.locationJa], ["description", op.desc], ["description_japanese", op.descJa], ["map_url", op.mapUrl], ["sort_order", op.sortOrder, true]],
-        3,
+        [
+          ["name_japanese", op.nameJa], ["kind", op.kind], ["kind_japanese", op.kindJa], ["description", op.desc],
+          ["description_japanese", op.descJa], ["map_url", op.mapUrl],
+        ],
+        9,
       );
       return [
         p(
-          `UPDATE station_restaurants SET updated_at = CURRENT_TIMESTAMP${u.sql}
-           WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND name = ?2`,
-          op.stationSlug, op.name, ...u.params,
+          `INSERT INTO restaurants (slug, name, name_japanese, kind, kind_japanese, description, description_japanese, map_url)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+           ON CONFLICT(slug) DO UPDATE SET name = excluded.name${u.sql}, updated_at = CURRENT_TIMESTAMP`,
+          op.slug, op.name, n(op.nameJa), n(op.kind), n(op.kindJa), n(op.desc), n(op.descJa), n(op.mapUrl), ...u.params,
         ),
+      ];
+    }
+
+    case "stationHotel": {
+      const u = sets([["location", op.location], ["location_japanese", op.locationJa], ["sort_order", op.sortOrder, true]], 6);
+      return [
         p(
-          `INSERT INTO station_restaurants
-             (station_id, name, name_japanese, kind, kind_japanese, location, location_japanese, description, description_japanese, map_url, sort_order)
-           SELECT s.id, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, COALESCE(?11, 0)
-           FROM stations s
-           WHERE s.slug = ?1
-             AND NOT EXISTS (SELECT 1 FROM station_restaurants x WHERE x.station_id = s.id AND x.name = ?2)`,
-          op.stationSlug, op.name, n(op.nameJa), n(op.kind), n(op.kindJa), n(op.location), n(op.locationJa),
-          n(op.desc), n(op.descJa), n(op.mapUrl), n(op.sortOrder),
+          `INSERT INTO station_hotels (station_id, hotel_id, location, location_japanese, sort_order)
+           SELECT s.id, h.id, ?3, ?4, COALESCE(?5, 0)
+           FROM stations s, hotels h WHERE s.slug = ?1 AND h.slug = ?2
+           ON CONFLICT(station_id, hotel_id) DO UPDATE SET hotel_id = excluded.hotel_id${u.sql}`,
+          op.stationSlug, op.hotelSlug, n(op.location), n(op.locationJa), n(op.sortOrder), ...u.params,
+        ),
+      ];
+    }
+
+    case "stationRestaurant": {
+      const u = sets([["location", op.location], ["location_japanese", op.locationJa], ["sort_order", op.sortOrder, true]], 6);
+      return [
+        p(
+          `INSERT INTO station_restaurants (station_id, restaurant_id, location, location_japanese, sort_order)
+           SELECT s.id, r.id, ?3, ?4, COALESCE(?5, 0)
+           FROM stations s, restaurants r WHERE s.slug = ?1 AND r.slug = ?2
+           ON CONFLICT(station_id, restaurant_id) DO UPDATE SET restaurant_id = excluded.restaurant_id${u.sql}`,
+          op.stationSlug, op.restaurantSlug, n(op.location), n(op.locationJa), n(op.sortOrder), ...u.params,
         ),
       ];
     }
@@ -1042,16 +1063,22 @@ function deleteStatement(db: D1Database, op: DeleteOp): D1PreparedStatement {
         k[0], k.slice(1).join("|"),
       );
     case "hotel":
+      return p(`DELETE FROM hotels WHERE slug = ?1`, k[0]);
+    case "restaurant":
+      return p(`DELETE FROM restaurants WHERE slug = ?1`, k[0]);
+    case "stationHotel":
       return p(
         `DELETE FROM station_hotels
-         WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND name = ?2`,
-        k[0], k.slice(1).join("|"),
+         WHERE station_id = (SELECT id FROM stations WHERE slug = ?1)
+           AND hotel_id = (SELECT id FROM hotels WHERE slug = ?2)`,
+        k[0], k[1],
       );
-    case "restaurant":
+    case "stationRestaurant":
       return p(
         `DELETE FROM station_restaurants
-         WHERE station_id = (SELECT id FROM stations WHERE slug = ?1) AND name = ?2`,
-        k[0], k.slice(1).join("|"),
+         WHERE station_id = (SELECT id FROM stations WHERE slug = ?1)
+           AND restaurant_id = (SELECT id FROM restaurants WHERE slug = ?2)`,
+        k[0], k[1],
       );
     case "thing":
       return p(

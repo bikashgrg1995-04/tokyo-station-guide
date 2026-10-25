@@ -1,0 +1,21 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import Breadcrumbs from "../../../components/common/Breadcrumbs.astro";
+import PlaceFormView from "../../../components/admin/PlaceFormView.astro";
+import { PLACE_KINDS } from "../../../lib/db/places";
+import { handlePlaceForm } from "../../../lib/services/places";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+const info = PLACE_KINDS.hotel;
+const form = await handlePlaceForm(Astro.request, env.DB, info, undefined, env);
+if (form.redirectTo) return Astro.redirect(form.redirectTo);
+---
+
+<AdminLayout title="Add Hotel" activePath="/admin/hotels">
+  <header class="admin-topbar">
+    <Breadcrumbs backHref="/admin/hotels" parentLabel="Hotels" current="Add Hotel" />
+  </header>
+  <PlaceFormView info={info} form={form} />
+</AdminLayout>

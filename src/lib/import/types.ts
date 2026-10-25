@@ -28,6 +28,8 @@ export type OpType =
   | "thing"
   | "hotel"
   | "restaurant"
+  | "stationHotel"
+  | "stationRestaurant"
   | "topPick"
   | "stationTopPick";
 
@@ -67,10 +69,12 @@ export interface ImportSnapshot {
   transport: string[];
   /** `stationSlug|name` */
   things: string[];
-  /** `stationSlug|name` */
-  hotels: string[];
-  /** `stationSlug|name` */
-  restaurants: string[];
+  hotels: { slug: string }[];
+  restaurants: { slug: string }[];
+  /** `stationSlug|hotelSlug` */
+  stationHotels: string[];
+  /** `stationSlug|restaurantSlug` */
+  stationRestaurants: string[];
   /** `stationSlug|floorName|facilitySlug` */
   floorFacilities: string[];
   /** `stationSlug|topPickSlug` */
@@ -101,8 +105,10 @@ export const KEY_FIELDS: Record<OpType, string[]> = {
   facilityGuide: ["stationSlug", "name"],
   transport: ["stationSlug", "place"],
   thing: ["stationSlug", "name"],
-  hotel: ["stationSlug", "name"],
-  restaurant: ["stationSlug", "name"],
+  hotel: ["slug"],
+  restaurant: ["slug"],
+  stationHotel: ["stationSlug", "hotelSlug"],
+  stationRestaurant: ["stationSlug", "restaurantSlug"],
   topPick: ["slug"],
   stationTopPick: ["stationSlug", "topPickSlug"],
 };
@@ -128,8 +134,10 @@ export const NOT_NULL_FIELDS: Record<OpType, string[]> = {
   facilityGuide: ["sortOrder"],
   transport: ["sortOrder"],
   thing: ["sortOrder"],
-  hotel: ["sortOrder"],
-  restaurant: ["sortOrder"],
+  hotel: ["name"],
+  restaurant: ["name"],
+  stationHotel: ["sortOrder"],
+  stationRestaurant: ["sortOrder"],
   topPick: ["name", "category"],
   stationTopPick: ["locationType", "sortOrder"],
 };
@@ -146,8 +154,10 @@ export type UpsertOp =
   | { t: "line"; slug: string; operatorSlug: string; name: string; nameJa: Opt<string>; code: Opt<string>; color: Opt<string>; lineType: Opt<string>; status: Opt<string>; desc: Opt<string>; descJa: Opt<string> }
   | { t: "station"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; about: Opt<string>; aboutJa: Opt<string>; locationUrl: Opt<string>; isVerified: Opt<number>; verifiedAt: Opt<string>; region: Opt<string>; regionJa: Opt<string>; address: Opt<string>; addressJa: Opt<string>; statLinesNote: Opt<string>; statLinesNoteJa: Opt<string>; statRidersValue: Opt<string>; statRidersNote: Opt<string>; statRidersNoteJa: Opt<string>; statOpenedValue: Opt<string>; statOpenedNote: Opt<string>; statOpenedNoteJa: Opt<string>; sidesNote: Opt<string>; sidesNoteJa: Opt<string>; routesNote: Opt<string>; routesNoteJa: Opt<string>; exitsNote: Opt<string>; exitsNoteJa: Opt<string>; restaurantsNote: Opt<string>; restaurantsNoteJa: Opt<string> }
   | { t: "practicalTip"; stationSlug: string; tip: string; tipJa: Opt<string>; sortOrder: Opt<number> }
-  | { t: "hotel"; stationSlug: string; name: string; nameJa: Opt<string>; kind: Opt<string>; kindJa: Opt<string>; location: Opt<string>; locationJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; mapUrl: Opt<string>; sortOrder: Opt<number>; bookingUrl: Opt<string> }
-  | { t: "restaurant"; stationSlug: string; name: string; nameJa: Opt<string>; kind: Opt<string>; kindJa: Opt<string>; location: Opt<string>; locationJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; mapUrl: Opt<string>; sortOrder: Opt<number> }
+  | { t: "hotel"; slug: string; name: string; nameJa: Opt<string>; kind: Opt<string>; kindJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; mapUrl: Opt<string>; bookingUrl: Opt<string> }
+  | { t: "restaurant"; slug: string; name: string; nameJa: Opt<string>; kind: Opt<string>; kindJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; mapUrl: Opt<string> }
+  | { t: "stationHotel"; stationSlug: string; hotelSlug: string; location: Opt<string>; locationJa: Opt<string>; sortOrder: Opt<number> }
+  | { t: "stationRestaurant"; stationSlug: string; restaurantSlug: string; location: Opt<string>; locationJa: Opt<string>; sortOrder: Opt<number> }
   | { t: "thing"; stationSlug: string; name: string; nameJa: Opt<string>; kind: Opt<string>; kindJa: Opt<string>; location: Opt<string>; locationJa: Opt<string>; cost: Opt<string>; costJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; mapUrl: Opt<string>; sortOrder: Opt<number> }
   | { t: "transport"; stationSlug: string; place: string; placeJa: Opt<string>; service: Opt<string>; serviceJa: Opt<string>; notes: Opt<string>; notesJa: Opt<string>; photoTitle: Opt<string>; photoTitleJa: Opt<string>; photoCaption: Opt<string>; photoCaptionJa: Opt<string>; sortOrder: Opt<number> }
   | { t: "facilityGuide"; stationSlug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; photoCaption: Opt<string>; photoCaptionJa: Opt<string>; sortOrder: Opt<number> }

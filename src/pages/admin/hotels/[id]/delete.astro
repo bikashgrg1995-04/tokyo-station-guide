@@ -1,0 +1,12 @@
+---
+import { PLACE_KINDS } from "../../../../lib/db/places";
+import { handlePlaceDelete } from "../../../../lib/services/places";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+
+return Astro.redirect(
+  await handlePlaceDelete(Astro.request, env.DB, PLACE_KINDS.hotel, Astro.params.id, env),
+);
+---

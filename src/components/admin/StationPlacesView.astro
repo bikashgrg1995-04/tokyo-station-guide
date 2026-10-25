@@ -1,0 +1,127 @@
+---
+import "../../styles/admin/forms.css";
+import "../../styles/admin/stations.css";
+import "../../styles/admin/station-sides.css";
+
+import type { PlaceKindInfo } from "../../lib/db/places";
+import type { StationPlacesResult } from "../../lib/services/places";
+
+export interface Props {
+  info: PlaceKindInfo;
+  stationName: string;
+  form: StationPlacesResult;
+}
+
+const { info, stationName, form } = Astro.props;
+const lower = info.label.toLowerCase();
+const next = form.assigned.reduce((m, a) => Math.max(m, a.sort_order), 0) + 1;
+const ph = info.kind === "hotel" ? "Marunouchi South Exit, directly connected" : "Tokyo Ramen Street, First Avenue B1 south end";
+---
+
+<div class="admin-content">
+  <div class="admin-page-header">
+    <div>
+      <h2>{info.plural}</h2>
+      <p>
+        For <strong>{stationName}</strong>: pick {info.plural.toLowerCase()} from
+        <a href={`/admin/${info.route}`}>Admin → {info.plural}</a> and say where each one is from this station.
+      </p>
+    </div>
+  </div>
+
+  {
+    info.kind === "restaurant" && (
+      <section class="admin-panel sides-panel">
+        <form method="POST" class="admin-panel-body">
+          <h3 class="sides-title">Note above the list</h3>
+          {form.errorFor === "note" && <div class="admin-form-error" role="alert">{form.formError}</div>}
+          <div class="admin-form-grid">
+            <div class="admin-form-group full-width">
+              <label>Note (use **text** for bold)</label>
+              <textarea name="restaurants_note" rows="2" maxlength="1000">{form.note}</textarea>
+            </div>
+            <div class="admin-form-group full-width">
+              <label>Note (Japanese)</label>
+              <textarea name="restaurants_note_japanese" lang="ja" rows="2" maxlength="1000">{form.noteJapanese}</textarea>
+            </div>
+          </div>
+          <div class="admin-form-actions">
+            <button type="submit" name="place_action" value="note_save" class="common-button common-button-primary">Save note</button>
+          </div>
+        </form>
+      </section>
+    )
+  }
+
+  {
+    form.assigned.map((a) => (
+      <section class="admin-panel sides-panel">
+        <form method="POST" class="admin-panel-body">
+          <h3 class="sides-title">{a.name}</h3>
+          <input type="hidden" name="place_id" value={a.place_id} />
+          {form.errorFor === String(a.place_id) && <div class="admin-form-error" role="alert">{form.formError}</div>}
+          <div class="admin-form-grid">
+            <div class="admin-form-group">
+              <label>Location from this station</label>
+              <input name="location" maxlength="200" value={a.location ?? ""} placeholder={ph} />
+            </div>
+            <div class="admin-form-group">
+              <label>Location (Japanese)</label>
+              <input name="location_japanese" lang="ja" maxlength="200" value={a.location_japanese ?? ""} />
+            </div>
+            <div class="admin-form-group">
+              <label>Order</label>
+              <input name="sort_order" type="number" min="0" value={a.sort_order} />
+            </div>
+          </div>
+          <div class="admin-form-actions">
+            <button type="submit" name="place_action" value="update" class="common-button common-button-primary">Save</button>
+            <button type="submit" name="place_action" value="unassign" class="common-button common-button-danger" formnovalidate onclick={`return confirm('Remove this ${lower} from the station?')`}>Remove</button>
+          </div>
+        </form>
+      </section>
+    ))
+  }
+
+  <section class="admin-panel sides-panel">
+    <form method="POST" class="admin-panel-body">
+      <h3 class="sides-title">Add a {lower}</h3>
+      {form.errorFor === "new" && <div class="admin-form-error" role="alert">{form.formError}</div>}
+      {
+        form.available.length === 0 ? (
+          <p>
+            {form.assigned.length > 0 ? `All ${info.plural.toLowerCase()} are already assigned.` : `No ${info.plural.toLowerCase()} yet.`}
+            <a href={`/admin/${info.route}/new`}> Add a {lower}</a> first.
+          </p>
+        ) : (
+          <>
+            <div class="admin-form-grid">
+              <div class="admin-form-group">
+                <label>{info.label}</label>
+                <select name="place_id" required>
+                  <option value="">Select a {lower}</option>
+                  {form.available.map((p) => <option value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div class="admin-form-group">
+                <label>Location from this station</label>
+                <input name="location" maxlength="200" placeholder={ph} />
+              </div>
+              <div class="admin-form-group">
+                <label>Location (Japanese)</label>
+                <input name="location_japanese" lang="ja" maxlength="200" />
+              </div>
+              <div class="admin-form-group">
+                <label>Order</label>
+                <input name="sort_order" type="number" min="0" value={next} />
+              </div>
+            </div>
+            <div class="admin-form-actions">
+              <button type="submit" name="place_action" value="assign" class="common-button common-button-primary">Add to station</button>
+            </div>
+          </>
+        )
+      }
+    </form>
+  </section>
+</div>

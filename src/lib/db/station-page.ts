@@ -385,14 +385,22 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageThing>();
 
-  const placeCols = `name, name_japanese, kind, kind_japanese, location, location_japanese, description,
-              description_japanese, map_url, photo`;
   const hotels = await db
-    .prepare(`SELECT ${placeCols}, booking_url FROM station_hotels WHERE station_id = ? ORDER BY sort_order, id`)
+    .prepare(
+      `SELECT h.name, h.name_japanese, h.kind, h.kind_japanese, l.location, l.location_japanese,
+              h.description, h.description_japanese, h.map_url, h.photo, h.booking_url
+       FROM station_hotels l JOIN hotels h ON h.id = l.hotel_id
+       WHERE l.station_id = ? ORDER BY l.sort_order, h.name`,
+    )
     .bind(station.id)
     .all<StationPagePlace>();
   const restaurants = await db
-    .prepare(`SELECT ${placeCols} FROM station_restaurants WHERE station_id = ? ORDER BY sort_order, id`)
+    .prepare(
+      `SELECT r.name, r.name_japanese, r.kind, r.kind_japanese, l.location, l.location_japanese,
+              r.description, r.description_japanese, r.map_url, r.photo
+       FROM station_restaurants l JOIN restaurants r ON r.id = l.restaurant_id
+       WHERE l.station_id = ? ORDER BY l.sort_order, r.name`,
+    )
     .bind(station.id)
     .all<StationPagePlace>();
 

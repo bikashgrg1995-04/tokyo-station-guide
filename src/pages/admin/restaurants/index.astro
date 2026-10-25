@@ -1,0 +1,16 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import PlaceListView from "../../../components/admin/PlaceListView.astro";
+import { PLACE_KINDS } from "../../../lib/db/places";
+import { loadPlaceList } from "../../../lib/services/places";
+
+export const prerender = false;
+
+const { env } = await import("cloudflare:workers");
+const info = PLACE_KINDS.restaurant;
+const list = await loadPlaceList(env.DB, info, Astro.url);
+---
+
+<AdminLayout title="Restaurants" activePath="/admin/restaurants">
+  <PlaceListView info={info} list={list} deleteError={Astro.url.searchParams.get("error")} />
+</AdminLayout>
