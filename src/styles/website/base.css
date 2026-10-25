@@ -80,18 +80,9 @@ html.lite * {
   -webkit-backdrop-filter: none !important;
 }
 
-html.lite .stn.current .pulse,
+/* The radar on the selected station stays on in lite mode: it is only a transform + opacity animation. */
 html.lite .stn.current .stop {
   animation: none !important;
-}
-
-html.lite .stn.current .pulse {
-  opacity: 0.22;
-  transform: scale(1.8);
-}
-
-html.lite .stn.current .pulse-2 {
-  display: none;
 }
 
 html.lite .board-card,
