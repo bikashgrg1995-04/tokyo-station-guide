@@ -233,6 +233,61 @@ const {
     }
   </div>
 
+  <!-- About -->
+  <div class="admin-form-group span-6">
+    <label for="about">
+      About <span class="admin-label-hint">station popup, up to 150 characters</span>
+    </label>
+
+    <textarea
+      id="about"
+      name="about"
+      maxlength="150"
+      rows="2"
+      class="admin-station-description"
+      placeholder="Short text shown in the About section of the station popup..."
+      aria-invalid={errors.about ? "true" : "false"}
+      aria-describedby={errors.about ? "about-error" : undefined}
+      >{about}</textarea
+    >
+
+    {
+      errors.about && (
+        <small id="about-error" class="admin-form-error">
+          {errors.about}
+        </small>
+      )
+    }
+  </div>
+
+  <!-- Japanese About -->
+  <div class="admin-form-group span-6">
+    <label for="about_japanese">
+      Japanese About <span class="admin-label-hint">up to 150 characters</span>
+    </label>
+
+    <textarea
+      id="about_japanese"
+      name="about_japanese"
+      maxlength="150"
+      rows="2"
+      lang="ja"
+      class="admin-station-description"
+      placeholder="駅ポップアップの「概要」に表示される短い文章..."
+      aria-invalid={errors.aboutJapanese ? "true" : "false"}
+      aria-describedby={errors.aboutJapanese ? "about-japanese-error" : undefined}
+      >{aboutJapanese}</textarea
+    >
+
+    {
+      errors.aboutJapanese && (
+        <small id="about-japanese-error" class="admin-form-error">
+          {errors.aboutJapanese}
+        </small>
+      )
+    }
+  </div>
+
   <!-- Location label on the station page -->
   <div class="admin-form-group span-6">
     <label for="region">
@@ -395,62 +450,6 @@ const {
     <input id="stat_opened_note_japanese" name="stat_opened_note_japanese" type="text" maxlength="120" placeholder="例: 開業（丸の内駅舎）" lang="ja" value={statOpenedNoteJapanese} />
     {errors.statOpenedNoteJapanese && <small class="admin-form-error">{errors.statOpenedNoteJapanese}</small>}
   </div>
-
-  <!-- About -->
-  <div class="admin-form-group span-6">
-    <label for="about">
-      About <span class="admin-label-hint">station popup, up to 150 characters</span>
-    </label>
-
-    <textarea
-      id="about"
-      name="about"
-      maxlength="150"
-      rows="2"
-      class="admin-station-description"
-      placeholder="Short text shown in the About section of the station popup..."
-      aria-invalid={errors.about ? "true" : "false"}
-      aria-describedby={errors.about ? "about-error" : undefined}
-      >{about}</textarea
-    >
-
-    {
-      errors.about && (
-        <small id="about-error" class="admin-form-error">
-          {errors.about}
-        </small>
-      )
-    }
-  </div>
-
-  <!-- Japanese About -->
-  <div class="admin-form-group span-6">
-    <label for="about_japanese">
-      Japanese About <span class="admin-label-hint">up to 150 characters</span>
-    </label>
-
-    <textarea
-      id="about_japanese"
-      name="about_japanese"
-      maxlength="150"
-      rows="2"
-      lang="ja"
-      class="admin-station-description"
-      placeholder="駅ポップアップの「概要」に表示される短い文章..."
-      aria-invalid={errors.aboutJapanese ? "true" : "false"}
-      aria-describedby={errors.aboutJapanese ? "about-japanese-error" : undefined}
-      >{aboutJapanese}</textarea
-    >
-
-    {
-      errors.aboutJapanese && (
-        <small id="about-japanese-error" class="admin-form-error">
-          {errors.aboutJapanese}
-        </small>
-      )
-    }
-  </div>
-
 
 </div>
 
