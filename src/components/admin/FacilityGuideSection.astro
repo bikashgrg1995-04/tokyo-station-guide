@@ -48,7 +48,7 @@ const reopen = form.posted
                   <td>{t.photo ? <img class="admin-photo-thumb" src={src(t.photo)} alt="" loading="lazy" /> : <span class="admin-table-muted">—</span>}</td>
                   <td>
                     <strong>{t.name || t.name_japanese}</strong>
-                    {t.name && t.name_japanese && <div class="sim-sub" lang="ja">{t.name_japanese}</div>}
+                    
                   </td>
                   <td><div class="sim-clip">{t.description || t.description_japanese || "—"}</div></td>
                   <td>

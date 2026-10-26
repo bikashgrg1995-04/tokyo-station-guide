@@ -158,12 +158,7 @@ const pickerColor = /^#[0-9a-fA-F]{6}$/.test(formValues.colorCode)
                     <input type="checkbox" class="admin-row-checkbox" data-bulk-select value={exit.id} aria-label="Select exit" />
                   </td>
                   <td>
-                    <strong>{exit.name}</strong>
-                    {exit.name_japanese && (
-                      <div class="admin-table-muted" lang="ja">
-                        {exit.name_japanese}
-                      </div>
-                    )}
+                    <strong>{exit.name || exit.name_japanese}</strong>
                   </td>
                   <td>
                     <span class="admin-floor-pill">

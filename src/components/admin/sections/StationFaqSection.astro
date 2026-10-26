@@ -53,9 +53,8 @@ const reopen = form.posted
                     <td>{f.sort_order}</td>
                     <td>
                       <strong>{f.question || f.question_japanese}</strong>
-                      {f.question && f.question_japanese && <div class="sim-sub" lang="ja">{f.question_japanese}</div>}
                     </td>
-                    <td><div class="sim-clip">{f.answer}</div></td>
+                    <td><div class="sim-clip">{f.answer || f.answer_japanese}</div></td>
                     <td>
                       <div class="sim-actions">
                         <button

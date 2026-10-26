@@ -26,9 +26,8 @@ const rows: Row[] = form.items.map((t) => ({
   },
   cells: [
     { img: t.photo ? src(t.photo) : undefined, main: String(t.sort_order) },
-    { main: t.place || t.place_japanese || "", sub: t.place ? (t.place_japanese ?? "") : "" },
-    { clip: t.service ?? "" },
-    { clip: t.notes ?? "" },
+    { main: t.place || t.place_japanese || "" },
+    { clip: t.service || t.service_japanese || t.notes || t.notes_japanese || "" },
   ],
 }));
 ---
@@ -38,7 +37,7 @@ const rows: Row[] = form.items.map((t) => ({
   title="Buses & taxis"
   hint={`The <b>Buses &amp; taxis</b> section. A row with service or notes appears in the table (Where / Service / Notes); a row with a photo also gets a photo card (title + caption). Leave service and notes empty to show only the photo card.`}
   noun="row"
-  columns={["Photo / order", "Where", "Service", "Notes"]}
+  columns={["Order", "Where", "Service / notes"]}
   rows={rows}
   actionName="guide_action"
   createValue="guide_create"

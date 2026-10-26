@@ -72,7 +72,6 @@ const reopen = form.posted
                       <td>{p.sort_order}</td>
                       <td>
                         <strong>{p.name || p.name_japanese}</strong>
-                        {p.name && p.name_japanese && <div class="sim-sub" lang="ja">{p.name_japanese}</div>}
                       </td>
                       <td>{EXIT_PLACE_CATEGORY_LABELS[p.category]}</td>
                       <td>

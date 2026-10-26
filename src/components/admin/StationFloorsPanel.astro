@@ -101,7 +101,6 @@ const showDeleteError =
                 </th>
                 <th>ID</th>
                 <th>Floor Name</th>
-                <th>Japanese Name</th>
                 <th>Sort Order</th>
                 <th>Actions</th>
               </tr>
@@ -117,12 +116,7 @@ const showDeleteError =
                     <input type="checkbox" class="admin-row-checkbox" data-bulk-select value={floor.id} aria-label="Select floor" />
                   </td>
                   <td class="admin-table-id">{floor.id}</td>
-                  <td><strong>{floor.name}</strong></td>
-                  <td>
-                    {floor.name_japanese || (
-                      <span class="admin-table-muted">—</span>
-                    )}
-                  </td>
+                  <td><strong>{floor.name || floor.name_japanese}</strong></td>
                   <td>{floor.floor_order}</td>
                   <td>
                     <div class="admin-table-actions">

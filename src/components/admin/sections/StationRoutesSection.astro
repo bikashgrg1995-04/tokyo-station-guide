@@ -23,10 +23,9 @@ const rows: Row[] = form.routes.map((r) => ({
   },
   cells: [
     { main: String(r.sort_order) },
-    { main: r.from_place || r.from_place_japanese || "", sub: r.from_place ? (r.from_place_japanese ?? "") : "" },
-    { clip: r.route ?? "" },
-    { clip: r.travel_time ?? "" },
-    { clip: r.cost ?? "" },
+    { main: r.from_place || r.from_place_japanese || "" },
+    { clip: r.travel_time || r.travel_time_japanese || "" },
+    { clip: r.cost || r.cost_japanese || "" },
   ],
 }));
 const noteErr = form.errorFor === "note";
@@ -37,7 +36,7 @@ const noteErr = form.errorFor === "note";
   title="Getting there"
   hint={`How to reach ${station.name} from airports and other places: one row per route, shown under <b>Getting there</b>, plus one footnote below the table.`}
   noun="route"
-  columns={["Order", "From", "Route", "Time", "Cost"]}
+  columns={["Order", "From", "Time", "Cost"]}
   rows={rows}
   idField="route_id"
   actionName="route_action"

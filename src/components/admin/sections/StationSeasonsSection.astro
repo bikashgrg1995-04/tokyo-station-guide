@@ -24,8 +24,7 @@ const rows: Row[] = SEASONS.map((s) => {
     },
     cells: [
       { main: cap(s) },
-      { clip: v?.months ?? "", sub: v?.months_japanese ?? "" },
-      { clip: v?.description ?? (v ? "" : "— empty, not shown on the page —") },
+      { clip: v?.months || v?.months_japanese || (v ? "" : "— empty, not shown —") },
     ],
     noDelete: true,
   };
@@ -37,7 +36,7 @@ const rows: Row[] = SEASONS.map((s) => {
   title="When to visit"
   hint={`One block per season shown under <b>When to visit</b> on the ${station.name} page. Click Edit on a season; save it empty to hide that season.`}
   noun="season"
-  columns={["Season", "Months", "Text"]}
+  columns={["Season", "Months"]}
   rows={rows}
   canAdd={false}
   editTitle="Edit season"

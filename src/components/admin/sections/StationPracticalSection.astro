@@ -19,7 +19,7 @@ const rows: Row[] = form.tips.map((t) => ({
   id: t.id,
   search: `${t.tip} ${t.tip_japanese ?? ""}`,
   item: { item_id: String(t.id), tip: t.tip, tip_japanese: t.tip_japanese ?? "", sort_order: String(t.sort_order) },
-  cells: [{ main: String(t.sort_order) }, { clip: t.tip || t.tip_japanese || "", sub: t.tip ? (t.tip_japanese ?? "") : "" }],
+  cells: [{ main: String(t.sort_order) }, { clip: t.tip || t.tip_japanese || "" }],
 }));
 ---
 

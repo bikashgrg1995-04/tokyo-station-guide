@@ -26,8 +26,7 @@ const rows: Row[] = form.sides.map((s) => {
     },
     cells: [
       { main: String(s.sort_order) },
-      { main: s.name || s.name_japanese || "", sub: s.name ? (s.name_japanese ?? "") : "" },
-      { clip: s.subtitle ?? "" },
+      { main: s.name || s.name_japanese || "" },
       { clip: ids.map((i) => exitName.get(i)).filter(Boolean).join(", ") },
     ],
   };
@@ -40,7 +39,7 @@ const noteErr = form.errorFor === "note";
   title="Sides of the station"
   hint={`The sides of ${station.name} (e.g. Marunouchi / Yaesu) shown under <b>Sides of the station</b> and used as the first filter in <b>Which exit?</b>. Tick the exits that belong to each side.`}
   noun="side"
-  columns={["Order", "Side", "Red subtitle", "Exits"]}
+  columns={["Order", "Side", "Exits"]}
   rows={rows}
   idField="side_id"
   actionName="side_action"

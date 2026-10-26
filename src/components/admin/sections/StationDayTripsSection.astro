@@ -26,9 +26,8 @@ const rows: Row[] = form.trips.map((t) => ({
   },
   cells: [
     { img: t.photo ? src(t.photo) : undefined, main: String(t.sort_order) },
-    { main: t.name || t.name_japanese || "", sub: t.name ? (t.name_japanese ?? "") : "" },
-    { clip: t.travel_time ?? "" },
-    { clip: t.transport ?? "" },
+    { main: t.name || t.name_japanese || "" },
+    { clip: t.travel_time || t.travel_time_japanese || "" },
   ],
 }));
 ---
@@ -38,7 +37,7 @@ const rows: Row[] = form.trips.map((t) => ({
   title="Day trips"
   hint={`Places reachable in a day from ${station.name}, shown under <b>Day trips</b> with travel time and transport.`}
   noun="day trip"
-  columns={["Photo / order", "Destination", "Travel time", "Transport"]}
+  columns={["Order", "Destination", "Travel time"]}
   rows={rows}
   actionName="trip_action"
   createValue="trip_create"

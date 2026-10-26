@@ -26,9 +26,8 @@ const rows: Row[] = form.things.map((t) => ({
   },
   cells: [
     { img: t.photo ? src(t.photo) : undefined, main: String(t.sort_order) },
-    { main: t.name || t.name_japanese || "", sub: t.name ? (t.name_japanese ?? "") : "" },
-    { clip: [t.kind, t.location].filter(Boolean).join(" · ") },
-    { clip: t.cost ?? "" },
+    { main: t.name || t.name_japanese || "" },
+    { clip: [t.kind || t.kind_japanese, t.cost || t.cost_japanese].filter(Boolean).join(" · ") },
   ],
 }));
 ---
@@ -38,7 +37,7 @@ const rows: Row[] = form.things.map((t) => ({
   title="Things to do"
   hint={`Places to see near the station, shown under <b>Things to do</b> with a photo. The grey line under the name = kind · location · cost.`}
   noun="place"
-  columns={["Photo / order", "Name", "Kind · location", "Cost"]}
+  columns={["Order", "Name", "Kind · cost"]}
   rows={rows}
   actionName="trip_action"
   createValue="trip_create"

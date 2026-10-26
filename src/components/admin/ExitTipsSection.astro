@@ -60,8 +60,8 @@ const reopen = form.posted
                 <tr class="sim-row" data-search={`${t.tip} ${t.tip_japanese ?? ""}`.toLowerCase()}>
                   <td>{t.sort_order}</td>
                   <td>
-                    <div class="sim-clip">{t.tip}</div>
-                    {t.tip_japanese && <div class="sim-sub sim-clip" lang="ja">{t.tip_japanese}</div>}
+                    <div class="sim-clip">{t.tip || t.tip_japanese}</div>
+                    
                   </td>
                   <td>
                     <div class="sim-actions">
