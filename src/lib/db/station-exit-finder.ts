@@ -1,9 +1,9 @@
 /** "Which exit?": exits per side, and the places each exit is the way to. */
 
-export const EXIT_PLACE_CATEGORIES = ["sights", "food", "hotels", "transport", "help"] as const;
+export const EXIT_PLACE_CATEGORIES = ["transport", "help"] as const;
 export type ExitPlaceCategory = (typeof EXIT_PLACE_CATEGORIES)[number];
 
-export const EXIT_PLACE_CATEGORY_LABELS: Record<ExitPlaceCategory, string> = {
+export const EXIT_PLACE_CATEGORY_LABELS: Record<string, string> = {
   sights: "Sights",
   food: "Food & shops",
   hotels: "Hotels",
@@ -72,7 +72,7 @@ export async function getExitPlaces(db: D1Database, stationId: number): Promise<
   const places = await db
     .prepare(
       `SELECT id, name, name_japanese, category, sort_order
-       FROM station_exit_places WHERE station_id = ? ORDER BY sort_order, id`,
+       FROM station_exit_places WHERE station_id = ? AND category IN ('transport', 'help') ORDER BY sort_order, id`,
     )
     .bind(stationId)
     .all<Omit<ExitPlace, "exits">>();

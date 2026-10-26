@@ -1,0 +1,63 @@
+---
+import SimSection from "../SimSection.astro";
+import type { Row } from "../SimSection.astro";
+import type { StationPlacesResult } from "../../../lib/services/station-places";
+
+export interface Props {
+  form: StationPlacesResult;
+  /** "hotels" | "restaurants" (also the section anchor) */
+  anchor: string;
+  title: string;
+  noun: string;
+}
+const { form, anchor, title, noun } = Astro.props;
+
+const nextOrder = form.items.reduce((m, t) => Math.max(m, t.sort_order), 0) + 1;
+const rows: Row[] = form.items.map((t) => ({
+  id: t.place_id,
+  search: [t.name, t.name_japanese, t.exit_name, t.location, t.location_japanese].join(" "),
+  item: {
+    item_id: String(t.place_id), exit_id: t.exit_id ? String(t.exit_id) : "",
+    walking_minutes: t.walking_minutes != null ? String(t.walking_minutes) : "",
+    location: t.location ?? "", location_japanese: t.location_japanese ?? "", sort_order: String(t.sort_order),
+  },
+  cells: [
+    { main: String(t.sort_order) },
+    { main: t.name || t.name_japanese || "" },
+    { clip: [t.exit_name, t.walking_minutes != null ? `${t.walking_minutes} min` : ""].filter(Boolean).join(" · ") },
+  ],
+}));
+---
+
+<SimSection
+  anchor={anchor}
+  title={title}
+  hint={`Pick a ${noun} from the <b>${title}</b> list, then its exit and walking minutes. Used by the station page and <b>Which exit?</b>. Removing only takes it off this station.`}
+  noun={noun}
+  columns={["Order", "Name", "Exit · minutes"]}
+  rows={rows}
+  actionName="place_action"
+  createValue="place_create"
+  updateValue="place_update"
+  deleteValue="place_delete"
+  nextOrder={nextOrder}
+  canAdd={form.choices.length > 0}
+  emptyHint={form.choices.length === 0 ? `No more ${title.toLowerCase()} to add. Create them under ${title} first.` : undefined}
+  formError={form.formError}
+  posted={form.posted}
+  reopenMode={form.errorFor === "place-new" ? "create" : "update"}
+>
+  <div class="admin-form-group">
+    <label>{noun}</label>
+    <select name="existing_id"><option value="">— choose —</option>{form.choices.map((c) => <option value={c.id}>{c.name}</option>)}</select>
+  </div>
+  <div class="sim-grid2">
+    <div class="admin-form-group"><label>Exit</label>
+      <select name="exit_id"><option value="">— none —</option>{form.exits.map((e) => <option value={e.id}>{e.name}</option>)}</select>
+    </div>
+    <div class="admin-form-group"><label>Walking minutes</label><input name="walking_minutes" type="number" min="0" max="120" /></div>
+    <div class="admin-form-group"><label>Extra note</label><input name="location" maxlength="200" /></div>
+    <div class="admin-form-group"><label>Extra note (Japanese)</label><input name="location_japanese" maxlength="200" lang="ja" /></div>
+    <div class="admin-form-group"><label>Order</label><input name="sort_order" type="number" min="0" value="0" /></div>
+  </div>
+</SimSection>

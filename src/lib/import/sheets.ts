@@ -23,7 +23,6 @@ export type SheetName =
   | "faqs"
   | "day_trips"
   | "buses_taxis"
-  | "things_to_do"
   | "top_picks"
   | "station_top_picks"
   | "hotels"
@@ -49,7 +48,6 @@ export const SHEET_ORDER: SheetName[] = [
   "faqs",
   "day_trips",
   "buses_taxis",
-  "things_to_do",
   "top_picks",
   "station_top_picks",
   "hotels",
@@ -77,7 +75,6 @@ export const REQUIRED_COLUMNS: Record<SheetName, string[]> = {
   faqs: ["station_slug", "question"],
   day_trips: ["station_slug", "name"],
   buses_taxis: ["station_slug", "place"],
-  things_to_do: ["station_slug", "name"],
   top_picks: ["slug", "name"],
   station_top_picks: ["station_slug", "top_pick_slug"],
   hotels: ["slug", "name"],
@@ -91,7 +88,7 @@ export const SEASONS = ["spring", "summer", "autumn", "winter"];
 export const LINE_TYPES = ["jr", "subway", "private", "shinkansen", "express"];
 export const WEBSITE_STATUSES = ["live", "coming_soon", "hidden"];
 export const FACILITY_LOCATIONS = ["inside", "outside"];
-export const EXIT_PLACE_CATEGORIES = ["sights", "food", "hotels", "transport", "help"];
+export const EXIT_PLACE_CATEGORIES = ["transport", "help"];
 export const TOP_PICK_LOCATIONS = ["inside", "outside", "inside_outside"];
 export const TOP_PICK_CATEGORIES = [
   "landmark",

@@ -147,6 +147,10 @@ export async function deletePlace(db: D1Database, k: PlaceKindInfo, id: number) 
 export interface StationPlace {
   place_id: number;
   name: string;
+  name_japanese: string | null;
+  exit_id: number | null;
+  exit_name: string | null;
+  walking_minutes: number | null;
   location: string | null;
   location_japanese: string | null;
   sort_order: number;
@@ -155,8 +159,10 @@ export interface StationPlace {
 export async function getStationPlaces(db: D1Database, k: PlaceKindInfo, stationId: number): Promise<StationPlace[]> {
   const r = await db
     .prepare(
-      `SELECT p.id AS place_id, p.name, l.location, l.location_japanese, l.sort_order
+      `SELECT p.id AS place_id, p.name, p.name_japanese, l.exit_id, e.name AS exit_name, l.walking_minutes,
+              l.location, l.location_japanese, l.sort_order
        FROM ${k.link} l JOIN ${k.table} p ON p.id = l.${k.linkCol}
+       LEFT JOIN station_exits e ON e.id = l.exit_id
        WHERE l.station_id = ? ORDER BY l.sort_order, p.name`,
     )
     .bind(stationId)
@@ -166,16 +172,29 @@ export async function getStationPlaces(db: D1Database, k: PlaceKindInfo, station
 
 export async function assignPlace(
   db: D1Database, k: PlaceKindInfo, stationId: number, placeId: number,
-  v: { location: string | null; locationJapanese: string | null; sortOrder: number },
+  v: {
+    location: string | null;
+    locationJapanese: string | null;
+    sortOrder: number;
+    exitId?: number | null;
+    walkingMinutes?: number | null;
+  },
 ) {
+  // The exit must belong to this station.
+  let exitId = v.exitId ?? null;
+  if (exitId) {
+    const ok = await db.prepare(`SELECT 1 AS x FROM station_exits WHERE id = ? AND station_id = ?`).bind(exitId, stationId).first();
+    if (!ok) exitId = null;
+  }
   await db
     .prepare(
-      `INSERT INTO ${k.link} (station_id, ${k.linkCol}, location, location_japanese, sort_order)
-       VALUES (?, ?, ?, ?, ?)
+      `INSERT INTO ${k.link} (station_id, ${k.linkCol}, location, location_japanese, sort_order, exit_id, walking_minutes)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(station_id, ${k.linkCol}) DO UPDATE SET
-         location = excluded.location, location_japanese = excluded.location_japanese, sort_order = excluded.sort_order`,
+         location = excluded.location, location_japanese = excluded.location_japanese, sort_order = excluded.sort_order,
+         exit_id = excluded.exit_id, walking_minutes = excluded.walking_minutes`,
     )
-    .bind(stationId, placeId, v.location, v.locationJapanese, v.sortOrder)
+    .bind(stationId, placeId, v.location, v.locationJapanese, v.sortOrder, exitId, v.walkingMinutes ?? null)
     .run();
 }
 
@@ -205,6 +224,8 @@ export interface PlaceStationAssignment {
   station_name: string;
   station_name_japanese: string | null;
   station_slug: string;
+  exit_id: number | null;
+  walking_minutes: number | null;
   location: string | null;
   location_japanese: string | null;
   sort_order: number;
@@ -216,7 +237,7 @@ export async function getPlaceStationAssignments(
   const r = await db
     .prepare(
       `SELECT s.id AS station_id, s.name AS station_name, s.name_japanese AS station_name_japanese,
-              s.slug AS station_slug, l.location, l.location_japanese, l.sort_order
+              s.slug AS station_slug, l.exit_id, l.walking_minutes, l.location, l.location_japanese, l.sort_order
        FROM ${k.link} l JOIN stations s ON s.id = l.station_id
        WHERE l.${k.linkCol} = ? ORDER BY s.name`,
     )

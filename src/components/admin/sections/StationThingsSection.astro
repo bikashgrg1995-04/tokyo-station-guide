@@ -1,43 +1,46 @@
 ---
 import SimSection from "../SimSection.astro";
 import type { Row } from "../SimSection.astro";
-import { handleThings } from "../../../lib/services/station-things";
+import { handleSights } from "../../../lib/services/station-sights";
 import { getStationById } from "../../../lib/db/stations";
 
 export interface Props {
   station: NonNullable<Awaited<ReturnType<typeof getStationById>>>;
   id: number;
-  form: Awaited<ReturnType<typeof handleThings>>;
+  form: Awaited<ReturnType<typeof handleSights>>;
   mediaBase: string;
 }
 const { station, form, mediaBase } = Astro.props;
 const src = (k: string) => (/^https?:\/\//i.test(k) ? k : `${mediaBase}/${k}`);
 void src;
 
-const nextOrder = form.things.reduce((m, t) => Math.max(m, t.sort_order), 0) + 1;
-const rows: Row[] = form.things.map((t) => ({
-  id: t.id,
-  search: [t.name, t.name_japanese, t.kind, t.kind_japanese, t.location, t.location_japanese, t.cost, t.description].join(" "),
+const nextOrder = form.sights.reduce((m, t) => Math.max(m, t.sort_order), 0) + 1;
+const rows: Row[] = form.sights.map((t) => ({
+  id: t.top_pick_id,
+  search: [t.name, t.name_japanese, t.kind, t.kind_japanese, t.exit_name, t.location, t.location_japanese, t.entry_fee, t.description].join(" "),
   item: {
-    item_id: String(t.id), name: t.name, name_japanese: t.name_japanese ?? "", kind: t.kind ?? "", kind_japanese: t.kind_japanese ?? "",
-    location: t.location ?? "", location_japanese: t.location_japanese ?? "", cost: t.cost ?? "", cost_japanese: t.cost_japanese ?? "",
+    item_id: String(t.top_pick_id), name: t.name, name_japanese: t.name_japanese ?? "", kind: t.kind ?? "", kind_japanese: t.kind_japanese ?? "",
+    category: t.category, exit_id: t.exit_id ? String(t.exit_id) : "", walking_minutes: t.walking_minutes != null ? String(t.walking_minutes) : "",
+    location_type: t.location_type, location: t.location ?? "", location_japanese: t.location_japanese ?? "",
+    cost: t.entry_fee ?? "", cost_japanese: t.entry_fee_japanese ?? "",
     description: t.description ?? "", description_japanese: t.description_japanese ?? "", map_url: t.map_url ?? "",
-    sort_order: String(t.sort_order), photo_url: t.photo ? src(t.photo) : "",
+    sort_order: String(t.sort_order), photo_url: t.image_url ? src(t.image_url) : "",
   },
   cells: [
-    { img: t.photo ? src(t.photo) : undefined, main: String(t.sort_order) },
+    { img: t.image_url ? src(t.image_url) : undefined, main: String(t.sort_order) },
     { main: t.name || t.name_japanese || "" },
-    { clip: [t.kind || t.kind_japanese, t.cost || t.cost_japanese].filter(Boolean).join(" · ") },
+    { clip: [t.exit_name, t.walking_minutes != null ? `${t.walking_minutes} min` : ""].filter(Boolean).join(" · ") },
   ],
 }));
+const CATS = ["landmark", "food", "shopping", "museum", "park", "temple"];
 ---
 
 <SimSection
   anchor="things-to-do"
-  title="Things to do"
-  hint={`Places to see near the station, shown under <b>Things to do</b> with a photo. The grey line under the name = kind · location · cost.`}
+  title="Things to do (sights)"
+  hint={`One list for <b>Things to do</b>, <b>Top picks</b> (map) and <b>Which exit?</b>. Pick the exit and walking minutes; the same place can be used at other stations. Removing only takes it off this station.`}
   noun="place"
-  columns={["Order", "Name", "Kind · cost"]}
+  columns={["Order", "Name", "Exit · minutes"]}
   rows={rows}
   actionName="trip_action"
   createValue="trip_create"
@@ -49,13 +52,32 @@ const rows: Row[] = form.things.map((t) => ({
   posted={form.posted}
   reopenMode={form.errorFor === "thing-new" ? "create" : "update"}
 >
+  {form.unlinked.length > 0 && (
+    <div class="admin-form-group" data-sim-create-only>
+      <label>Use an existing place (or leave empty and fill in a new one below)</label>
+      <select name="existing_id">
+        <option value="">New place…</option>
+        {form.unlinked.map((u) => <option value={u.id}>{u.name}</option>)}
+      </select>
+    </div>
+  )}
   <div class="sim-grid2">
+    <div class="admin-form-group"><label>Exit</label>
+      <select name="exit_id"><option value="">— none —</option>{form.exits.map((e) => <option value={e.id}>{e.name}</option>)}</select>
+    </div>
+    <div class="admin-form-group"><label>Walking minutes</label><input name="walking_minutes" type="number" min="0" max="120" /></div>
+    <div class="admin-form-group"><label>Inside / outside</label>
+      <select name="location_type"><option value="inside">Inside station</option><option value="outside">Outside</option><option value="inside_outside">Both</option></select>
+    </div>
+    <div class="admin-form-group"><label>Category</label>
+      <select name="category">{CATS.map((c) => <option value={c}>{c}</option>)}</select>
+    </div>
     <div class="admin-form-group"><label>Name</label><input name="name" maxlength="150" placeholder="Imperial Palace East Gardens"></div>
     <div class="admin-form-group"><label>Name (Japanese)</label><input name="name_japanese" maxlength="150" lang="ja"></div>
     <div class="admin-form-group"><label>Kind</label><input name="kind" maxlength="60" placeholder="Garden"></div>
     <div class="admin-form-group"><label>Kind (Japanese)</label><input name="kind_japanese" maxlength="60" lang="ja"></div>
-    <div class="admin-form-group"><label>Location</label><input name="location" maxlength="150" placeholder="Marunouchi North Exit, about 13 min"></div>
-    <div class="admin-form-group"><label>Location (Japanese)</label><input name="location_japanese" maxlength="150" lang="ja"></div>
+    <div class="admin-form-group"><label>Extra location note</label><input name="location" maxlength="150" placeholder="Near the east gate"></div>
+    <div class="admin-form-group"><label>Extra location note (Japanese)</label><input name="location_japanese" maxlength="150" lang="ja"></div>
     <div class="admin-form-group"><label>Cost</label><input name="cost" maxlength="100" placeholder="Free"></div>
     <div class="admin-form-group"><label>Cost (Japanese)</label><input name="cost_japanese" maxlength="100" lang="ja"></div>
   </div>

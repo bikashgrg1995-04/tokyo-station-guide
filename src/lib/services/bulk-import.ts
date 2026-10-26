@@ -166,7 +166,6 @@ export function buildImportPlan(
   const faqs = new Set(snap.faqs);
   const dayTrips = new Set(snap.dayTrips);
   const transport = new Set(snap.transport);
-  const things = new Set(snap.things);
   const hotelSlugs = new Set(snap.hotels.map((h) => h.slug));
   const restaurantSlugs = new Set(snap.restaurants.map((h) => h.slug));
   const stationHotels = new Set(snap.stationHotels);
@@ -226,7 +225,6 @@ export function buildImportPlan(
     const delFaqs = gone("faq", "faqs", (d) => `${d.station_slug}|${d.question}`, (k) => stationKept(part(k, 0)));
     const delDayTrips = gone("dayTrip", "day_trips", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
     const delTransport = gone("transport", "buses_taxis", (d) => `${d.station_slug}|${d.place}`, (k) => stationKept(part(k, 0)));
-    const delThings = gone("thing", "things_to_do", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
     const delHotels = gone("hotel", "hotels", (d) => d.slug);
     const delRestaurants = gone("restaurant", "restaurants", (d) => d.slug);
     const delStationHotels = gone("stationHotel", "station_hotels",
@@ -269,7 +267,6 @@ export function buildImportPlan(
       ["faq", "faqs", delFaqs],
       ["dayTrip", "day_trips", delDayTrips],
       ["transport", "buses_taxis", delTransport],
-      ["thing", "things_to_do", delThings],
       ["stationHotel", "station_hotels", delStationHotels],
       ["stationRestaurant", "station_restaurants", delStationRestaurants],
       ["hotel", "hotels", delHotels],
@@ -642,6 +639,14 @@ export function buildImportPlan(
     return fileExitKeys.has(key) || (exits.has(key) && !removedExits.has(key));
   };
 
+  const exitNameField = (d: Record<string, string>, stationSlug: string, err: (m: string) => void): Opt<string> => {
+    if (!("exit_name" in d)) return undefined;
+    const name = (d.exit_name ?? "").trim();
+    if (!name) return null;
+    if (!knownExit(stationSlug, name)) err(`Exit "${name}" does not exist for station "${stationSlug}" (add it in the exits sheet).`);
+    return name;
+  };
+
   // ---- floor_facilities ------------------------------------------------------
   eachRow("floor_facilities", (d) => `${d.station_slug}|${d.floor_name}|${d.facility_slug}`, (d, err, dup) => {
     const stationSlug = d.station_slug ?? "";
@@ -922,35 +927,13 @@ export function buildImportPlan(
     record("buses_taxis", { t: "transport", stationSlug, place, placeJa, service, serviceJa, notes, notesJa, photoTitle, photoTitleJa, photoCaption, photoCaptionJa, sortOrder }, key, exists);
   });
 
-  // ---- things_to_do ----------------------------------------------------------
-  eachRow("things_to_do", (d) => `${d.station_slug}|${d.name}`, (d, err, dup) => {
-    const stationSlug = d.station_slug ?? "";
-    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
-    const name = text(d, "name", 150, err, true) ?? "";
-    const nameJa = text(d, "name_japanese", 150, err);
-    const kind = text(d, "kind", 60, err);
-    const kindJa = text(d, "kind_japanese", 60, err);
-    const location = text(d, "location", 150, err);
-    const locationJa = text(d, "location_japanese", 150, err);
-    const cost = text(d, "cost", 100, err);
-    const costJa = text(d, "cost_japanese", 100, err);
-    const desc = text(d, "description", 800, err);
-    const descJa = text(d, "description_japanese", 800, err);
-    const mapUrl = urlField(d, "map_url", err);
-    const sortOrder = intField(d, "sort_order", err);
-    if (dup || !name || !stationSlugs.has(stationSlug)) return;
-
-    const key = `${stationSlug}|${name}`;
-    const exists = things.has(key);
-    things.add(key);
-    record("things_to_do", { t: "thing", stationSlug, name, nameJa, kind, kindJa, location, locationJa, cost, costJa, desc, descJa, mapUrl, sortOrder }, key, exists);
-  });
-
   // ---- top_picks -------------------------------------------------------------
   eachRow("top_picks", (d) => d.slug, (d, err, dup) => {
     const slug = slugField(d, "slug", err);
     const name = text(d, "name", 150, err, true) ?? "";
     const nameJa = text(d, "name_japanese", 150, err);
+    const kind = text(d, "kind", 60, err);
+    const kindJa = text(d, "kind_japanese", 60, err);
     const category = oneOf(d, "category", TOP_PICK_CATEGORIES, err);
     const desc = text(d, "description", 1000, err);
     const descJa = text(d, "description_japanese", 1000, err);
@@ -963,7 +946,7 @@ export function buildImportPlan(
 
     const exists = topPickSlugs.has(slug);
     topPickSlugs.add(slug);
-    record("top_picks", { t: "topPick", slug, name, nameJa, category, desc, descJa, entryFee, entryFeeJa, notes, notesJa, mapUrl }, slug, exists);
+    record("top_picks", { t: "topPick", slug, name, nameJa, kind, kindJa, category, desc, descJa, entryFee, entryFeeJa, notes, notesJa, mapUrl }, slug, exists);
   });
 
   // ---- station_top_picks -----------------------------------------------------
@@ -972,15 +955,18 @@ export function buildImportPlan(
     const topPickSlug = d.top_pick_slug ?? "";
     if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
     if (!topPickSlugs.has(topPickSlug)) err(`Top pick "${topPickSlug}" does not exist.`);
+    const exitName = exitNameField(d, stationSlug, err);
     const minutes = intField(d, "walking_minutes", err, 0, 600);
     const locationType = oneOf(d, "location_type", TOP_PICK_LOCATIONS, err);
+    const location = text(d, "location", 150, err);
+    const locationJa = text(d, "location_japanese", 150, err);
     const sortOrder = intField(d, "sort_order", err);
     if (dup || !stationSlugs.has(stationSlug) || !topPickSlugs.has(topPickSlug)) return;
 
     const key = `${stationSlug}|${topPickSlug}`;
     const exists = stationTopPicks.has(key);
     stationTopPicks.add(key);
-    record("station_top_picks", { t: "stationTopPick", stationSlug, topPickSlug, minutes, locationType, sortOrder }, key, exists);
+    record("station_top_picks", { t: "stationTopPick", stationSlug, topPickSlug, exitName, minutes, locationType, location, locationJa, sortOrder }, key, exists);
   });
 
   // ---- hotels -------------------------------------------------------------
@@ -1024,6 +1010,8 @@ export function buildImportPlan(
     const hotelSlug = d.hotel_slug ?? "";
     if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
     if (!hotelSlugs.has(hotelSlug)) err(`Hotel "${hotelSlug}" does not exist.`);
+    const exitName = exitNameField(d, stationSlug, err);
+    const minutes = intField(d, "walking_minutes", err, 0, 120);
     const location = text(d, "location", 200, err);
     const locationJa = text(d, "location_japanese", 200, err);
     const sortOrder = intField(d, "sort_order", err);
@@ -1032,7 +1020,7 @@ export function buildImportPlan(
     const key = `${stationSlug}|${hotelSlug}`;
     const exists = stationHotels.has(key);
     stationHotels.add(key);
-    record("station_hotels", { t: "stationHotel", stationSlug, hotelSlug, location, locationJa, sortOrder }, key, exists);
+    record("station_hotels", { t: "stationHotel", stationSlug, hotelSlug, exitName, minutes, location, locationJa, sortOrder }, key, exists);
   });
 
   // ---- station_restaurants -------------------------------------------------------
@@ -1041,6 +1029,8 @@ export function buildImportPlan(
     const restaurantSlug = d.restaurant_slug ?? "";
     if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
     if (!restaurantSlugs.has(restaurantSlug)) err(`Restaurant "${restaurantSlug}" does not exist.`);
+    const exitName = exitNameField(d, stationSlug, err);
+    const minutes = intField(d, "walking_minutes", err, 0, 120);
     const location = text(d, "location", 200, err);
     const locationJa = text(d, "location_japanese", 200, err);
     const sortOrder = intField(d, "sort_order", err);
@@ -1049,7 +1039,7 @@ export function buildImportPlan(
     const key = `${stationSlug}|${restaurantSlug}`;
     const exists = stationRestaurants.has(key);
     stationRestaurants.add(key);
-    record("station_restaurants", { t: "stationRestaurant", stationSlug, restaurantSlug, location, locationJa, sortOrder }, key, exists);
+    record("station_restaurants", { t: "stationRestaurant", stationSlug, restaurantSlug, exitName, minutes, location, locationJa, sortOrder }, key, exists);
   });
 
 

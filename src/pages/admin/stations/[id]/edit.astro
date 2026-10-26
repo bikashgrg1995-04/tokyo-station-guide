@@ -39,7 +39,10 @@ import { handleStationRoutes } from "../../../../lib/services/station-routes";
 import { handleStationExits } from "../../../../lib/services/station-exits";
 import { handleStationTips } from "../../../../lib/services/station-tips";
 import { handleTransport } from "../../../../lib/services/station-transport";
-import { handleThings } from "../../../../lib/services/station-things";
+import { PLACE_KINDS } from "../../../../lib/db/places";
+import { handleStationPlaces } from "../../../../lib/services/station-places";
+import StationPlacesSection from "../../../../components/admin/sections/StationPlacesSection.astro";
+import { handleSights } from "../../../../lib/services/station-sights";
 import { handleDayTrips } from "../../../../lib/services/station-day-trips";
 import { handleStationSeasons } from "../../../../lib/services/station-seasons";
 import { handlePracticalTips } from "../../../../lib/services/station-practical-tips";
@@ -84,7 +87,9 @@ const exitForm = await handleStationExits(reqFor("exits"), db, id, station.slug)
 const tipsForm = await handleStationTips(reqFor("exits"), db, id);
 const facilitiesForm = await handleFacilityEntries(reqFor("facilities"), db, id, station.slug);
 const busesForm = await handleTransport(reqFor("buses-taxis"), db, id, station.slug);
-const thingsForm = await handleThings(reqFor("things-to-do"), db, id, station.slug);
+const thingsForm = await handleSights(reqFor("things-to-do"), db, id, station.slug);
+const hotelsForm = await handleStationPlaces(reqFor("hotels"), db, id, PLACE_KINDS.hotel);
+const restaurantsForm = await handleStationPlaces(reqFor("restaurants"), db, id, PLACE_KINDS.restaurant);
 const tripsForm = await handleDayTrips(reqFor("day-trips"), db, id, station.slug);
 const seasonsForm = await handleStationSeasons(reqFor("seasons"), db, id);
 const practicalForm = await handlePracticalTips(reqFor("practical-tips"), db, id);
@@ -100,6 +105,8 @@ const done: [string, string | null][] = [
   ["facilities", facilitiesForm.redirectTo],
   ["buses-taxis", busesForm.redirectTo],
   ["things-to-do", thingsForm.redirectTo],
+  ["hotels", hotelsForm.redirectTo],
+  ["restaurants", restaurantsForm.redirectTo],
   ["day-trips", tripsForm.redirectTo],
   ["seasons", seasonsForm.redirectTo],
   ["practical-tips", practicalForm.redirectTo],
@@ -183,6 +190,8 @@ const shared = { station, id, mediaBase };
         <div style="order:70"><StationFacilitiesSection {...shared} form={facilitiesForm} /></div>
         <div style="order:80"><StationBusesSection {...shared} form={busesForm} /></div>
         <div style="order:90"><StationThingsSection {...shared} form={thingsForm} /></div>
+        <div style="order:95"><StationPlacesSection form={restaurantsForm} anchor="restaurants" title="Restaurants" noun="restaurant" /></div>
+        <div style="order:105"><StationPlacesSection form={hotelsForm} anchor="hotels" title="Hotels" noun="hotel" /></div>
         <div style="order:110"><StationDayTripsSection {...shared} form={tripsForm} /></div>
         <div style="order:120"><StationSeasonsSection {...shared} form={seasonsForm} /></div>
         <div style="order:130"><StationPracticalSection {...shared} form={practicalForm} /></div>

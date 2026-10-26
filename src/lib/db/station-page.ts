@@ -149,6 +149,27 @@ export interface StationPageThing {
   photo: string | null;
 }
 
+interface PlaceRow extends StationPagePlace {
+  pid: number;
+  cost?: string | null;
+  cost_japanese?: string | null;
+  exit_id: number | null;
+  walking_minutes: number | null;
+}
+
+/** "Exit name · N min · free text" in both languages, built from the one place record. */
+function composeWhere(rows: PlaceRow[], exitNames: Map<number, { en: string; ja: string | null }>) {
+  return rows.map((r) => {
+    let ex = r.exit_id ? exitNames.get(r.exit_id) : undefined;
+    // Rows moved over from the old "Things to do" already name the exit in their text: don't say it twice.
+    if (ex && r.location && r.location.toLowerCase().includes(ex.en.toLowerCase())) ex = undefined;
+    const en = [ex?.en, r.walking_minutes != null ? `${r.walking_minutes} min` : null, r.location].filter(Boolean).join(" · ");
+    const ja = [ex?.ja ?? ex?.en, r.walking_minutes != null ? `徒歩${r.walking_minutes}分` : null, r.location_japanese ?? r.location]
+      .filter(Boolean).join(" · ");
+    return { ...r, location: en || null, location_japanese: ja || null };
+  });
+}
+
 export interface StationPagePlace {
   name: string;
   name_japanese: string | null;
@@ -357,7 +378,7 @@ export async function getStationPage(
   const exitPlaceRows = db
     .prepare(
       `SELECT id, name, name_japanese, category FROM station_exit_places
-       WHERE station_id = ? ORDER BY sort_order, id`,
+       WHERE station_id = ? AND category IN ('transport', 'help') ORDER BY sort_order, id`,
     )
     .bind(station.id)
     .all<{ id: number; name: string; name_japanese: string | null; category: string }>();
@@ -370,7 +391,7 @@ export async function getStationPage(
     .bind(station.id)
     .all<{ place_id: number; exit_id: number; note: string | null; note_japanese: string | null }>();
   const exitPlaceLinkRows = (await exitPlaceLinks).results ?? [];
-  const exitPlaces: StationPageExitPlace[] = ((await exitPlaceRows).results ?? []).map((p) => ({
+  const otherExitPlaces: StationPageExitPlace[] = ((await exitPlaceRows).results ?? []).map((p) => ({
     name: p.name,
     name_japanese: p.name_japanese,
     category: p.category,
@@ -459,33 +480,43 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageTransport>();
 
+  // One table per place type, each linked to the station with an exit + walking minutes:
+  // sights = top_picks, food = restaurants, hotels = hotels.
   const things = db
     .prepare(
-      `SELECT name, name_japanese, kind, kind_japanese, location, location_japanese, cost, cost_japanese,
-              description, description_japanese, map_url, photo
-       FROM station_things WHERE station_id = ? ORDER BY sort_order, id`,
+      `SELECT p.id AS pid, p.name, p.name_japanese, p.kind, p.kind_japanese, l.location, l.location_japanese,
+              p.entry_fee AS cost, p.entry_fee_japanese AS cost_japanese,
+              p.description, p.description_japanese, p.map_url, p.image_url AS photo,
+              l.exit_id, e.name AS exit_name, e.name_japanese AS exit_name_japanese, l.walking_minutes
+       FROM station_top_picks l JOIN top_picks p ON p.id = l.top_pick_id
+       LEFT JOIN station_exits e ON e.id = l.exit_id
+       WHERE l.station_id = ? ORDER BY l.sort_order, p.name`,
     )
     .bind(station.id)
-    .all<StationPageThing>();
+    .all<PlaceRow & { pid: number; cost: string | null; cost_japanese: string | null }>();
 
   const hotels = db
     .prepare(
-      `SELECT h.name, h.name_japanese, h.kind, h.kind_japanese, l.location, l.location_japanese,
-              h.description, h.description_japanese, h.map_url, h.photo, h.booking_url
+      `SELECT h.id AS pid, h.name, h.name_japanese, h.kind, h.kind_japanese, l.location, l.location_japanese,
+              h.description, h.description_japanese, h.map_url, h.photo, h.booking_url,
+              l.exit_id, e.name AS exit_name, e.name_japanese AS exit_name_japanese, l.walking_minutes
        FROM station_hotels l JOIN hotels h ON h.id = l.hotel_id
+       LEFT JOIN station_exits e ON e.id = l.exit_id
        WHERE l.station_id = ? ORDER BY l.sort_order, h.name`,
     )
     .bind(station.id)
-    .all<StationPagePlace>();
+    .all<PlaceRow & { pid: number }>();
   const restaurants = db
     .prepare(
-      `SELECT r.name, r.name_japanese, r.kind, r.kind_japanese, l.location, l.location_japanese,
-              r.description, r.description_japanese, r.map_url, r.photo
+      `SELECT r.id AS pid, r.name, r.name_japanese, r.kind, r.kind_japanese, l.location, l.location_japanese,
+              r.description, r.description_japanese, r.map_url, r.photo,
+              l.exit_id, e.name AS exit_name, e.name_japanese AS exit_name_japanese, l.walking_minutes
        FROM station_restaurants l JOIN restaurants r ON r.id = l.restaurant_id
+       LEFT JOIN station_exits e ON e.id = l.exit_id
        WHERE l.station_id = ? ORDER BY l.sort_order, r.name`,
     )
     .bind(station.id)
-    .all<StationPagePlace>();
+    .all<PlaceRow & { pid: number }>();
 
   // The operator with the most lines here (and a website) is the one the "Full station map" button opens.
   const opRowsQ = db
@@ -507,9 +538,32 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageTip>();
 
+  const exitRows = (await exits).results ?? [];
+  const exitNames = new Map(exitRows.map((e) => [e.id, { en: e.name, ja: e.name_japanese }]));
+  const thingRows = composeWhere((await things).results ?? [], exitNames);
+  const hotelRows = composeWhere((await hotels).results ?? [], exitNames);
+  const restaurantRows = composeWhere((await restaurants).results ?? [], exitNames);
+  // "Which exit?" lists the sights, food and hotels that are tied to an exit, plus transport and help.
+  const toExitPlaces = (rows: PlaceRow[], orig: PlaceRow[], category: string): StationPageExitPlace[] =>
+    orig.flatMap((r, i) => {
+      if (!r.exit_id) return [];
+      const en = [r.walking_minutes != null ? `${r.walking_minutes} min` : null, r.location].filter(Boolean).join(" · ") || null;
+      const ja = [r.walking_minutes != null ? `徒歩${r.walking_minutes}分` : null, r.location_japanese ?? r.location].filter(Boolean).join(" · ") || null;
+      return [{
+        name: rows[i].name, name_japanese: rows[i].name_japanese, category,
+        exits: [{ exit_id: r.exit_id, note: en, note_japanese: ja }],
+      }];
+    });
+  const exitPlaces = [
+    ...toExitPlaces(thingRows, (await things).results ?? [], "sights"),
+    ...toExitPlaces(restaurantRows, (await restaurants).results ?? [], "food"),
+    ...toExitPlaces(hotelRows, (await hotels).results ?? [], "hotels"),
+    ...otherExitPlaces,
+  ];
+
   return {
     ...station,
-    exits: (await exits).results ?? [],
+    exits: exitRows,
     exitPlaces,
     operatorSite,
     tips: (await tips).results ?? [],
@@ -522,9 +576,9 @@ export async function getStationPage(
       exit_names_japanese: JSON.parse(r.exit_names_japanese || "[]") as string[],
     })),
     transport: (await transport).results ?? [],
-    things: (await things).results ?? [],
-    hotels: (await hotels).results ?? [],
-    restaurants: (await restaurants).results ?? [],
+    things: thingRows.map((t) => ({ ...t, cost: t.cost ?? null, cost_japanese: t.cost_japanese ?? null })),
+    hotels: hotelRows,
+    restaurants: restaurantRows,
     seasons: ((await seasons).results ?? []).sort(
       (a, b) => ["spring", "summer", "autumn", "winter"].indexOf(a.season) - ["spring", "summer", "autumn", "winter"].indexOf(b.season),
     ),

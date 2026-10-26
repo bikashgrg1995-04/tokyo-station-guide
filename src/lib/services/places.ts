@@ -212,8 +212,13 @@ export async function loadPlaceStationsPage(
     const location = readText(fd, "location");
     const locationJa = readText(fd, "location_japanese");
     const order = Number(readText(fd, "sort_order") || "0");
+    const exitId = Number(readText(fd, "exit_id") || "0") || null;
+    const minRaw = readText(fd, "walking_minutes");
+    const minutes = minRaw === "" ? null : Number(minRaw);
 
-    if (!Number.isInteger(stationId) || stationId <= 0) {
+    if (minutes !== null && (!Number.isInteger(minutes) || minutes < 0 || minutes > 120)) {
+      error = "Walking minutes must be a whole number from 0 to 120.";
+    } else if (!Number.isInteger(stationId) || stationId <= 0) {
       error = "Please select a valid station.";
     } else if (action === "save") {
       if (location.length > 200 || locationJa.length > 200) error = "The location must be 200 characters or less.";
@@ -224,7 +229,7 @@ export async function loadPlaceStationsPage(
           if (!exists) error = "Please select a valid station.";
           else {
             await assignPlace(db, k, stationId, placeId, {
-              location: location || null, locationJapanese: locationJa || null, sortOrder: order,
+              location: location || null, locationJapanese: locationJa || null, sortOrder: order, exitId, walkingMinutes: minutes,
             });
             redirectTo = `/admin/${k.route}/${placeId}/stations?success=save`;
           }
