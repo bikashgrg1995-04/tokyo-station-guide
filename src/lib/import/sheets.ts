@@ -20,7 +20,6 @@ export type SheetName =
   | "routes"
   | "tips"
   | "seasons"
-  | "practical_tips"
   | "faqs"
   | "day_trips"
   | "facility_guide"
@@ -48,7 +47,6 @@ export const SHEET_ORDER: SheetName[] = [
   "routes",
   "tips",
   "seasons",
-  "practical_tips",
   "faqs",
   "day_trips",
   "facility_guide",
@@ -78,7 +76,6 @@ export const REQUIRED_COLUMNS: Record<SheetName, string[]> = {
   routes: ["station_slug", "from_place"],
   tips: ["station_slug", "tip"],
   seasons: ["station_slug", "season"],
-  practical_tips: ["station_slug", "tip"],
   faqs: ["station_slug", "question"],
   day_trips: ["station_slug", "name"],
   facility_guide: ["station_slug", "name"],
@@ -92,6 +89,7 @@ export const REQUIRED_COLUMNS: Record<SheetName, string[]> = {
   station_restaurants: ["station_slug", "restaurant_slug"],
 };
 
+export const TIP_SECTIONS = ["exits", "practical"];
 export const SEASONS = ["spring", "summer", "autumn", "winter"];
 export const LINE_TYPES = ["jr", "subway", "private", "shinkansen", "express"];
 export const WEBSITE_STATUSES = ["live", "coming_soon", "hidden"];

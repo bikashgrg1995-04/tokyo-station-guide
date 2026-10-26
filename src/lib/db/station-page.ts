@@ -402,7 +402,7 @@ export async function getStationPage(
     .all<StationPageSeason>();
 
   const practical = db
-    .prepare(`SELECT tip, tip_japanese FROM station_practical_tips WHERE station_id = ? ORDER BY sort_order, id`)
+    .prepare(`SELECT tip, tip_japanese FROM station_tips WHERE station_id = ? AND section = 'practical' ORDER BY sort_order, id`)
     .bind(station.id)
     .all<StationPageTip>();
   const faqs = db
@@ -483,7 +483,7 @@ export async function getStationPage(
   const operatorSite = opRows && /^https?:\/\//i.test(opRows.url) ? opRows : null;
 
   const tips = db
-    .prepare(`SELECT tip, tip_japanese FROM station_tips WHERE station_id = ? ORDER BY sort_order, id`)
+    .prepare(`SELECT tip, tip_japanese FROM station_tips WHERE station_id = ? AND section = 'exits' ORDER BY sort_order, id`)
     .bind(station.id)
     .all<StationPageTip>();
 

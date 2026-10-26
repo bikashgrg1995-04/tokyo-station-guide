@@ -21,7 +21,6 @@ export type OpType =
   | "route"
   | "tip"
   | "season"
-  | "practicalTip"
   | "faq"
   | "dayTrip"
   | "facilityGuide"
@@ -56,12 +55,11 @@ export interface ImportSnapshot {
   exitPlaces: string[];
   /** `stationSlug|fromPlace|route` */
   routes: string[];
-  /** `stationSlug|tipText` */
+  /** `stationSlug|section|tipText` */
   tips: string[];
   /** `stationSlug|season` */
   seasons: string[];
   /** `stationSlug|tipText` */
-  practicalTips: string[];
   /** `stationSlug|question` */
   faqs: string[];
   /** `stationSlug|name` */
@@ -101,9 +99,8 @@ export const KEY_FIELDS: Record<OpType, string[]> = {
   side: ["stationSlug", "name"],
   exitPlace: ["stationSlug", "name"],
   route: ["stationSlug", "fromPlace", "route"],
-  tip: ["stationSlug", "tip"],
+  tip: ["stationSlug", "section", "tip"],
   season: ["stationSlug", "season"],
-  practicalTip: ["stationSlug", "tip"],
   faq: ["stationSlug", "question"],
   dayTrip: ["stationSlug", "name"],
   facilityGuide: ["stationSlug", "name"],
@@ -133,7 +130,6 @@ export const NOT_NULL_FIELDS: Record<OpType, string[]> = {
   route: ["sortOrder"],
   tip: ["sortOrder"],
   season: [],
-  practicalTip: ["sortOrder"],
   faq: ["answer", "sortOrder"],
   dayTrip: ["sortOrder"],
   facilityGuide: ["sortOrder"],
@@ -158,7 +154,6 @@ export type UpsertOp =
   | { t: "operator"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; url: Opt<string> }
   | { t: "line"; slug: string; operatorSlug: string; name: string; nameJa: Opt<string>; code: Opt<string>; color: Opt<string>; lineType: Opt<string>; status: Opt<string>; desc: Opt<string>; descJa: Opt<string> }
   | { t: "station"; slug: string; name: string; nameJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; about: Opt<string>; aboutJa: Opt<string>; locationUrl: Opt<string>; isVerified: Opt<number>; verifiedAt: Opt<string>; region: Opt<string>; regionJa: Opt<string>; address: Opt<string>; addressJa: Opt<string>; statLinesNote: Opt<string>; statLinesNoteJa: Opt<string>; statRidersValue: Opt<string>; statRidersNote: Opt<string>; statRidersNoteJa: Opt<string>; statOpenedValue: Opt<string>; statOpenedNote: Opt<string>; statOpenedNoteJa: Opt<string>; sidesNote: Opt<string>; sidesNoteJa: Opt<string>; routesNote: Opt<string>; routesNoteJa: Opt<string>; exitsNote: Opt<string>; exitsNoteJa: Opt<string>; restaurantsNote: Opt<string>; restaurantsNoteJa: Opt<string> }
-  | { t: "practicalTip"; stationSlug: string; tip: string; tipJa: Opt<string>; sortOrder: Opt<number> }
   | { t: "hotel"; slug: string; name: string; nameJa: Opt<string>; kind: Opt<string>; kindJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; mapUrl: Opt<string>; bookingUrl: Opt<string> }
   | { t: "restaurant"; slug: string; name: string; nameJa: Opt<string>; kind: Opt<string>; kindJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; mapUrl: Opt<string> }
   | { t: "stationHotel"; stationSlug: string; hotelSlug: string; location: Opt<string>; locationJa: Opt<string>; sortOrder: Opt<number> }
@@ -169,7 +164,7 @@ export type UpsertOp =
   | { t: "dayTrip"; stationSlug: string; name: string; nameJa: Opt<string>; time: Opt<string>; timeJa: Opt<string>; transport: Opt<string>; transportJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; mapUrl: Opt<string>; sortOrder: Opt<number> }
   | { t: "faq"; stationSlug: string; question: string; questionJa: Opt<string>; answer: Opt<string>; answerJa: Opt<string>; sortOrder: Opt<number> }
   | { t: "season"; stationSlug: string; season: string; months: Opt<string>; monthsJa: Opt<string>; desc: Opt<string>; descJa: Opt<string> }
-  | { t: "tip"; stationSlug: string; tip: string; tipJa: Opt<string>; sortOrder: Opt<number> }
+  | { t: "tip"; stationSlug: string; section: string; tip: string; tipJa: Opt<string>; sortOrder: Opt<number> }
   | { t: "route"; stationSlug: string; fromPlace: string; fromPlaceJa: Opt<string>; route: string | null; routeJa: Opt<string>; time: Opt<string>; timeJa: Opt<string>; cost: Opt<string>; costJa: Opt<string>; sortOrder: Opt<number> }
   | { t: "side"; stationSlug: string; name: string; nameJa: Opt<string>; subtitle: Opt<string>; subtitleJa: Opt<string>; desc: Opt<string>; descJa: Opt<string>; sortOrder: Opt<number>; /** exit names on this side, sorted, joined with "|" */ exits: Opt<string> }
   | { t: "exitPlace"; stationSlug: string; name: string; nameJa: Opt<string>; category: Opt<string>; sortOrder: Opt<number>; /** "exit=note=noteJa" per exit, sorted by exit, joined with "|" */ exits: Opt<string> }

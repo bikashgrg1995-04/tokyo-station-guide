@@ -1,41 +1,20 @@
-export interface PracticalTip {
-  id: number;
-  tip: string;
-  tip_japanese: string | null;
-  sort_order: number;
-}
+import {
+  createStationTip,
+  deleteStationTip,
+  getStationTips,
+  updateStationTip,
+  type StationTip,
+  type StationTipInput,
+} from "./station-tips";
 
-export interface PracticalTipInput {
-  tip: string;
-  tipJapanese: string | null;
-  sortOrder: number;
-}
+/** Practical tips live in station_tips with section = 'practical'. */
+export type PracticalTip = StationTip;
+export type PracticalTipInput = StationTipInput;
 
-export async function getPracticalTips(db: D1Database, stationId: number): Promise<PracticalTip[]> {
-  const r = await db
-    .prepare(`SELECT id, tip, tip_japanese, sort_order FROM station_practical_tips WHERE station_id = ? ORDER BY sort_order, id`)
-    .bind(stationId)
-    .all<PracticalTip>();
-  return r.results ?? [];
-}
-
-export async function createPracticalTip(db: D1Database, stationId: number, i: PracticalTipInput) {
-  await db
-    .prepare(`INSERT INTO station_practical_tips (station_id, tip, tip_japanese, sort_order) VALUES (?, ?, ?, ?)`)
-    .bind(stationId, i.tip, i.tipJapanese, i.sortOrder)
-    .run();
-}
-
-export async function updatePracticalTip(db: D1Database, stationId: number, id: number, i: PracticalTipInput) {
-  await db
-    .prepare(
-      `UPDATE station_practical_tips SET tip = ?, tip_japanese = ?, sort_order = ?, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ? AND station_id = ?`,
-    )
-    .bind(i.tip, i.tipJapanese, i.sortOrder, id, stationId)
-    .run();
-}
-
-export async function deletePracticalTip(db: D1Database, stationId: number, id: number) {
-  await db.prepare(`DELETE FROM station_practical_tips WHERE id = ? AND station_id = ?`).bind(id, stationId).run();
-}
+export const getPracticalTips = (db: D1Database, stationId: number) => getStationTips(db, stationId, "practical");
+export const createPracticalTip = (db: D1Database, stationId: number, i: PracticalTipInput) =>
+  createStationTip(db, stationId, i, "practical");
+export const updatePracticalTip = (db: D1Database, stationId: number, id: number, i: PracticalTipInput) =>
+  updateStationTip(db, stationId, id, i, "practical");
+export const deletePracticalTip = (db: D1Database, stationId: number, id: number) =>
+  deleteStationTip(db, stationId, id, "practical");
