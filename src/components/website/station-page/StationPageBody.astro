@@ -1,0 +1,64 @@
+---
+/** The heavy part of the station page. Awaited here so the shell above it is streamed first. */
+import { env } from "cloudflare:workers";
+import StationGlance from "./StationGlance.astro";
+import StationQuickNav from "./StationQuickNav.astro";
+import StationHero from "./StationHero.astro";
+import StationSection from "./StationSection.astro";
+import { getStationPage } from "../../../lib/db/station-page";
+import { SECTIONS } from "./sections";
+
+export interface Props {
+  slug: string;
+  lineId: number | null;
+  mediaBase: string;
+}
+const { slug, lineId, mediaBase } = Astro.props;
+const station = await getStationPage(env.DB, slug);
+if (!station) throw new Error("Station disappeared");
+
+const mainImage = station.main_image;
+const photoSrc = !mainImage
+  ? ""
+  : /^https?:\/\//i.test(mainImage)
+    ? mainImage
+    : `${mediaBase}/${mainImage}`;
+---
+
+<!-- Hides the shimmer placeholders as soon as the real content starts arriving. -->
+<style is:inline>#sp-skel{display:none}</style>
+
+<StationHero station={station} />
+
+{
+  photoSrc ? (
+    <img class="sp-photo sp-photo-img" src={photoSrc} alt={`${station.name} Station`} fetchpriority="high" />
+  ) : (
+    <div class="sp-photo" role="img" aria-label="Main photo">
+      <span data-i18n="sp.photo">Main photo coming soon</span>
+    </div>
+  )
+}
+
+<StationQuickNav />
+
+<StationGlance station={station} mediaBase={mediaBase} />
+
+<div class="sp-layout">
+  <div class="sp-content">
+    {SECTIONS.map((section) => (
+      <StationSection section={section} station={station} mediaBase={mediaBase} lineId={lineId} />
+    ))}
+  </div>
+
+  <aside class="sp-toc" aria-label="On this page" data-i18n-attr="aria-label:sp.toc">
+    <p class="sp-toc-title" data-i18n="sp.toc">On this page</p>
+    <nav>
+      {SECTIONS.map((section) => (
+        <a href={`#${section.id}`} data-toc-link={section.id}>
+          <span data-i18n={`sp.s.${section.id}`}>{section.title}</span>
+        </a>
+      ))}
+    </nav>
+  </aside>
+</div>

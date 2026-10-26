@@ -253,7 +253,7 @@ export async function getStationPage(
 
   if (!station) return null;
 
-  const lines = await db
+  const lines = db
     .prepare(
       `SELECT l.id, l.name, l.name_japanese, l.color, l.code, ls.station_code,
               o.name AS operator_name, o.name_japanese AS operator_name_japanese
@@ -266,18 +266,21 @@ export async function getStationPage(
     .bind(station.id)
     .all<Omit<StationPageLine, "prev" | "next">>();
 
-  // Previous / next station on each line (a loop line wraps around).
-  const withNeighbors: StationPageLine[] = [];
-  for (const line of lines.results ?? []) {
-    const rows = await db
+  // Previous / next station on each line (a loop line wraps around). All lines are queried at once.
+  const lineRows = (await lines).results ?? [];
+  const neighborQueries = lineRows.map((line) =>
+    db
       .prepare(
         `SELECT s.id, s.slug, s.name, s.name_japanese, s.is_verified, ls.station_code AS code
          FROM line_stations ls JOIN stations s ON s.id = ls.station_id
          WHERE ls.line_id = ? ORDER BY ls.station_order`,
       )
       .bind(line.id)
-      .all<{ id: number; slug: string; name: string; name_japanese: string | null; is_verified: number; code: string | null }>();
-    const list = rows.results ?? [];
+      .all<{ id: number; slug: string; name: string; name_japanese: string | null; is_verified: number; code: string | null }>(),
+  );
+  const neighborResults = await Promise.all(neighborQueries);
+  const withNeighbors: StationPageLine[] = lineRows.map((line, k) => {
+    const list = neighborResults[k].results ?? [];
     const at = list.findIndex((r) => r.id === station.id);
     const isLoop = line.code === "JY" || /yamanote/i.test(line.name);
     const pick = (i: number): StationPageNeighbor | null => {
@@ -287,11 +290,11 @@ export async function getStationPage(
       if (!r || r.id === station.id) return null;
       return { slug: r.slug, name: r.name, name_japanese: r.name_japanese, code: r.code, verified: Number(r.is_verified) === 1 };
     };
-    withNeighbors.push({ ...line, prev: pick(at - 1), next: pick(at + 1) });
-  }
+    return { ...line, prev: pick(at - 1), next: pick(at + 1) };
+  });
 
   // Facilities this station has (each once), grouped by category.
-  const facilities = await db
+  const facilities = db
     .prepare(
       `SELECT f.id, f.name, f.name_japanese, f.slug, f.icon, f.icon_dark, f.category
        FROM facilities f
@@ -309,7 +312,7 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageFacility>();
 
-  const platforms = await db
+  const platforms = db
     .prepare(
       `SELECT sp.line_id, sp.platform_number, sp.destinations, sp.destinations_japanese,
               l.name AS line_name, l.name_japanese AS line_name_japanese,
@@ -324,7 +327,7 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPagePlatform>();
 
-  const sides = await db
+  const sides = db
     .prepare(
       `SELECT id, name, name_japanese, subtitle, subtitle_japanese, description, description_japanese
        FROM station_sides WHERE station_id = ? ORDER BY sort_order, id`,
@@ -332,7 +335,7 @@ export async function getStationPage(
     .bind(station.id)
     .all<Omit<StationPageSide, "exit_ids">>();
 
-  const sideLinks = await db
+  const sideLinks = db
     .prepare(
       `SELECT se.side_id, se.exit_id FROM station_side_exits se
        JOIN station_sides s ON s.id = se.side_id WHERE s.station_id = ?`,
@@ -340,18 +343,18 @@ export async function getStationPage(
     .bind(station.id)
     .all<{ side_id: number; exit_id: number }>();
   const exitIdsBySide = new Map<number, number[]>();
-  for (const l of sideLinks.results ?? []) {
+  for (const l of (await sideLinks).results ?? []) {
     exitIdsBySide.set(l.side_id, [...(exitIdsBySide.get(l.side_id) ?? []), l.exit_id]);
   }
 
-  const exitPlaceRows = await db
+  const exitPlaceRows = db
     .prepare(
       `SELECT id, name, name_japanese, category FROM station_exit_places
        WHERE station_id = ? ORDER BY sort_order, id`,
     )
     .bind(station.id)
     .all<{ id: number; name: string; name_japanese: string | null; category: string }>();
-  const exitPlaceLinks = await db
+  const exitPlaceLinks = db
     .prepare(
       `SELECT pe.place_id, pe.exit_id, pe.note, pe.note_japanese
        FROM station_exit_place_exits pe JOIN station_exit_places p ON p.id = pe.place_id
@@ -359,16 +362,17 @@ export async function getStationPage(
     )
     .bind(station.id)
     .all<{ place_id: number; exit_id: number; note: string | null; note_japanese: string | null }>();
-  const exitPlaces: StationPageExitPlace[] = (exitPlaceRows.results ?? []).map((p) => ({
+  const exitPlaceLinkRows = (await exitPlaceLinks).results ?? [];
+  const exitPlaces: StationPageExitPlace[] = ((await exitPlaceRows).results ?? []).map((p) => ({
     name: p.name,
     name_japanese: p.name_japanese,
     category: p.category,
-    exits: (exitPlaceLinks.results ?? [])
+    exits: exitPlaceLinkRows
       .filter((l) => l.place_id === p.id)
       .map((l) => ({ exit_id: l.exit_id, note: l.note, note_japanese: l.note_japanese })),
   }));
 
-  const routes = await db
+  const routes = db
     .prepare(
       `SELECT from_place, from_place_japanese, route, route_japanese, travel_time,
               travel_time_japanese, cost, cost_japanese
@@ -377,7 +381,7 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageRoute>();
 
-  const exits = await db
+  const exits = db
     .prepare(
       `SELECT e.id, e.color_code, e.code, e.name, e.name_japanese, e.description, e.description_japanese,
               e.photo, e.photo_caption, e.photo_caption_japanese
@@ -389,7 +393,7 @@ export async function getStationPage(
     .all<StationPageExit>();
 
 
-  const seasons = await db
+  const seasons = db
     .prepare(
       `SELECT season, months, months_japanese, description, description_japanese
        FROM station_seasons WHERE station_id = ?`,
@@ -397,11 +401,11 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageSeason>();
 
-  const practical = await db
+  const practical = db
     .prepare(`SELECT tip, tip_japanese FROM station_practical_tips WHERE station_id = ? ORDER BY sort_order, id`)
     .bind(station.id)
     .all<StationPageTip>();
-  const faqs = await db
+  const faqs = db
     .prepare(
       `SELECT question, question_japanese, answer, answer_japanese
        FROM station_faqs WHERE station_id = ? ORDER BY sort_order, id`,
@@ -409,7 +413,7 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageFaq>();
 
-  const dayTrips = await db
+  const dayTrips = db
     .prepare(
       `SELECT name, name_japanese, travel_time, travel_time_japanese, transport, transport_japanese,
               description, description_japanese, map_url, photo
@@ -418,7 +422,7 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageDayTrip>();
 
-  const facilityGuide = await db
+  const facilityGuide = db
     .prepare(
       `SELECT name, name_japanese, description, description_japanese, photo, photo_caption, photo_caption_japanese
        FROM station_facility_guide WHERE station_id = ? ORDER BY sort_order, id`,
@@ -426,7 +430,7 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageGuideItem>();
 
-  const transport = await db
+  const transport = db
     .prepare(
       `SELECT place, place_japanese, service, service_japanese, notes, notes_japanese, photo, photo_title,
               photo_title_japanese, photo_caption, photo_caption_japanese
@@ -435,7 +439,7 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageTransport>();
 
-  const things = await db
+  const things = db
     .prepare(
       `SELECT name, name_japanese, kind, kind_japanese, location, location_japanese, cost, cost_japanese,
               description, description_japanese, map_url, photo
@@ -444,7 +448,7 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageThing>();
 
-  const hotels = await db
+  const hotels = db
     .prepare(
       `SELECT h.name, h.name_japanese, h.kind, h.kind_japanese, l.location, l.location_japanese,
               h.description, h.description_japanese, h.map_url, h.photo, h.booking_url
@@ -453,7 +457,7 @@ export async function getStationPage(
     )
     .bind(station.id)
     .all<StationPagePlace>();
-  const restaurants = await db
+  const restaurants = db
     .prepare(
       `SELECT r.name, r.name_japanese, r.kind, r.kind_japanese, l.location, l.location_japanese,
               r.description, r.description_japanese, r.map_url, r.photo
@@ -464,7 +468,7 @@ export async function getStationPage(
     .all<StationPagePlace>();
 
   // The operator with the most lines here (and a website) is the one the "Full station map" button opens.
-  const opRows = await db
+  const opRowsQ = db
     .prepare(
       `SELECT o.name, o.name_japanese, o.website_url AS url, COUNT(*) AS n
        FROM line_stations ls
@@ -475,34 +479,35 @@ export async function getStationPage(
     )
     .bind(station.id)
     .first<StationPageOperatorSite>();
+  const opRows = await opRowsQ;
   const operatorSite = opRows && /^https?:\/\//i.test(opRows.url) ? opRows : null;
 
-  const tips = await db
+  const tips = db
     .prepare(`SELECT tip, tip_japanese FROM station_tips WHERE station_id = ? ORDER BY sort_order, id`)
     .bind(station.id)
     .all<StationPageTip>();
 
   return {
     ...station,
-    exits: exits.results ?? [],
+    exits: (await exits).results ?? [],
     exitPlaces,
     operatorSite,
-    tips: tips.results ?? [],
-    practical: practical.results ?? [],
-    faqs: faqs.results ?? [],
-    dayTrips: dayTrips.results ?? [],
-    facilityGuide: facilityGuide.results ?? [],
-    transport: transport.results ?? [],
-    things: things.results ?? [],
-    hotels: hotels.results ?? [],
-    restaurants: restaurants.results ?? [],
-    seasons: (seasons.results ?? []).sort(
+    tips: (await tips).results ?? [],
+    practical: (await practical).results ?? [],
+    faqs: (await faqs).results ?? [],
+    dayTrips: (await dayTrips).results ?? [],
+    facilityGuide: (await facilityGuide).results ?? [],
+    transport: (await transport).results ?? [],
+    things: (await things).results ?? [],
+    hotels: (await hotels).results ?? [],
+    restaurants: (await restaurants).results ?? [],
+    seasons: ((await seasons).results ?? []).sort(
       (a, b) => ["spring", "summer", "autumn", "winter"].indexOf(a.season) - ["spring", "summer", "autumn", "winter"].indexOf(b.season),
     ),
-    routes: routes.results ?? [],
-    sides: (sides.results ?? []).map((sd) => ({ ...sd, exit_ids: exitIdsBySide.get(sd.id) ?? [] })),
-    platforms: platforms.results ?? [],
+    routes: (await routes).results ?? [],
+    sides: ((await sides).results ?? []).map((sd) => ({ ...sd, exit_ids: exitIdsBySide.get(sd.id) ?? [] })),
+    platforms: (await platforms).results ?? [],
     lines: withNeighbors,
-    facilities: facilities.results ?? [],
+    facilities: (await facilities).results ?? [],
   };
 }

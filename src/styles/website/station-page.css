@@ -1865,3 +1865,23 @@ html[data-lang="jp"] .sp-side-ja {
   text-decoration: none;
 }
 .sp-wx-foot { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+/* ---------- Loading placeholders (shimmer) ---------- */
+.sp-skel { display: grid; gap: 14px; }
+.sp-skel .sk-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.sk {
+  border-radius: 10px;
+  background: linear-gradient(100deg, var(--row-edge) 30%, var(--surface) 50%, var(--row-edge) 70%);
+  background-size: 300% 100%;
+  animation: sk-shimmer 1.3s linear infinite;
+}
+.sk-chip { width: 120px; height: 22px; }
+.sk-title { width: min(360px, 70%); height: 40px; }
+.sk-line { height: 14px; width: 100%; max-width: 560px; }
+.sk-w80 { width: 80%; }
+.sk-w60 { width: 60%; }
+.sk-photo { height: 220px; border-radius: 16px; }
+.sk-card { height: 84px; }
+.sk-block { height: 160px; border-radius: 16px; }
+@keyframes sk-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .sk { animation: none; } }

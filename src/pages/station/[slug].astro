@@ -1,14 +1,9 @@
 ---
 import { env } from "cloudflare:workers";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import StationPageBody from "../../components/website/station-page/StationPageBody.astro";
 import StationPageHeader from "../../components/website/station-page/StationPageHeader.astro";
-import StationGlance from "../../components/website/station-page/StationGlance.astro";
-import StationQuickNav from "../../components/website/station-page/StationQuickNav.astro";
-import StationHero from "../../components/website/station-page/StationHero.astro";
 import ComingSoonDialog from "../../components/website/ComingSoonDialog.astro";
-import StationSection from "../../components/website/station-page/StationSection.astro";
-import { getStationPage } from "../../lib/db/station-page";
-import { SECTIONS } from "../../components/website/station-page/sections";
 
 import "@fontsource-variable/inter";
 import "@fontsource-variable/noto-sans-jp";
@@ -22,7 +17,12 @@ export const prerender = false;
 
 const lineParam = Number(Astro.url.searchParams.get("line"));
 const lineId = Number.isInteger(lineParam) && lineParam > 0 ? lineParam : null;
-const station = await getStationPage(env.DB, Astro.params.slug ?? "");
+// Cheap check first, so the page shell (and shimmer placeholders) can be sent straight away;
+// the heavy station data is loaded and streamed in by StationPageBody.
+const station = await env.DB
+  .prepare("SELECT name, description, is_verified FROM stations WHERE slug = ?")
+  .bind(Astro.params.slug ?? "")
+  .first<{ name: string; description: string | null; is_verified: number }>();
 
 // Only verified stations have a public page.
 if (!station || Number(station.is_verified) !== 1) {
@@ -32,17 +32,10 @@ if (!station || Number(station.is_verified) !== 1) {
   });
 }
 
-// Photos come from the R2 custom domain when MEDIA_BASE_URL is set, else from /media.
 const mediaBase =
   String((env as { MEDIA_BASE_URL?: string }).MEDIA_BASE_URL ?? "")
     .trim()
     .replace(/\/+$/, "") || "/media";
-const mainImage = station.main_image;
-const photoSrc = !mainImage
-  ? ""
-  : /^https?:\/\//i.test(mainImage)
-    ? mainImage
-    : `${mediaBase}/${mainImage}`;
 
 const title = `${station.name} Station Guide | Tokyo Station Guide`;
 const description =
@@ -74,41 +67,18 @@ const description =
     <StationPageHeader />
 
     <main class="sp-main">
-      <StationHero station={station} />
-
-      <!-- Main photo (uploaded in Admin > Stations > Edit) -->
-      {
-        photoSrc ? (
-          <img class="sp-photo sp-photo-img" src={photoSrc} alt={`${station.name} Station`} fetchpriority="high" />
-        ) : (
-          <div class="sp-photo" role="img" aria-label="Main photo">
-            <span data-i18n="sp.photo">Main photo coming soon</span>
-          </div>
-        )
-      }
-
-      <StationQuickNav />
-
-      <StationGlance station={station} mediaBase={mediaBase} />
-
-      <div class="sp-layout">
-        <div class="sp-content">
-          {SECTIONS.map((section) => (
-            <StationSection section={section} station={station} mediaBase={mediaBase} lineId={lineId} />
-          ))}
-        </div>
-
-        <aside class="sp-toc" aria-label="On this page" data-i18n-attr="aria-label:sp.toc">
-          <p class="sp-toc-title" data-i18n="sp.toc">On this page</p>
-          <nav>
-            {SECTIONS.map((section) => (
-              <a href={`#${section.id}`} data-toc-link={section.id}>
-                <span data-i18n={`sp.s.${section.id}`}>{section.title}</span>
-              </a>
-            ))}
-          </nav>
-        </aside>
+      <div class="sp-skel" id="sp-skel" aria-hidden="true">
+        <div class="sk sk-chip"></div>
+        <div class="sk sk-title"></div>
+        <div class="sk sk-line"></div>
+        <div class="sk sk-line sk-w80"></div>
+        <div class="sk sk-line sk-w60"></div>
+        <div class="sk sk-photo"></div>
+        <div class="sk-row"><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div></div>
+        <div class="sk sk-block"></div>
+        <div class="sk sk-block"></div>
       </div>
+      <StationPageBody slug={Astro.params.slug ?? ""} lineId={lineId} mediaBase={mediaBase} />
     </main>
 
     <ComingSoonDialog />
