@@ -11,9 +11,6 @@ import Button from "../../../../components/common/Button.astro";
 import ConfirmDialog from "../../../../components/common/ConfirmDialog.astro";
 
 import StationFormFields from "../../../../components/admin/StationFormFields.astro";
-import StationFacilitiesPanel from "../../../../components/admin/StationFacilitiesPanel.astro";
-import FacilityModal from "../../../../components/admin/FacilityModal.astro";
-import FacilityExitPickerModal from "../../../../components/admin/FacilityExitPickerModal.astro";
 
 import { getStationFloors } from "../../../../lib/db/station-floors";
 import { getStationById } from "../../../../lib/db/stations";
@@ -21,8 +18,8 @@ import { handleStationUpdate } from "../../../../lib/services/stations";
 import { getRestaurantsNote } from "../../../../lib/db/places";
 
 
-import FacilityGuideSection from "../../../../components/admin/FacilityGuideSection.astro";
-import { handleFacilityGuide } from "../../../../lib/services/station-facility-guide";
+import StationFacilitiesSection from "../../../../components/admin/sections/StationFacilitiesSection.astro";
+import { handleFacilityEntries } from "../../../../lib/services/station-facility-entries";
 import StationPlatformsSection from "../../../../components/admin/sections/StationPlatformsSection.astro";
 import StationFloorsSection from "../../../../components/admin/sections/StationFloorsSection.astro";
 import StationSidesSection from "../../../../components/admin/sections/StationSidesSection.astro";
@@ -85,7 +82,7 @@ const sidesForm = await handleStationSides(reqFor("sides"), db, id);
 const routesForm = await handleStationRoutes(reqFor("routes"), db, id);
 const exitForm = await handleStationExits(reqFor("exits"), db, id, station.slug);
 const tipsForm = await handleStationTips(reqFor("exits"), db, id);
-const guideForm = await handleFacilityGuide(reqFor("facility-guide"), db, id, station.slug);
+const facilitiesForm = await handleFacilityEntries(reqFor("facilities"), db, id, station.slug);
 const busesForm = await handleTransport(reqFor("buses-taxis"), db, id, station.slug);
 const thingsForm = await handleThings(reqFor("things-to-do"), db, id, station.slug);
 const tripsForm = await handleDayTrips(reqFor("day-trips"), db, id, station.slug);
@@ -100,7 +97,7 @@ const done: [string, string | null][] = [
   ["sides", sidesForm.redirectTo],
   ["routes", routesForm.redirectTo],
   ["exits", exitForm.redirectTo ?? tipsForm.redirectTo],
-  ["facilities", guideForm.redirectTo],
+  ["facilities", facilitiesForm.redirectTo],
   ["buses-taxis", busesForm.redirectTo],
   ["things-to-do", thingsForm.redirectTo],
   ["day-trips", tripsForm.redirectTo],
@@ -120,12 +117,8 @@ const mediaSrc = (k: string) => (/^https?:\/\//i.test(k) ? k : `${mediaBase}/${k
 const {
   errors,
   formError,
-  stationFacilities,
-  availableFacilities,
-  stationExits,
 } = form;
 
-const facilityError = errors.facilities;
 const savedNote = await getRestaurantsNote(db, id);
 const noteValue = form.restaurantsNote ?? savedNote.note;
 const noteJaValue = form.restaurantsNoteJapanese ?? savedNote.noteJapanese;
@@ -175,21 +168,9 @@ const shared = { station, id, mediaBase };
             </div>
           </section>
 
-          <div class="station-section" id="facilities" data-nav="facilities" style="order:70">
-            <StationFacilitiesPanel
-              assigned={stationFacilities}
-              canAdd={stationFloors.length > 0 && availableFacilities.length > 0}
-              error={facilityError}
-              allAddedMessage="No facilities are available in the master list."
-            >
-              Floor, quantity, nearby exits and an optional note for each facility at
-              <strong>{station.name}</strong>.
-            </StationFacilitiesPanel>
-          </div>
-
           <div class="station-save-bar">
             <Button href="/admin/stations" variant="secondary"> Cancel </Button>
-            <Button type="submit" variant="primary" id="save-station-button">Save Station &amp; Facilities</Button>
+            <Button type="submit" variant="primary" id="save-station-button">Save Station</Button>
           </div>
         </form>
 
@@ -199,7 +180,7 @@ const shared = { station, id, mediaBase };
         <div style="order:40"><StationSidesSection {...shared} form={sidesForm} /></div>
         <div style="order:50"><StationRoutesSection {...shared} form={routesForm} /></div>
         <div style="order:60"><StationExitsSection {...shared} form={exitForm} tipsForm={tipsForm} /></div>
-        <div style="order:75"><FacilityGuideSection stationName={station.name} form={guideForm} src={mediaSrc} /></div>
+        <div style="order:70"><StationFacilitiesSection {...shared} form={facilitiesForm} /></div>
         <div style="order:80"><StationBusesSection {...shared} form={busesForm} /></div>
         <div style="order:90"><StationThingsSection {...shared} form={thingsForm} /></div>
         <div style="order:110"><StationDayTripsSection {...shared} form={tripsForm} /></div>
@@ -211,41 +192,6 @@ const shared = { station, id, mediaBase };
   </div>
 
   <Fragment slot="after">
-    <!-- Add Facilities Modal -->
-    <FacilityModal
-      facilities={availableFacilities}
-      floors={stationFloors}
-      description={`Select facilities to add floor entries for ${station.name}.`}
-      emptyDescription="No facilities are available in the master facility list."
-    />
-
-    <!-- Select Nearby Exits for Facility Assignments -->
-    <FacilityExitPickerModal
-      exits={stationExits}
-      floors={stationFloors}
-      manageExitsHref="#exits"
-    />
-
-    <!-- Remove Facility Confirmation -->
-    <ConfirmDialog
-      id="remove-facility-confirm-dialog"
-      title="Remove Facility Entry"
-      description="Are you sure you want to remove this floor entry?"
-      confirmText="Remove"
-      cancelText="Cancel"
-      variant="danger"
-    />
-
-    <!-- Delete the ticked facility entries -->
-    <ConfirmDialog
-      id="delete-selected-facilities-dialog"
-      title="Delete Facility Entries"
-      description="Are you sure you want to remove the selected facility entries?"
-      confirmText="Delete"
-      cancelText="Cancel"
-      variant="danger"
-    />
-
     <!-- Save Station Confirmation -->
     <ConfirmDialog
       id="edit-station-confirm-dialog"
@@ -258,7 +204,6 @@ const shared = { station, id, mediaBase };
 
     <script>
       import "../../../../scripts/admin/stations-edit.ts";
-      import "../../../../scripts/admin/facility-exit-picker.ts";
     </script>
   </Fragment>
 </AdminLayout>

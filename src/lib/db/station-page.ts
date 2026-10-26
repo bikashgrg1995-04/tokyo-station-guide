@@ -103,9 +103,16 @@ export interface StationPageSeason {
   description_japanese: string | null;
 }
 
+/** One row of the one facilities table: a facility on a floor, with its description and photo. */
 export interface StationPageGuideItem {
   name: string;
   name_japanese: string | null;
+  floor_name: string;
+  floor_name_japanese: string | null;
+  location_type: string;
+  count: number | null;
+  exit_names: string[];
+  exit_names_japanese: string[];
   description: string | null;
   description_japanese: string | null;
   photo: string | null;
@@ -422,13 +429,26 @@ export async function getStationPage(
     .bind(station.id)
     .all<StationPageDayTrip>();
 
-  const facilityGuide = db
+  const facilityGuideQ = db
     .prepare(
-      `SELECT name, name_japanese, description, description_japanese, photo, photo_caption, photo_caption_japanese
-       FROM station_facility_guide WHERE station_id = ? ORDER BY sort_order, id`,
+      `SELECT f.name, f.name_japanese, sf.name AS floor_name, sf.name_japanese AS floor_name_japanese,
+              sff.location_type, sff.facility_count AS count,
+              sff.note AS description, sff.note_japanese AS description_japanese,
+              sff.photo, sff.photo_caption, sff.photo_caption_japanese,
+              (SELECT json_group_array(se.name) FROM station_floor_facility_exits x
+                 JOIN station_exits se ON se.id = x.station_exit_id
+                 WHERE x.station_floor_facility_id = sff.id) AS exit_names,
+              (SELECT json_group_array(COALESCE(se.name_japanese, se.name)) FROM station_floor_facility_exits x
+                 JOIN station_exits se ON se.id = x.station_exit_id
+                 WHERE x.station_floor_facility_id = sff.id) AS exit_names_japanese
+       FROM station_floor_facilities sff
+       JOIN station_floors sf ON sf.id = sff.floor_id
+       JOIN facilities f ON f.id = sff.facility_id
+       WHERE sf.station_id = ?
+       ORDER BY sf.floor_order, sff.sort_order, f.sort_order, f.name`,
     )
     .bind(station.id)
-    .all<StationPageGuideItem>();
+    .all<Omit<StationPageGuideItem, "exit_names" | "exit_names_japanese"> & { exit_names: string; exit_names_japanese: string }>();
 
   const transport = db
     .prepare(
@@ -496,7 +516,11 @@ export async function getStationPage(
     practical: (await practical).results ?? [],
     faqs: (await faqs).results ?? [],
     dayTrips: (await dayTrips).results ?? [],
-    facilityGuide: (await facilityGuide).results ?? [],
+    facilityGuide: ((await facilityGuideQ).results ?? []).map((r) => ({
+      ...r,
+      exit_names: JSON.parse(r.exit_names || "[]") as string[],
+      exit_names_japanese: JSON.parse(r.exit_names_japanese || "[]") as string[],
+    })),
     transport: (await transport).results ?? [],
     things: (await things).results ?? [],
     hotels: (await hotels).results ?? [],

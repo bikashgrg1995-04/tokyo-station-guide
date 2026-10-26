@@ -14,6 +14,9 @@ export interface Cell {
   sub?: string;
   clip?: string;
   img?: string;
+  /** small round icon (image URL) or emoji/text before the main text */
+  icon?: string;
+  emoji?: string;
   badge?: string;
   ja?: boolean;
 }
@@ -94,6 +97,8 @@ const canDelete = !!deleteValue;
                     {r.cells.map((c) => (
                       <td>
                         {c.img && <img class="sim-thumb" src={c.img} alt="" loading="lazy" />}
+                        {c.icon && <img class="sim-icon" src={c.icon} alt="" loading="lazy" />}
+                        {c.emoji && <span class="sim-emoji">{c.emoji}</span>}
                         {c.main !== undefined && <strong lang={c.ja ? "ja" : undefined}>{c.main}</strong>}
                         {c.badge && <span class="sim-badge">{c.badge}</span>}
                         {c.clip && <div class="sim-clip">{c.clip}</div>}

@@ -64,3 +64,6 @@
 .sim-actions button { white-space:nowrap; }
 .sim-table td:last-child { overflow:visible; }
 .admin-table-wrapper { overflow-x:auto; }
+
+.sim-icon { display:inline-block; width:22px; height:22px; object-fit:contain; vertical-align:middle; margin-right:6px; }
+.sim-emoji { display:inline-block; margin-right:6px; }

@@ -10,6 +10,14 @@ export interface Props {
 const { station, mediaBase } = Astro.props;
 const src = (key: string) => (/^https?:\/\//i.test(key) ? key : `${mediaBase}/${key}`);
 const rows = station.facilityGuide.filter((f) => f.description || f.description_japanese);
+const where = (f: (typeof station.facilityGuide)[number], jp: boolean) =>
+  [
+    jp ? f.floor_name_japanese || f.floor_name : f.floor_name,
+    ...(jp ? f.exit_names_japanese : f.exit_names),
+    f.location_type === "outside" ? (jp ? "駅の外" : "outside the station") : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
 const photos = station.facilityGuide.filter((f) => f.photo);
 ---
 
@@ -27,7 +35,10 @@ const photos = station.facilityGuide.filter((f) => f.photo);
           {rows.map((f) => (
             <tr>
               <th scope="row" data-pick data-en={f.name} data-jp={f.name_japanese ?? ""}>{f.name}</th>
-              <td data-pick data-en={f.description ?? ""} data-jp={f.description_japanese ?? ""}>{f.description}</td>
+              <td>
+                <span class="sp-fac-where" data-pick data-en={where(f, false)} data-jp={where(f, true)}>{where(f, false)}</span>
+                <span data-pick data-en={f.description ?? ""} data-jp={f.description_japanese ?? ""}>{f.description}</span>
+              </td>
             </tr>
           ))}
         </tbody>

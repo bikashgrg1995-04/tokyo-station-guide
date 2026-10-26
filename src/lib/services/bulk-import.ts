@@ -165,7 +165,6 @@ export function buildImportPlan(
   const seasons = new Set(snap.seasons);
   const faqs = new Set(snap.faqs);
   const dayTrips = new Set(snap.dayTrips);
-  const facilityGuide = new Set(snap.facilityGuide);
   const transport = new Set(snap.transport);
   const things = new Set(snap.things);
   const hotelSlugs = new Set(snap.hotels.map((h) => h.slug));
@@ -226,7 +225,6 @@ export function buildImportPlan(
     const delSeasons = gone("season", "seasons", (d) => `${d.station_slug}|${(d.season ?? "").toLowerCase()}`, (k) => stationKept(part(k, 0)));
     const delFaqs = gone("faq", "faqs", (d) => `${d.station_slug}|${d.question}`, (k) => stationKept(part(k, 0)));
     const delDayTrips = gone("dayTrip", "day_trips", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
-    const delFacilityGuide = gone("facilityGuide", "facility_guide", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
     const delTransport = gone("transport", "buses_taxis", (d) => `${d.station_slug}|${d.place}`, (k) => stationKept(part(k, 0)));
     const delThings = gone("thing", "things_to_do", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
     const delHotels = gone("hotel", "hotels", (d) => d.slug);
@@ -270,7 +268,6 @@ export function buildImportPlan(
       ["season", "seasons", delSeasons],
       ["faq", "faqs", delFaqs],
       ["dayTrip", "day_trips", delDayTrips],
-      ["facilityGuide", "facility_guide", delFacilityGuide],
       ["transport", "buses_taxis", delTransport],
       ["thing", "things_to_do", delThings],
       ["stationHotel", "station_hotels", delStationHotels],
@@ -654,8 +651,10 @@ export function buildImportPlan(
     else if (!floors.has(`${stationSlug}|${floorName}`)) err(`Floor "${floorName}" does not exist for station "${stationSlug}".`);
     if (!facilitySlugs.has(facilitySlug)) err(`Facility "${facilitySlug}" does not exist.`);
     const count = intField(d, "facility_count", err);
-    const note = text(d, "note", 500, err);
-    const noteJa = text(d, "note_japanese", 500, err);
+    const note = text(d, "description", 1500, err);
+    const noteJa = text(d, "description_japanese", 1500, err);
+    const photoCaption = text(d, "photo_caption", 400, err);
+    const photoCaptionJa = text(d, "photo_caption_japanese", 400, err);
     const locationType = oneOf(d, "location_type", FACILITY_LOCATIONS, err);
     const sortOrder = intField(d, "sort_order", err);
 
@@ -675,7 +674,7 @@ export function buildImportPlan(
     const key = `${stationSlug}|${floorName}|${facilitySlug}`;
     const exists = floorFacilities.has(key);
     floorFacilities.add(key);
-    record("floor_facilities", { t: "floorFacility", stationSlug, floorName, facilitySlug, count, note, noteJa, locationType, sortOrder, exits: exitsValue }, key, exists);
+    record("floor_facilities", { t: "floorFacility", stationSlug, floorName, facilitySlug, count, note, noteJa, photoCaption, photoCaptionJa, locationType, sortOrder, exits: exitsValue }, key, exists);
   });
 
   // ---- exits -----------------------------------------------------------------
@@ -898,25 +897,6 @@ export function buildImportPlan(
     const exists = dayTrips.has(key);
     dayTrips.add(key);
     record("day_trips", { t: "dayTrip", stationSlug, name, nameJa, time, timeJa, transport, transportJa, desc, descJa, mapUrl, sortOrder }, key, exists);
-  });
-
-  // ---- facility_guide --------------------------------------------------------
-  eachRow("facility_guide", (d) => `${d.station_slug}|${d.name}`, (d, err, dup) => {
-    const stationSlug = d.station_slug ?? "";
-    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
-    const name = text(d, "name", 150, err, true) ?? "";
-    const nameJa = text(d, "name_japanese", 150, err);
-    const desc = text(d, "description", 1500, err);
-    const descJa = text(d, "description_japanese", 1500, err);
-    const photoCaption = text(d, "photo_caption", 400, err);
-    const photoCaptionJa = text(d, "photo_caption_japanese", 400, err);
-    const sortOrder = intField(d, "sort_order", err);
-    if (dup || !name || !stationSlugs.has(stationSlug)) return;
-
-    const key = `${stationSlug}|${name}`;
-    const exists = facilityGuide.has(key);
-    facilityGuide.add(key);
-    record("facility_guide", { t: "facilityGuide", stationSlug, name, nameJa, desc, descJa, photoCaption, photoCaptionJa, sortOrder }, key, exists);
   });
 
   // ---- buses_taxis -----------------------------------------------------------

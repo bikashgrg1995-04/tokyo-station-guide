@@ -23,6 +23,7 @@ export interface StationFacility {
   floor_name: string;
   floor_name_japanese: string | null;
   name: string;
+  name_japanese: string | null;
   slug: string;
   icon: string | null;
   icon_dark: string | null;
@@ -30,6 +31,9 @@ export interface StationFacility {
   facility_count: number | null;
   note: string | null;
   note_japanese: string | null;
+  photo: string | null;
+  photo_caption: string | null;
+  photo_caption_japanese: string | null;
   location_type: StationFacilityLocation;
   exits: StationFacilityExit[];
 }
@@ -319,6 +323,7 @@ export async function getStationFacilities(
           sff.id,
           f.id AS facility_id,
           f.name,
+          f.name_japanese,
           f.slug,
           f.icon,
           f.icon_dark,
@@ -326,6 +331,9 @@ export async function getStationFacilities(
           sff.facility_count,
           sff.note,
           sff.note_japanese,
+          sff.photo,
+          sff.photo_caption,
+          sff.photo_caption_japanese,
           sff.location_type,
           sf.id AS floor_id,
           sf.name AS floor_name,
