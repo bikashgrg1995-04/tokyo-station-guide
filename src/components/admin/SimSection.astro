@@ -1,0 +1,157 @@
+---
+/**
+ * One admin section = title + hint, search box, table, and an Add/Edit popup.
+ * The popup fields come in through the default slot. Delete is a small POST form.
+ */
+import "../../styles/admin/forms.css";
+import "../../styles/admin/stations.css";
+import "../../styles/admin/tables.css";
+import "../../styles/admin/station-item-modal.css";
+import EmptyState from "../common/EmptyState.astro";
+
+export interface Cell {
+  main?: string;
+  sub?: string;
+  clip?: string;
+  img?: string;
+  badge?: string;
+  ja?: boolean;
+}
+export interface Row {
+  id?: number | string;
+  search: string;
+  item: Record<string, string>;
+  cells: Cell[];
+  noDelete?: boolean;
+}
+export interface Props {
+  anchor: string;
+  title: string;
+  hint: string;
+  noun: string; // "tip", "place"
+  columns: string[];
+  rows: Row[];
+  actionName?: string; // hidden action field name, e.g. "tips_action"
+  createValue?: string;
+  updateValue?: string;
+  deleteValue?: string;
+  multipart?: boolean;
+  nextOrder?: number;
+  canAdd?: boolean;
+  formError?: string;
+  posted?: Record<string, string> | null;
+  reopenMode?: "create" | "update";
+  searchPlaceholder?: string;
+  emptyHint?: string;
+  editTitle?: string;
+  idField?: string;
+}
+
+const {
+  anchor, title, hint, noun, columns, rows, actionName, createValue, updateValue, deleteValue,
+  multipart = false, nextOrder = 0, canAdd = true, formError = "", posted = null, reopenMode = "update",
+  searchPlaceholder = `Search ${noun}s...`, emptyHint, editTitle, idField = "item_id",
+} = Astro.props;
+
+const reopen = posted ? JSON.stringify({ mode: reopenMode, values: posted }) : "";
+const canDelete = !!deleteValue;
+---
+
+<section class="station-section" id={anchor} data-nav={anchor} data-sim-root>
+  <div class="station-section-head">
+    <div>
+      <h2>{title}</h2>
+      <p set:html={hint} />
+    </div>
+    {canAdd && <button type="button" data-sim="add" class="sim-add" data-next-order={nextOrder}>+ Add {noun}</button>}
+  </div>
+
+  {formError && !posted && <div class="admin-form-error" role="alert">{formError}</div>}
+
+  {canAdd && rows.length > 0 && (
+    <div class="sim-toolbar">
+      <input data-sim="search" type="search" placeholder={searchPlaceholder} aria-label={searchPlaceholder} />
+    </div>
+  )}
+
+  <div class="admin-panel">
+    <div class="admin-panel-body admin-table-panel-body">
+      {
+        rows.length === 0 ? (
+          <EmptyState icon="+" title={`No ${noun}s yet`} description={emptyHint ?? `Click Add ${noun} to create the first one.`} />
+        ) : (
+          <div class="admin-table-wrapper">
+            <table class="admin-table sim-table">
+              <thead>
+                <tr>
+                  {columns.map((c) => <th>{c}</th>)}
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr class="sim-row" data-search={r.search.toLowerCase()}>
+                    {r.cells.map((c) => (
+                      <td>
+                        {c.img && <img class="sim-thumb" src={c.img} alt="" loading="lazy" />}
+                        {c.main !== undefined && <strong lang={c.ja ? "ja" : undefined}>{c.main}</strong>}
+                        {c.badge && <span class="sim-badge">{c.badge}</span>}
+                        {c.clip && <div class="sim-clip">{c.clip}</div>}
+                        {c.sub && <div class="sim-sub" lang="ja">{c.sub}</div>}
+                      </td>
+                    ))}
+                    <td>
+                      <div class="sim-actions">
+                        <button type="button" class="admin-table-action admin-table-action-edit sim-edit" data-item={JSON.stringify(r.item)}>Edit</button>
+                        {canDelete && !r.noDelete && (
+                          <form method="POST" action={`?s=${anchor}`} onsubmit={`return confirm('Delete this ${noun}?')`}>
+                            <input type="hidden" name={idField} value={r.id} />
+                            {actionName && <input type="hidden" name={actionName} value={deleteValue} />}
+                            <button type="submit" class="admin-table-action admin-table-action-delete">Delete</button>
+                          </form>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p data-sim="empty" class="sim-empty-search" hidden>No matching {noun}s.</p>
+          </div>
+        )
+      }
+    </div>
+  </div>
+
+  <div
+    data-sim="modal"
+    class="sim-modal"
+    hidden
+    data-create-action={createValue ?? ""}
+    data-update-action={updateValue ?? ""}
+    data-add-title={`Add ${noun}`}
+    data-edit-title={editTitle ?? `Edit ${noun}`}
+    data-add-label={`Add ${noun}`}
+    data-reopen={reopen}
+  >
+    <div class="sim-backdrop" data-close></div>
+    <div class="sim-dialog" role="dialog" aria-modal="true">
+      <h2 data-sim="title">Add {noun}</h2>
+      {formError && posted && <div class="admin-form-error" role="alert">{formError}</div>}
+      <form data-sim="form" method="POST" action={`?s=${anchor}`} enctype={multipart ? "multipart/form-data" : undefined} class="admin-form">
+        {actionName && <input type="hidden" name={actionName} value={createValue} />}
+        <input type="hidden" name={idField} value="" />
+        <slot />
+        <div class="sim-foot">
+          <button type="button" class="common-button common-button-secondary" data-close>Cancel</button>
+          <button type="submit" data-sim="submit" class="common-button common-button-primary">Save changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <slot name="after" />
+</section>
+
+<script>
+  import "../../scripts/admin/station-item-modal";
+</script>

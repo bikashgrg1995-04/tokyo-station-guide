@@ -6,6 +6,7 @@ export interface StationSeasonsResult {
   seasons: Record<Season, StationSeason | undefined>;
   formError: string;
   errorFor: string;
+  posted: Record<string, string> | null;
 }
 
 const text = (fd: FormData, key: string) => readText(fd, key) || null;
@@ -19,11 +20,13 @@ export async function handleStationSeasons(
     const rows = await getStationSeasons(db, stationId);
     return Object.fromEntries(SEASONS.map((s) => [s, rows.find((r) => r.season === s)])) as StationSeasonsResult["seasons"];
   };
-  const result: StationSeasonsResult = { redirectTo: null, seasons: await load(), formError: "", errorFor: "" };
+  const result: StationSeasonsResult = { redirectTo: null, seasons: await load(), formError: "", errorFor: "", posted: null };
   if (request.method !== "POST") return result;
 
   const fd = await request.formData();
   const season = readText(fd, "season") as Season;
+  const posted: Record<string, string> = {};
+  for (const [k, v] of fd.entries()) if (typeof v === "string") posted[k] = v;
   if (!SEASONS.includes(season)) return result;
 
   const months = text(fd, "months");
@@ -32,6 +35,7 @@ export async function handleStationSeasons(
   const descJa = text(fd, "description_japanese");
   const fail = (m: string) => {
     result.errorFor = season;
+    result.posted = posted;
     result.formError = m;
     return result;
   };

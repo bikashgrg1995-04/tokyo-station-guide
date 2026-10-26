@@ -12,6 +12,12 @@ function init(root: HTMLElement) {
   function fill(values: Record<string, string>) {
     form?.reset();
     for (const [k, v] of Object.entries(values)) {
+      const multi = form?.querySelectorAll<HTMLInputElement>(`input[type='checkbox'][name="${k}"][value]`);
+      if (multi && multi.length) {
+        const set = new Set(v.split(",").filter(Boolean));
+        multi.forEach((c) => (c.checked = set.has(c.value)));
+        continue;
+      }
       const el = form?.elements.namedItem(k) as HTMLInputElement | null;
       if (!el || !("value" in el) || el.type === "file") continue;
       if (el.type === "checkbox") el.checked = v === "on" || v === "1";

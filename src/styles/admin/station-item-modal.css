@@ -47,3 +47,13 @@
 .sim-exitrow:not(:has(input[type="checkbox"]:checked)) input[type="text"] { opacity:.45; }
 .sim-badge { display:inline-block; padding:1px 8px; border-radius:999px; background:#b3202a; color:#fff; font-size:.72rem; font-weight:700; margin:1px 3px 1px 0; }
 @media (max-width:640px) { .sim-exitrow { grid-template-columns:1fr; } }
+
+.sim-thumb { display:block; width:56px; height:40px; object-fit:cover; border-radius:6px; margin-bottom:3px; }
+.sim-photo { display:grid; gap:6px; margin-bottom:10px; }
+.sim-photo-prev { display:flex; align-items:center; gap:10px; }
+.sim-photo-prev img { width:96px; height:64px; object-fit:cover; border-radius:6px; }
+.sim-photo-prev label { font-size:.85rem; }
+
+.sim-note { margin-top:12px; padding:12px 14px; border:1px solid var(--admin-border, #e3e6ea); border-radius:10px; background:#fafbfc; }
+.sim-note h3 { margin:0 0 8px; font-size:.95rem; }
+.sim-note .common-button { margin-top:6px; }

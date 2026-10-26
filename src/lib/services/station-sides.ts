@@ -23,6 +23,7 @@ export interface StationSidesResult {
   formError: string;
   /** Which form the error belongs to: a side id, "new" or "note". */
   errorFor: string;
+  posted: Record<string, string> | null;
 }
 
 function readInput(formData: FormData): { input: StationSideInput; error: string } {
@@ -66,11 +67,14 @@ export async function handleStationSides(
     ...(await getSidesNote(db, stationId)),
     formError: "",
     errorFor: "",
+    posted: null,
   };
   if (request.method !== "POST") return result;
 
   const formData = await request.formData();
   const action = readText(formData, "side_action");
+  const posted: Record<string, string> = {};
+  for (const [k, v] of formData.entries()) if (typeof v === "string" && k !== "side_action") posted[k] = k in posted ? `${posted[k]},${v}` : v;
   const id = Number(readText(formData, "side_id"));
   const owned = result.sides.some((s) => s.id === id);
 
@@ -89,6 +93,7 @@ export async function handleStationSides(
       if (error) {
         result.formError = error;
         result.errorFor = action === "create" ? "new" : String(id);
+        result.posted = posted;
         return result;
       }
       const exitIds = formData.getAll("exit_ids").map(Number).filter((n) => Number.isInteger(n) && n > 0);

@@ -13,6 +13,7 @@ export interface PracticalTipsResult {
   formError: string;
   /** "tip-<id>" or "tip-new" */
   errorFor: string;
+  posted: Record<string, string> | null;
 }
 
 export async function handlePracticalTips(
@@ -25,14 +26,18 @@ export async function handlePracticalTips(
     tips: await getPracticalTips(db, stationId),
     formError: "",
     errorFor: "",
+    posted: null,
   };
   if (request.method !== "POST") return result;
 
   const fd = await request.formData();
   const action = readText(fd, "tips_action");
   const id = Number(readText(fd, "item_id"));
+  const posted: Record<string, string> = { item_id: String(id || "") };
+  for (const [k, v] of fd.entries()) if (typeof v === "string" && k !== "tips_action") posted[k] = v;
   const fail = (scope: string, message: string) => {
     result.errorFor = scope;
+    result.posted = posted;
     result.formError = message;
     return result;
   };

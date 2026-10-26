@@ -1,7 +1,6 @@
 ---
-import "../../../styles/admin/forms.css";
-import "../../../styles/admin/stations.css";
-import "../../../styles/admin/station-sides.css";
+import SimSection from "../SimSection.astro";
+import type { Row } from "../SimSection.astro";
 import { handlePracticalTips } from "../../../lib/services/station-practical-tips";
 import { getStationById } from "../../../lib/db/stations";
 
@@ -11,73 +10,36 @@ export interface Props {
   form: Awaited<ReturnType<typeof handlePracticalTips>>;
   mediaBase: string;
 }
+const { station, form, mediaBase } = Astro.props;
+const src = (k: string) => (/^https?:\/\//i.test(k) ? k : `${mediaBase}/${k}`);
+void src;
 
-const { station, id, form: __form, mediaBase } = Astro.props;
-const form = __form;
-
-const nextTip = form.tips.reduce((max, t) => Math.max(max, t.sort_order), 0) + 1;
+const nextOrder = form.tips.reduce((m, t) => Math.max(m, t.sort_order), 0) + 1;
+const rows: Row[] = form.tips.map((t) => ({
+  id: t.id,
+  search: `${t.tip} ${t.tip_japanese ?? ""}`,
+  item: { item_id: String(t.id), tip: t.tip, tip_japanese: t.tip_japanese ?? "", sort_order: String(t.sort_order) },
+  cells: [{ main: String(t.sort_order) }, { clip: t.tip || t.tip_japanese || "", sub: t.tip ? (t.tip_japanese ?? "") : "" }],
+}));
 ---
 
-<section class="station-section" id="practical-tips" data-nav="practical-tips">
-    <div class="admin-page-header">
-      <div>
-        <h2>Practical tips</h2>
-        <p>
-          For <strong>{station.name}</strong>: the bullet list under "Practical tips" on the public page.
-        </p>
-      </div>
-    </div>
-
-    <h3 class="sides-heading">Practical tips</h3>
-    {
-      form.tips.map((tip) => (
-        <section class="admin-panel sides-panel">
-          <form action="?s=practical-tips" method="POST" class="admin-panel-body">
-            <input type="hidden" name="item_id" value={tip.id} />
-            {form.errorFor === `tip-${tip.id}` && <div class="admin-form-error" role="alert">{form.formError}</div>}
-            <div class="admin-form-grid">
-            <div class="admin-form-group full-width">
-              <label>Tip</label>
-              <textarea name="tip" required rows="2" maxlength="800">{tip.tip}</textarea>
-            </div>
-            <div class="admin-form-group full-width">
-              <label>Tip (Japanese)</label>
-              <textarea name="tip_japanese" lang="ja" rows="2" maxlength="800">{tip.tip_japanese ?? ""}</textarea>
-            </div>
-            <div class="admin-form-group">
-              <label>Order</label>
-              <input name="sort_order" type="number" min="0" value={tip.sort_order} />
-            </div>
-            </div>
-            <div class="admin-form-actions">
-              <button type="submit" name="tips_action" value="tip_update" class="common-button common-button-primary">Save</button>
-              <button type="submit" name="tips_action" value="tip_delete" class="common-button common-button-danger" formnovalidate onclick="return confirm('Delete this tip?')">Delete</button>
-            </div>
-          </form>
-        </section>
-      ))
-    }
-    <section class="admin-panel sides-panel">
-      <form action="?s=practical-tips" method="POST" class="admin-panel-body">
-        <h3 class="sides-title">Add a tip</h3>
-        {form.errorFor === "tip-new" && <div class="admin-form-error" role="alert">{form.formError}</div>}
-        <div class="admin-form-grid">
-            <div class="admin-form-group full-width">
-              <label>Tip</label>
-              <textarea name="tip" required rows="2" maxlength="800"></textarea>
-            </div>
-            <div class="admin-form-group full-width">
-              <label>Tip (Japanese)</label>
-              <textarea name="tip_japanese" lang="ja" rows="2" maxlength="800"></textarea>
-            </div>
-            <div class="admin-form-group">
-              <label>Order</label>
-              <input name="sort_order" type="number" min="0" value={nextTip} />
-            </div>
-        </div>
-        <div class="admin-form-actions">
-          <button type="submit" name="tips_action" value="tip_create" class="common-button common-button-primary">Add tip</button>
-        </div>
-      </form>
-    </section>
-  </section>
+<SimSection
+  anchor="practical-tips"
+  title="Practical tips"
+  hint={`Short bullet points shown under <b>Practical tips</b> on the ${station.name} page (luggage, crowds, best time...).`}
+  noun="tip"
+  columns={["Order", "Tip"]}
+  rows={rows}
+  actionName="tips_action"
+  createValue="tip_create"
+  updateValue="tip_update"
+  deleteValue="tip_delete"
+  nextOrder={nextOrder}
+  formError={form.formError}
+  posted={form.posted}
+  reopenMode={form.errorFor === "tip-new" ? "create" : "update"}
+>
+  <div class="admin-form-group"><label>Tip</label><textarea name="tip" required rows="3" maxlength="800"></textarea></div>
+  <div class="admin-form-group"><label>Tip (Japanese)</label><textarea name="tip_japanese" lang="ja" rows="3" maxlength="800"></textarea></div>
+  <div class="admin-form-group"><label>Order</label><input name="sort_order" type="number" min="0" value="0" /></div>
+</SimSection>

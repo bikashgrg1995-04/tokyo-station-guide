@@ -1,7 +1,6 @@
 ---
-import "../../../styles/admin/forms.css";
-import "../../../styles/admin/stations.css";
-import "../../../styles/admin/station-sides.css";
+import SimSection from "../SimSection.astro";
+import type { Row } from "../SimSection.astro";
 import { handleStationRoutes } from "../../../lib/services/station-routes";
 import { getStationById } from "../../../lib/db/stations";
 
@@ -11,150 +10,65 @@ export interface Props {
   form: Awaited<ReturnType<typeof handleStationRoutes>>;
   mediaBase: string;
 }
+const { station, form } = Astro.props;
 
-const { station, id, form: __form, mediaBase } = Astro.props;
-const form = __form;
-
-const nextOrder = form.routes.reduce((max, r) => Math.max(max, r.sort_order), 0) + 1;
+const nextOrder = form.routes.reduce((m, r) => Math.max(m, r.sort_order), 0) + 1;
+const rows: Row[] = form.routes.map((r) => ({
+  id: r.id,
+  search: [r.from_place, r.from_place_japanese, r.route, r.travel_time, r.cost].join(" "),
+  item: {
+    route_id: String(r.id), from_place: r.from_place ?? "", from_place_japanese: r.from_place_japanese ?? "", route: r.route ?? "",
+    route_japanese: r.route_japanese ?? "", travel_time: r.travel_time ?? "", travel_time_japanese: r.travel_time_japanese ?? "",
+    cost: r.cost ?? "", cost_japanese: r.cost_japanese ?? "", sort_order: String(r.sort_order),
+  },
+  cells: [
+    { main: String(r.sort_order) },
+    { main: r.from_place || r.from_place_japanese || "", sub: r.from_place ? (r.from_place_japanese ?? "") : "" },
+    { clip: r.route ?? "" },
+    { clip: r.travel_time ?? "" },
+    { clip: r.cost ?? "" },
+  ],
+}));
+const noteErr = form.errorFor === "note";
 ---
 
-<section class="station-section" id="routes" data-nav="routes">
-    <div class="admin-page-header">
-      <div>
-        <h2>Manage Routes</h2>
-        <p>
-          How to reach <strong>{station.name}</strong> from airports and other places: one row per
-          route, shown in "Getting there" on the public page, plus a footnote.
-        </p>
-      </div>
+<SimSection
+  anchor="routes"
+  title="Getting there"
+  hint={`How to reach ${station.name} from airports and other places: one row per route, shown under <b>Getting there</b>, plus one footnote below the table.`}
+  noun="route"
+  columns={["Order", "From", "Route", "Time", "Cost"]}
+  rows={rows}
+  idField="route_id"
+  actionName="route_action"
+  createValue="create"
+  updateValue="update"
+  deleteValue="delete"
+  nextOrder={nextOrder}
+  formError={noteErr ? "" : form.formError}
+  posted={form.posted}
+  reopenMode={form.errorFor === "new" ? "create" : "update"}
+>
+  <div class="sim-grid2">
+    <div class="admin-form-group"><label>From</label><input name="from_place" maxlength="80" placeholder="Narita Airport" /></div>
+    <div class="admin-form-group"><label>From (Japanese)</label><input name="from_place_japanese" lang="ja" maxlength="80" /></div>
+  </div>
+  <div class="admin-form-group"><label>Route</label><input name="route" maxlength="500" placeholder="Narita Express (N'EX), direct to the underground platforms" /></div>
+  <div class="admin-form-group"><label>Route (Japanese)</label><input name="route_japanese" lang="ja" maxlength="500" /></div>
+  <div class="sim-grid2">
+    <div class="admin-form-group"><label>Time</label><input name="travel_time" maxlength="60" placeholder="≈ 53 min" /></div>
+    <div class="admin-form-group"><label>Time (Japanese)</label><input name="travel_time_japanese" lang="ja" maxlength="60" /></div>
+    <div class="admin-form-group"><label>Cost</label><input name="cost" maxlength="120" placeholder="¥3,140" /></div>
+    <div class="admin-form-group"><label>Cost (Japanese)</label><input name="cost_japanese" lang="ja" maxlength="120" /></div>
+  </div>
+  <div class="admin-form-group"><label>Order</label><input name="sort_order" type="number" min="0" value="0" /></div>
+  <form slot="after" action="?s=routes" method="POST" class="sim-note admin-form">
+    <h3>Footnote under the table</h3>
+    {noteErr && <div class="admin-form-error" role="alert">{form.formError}</div>}
+    <div class="sim-grid2">
+      <div class="admin-form-group"><label>Note</label><textarea name="routes_note" rows="3" maxlength="1000" placeholder="Fares and times as published by the operators on ...">{form.note}</textarea></div>
+      <div class="admin-form-group"><label>Note (Japanese)</label><textarea name="routes_note_japanese" lang="ja" rows="3" maxlength="1000">{form.noteJapanese}</textarea></div>
     </div>
-
-    {
-      form.routes.map((route) => (
-        <section class="admin-panel sides-panel">
-          <form action="?s=routes" method="POST" class="admin-panel-body">
-            <input type="hidden" name="route_id" value={route.id} />
-            <h3 class="sides-title">{route.from_place}</h3>
-            {form.errorFor === String(route.id) && <div class="admin-form-error" role="alert">{form.formError}</div>}
-            <div class="admin-form-grid">
-              <div class="admin-form-group">
-                <label>From</label>
-                <input name="from_place" required maxlength="80" placeholder="Narita Airport" value={route.from_place ?? ""} />
-              </div>
-              <div class="admin-form-group">
-                <label>From (Japanese)</label>
-                <input name="from_place_japanese" lang="ja" maxlength="80" value={route.from_place_japanese ?? ""} />
-              </div>
-              <div class="admin-form-group">
-                <label>Route</label>
-                <input name="route" maxlength="500" placeholder="Narita Express (N'EX), direct to the underground Sobu/Yokosuka platforms" value={route.route ?? ""} />
-              </div>
-              <div class="admin-form-group">
-                <label>Route (Japanese)</label>
-                <input name="route_japanese" lang="ja" maxlength="500" value={route.route_japanese ?? ""} />
-              </div>
-              <div class="admin-form-group">
-                <label>Time</label>
-                <input name="travel_time" maxlength="60" placeholder="≈ 53 min" value={route.travel_time ?? ""} />
-              </div>
-              <div class="admin-form-group">
-                <label>Time (Japanese)</label>
-                <input name="travel_time_japanese" lang="ja" maxlength="60" value={route.travel_time_japanese ?? ""} />
-              </div>
-              <div class="admin-form-group">
-                <label>Cost</label>
-                <input name="cost" maxlength="120" placeholder="¥3,140" value={route.cost ?? ""} />
-              </div>
-              <div class="admin-form-group">
-                <label>Cost (Japanese)</label>
-                <input name="cost_japanese" lang="ja" maxlength="120" value={route.cost_japanese ?? ""} />
-              </div>
-              <div class="admin-form-group">
-                <label>Order</label>
-                <input name="sort_order" type="number" min="0" value={route.sort_order} />
-              </div>
-            </div>
-            <div class="admin-form-actions">
-              <button type="submit" name="route_action" value="update" class="common-button common-button-primary">Save</button>
-              <button
-                type="submit"
-                name="route_action"
-                value="delete"
-                class="common-button common-button-danger"
-                formnovalidate
-                onclick="return confirm('Delete this route?')"
-              >Delete</button>
-            </div>
-          </form>
-        </section>
-      ))
-    }
-
-    <section class="admin-panel sides-panel">
-      <form action="?s=routes" method="POST" class="admin-panel-body">
-        <h3 class="sides-title">Add a route</h3>
-        {form.errorFor === "new" && <div class="admin-form-error" role="alert">{form.formError}</div>}
-        <div class="admin-form-grid">
-          <div class="admin-form-group">
-            <label>From</label>
-            <input name="from_place" required maxlength="80" placeholder="Narita Airport" />
-          </div>
-          <div class="admin-form-group">
-            <label>From (Japanese)</label>
-            <input name="from_place_japanese" lang="ja" maxlength="80" />
-          </div>
-          <div class="admin-form-group">
-            <label>Route</label>
-            <input name="route" maxlength="500" placeholder="Narita Express (N'EX), direct to the underground Sobu/Yokosuka platforms" />
-          </div>
-          <div class="admin-form-group">
-            <label>Route (Japanese)</label>
-            <input name="route_japanese" lang="ja" maxlength="500" />
-          </div>
-          <div class="admin-form-group">
-            <label>Time</label>
-            <input name="travel_time" maxlength="60" placeholder="≈ 53 min" />
-          </div>
-          <div class="admin-form-group">
-            <label>Time (Japanese)</label>
-            <input name="travel_time_japanese" lang="ja" maxlength="60" />
-          </div>
-          <div class="admin-form-group">
-            <label>Cost</label>
-            <input name="cost" maxlength="120" placeholder="¥3,140" />
-          </div>
-          <div class="admin-form-group">
-            <label>Cost (Japanese)</label>
-            <input name="cost_japanese" lang="ja" maxlength="120" />
-          </div>
-              <div class="admin-form-group">
-                <label>Order</label>
-                <input name="sort_order" type="number" min="0" value={nextOrder} />
-              </div>
-        </div>
-        <div class="admin-form-actions">
-          <button type="submit" name="route_action" value="create" class="common-button common-button-primary">Add route</button>
-        </div>
-      </form>
-    </section>
-
-    <section class="admin-panel sides-panel">
-      <form action="?s=routes" method="POST" class="admin-panel-body">
-        <h3 class="sides-title">Footnote under the table</h3>
-        {form.errorFor === "note" && <div class="admin-form-error" role="alert">{form.formError}</div>}
-        <div class="admin-form-grid">
-          <div class="admin-form-group full-width">
-            <label>Note</label>
-            <textarea name="routes_note" rows="3" maxlength="1000" placeholder="Fares and times as published by the operators on 2026-10-06; ...">{form.note}</textarea>
-          </div>
-          <div class="admin-form-group full-width">
-            <label>Note (Japanese)</label>
-            <textarea name="routes_note_japanese" lang="ja" rows="3" maxlength="1000">{form.noteJapanese}</textarea>
-          </div>
-        </div>
-        <div class="admin-form-actions">
-          <button type="submit" name="route_action" value="save_note" class="common-button common-button-primary">Save note</button>
-        </div>
-      </form>
-    </section>
-  </section>
+    <button type="submit" name="route_action" value="save_note" class="common-button common-button-primary">Save note</button>
+  </form>
+</SimSection>

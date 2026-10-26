@@ -71,10 +71,10 @@ const stationFloors = await getStationFloors(db, id);
 // Every section posts here with ?s=<section>; only that section's handler gets the POST.
 const posted = Astro.request.method === "POST";
 const part = Astro.url.searchParams.get("s");
-const getReq = () => new Request(Astro.url, { method: "GET" });
-const reqFor = (key: string) => (!posted ? Astro.request : part === key ? Astro.request.clone() : getReq());
+const getReq = (): Request => new Request(Astro.url, { method: "GET" });
+const reqFor = (key: string): Request => (!posted ? Astro.request : part === key ? Astro.request.clone() : getReq()) as Request;
 
-const form = await handleStationUpdate(!posted || part ? (posted ? getReq() : Astro.request) : Astro.request.clone(), db, id, station);
+const form = await handleStationUpdate((!posted || part ? (posted ? getReq() : Astro.request) : Astro.request.clone()) as Request, db, id, station);
 if (form.redirectTo) {
   return Astro.redirect(form.redirectTo);
 }

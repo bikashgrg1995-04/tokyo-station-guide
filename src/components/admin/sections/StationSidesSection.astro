@@ -1,8 +1,6 @@
 ---
-import "../../../styles/admin/forms.css";
-import "../../../styles/admin/stations.css";
-import "../../../styles/admin/station-sides.css";
-import Button from "../../../components/common/Button.astro";
+import SimSection from "../SimSection.astro";
+import type { Row } from "../SimSection.astro";
 import { handleStationSides } from "../../../lib/services/station-sides";
 import { getStationById } from "../../../lib/db/stations";
 
@@ -12,158 +10,73 @@ export interface Props {
   form: Awaited<ReturnType<typeof handleStationSides>>;
   mediaBase: string;
 }
+const { station, form } = Astro.props;
 
-const { station, id, form: __form, mediaBase } = Astro.props;
-const form = __form;
-
-const nextOrder = form.sides.reduce((max, s) => Math.max(max, s.sort_order), 0) + 1;
+const nextOrder = form.sides.reduce((m, s) => Math.max(m, s.sort_order), 0) + 1;
+const exitName = new Map(form.exits.map((e) => [e.id, e.name]));
+const rows: Row[] = form.sides.map((s) => {
+  const ids = form.sideExitIds[s.id] ?? [];
+  return {
+    id: s.id,
+    search: [s.name, s.name_japanese, s.subtitle, s.description, ...ids.map((i) => exitName.get(i))].join(" "),
+    item: {
+      side_id: String(s.id), name: s.name, name_japanese: s.name_japanese ?? "", subtitle: s.subtitle ?? "",
+      subtitle_japanese: s.subtitle_japanese ?? "", description: s.description ?? "",
+      description_japanese: s.description_japanese ?? "", sort_order: String(s.sort_order), exit_ids: ids.join(","),
+    },
+    cells: [
+      { main: String(s.sort_order) },
+      { main: s.name || s.name_japanese || "", sub: s.name ? (s.name_japanese ?? "") : "" },
+      { clip: s.subtitle ?? "" },
+      { clip: ids.map((i) => exitName.get(i)).filter(Boolean).join(", ") },
+    ],
+  };
+});
+const noteErr = form.errorFor === "note";
 ---
 
-<section class="station-section" id="sides" data-nav="sides">
-    <div class="admin-page-header">
-      <div>
-        <h2>Manage Sides</h2>
-        <p>
-          The sides of <strong>{station.name}</strong> (for example Marunouchi / Yaesu) shown in
-          "Sides of the station" on the public page, plus one note about crossing between them.
-        </p>
-      </div>
+<SimSection
+  anchor="sides"
+  title="Sides of the station"
+  hint={`The sides of ${station.name} (e.g. Marunouchi / Yaesu) shown under <b>Sides of the station</b> and used as the first filter in <b>Which exit?</b>. Tick the exits that belong to each side.`}
+  noun="side"
+  columns={["Order", "Side", "Red subtitle", "Exits"]}
+  rows={rows}
+  idField="side_id"
+  actionName="side_action"
+  createValue="create"
+  updateValue="update"
+  deleteValue="delete"
+  nextOrder={nextOrder}
+  formError={noteErr ? "" : form.formError}
+  posted={form.posted}
+  reopenMode={form.errorFor === "new" ? "create" : "update"}
+>
+  <div class="sim-grid2">
+    <div class="admin-form-group"><label>Name</label><input name="name" maxlength="80" placeholder="Marunouchi side" /></div>
+    <div class="admin-form-group"><label>Name (Japanese)</label><input name="name_japanese" lang="ja" maxlength="80" /></div>
+    <div class="admin-form-group"><label>Red subtitle</label><input name="subtitle" maxlength="120" placeholder="West side · Red-brick historic front" /></div>
+    <div class="admin-form-group"><label>Red subtitle (Japanese)</label><input name="subtitle_japanese" lang="ja" maxlength="120" /></div>
+  </div>
+  <div class="admin-form-group"><label>Description</label><textarea name="description" rows="3" maxlength="1500"></textarea></div>
+  <div class="admin-form-group"><label>Description (Japanese)</label><textarea name="description_japanese" lang="ja" rows="3" maxlength="1500"></textarea></div>
+  <div class="admin-form-group">
+    <label>Exits on this side</label>
+    <div class="side-exit-checks">
+      {form.exits.length === 0 && <span class="admin-table-muted">Add exits first (Exits section).</span>}
+      {form.exits.map((e) => (
+        <label class="side-exit-check"><input type="checkbox" name="exit_ids" value={e.id} /> {e.name}</label>
+      ))}
     </div>
-
-    {
-      form.sides.map((side) => (
-        <section class="admin-panel sides-panel">
-          <form action="?s=sides" method="POST" class="admin-panel-body">
-            <input type="hidden" name="side_id" value={side.id} />
-            <h3 class="sides-title">{side.name}</h3>
-            {form.errorFor === String(side.id) && <div class="admin-form-error" role="alert">{form.formError}</div>}
-            <div class="admin-form-grid">
-              <div class="admin-form-group">
-                <label>Name</label>
-                <input name="name" required maxlength="80" value={side.name} />
-              </div>
-              <div class="admin-form-group">
-                <label>Name (Japanese)</label>
-                <input name="name_japanese" lang="ja" maxlength="80" value={side.name_japanese ?? ""} />
-              </div>
-              <div class="admin-form-group">
-                <label>Red subtitle</label>
-                <input name="subtitle" maxlength="120" placeholder="West side · Red-brick historic front" value={side.subtitle ?? ""} />
-              </div>
-              <div class="admin-form-group">
-                <label>Red subtitle (Japanese)</label>
-                <input name="subtitle_japanese" lang="ja" maxlength="120" value={side.subtitle_japanese ?? ""} />
-              </div>
-              <div class="admin-form-group full-width">
-                <label>Description</label>
-                <textarea name="description" rows="4" maxlength="1500">{side.description ?? ""}</textarea>
-              </div>
-              <div class="admin-form-group full-width">
-                <label>Description (Japanese)</label>
-                <textarea name="description_japanese" lang="ja" rows="3" maxlength="1500">{side.description_japanese ?? ""}</textarea>
-              </div>
-              <div class="admin-form-group full-width">
-                <label>Exits on this side <span class="admin-label-hint">used by "Which exit?" on the public page</span></label>
-                <div class="side-exit-checks">
-                  {form.exits.length === 0 && <span class="admin-table-muted">Add exits first (Exits section).</span>}
-                  {form.exits.map((e) => (
-                    <label class="side-exit-check">
-                      <input type="checkbox" name="exit_ids" value={e.id} checked={(form.sideExitIds[side.id] ?? []).includes(e.id)} />
-                      {e.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div class="admin-form-group">
-                <label>Order</label>
-                <input name="sort_order" type="number" min="0" value={side.sort_order} />
-              </div>
-            </div>
-            <div class="admin-form-actions">
-              <button type="submit" name="side_action" value="update" class="common-button common-button-primary">Save</button>
-              <button
-                type="submit"
-                name="side_action"
-                value="delete"
-                class="common-button common-button-danger"
-                formnovalidate
-                onclick="return confirm('Delete this side?')"
-              >Delete</button>
-            </div>
-          </form>
-        </section>
-      ))
-    }
-
-    <section class="admin-panel sides-panel">
-      <form action="?s=sides" method="POST" class="admin-panel-body">
-        <h3 class="sides-title">Add a side</h3>
-        {form.errorFor === "new" && <div class="admin-form-error" role="alert">{form.formError}</div>}
-        <div class="admin-form-grid">
-          <div class="admin-form-group">
-            <label>Name</label>
-            <input name="name" required maxlength="80" placeholder="Marunouchi side" />
-          </div>
-          <div class="admin-form-group">
-            <label>Name (Japanese)</label>
-            <input name="name_japanese" lang="ja" maxlength="80" placeholder="丸の内" />
-          </div>
-          <div class="admin-form-group">
-            <label>Red subtitle</label>
-            <input name="subtitle" maxlength="120" placeholder="West side · Red-brick historic front" />
-          </div>
-          <div class="admin-form-group">
-            <label>Red subtitle (Japanese)</label>
-            <input name="subtitle_japanese" lang="ja" maxlength="120" />
-          </div>
-          <div class="admin-form-group full-width">
-            <label>Description</label>
-            <textarea name="description" rows="4" maxlength="1500"></textarea>
-          </div>
-          <div class="admin-form-group full-width">
-            <label>Description (Japanese)</label>
-            <textarea name="description_japanese" lang="ja" rows="3" maxlength="1500"></textarea>
-          </div>
-          <div class="admin-form-group full-width">
-            <label>Exits on this side <span class="admin-label-hint">used by "Which exit?" on the public page</span></label>
-            <div class="side-exit-checks">
-              {form.exits.length === 0 && <span class="admin-table-muted">Add exits first (Exits section).</span>}
-              {form.exits.map((e) => (
-                <label class="side-exit-check">
-                  <input type="checkbox" name="exit_ids" value={e.id} checked={false} />
-                  {e.name}
-                </label>
-              ))}
-            </div>
-              </div>
-          <div class="admin-form-group">
-            <label>Order</label>
-            <input name="sort_order" type="number" min="0" value={nextOrder} />
-          </div>
-        </div>
-        <div class="admin-form-actions">
-          <button type="submit" name="side_action" value="create" class="common-button common-button-primary">Add side</button>
-        </div>
-      </form>
-    </section>
-
-    <section class="admin-panel sides-panel">
-      <form action="?s=sides" method="POST" class="admin-panel-body">
-        <h3 class="sides-title">Note about crossing between the sides</h3>
-        {form.errorFor === "note" && <div class="admin-form-error" role="alert">{form.formError}</div>}
-        <div class="admin-form-grid">
-          <div class="admin-form-group full-width">
-            <label>Note</label>
-            <textarea name="sides_note" rows="3" maxlength="1500">{form.note}</textarea>
-          </div>
-          <div class="admin-form-group full-width">
-            <label>Note (Japanese)</label>
-            <textarea name="sides_note_japanese" lang="ja" rows="3" maxlength="1500">{form.noteJapanese}</textarea>
-          </div>
-        </div>
-        <div class="admin-form-actions">
-          <button type="submit" name="side_action" value="save_note" class="common-button common-button-primary">Save note</button>
-        </div>
-      </form>
-    </section>
-  </section>
+  </div>
+  <div class="admin-form-group"><label>Order</label><input name="sort_order" type="number" min="0" value="0" /></div>
+  <form slot="after" action="?s=sides" method="POST" class="sim-note admin-form">
+    <h3>Note about crossing between the sides</h3>
+    {noteErr && <div class="admin-form-error" role="alert">{form.formError}</div>}
+    <div class="sim-grid2">
+      <div class="admin-form-group"><label>Note</label><textarea name="sides_note" rows="3" maxlength="1500">{form.note}</textarea></div>
+      <div class="admin-form-group"><label>Note (Japanese)</label><textarea name="sides_note_japanese" lang="ja" rows="3" maxlength="1500">{form.noteJapanese}</textarea></div>
+    </div>
+    <button type="submit" name="side_action" value="save_note" class="common-button common-button-primary">Save note</button>
+  </form>
+</SimSection>

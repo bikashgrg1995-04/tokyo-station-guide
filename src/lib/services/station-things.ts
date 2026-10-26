@@ -21,6 +21,7 @@ export interface ThingsResult {
   formError: string;
   /** "thing-<id>" or "thing-new" */
   errorFor: string;
+  posted: Record<string, string> | null;
 }
 
 const text = (fd: FormData, key: string, max: number) => {
@@ -39,15 +40,19 @@ export async function handleThings(
     things: await getThings(db, stationId),
     formError: "",
     errorFor: "",
+    posted: null,
   };
   if (request.method !== "POST") return result;
 
   const fd = await request.formData();
   const action = readText(fd, "trip_action");
   const id = Number(readText(fd, "item_id"));
+  const posted: Record<string, string> = { item_id: String(id || "") };
+  for (const [k, v] of fd.entries()) if (typeof v === "string" && k !== "trip_action") posted[k] = v;
   const existing = result.things.find((t) => t.id === id);
   const fail = (scope: string, message: string) => {
     result.errorFor = scope;
+    result.posted = posted;
     result.formError = message;
     return result;
   };

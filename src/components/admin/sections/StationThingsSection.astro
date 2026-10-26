@@ -1,7 +1,6 @@
 ---
-import "../../../styles/admin/forms.css";
-import "../../../styles/admin/stations.css";
-import "../../../styles/admin/station-sides.css";
+import SimSection from "../SimSection.astro";
+import type { Row } from "../SimSection.astro";
 import { handleThings } from "../../../lib/services/station-things";
 import { getStationById } from "../../../lib/db/stations";
 
@@ -11,111 +10,68 @@ export interface Props {
   form: Awaited<ReturnType<typeof handleThings>>;
   mediaBase: string;
 }
-
-const { station, id, form: __form, mediaBase } = Astro.props;
-const form = __form;
-
+const { station, form, mediaBase } = Astro.props;
 const src = (k: string) => (/^https?:\/\//i.test(k) ? k : `${mediaBase}/${k}`);
-const nextOrder = form.things.reduce((max, t) => Math.max(max, t.sort_order), 0) + 1;
+void src;
 
-const blank = {
-  id: 0, name: "", name_japanese: "", kind: "", kind_japanese: "", location: "", location_japanese: "",
-  cost: "", cost_japanese: "", description: "", description_japanese: "", map_url: "", photo: null as string | null,
-  sort_order: nextOrder,
-};
-const forms = [...form.things.map((t) => ({ t, scope: `thing-${t.id}`, isNew: false })), { t: blank, scope: "thing-new", isNew: true }];
+const nextOrder = form.things.reduce((m, t) => Math.max(m, t.sort_order), 0) + 1;
+const rows: Row[] = form.things.map((t) => ({
+  id: t.id,
+  search: [t.name, t.name_japanese, t.kind, t.kind_japanese, t.location, t.location_japanese, t.cost, t.description].join(" "),
+  item: {
+    item_id: String(t.id), name: t.name, name_japanese: t.name_japanese ?? "", kind: t.kind ?? "", kind_japanese: t.kind_japanese ?? "",
+    location: t.location ?? "", location_japanese: t.location_japanese ?? "", cost: t.cost ?? "", cost_japanese: t.cost_japanese ?? "",
+    description: t.description ?? "", description_japanese: t.description_japanese ?? "", map_url: t.map_url ?? "",
+    sort_order: String(t.sort_order), photo_url: t.photo ? src(t.photo) : "",
+  },
+  cells: [
+    { img: t.photo ? src(t.photo) : undefined, main: String(t.sort_order) },
+    { main: t.name || t.name_japanese || "", sub: t.name ? (t.name_japanese ?? "") : "" },
+    { clip: [t.kind, t.location].filter(Boolean).join(" · ") },
+    { clip: t.cost ?? "" },
+  ],
+}));
 ---
 
-<section class="station-section" id="things-to-do" data-nav="things-to-do">
-    <div class="admin-page-header">
-      <div>
-        <h2>Things to do</h2>
-        <p>
-          For <strong>{station.name}</strong>: places to see near the station, shown under "Things to do" with a photo.
-          The grey line under the name is: kind · location · cost.
-        </p>
-      </div>
+<SimSection
+  anchor="things-to-do"
+  title="Things to do"
+  hint={`Places to see near the station, shown under <b>Things to do</b> with a photo. The grey line under the name = kind · location · cost.`}
+  noun="place"
+  columns={["Photo / order", "Name", "Kind · location", "Cost"]}
+  rows={rows}
+  actionName="trip_action"
+  createValue="trip_create"
+  updateValue="trip_update"
+  deleteValue="trip_delete"
+  multipart
+  nextOrder={nextOrder}
+  formError={form.formError}
+  posted={form.posted}
+  reopenMode={form.errorFor === "thing-new" ? "create" : "update"}
+>
+  <div class="sim-grid2">
+    <div class="admin-form-group"><label>Name</label><input name="name" maxlength="150" placeholder="Imperial Palace East Gardens"></div>
+    <div class="admin-form-group"><label>Name (Japanese)</label><input name="name_japanese" maxlength="150" lang="ja"></div>
+    <div class="admin-form-group"><label>Kind</label><input name="kind" maxlength="60" placeholder="Garden"></div>
+    <div class="admin-form-group"><label>Kind (Japanese)</label><input name="kind_japanese" maxlength="60" lang="ja"></div>
+    <div class="admin-form-group"><label>Location</label><input name="location" maxlength="150" placeholder="Marunouchi North Exit, about 13 min"></div>
+    <div class="admin-form-group"><label>Location (Japanese)</label><input name="location_japanese" maxlength="150" lang="ja"></div>
+    <div class="admin-form-group"><label>Cost</label><input name="cost" maxlength="100" placeholder="Free"></div>
+    <div class="admin-form-group"><label>Cost (Japanese)</label><input name="cost_japanese" maxlength="100" lang="ja"></div>
+  </div>
+  <div class="admin-form-group"><label>Description</label><textarea name="description" rows="3" maxlength="800"></textarea></div>
+  <div class="admin-form-group"><label>Description (Japanese)</label><textarea name="description_japanese" lang="ja" rows="3" maxlength="800"></textarea></div>
+  <div class="sim-grid2">
+    <div class="admin-form-group"><label>Map link</label><input name="map_url" type="url" maxlength="500" placeholder="https://maps.google.com/..." /></div>
+    <div class="admin-form-group"><label>Order</label><input name="sort_order" type="number" min="0" value="0" /></div>
+  </div>
+  <div class="sim-photo">
+    <label>Photo (optional, PNG, JPEG or WebP up to 2 MB)</label>
+    <div class="sim-photo-prev" data-sim="photo-preview" hidden>
+      <img alt="" src="" />
+      <label><input type="checkbox" name="remove_photo" /> Remove current photo</label>
     </div>
-
-    {
-      forms.map(({ t, scope, isNew }) => (
-        <section class="admin-panel sides-panel">
-          <form action="?s=things-to-do" method="POST" enctype="multipart/form-data" class="admin-panel-body">
-            <h3 class="sides-title">{isNew ? "Add a place" : t.name}</h3>
-            {!isNew && <input type="hidden" name="item_id" value={t.id} />}
-            {form.errorFor === scope && <div class="admin-form-error" role="alert">{form.formError}</div>}
-            <div class="admin-form-grid">
-              <div class="admin-form-group">
-                <label>Name</label>
-                <input name="name" required maxlength="150" value={t.name} placeholder="Imperial Palace East Gardens" />
-              </div>
-              <div class="admin-form-group">
-                <label>Name (Japanese)</label>
-                <input name="name_japanese" lang="ja" maxlength="150" value={t.name_japanese ?? ""} />
-              </div>
-              <div class="admin-form-group">
-                <label>Kind</label>
-                <input name="kind" maxlength="60" value={t.kind ?? ""} placeholder="Garden" />
-              </div>
-              <div class="admin-form-group">
-                <label>Kind (Japanese)</label>
-                <input name="kind_japanese" lang="ja" maxlength="60" value={t.kind_japanese ?? ""} />
-              </div>
-              <div class="admin-form-group">
-                <label>Location</label>
-                <input name="location" maxlength="150" value={t.location ?? ""} placeholder="Marunouchi North Exit, about 13 min" />
-              </div>
-              <div class="admin-form-group">
-                <label>Location (Japanese)</label>
-                <input name="location_japanese" lang="ja" maxlength="150" value={t.location_japanese ?? ""} />
-              </div>
-              <div class="admin-form-group">
-                <label>Cost</label>
-                <input name="cost" maxlength="100" value={t.cost ?? ""} placeholder="Free" />
-              </div>
-              <div class="admin-form-group">
-                <label>Cost (Japanese)</label>
-                <input name="cost_japanese" lang="ja" maxlength="100" value={t.cost_japanese ?? ""} />
-              </div>
-              <div class="admin-form-group full-width">
-                <label>Description</label>
-                <textarea name="description" rows="3" maxlength="800">{t.description ?? ""}</textarea>
-              </div>
-              <div class="admin-form-group full-width">
-                <label>Description (Japanese)</label>
-                <textarea name="description_japanese" lang="ja" rows="3" maxlength="800">{t.description_japanese ?? ""}</textarea>
-              </div>
-              <div class="admin-form-group">
-                <label>Map link</label>
-                <input name="map_url" type="url" maxlength="500" value={t.map_url ?? ""} placeholder="https://maps.google.com/..." />
-              </div>
-              <div class="admin-form-group">
-                <label>Order</label>
-                <input name="sort_order" type="number" min="0" value={t.sort_order} />
-              </div>
-              <div class="admin-form-group full-width">
-                <label>Photo (optional, PNG, JPEG or WebP up to 2 MB)</label>
-                {t.photo && (
-                  <div>
-                    <img src={src(t.photo)} alt="" style="display:block;width:160px;max-width:100%;margin-bottom:8px;border-radius:8px" />
-                    <label><input type="checkbox" name="remove_photo" /> Remove the current photo</label>
-                  </div>
-                )}
-                <input name="photo_file" type="file" accept="image/png,image/jpeg,image/webp" />
-              </div>
-            </div>
-            <div class="admin-form-actions">
-              {isNew ? (
-                <button type="submit" name="trip_action" value="trip_create" class="common-button common-button-primary">Add place</button>
-              ) : (
-                <>
-                  <button type="submit" name="trip_action" value="trip_update" class="common-button common-button-primary">Save</button>
-                  <button type="submit" name="trip_action" value="trip_delete" class="common-button common-button-danger" formnovalidate onclick="return confirm('Delete this place?')">Delete</button>
-                </>
-              )}
-            </div>
-          </form>
-        </section>
-      ))
-    }
-  </section>
+    <input name="photo_file" type="file" accept="image/png,image/jpeg,image/webp" />
+  </div>
+</SimSection>

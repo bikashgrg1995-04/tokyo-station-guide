@@ -18,6 +18,7 @@ export interface StationRoutesResult {
   formError: string;
   /** Which form the error belongs to: a route id, "new" or "note". */
   errorFor: string;
+  posted: Record<string, string> | null;
 }
 
 function readInput(formData: FormData): { input: StationRouteInput; error: string } {
@@ -55,11 +56,14 @@ export async function handleStationRoutes(
     ...(await getRoutesNote(db, stationId)),
     formError: "",
     errorFor: "",
+    posted: null,
   };
   if (request.method !== "POST") return result;
 
   const formData = await request.formData();
   const action = readText(formData, "route_action");
+  const posted: Record<string, string> = {};
+  for (const [k, v] of formData.entries()) if (typeof v === "string" && k !== "route_action") posted[k] = k in posted ? `${posted[k]},${v}` : v;
   const id = Number(readText(formData, "route_id"));
   const owned = result.routes.some((r) => r.id === id);
 
@@ -78,6 +82,7 @@ export async function handleStationRoutes(
       if (error) {
         result.formError = error;
         result.errorFor = action === "create" ? "new" : String(id);
+        result.posted = posted;
         return result;
       }
       if (action === "create") await createStationRoute(db, stationId, input);
