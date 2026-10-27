@@ -454,7 +454,7 @@ export async function getStationPage(
     .prepare(
       `SELECT f.name, f.name_japanese, sf.name AS floor_name, sf.name_japanese AS floor_name_japanese,
               sff.location_type, sff.facility_count AS count,
-              sff.note AS description, sff.note_japanese AS description_japanese,
+              sff.description AS description, sff.description_japanese AS description_japanese,
               sff.photo, sff.photo_caption, sff.photo_caption_japanese,
               (SELECT json_group_array(se.name) FROM station_floor_facility_exits x
                  JOIN station_exits se ON se.id = x.station_exit_id

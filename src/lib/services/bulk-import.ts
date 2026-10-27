@@ -656,8 +656,12 @@ export function buildImportPlan(
     else if (!floors.has(`${stationSlug}|${floorName}`)) err(`Floor "${floorName}" does not exist for station "${stationSlug}".`);
     if (!facilitySlugs.has(facilitySlug)) err(`Facility "${facilitySlug}" does not exist.`);
     const count = intField(d, "facility_count", err);
-    const note = text(d, "description", 1500, err);
-    const noteJa = text(d, "description_japanese", 1500, err);
+    // popup_note = the map popup; description = the station page Facilities table.
+    const popupKey = "popup_note" in d ? "popup_note" : "note"; // "note" = the name older files use
+    const note = text(d, popupKey, 300, err);
+    const noteJa = text(d, `${popupKey}_japanese`, 300, err);
+    const desc = text(d, "description", 1500, err);
+    const descJa = text(d, "description_japanese", 1500, err);
     const photoCaption = text(d, "photo_caption", 400, err);
     const photoCaptionJa = text(d, "photo_caption_japanese", 400, err);
     const locationType = oneOf(d, "location_type", FACILITY_LOCATIONS, err);
@@ -679,7 +683,7 @@ export function buildImportPlan(
     const key = `${stationSlug}|${floorName}|${facilitySlug}`;
     const exists = floorFacilities.has(key);
     floorFacilities.add(key);
-    record("floor_facilities", { t: "floorFacility", stationSlug, floorName, facilitySlug, count, note, noteJa, photoCaption, photoCaptionJa, locationType, sortOrder, exits: exitsValue }, key, exists);
+    record("floor_facilities", { t: "floorFacility", stationSlug, floorName, facilitySlug, count, note, noteJa, desc, descJa, photoCaption, photoCaptionJa, locationType, sortOrder, exits: exitsValue }, key, exists);
   });
 
   // ---- exits -----------------------------------------------------------------

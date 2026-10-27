@@ -88,3 +88,9 @@
 .station-section-head { margin-bottom:8px; }
 .station-section-head h2 { margin:0; }
 .station-section-head p { margin:2px 0 0; font-size:.82rem; }
+
+/* A group of fields that feed one place on the website */
+.sim-block { margin: 12px 0; padding: 10px 12px 2px; border: 1px solid var(--admin-border, #e3e6ea); border-radius: 10px; background: #fafbfc; }
+.sim-block-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+.sim-block-head strong { font-size: .9rem; }
+.sim-where { font-size: .78rem; color: #2563eb; }

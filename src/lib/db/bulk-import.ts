@@ -154,7 +154,7 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
       keyed(`SELECT s.slug || '|' || f.name AS k, f.name_japanese AS nameJa, f.floor_order AS floorOrder
              FROM station_floors f JOIN stations s ON s.id = f.station_id`),
       keyed(`SELECT s.slug || '|' || f.name || '|' || fa.slug AS k, sff.facility_count AS count,
-                    sff.note, sff.note_japanese AS noteJa, sff.photo_caption AS photoCaption,
+                    sff.note, sff.note_japanese AS noteJa, sff.description AS "desc", sff.description_japanese AS descJa, sff.photo_caption AS photoCaption,
                     sff.photo_caption_japanese AS photoCaptionJa, sff.location_type AS locationType,
                     sff.sort_order AS sortOrder,
                     (SELECT group_concat(name, '|') FROM (
@@ -488,26 +488,28 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
           ["facility_count", op.count],
           ["note", op.note],
           ["note_japanese", op.noteJa],
+          ["description", op.desc],
+          ["description_japanese", op.descJa],
           ["photo_caption", op.photoCaption],
           ["photo_caption_japanese", op.photoCaptionJa],
           ["location_type", op.locationType, true],
           ["sort_order", op.sortOrder, true],
         ],
-        11,
+        13,
       );
 
       const statements = [
         p(
           `INSERT INTO station_floor_facilities
-             (floor_id, facility_id, facility_count, note, note_japanese, photo_caption, photo_caption_japanese, location_type, sort_order)
-           SELECT fl.id, fa.id, ?4, ?5, ?6, ?7, ?8, COALESCE(?9, 'inside'), COALESCE(?10, 0)
+             (floor_id, facility_id, facility_count, note, note_japanese, description, description_japanese, photo_caption, photo_caption_japanese, location_type, sort_order)
+           SELECT fl.id, fa.id, ?4, ?5, ?6, ?11, ?12, ?7, ?8, COALESCE(?9, 'inside'), COALESCE(?10, 0)
            FROM station_floors fl
            JOIN stations s ON s.id = fl.station_id
            JOIN facilities fa ON fa.slug = ?3
            WHERE s.slug = ?1 AND fl.name = ?2
            ON CONFLICT(floor_id, facility_id) DO UPDATE SET facility_id = excluded.facility_id${u.sql}`,
           op.stationSlug, op.floorName, op.facilitySlug, n(op.count), n(op.note), n(op.noteJa),
-          n(op.photoCaption), n(op.photoCaptionJa), n(op.locationType), n(op.sortOrder), ...u.params,
+          n(op.photoCaption), n(op.photoCaptionJa), n(op.locationType), n(op.sortOrder), n(op.desc), n(op.descJa), ...u.params,
         ),
       ];
 

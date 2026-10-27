@@ -29,8 +29,12 @@ export interface StationFacility {
   icon_dark: string | null;
   sort_order: number;
   facility_count: number | null;
+  /** short text of the map popup */
   note: string | null;
   note_japanese: string | null;
+  /** text of the Facilities table on the station page */
+  description: string | null;
+  description_japanese: string | null;
   photo: string | null;
   photo_caption: string | null;
   photo_caption_japanese: string | null;
@@ -331,6 +335,8 @@ export async function getStationFacilities(
           sff.facility_count,
           sff.note,
           sff.note_japanese,
+          sff.description,
+          sff.description_japanese,
           sff.photo,
           sff.photo_caption,
           sff.photo_caption_japanese,

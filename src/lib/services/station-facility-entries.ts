@@ -90,8 +90,10 @@ export async function handleFacilityEntries(
       const floorId = Number(readText(fd, "floor_id"));
       const count = Number(readText(fd, "facility_count") || "1");
       const order = Number(readText(fd, "sort_order") || "0");
-      const desc = text(fd, "note", 1500);
-      const descJa = text(fd, "note_japanese", 1500);
+      const note = text(fd, "note", 300);
+      const noteJa = text(fd, "note_japanese", 300);
+      const desc = text(fd, "description", 1500);
+      const descJa = text(fd, "description_japanese", 1500);
       const cap = text(fd, "photo_caption", 400);
       const capJa = text(fd, "photo_caption_japanese", 400);
       const exitIds = fd.getAll("exit_ids").map(Number).filter((n) => Number.isInteger(n) && n > 0);
@@ -100,7 +102,8 @@ export async function handleFacilityEntries(
       if (!floors.some((f) => f.id === floorId)) return fail(scope, "Choose a floor.");
       if (!Number.isInteger(count) || count < 1) return fail(scope, "Quantity must be a whole number, 1 or more.");
       if (!Number.isInteger(order) || order < 0) return fail(scope, "Order must be a whole number, 0 or more.");
-      if (desc.tooLong || descJa.tooLong) return fail(scope, "The description must be 1500 characters or less.");
+      if (note.tooLong || noteJa.tooLong) return fail(scope, "The map popup text must be 300 characters or less.");
+      if (desc.tooLong || descJa.tooLong) return fail(scope, "The station page description must be 1500 characters or less.");
       if (cap.tooLong || capJa.tooLong) return fail(scope, "The photo caption must be 400 characters or less.");
       if (entries.some((e) => e.id !== id && e.facility_id === facilityId && e.floor_id === floorId)) {
         return fail(scope, "This facility is already listed on that floor. Edit that row instead.");
@@ -114,6 +117,8 @@ export async function handleFacilityEntries(
         facilityId,
         floorId,
         count,
+        note: note.value,
+        noteJapanese: noteJa.value,
         description: desc.value,
         descriptionJapanese: descJa.value,
         locationType: ({ outside: "outside", inside_outside: "inside_outside" } as const)[readText(fd, "location_type") as "outside" | "inside_outside"] ?? "inside",

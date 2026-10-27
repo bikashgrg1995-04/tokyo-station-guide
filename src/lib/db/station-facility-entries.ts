@@ -4,6 +4,10 @@ export interface FacilityEntryInput {
   facilityId: number;
   floorId: number;
   count: number;
+  /** map popup text */
+  note: string | null;
+  noteJapanese: string | null;
+  /** station page Facilities table text */
   description: string | null;
   descriptionJapanese: string | null;
   locationType: "inside" | "outside" | "inside_outside";
@@ -34,11 +38,11 @@ export async function createFacilityEntry(db: D1Database, stationId: number, i: 
   const r = await db
     .prepare(
       `INSERT INTO station_floor_facilities
-         (floor_id, facility_id, facility_count, note, note_japanese, location_type, photo, photo_caption, photo_caption_japanese, sort_order)
-       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+         (floor_id, facility_id, facility_count, note, note_japanese, description, description_japanese, location_type, photo, photo_caption, photo_caption_japanese, sort_order)
+       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
        WHERE EXISTS (SELECT 1 FROM station_floors WHERE id = ? AND station_id = ?)`,
     )
-    .bind(i.floorId, i.facilityId, i.count, i.description, i.descriptionJapanese, i.locationType, i.photo ?? null,
+    .bind(i.floorId, i.facilityId, i.count, i.note, i.noteJapanese, i.description, i.descriptionJapanese, i.locationType, i.photo ?? null,
       i.photoCaption, i.photoCaptionJapanese, i.sortOrder, i.floorId, stationId)
     .run();
   const id = Number(r.meta.last_row_id);
@@ -47,14 +51,14 @@ export async function createFacilityEntry(db: D1Database, stationId: number, i: 
 
 export async function updateFacilityEntry(db: D1Database, stationId: number, id: number, i: FacilityEntryInput) {
   const photoSql = i.photo === undefined ? "" : ", photo = ?";
-  const params: unknown[] = [i.floorId, i.facilityId, i.count, i.description, i.descriptionJapanese, i.locationType,
+  const params: unknown[] = [i.floorId, i.facilityId, i.count, i.note, i.noteJapanese, i.description, i.descriptionJapanese, i.locationType,
     i.photoCaption, i.photoCaptionJapanese, i.sortOrder];
   if (i.photo !== undefined) params.push(i.photo);
   params.push(id, stationId);
   await db
     .prepare(
       `UPDATE station_floor_facilities
-       SET floor_id = ?, facility_id = ?, facility_count = ?, note = ?, note_japanese = ?, location_type = ?,
+       SET floor_id = ?, facility_id = ?, facility_count = ?, note = ?, note_japanese = ?, description = ?, description_japanese = ?, location_type = ?,
            photo_caption = ?, photo_caption_japanese = ?, sort_order = ?${photoSql}
        WHERE id = ? AND floor_id IN (SELECT id FROM station_floors WHERE station_id = ?)`,
     )

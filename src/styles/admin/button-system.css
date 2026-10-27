@@ -147,3 +147,7 @@
 }
 .sim-note .sim-foot { margin-top: 12px; }
 .station-save-bar { margin-right: 16px; }
+
+/* Row actions are always stacked (Edit over Delete) so every table fits */
+.admin-main .sim-actions { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+.admin-main .sim-actions .admin-table-action { width: 100%; }
