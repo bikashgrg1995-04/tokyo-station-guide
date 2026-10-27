@@ -1,0 +1,149 @@
+/* ========================================
+   One button system for the whole admin
+   primary (blue) · secondary (white) · danger (red) · row actions (small, outlined)
+======================================== */
+
+:root {
+  --btn-h: 34px;
+  --btn-pad: 0 14px;
+  --btn-radius: 8px;
+  --btn-font: 13px;
+  --btn-primary: #2563eb;
+  --btn-primary-dark: #1d4ed8;
+  --btn-danger: #dc2626;
+  --btn-danger-dark: #b91c1c;
+}
+
+/* Every regular button: same height, padding, radius and type */
+.admin-main .common-button,
+.admin-main .admin-button,
+.admin-main .sim-add,
+.admin-main .station-add-button,
+.admin-main .station-cancel-button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--btn-h);
+  height: var(--btn-h);
+  padding: var(--btn-pad);
+  border: 1px solid transparent;
+  border-radius: var(--btn-radius);
+  font: inherit;
+  font-size: var(--btn-font);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  width: auto;
+}
+
+/* primary = Add, Save, Apply */
+.admin-main .common-button-primary,
+.admin-main .admin-button:not(.admin-button-secondary):not(.admin-button-danger),
+.admin-main .sim-add,
+.admin-main .station-add-button {
+  background: var(--btn-primary);
+  border-color: var(--btn-primary);
+  color: #fff;
+}
+.admin-main .common-button-primary:hover:not(:disabled),
+.admin-main .admin-button:not(.admin-button-secondary):not(.admin-button-danger):hover,
+.admin-main .sim-add:hover,
+.admin-main .station-add-button:hover {
+  background: var(--btn-primary-dark);
+  border-color: var(--btn-primary-dark);
+  color: #fff;
+}
+
+/* secondary = Cancel, Back */
+.admin-main .common-button-secondary,
+.admin-main .admin-button-secondary,
+.admin-main .station-cancel-button {
+  background: #fff;
+  border-color: #d1d5db;
+  color: #374151;
+}
+.admin-main .common-button-secondary:hover:not(:disabled),
+.admin-main .admin-button-secondary:hover,
+.admin-main .station-cancel-button:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+/* danger = confirmed delete */
+.admin-main .common-button-danger,
+.admin-main .admin-button-danger {
+  background: var(--btn-danger);
+  border-color: var(--btn-danger);
+  color: #fff;
+}
+.admin-main .common-button-danger:hover:not(:disabled),
+.admin-main .admin-button-danger:hover {
+  background: var(--btn-danger-dark);
+  border-color: var(--btn-danger-dark);
+}
+
+/* dialog buttons share the same sizes (also when the dialog sits outside .admin-main) */
+.sim-dialog .common-button,
+.admin-modal-actions .common-button,
+.admin-modal-actions .admin-button {
+  min-height: var(--btn-h);
+  height: var(--btn-h);
+  padding: var(--btn-pad);
+  border-radius: var(--btn-radius);
+  font-size: var(--btn-font);
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Edit / Delete inside tables: small outlined pair, identical everywhere */
+.admin-main .admin-table-action {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  min-width: 58px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Footers: buttons right-aligned with one gap, a thin rule above */
+.sim-foot,
+.admin-modal-actions,
+.station-save-bar,
+.admin-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+.sim-foot,
+.admin-modal-actions {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #eef0f3;
+}
+
+/* Toolbar: search and Add share one height and gap */
+.sim-toolbar,
+.admin-list-toolbar { gap: 10px; align-items: center; }
+.sim-toolbar input[type="search"] { height: var(--btn-h); box-sizing: border-box; }
+
+/* Note forms: the Save button sits bottom-right, like every dialog footer */
+.sim-note { display: grid; }
+.sim-note > .common-button,
+.sim-note > button[type="submit"] {
+  justify-self: end;
+  width: auto;
+  margin-top: 12px;
+}
+.sim-note .sim-foot { margin-top: 12px; }
+.station-save-bar { margin-right: 16px; }
