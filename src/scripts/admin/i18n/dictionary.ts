@@ -11,6 +11,7 @@ export const ADMIN_JA: Record<string, string> = {
   Stations: "駅",
   Facilities: "設備",
   "Top Picks": "おすすめスポット",
+  "Places": "スポット",
   "Featured Stations": "注目の駅",
   Suggestions: "ご提案",
   Management: "管理",

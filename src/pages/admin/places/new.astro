@@ -44,19 +44,19 @@ const { errors, formError } = form;
 
 ---
 
-<AdminLayout title="Add Top Pick" activePath="/admin/top-picks">
+<AdminLayout title="Add Place" activePath="/admin/places">
   <header class="admin-topbar">
     <Breadcrumbs
-      backHref="/admin/top-picks"
-      parentLabel="Top Picks"
-      current="Add Top Pick"
+      backHref="/admin/places"
+      parentLabel="Places"
+      current="Add Place"
     />
   </header>
 
   <div class="admin-content">
     <div class="admin-page-header">
       <div>
-        <h2>Add Top Pick</h2>
+        <h2>Add Place</h2>
         <p>
           Create a popular place that can be featured on relevant
           station pages throughout the Tokyo Station Guide.
@@ -68,7 +68,7 @@ const { errors, formError } = form;
       <div class="admin-panel-body">
         <div class="admin-operator-form">
           <div class="admin-operator-form-header">
-            <h2>Top Pick Details</h2>
+            <h2>Place Details</h2>
             <p>Enter the information for this featured place.</p>
           </div>
 
@@ -307,11 +307,11 @@ const { errors, formError } = form;
             <TopPickHoursTable openingHours={openingHours} />
 
             <div class="admin-form-actions">
-              <Button href="/admin/top-picks" variant="secondary">
+              <Button href="/admin/places" variant="secondary">
                 Cancel
               </Button>
               <Button type="submit" variant="primary">
-                Create Top Pick
+                Create Place
               </Button>
             </div>
           </form>

@@ -38,9 +38,31 @@ function init(root: HTMLElement) {
       const img = prev.querySelector("img");
       if (img) img.src = values.photo_url ?? "";
     }
+    // Fields that only make sense when adding / editing, and read-only text taken from the row.
+    modal.querySelectorAll<HTMLElement>("[data-sim-create-only]").forEach((el) => (el.hidden = mode !== "create"));
+    modal.querySelectorAll<HTMLElement>("[data-sim-edit-only]").forEach((el) => (el.hidden = mode !== "update"));
+    modal.querySelectorAll<HTMLElement>("[data-sim-text]").forEach((el) => (el.textContent = values[el.dataset.simText ?? ""] ?? ""));
+    modal.querySelectorAll<HTMLAnchorElement>("[data-sim-href]").forEach((el) => {
+      el.href = (el.dataset.simHref ?? "").replace("{id}", values.item_id ?? "");
+    });
+    filters().forEach(applyFilter);
     modal.hidden = false;
     form.querySelector<HTMLElement>("input[type='text'], input:not([type]), textarea")?.focus();
   }
+
+  const filters = () => Array.from(form?.querySelectorAll("[data-sim-filter]") ?? []) as unknown as HTMLSelectElement[];
+  // A select that narrows another select's options by data-category.
+  function applyFilter(filter: HTMLSelectElement) {
+    const target = form?.elements.namedItem(filter.dataset.simFilter ?? "") as HTMLSelectElement | null;
+    if (!target) return;
+    Array.from(target.options).forEach((o) => {
+      const show = !o.dataset.category || !filter.value || o.dataset.category === filter.value;
+      o.hidden = !show;
+      o.disabled = !show;
+    });
+    if (target.selectedOptions[0]?.disabled) target.value = "";
+  }
+  filters().forEach((f) => f.addEventListener("change", () => applyFilter(f)));
 
   const close = () => {
     if (modal) modal.hidden = true;

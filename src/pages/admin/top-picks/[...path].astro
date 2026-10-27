@@ -1,0 +1,6 @@
+---
+// Old address: the Top picks catalog is now called Places.
+export const prerender = false;
+const path = Astro.params.path ?? "";
+return Astro.redirect(`/admin/places${path ? `/${path}` : ""}${Astro.url.search}`);
+---

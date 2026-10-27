@@ -101,9 +101,9 @@ export async function handleTopPickStationAssignment(
       return result;
     }
 
-    result.redirectTo = `/admin/top-picks/${topPickId}/stations?success=${action}`;
+    result.redirectTo = `/admin/places/${topPickId}/stations?success=${action}`;
   } catch (error) {
-    console.error("Failed to save Top Pick station assignment:", error);
+    console.error("Failed to save Place station assignment:", error);
     result.error =
       error instanceof Error
         ? error.message
@@ -129,7 +129,7 @@ const SUCCESS_MESSAGES: Record<string, string> = {
 };
 
 /**
- * Loads a top pick with its station assignments (and the floors / exits of
+ * Loads a place with its station assignments (and the floors / exits of
  * every station for the picker) and handles the add / remove form on POST.
  * `redirectTo` is set when the page should redirect instead of rendering.
  */

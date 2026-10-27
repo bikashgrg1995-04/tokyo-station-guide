@@ -12,6 +12,7 @@ import ConfirmDialog from "../../../components/common/ConfirmDialog.astro";
 import Pagination from "../../../components/common/Pagination.astro";
 
 import { loadTopPickList } from "../../../lib/services/top-picks";
+import { TOP_PICK_CATEGORIES } from "../../../lib/db/top-picks";
 
 export const prerender = false;
 
@@ -24,18 +25,25 @@ const {
   totalPages,
   perPage,
   searchParam,
+  category,
   paginationUrl,
 } = await loadTopPickList(env.DB, Astro.url);
 
 const deleteError = Astro.url.searchParams.get("error");
+const filterHref = (c: string) => {
+  const u = new URL("/admin/places", Astro.url);
+  if (searchParam) u.searchParams.set("search", searchParam);
+  if (c) u.searchParams.set("category", c);
+  return `${u.pathname}${u.search}`;
+};
 ---
 
-<AdminLayout title="Top Picks" activePath="/admin/top-picks">
+<AdminLayout title="Places" activePath="/admin/places">
   <div class="admin-content">
     <!-- Page Header -->
     <div class="admin-page-header">
       <div>
-        <h2>Top Picks</h2>
+        <h2>Places</h2>
 
         <p>
           Manage popular places, landmarks, food spots, shopping areas,
@@ -48,12 +56,12 @@ const deleteError = Astro.url.searchParams.get("error");
     {
       deleteError === "assigned" ? (
         <div class="admin-form-error" role="alert">
-          This top pick is assigned to one or more stations.
+          This place is assigned to one or more stations.
           Remove its station assignments before deleting it.
         </div>
       ) : deleteError === "delete" ? (
         <div class="admin-form-error" role="alert">
-          Unable to delete this top pick. Please try again.
+          Unable to delete this place. Please try again.
         </div>
       ) : null
     }
@@ -64,24 +72,33 @@ const deleteError = Astro.url.searchParams.get("error");
         id="top-pick-search-form"
         class="admin-search-form"
         method="GET"
-        action="/admin/top-picks"
+        action="/admin/places"
         role="search"
       >
+        {category && <input type="hidden" name="category" value={category} />}
         <SearchInput
           id="top-pick-search"
           name="search"
           value={searchParam}
-          placeholder="Search top picks..."
-          ariaLabel="Search top picks"
+          placeholder="Search places..."
+          ariaLabel="Search places"
         />
       </form>
 
-      <Button href="/admin/top-picks/new" variant="primary">
-        + Add Top Pick
+      <Button href="/admin/places/new" variant="primary">
+        + Add Place
       </Button>
     </div>
 
-    <!-- Top Picks Table -->
+    <!-- Category filter -->
+    <nav class="admin-filter-pills" aria-label="Filter places by category">
+      <a href={filterHref("")} class:list={["admin-filter-pill", { "is-active": category === "" }]}>All</a>
+      {TOP_PICK_CATEGORIES.map((c) => (
+        <a href={filterHref(c)} class:list={["admin-filter-pill", { "is-active": category === c }]}>{c}</a>
+      ))}
+    </nav>
+
+    <!-- Places Table -->
     <section class="admin-panel">
       <div
         id="top-picks-table-content"
@@ -89,7 +106,7 @@ const deleteError = Astro.url.searchParams.get("error");
       >
         <!-- Table Meta -->
         <div class="admin-table-meta">
-          <span>{totalItems} • Total Top Picks</span>
+          <span>{totalItems} • Total Places</span>
         </div>
 
         {
@@ -101,7 +118,7 @@ const deleteError = Astro.url.searchParams.get("error");
                   <thead>
                     <tr>
                       <th>ID</th>
-                      <th>Top Pick</th>
+                      <th>Place</th>
                       <th>Japanese Name</th>
                       <th>Slug</th>
                       <th>Category</th>
@@ -162,14 +179,14 @@ const deleteError = Astro.url.searchParams.get("error");
                         <td>
                           <div class="admin-table-actions">
                             <a
-                              href={`/admin/top-picks/${topPick.id}/stations`}
+                              href={`/admin/places/${topPick.id}/stations`}
                               class="admin-table-action"
                             >
                               Station
                             </a>
 
                             <a
-                              href={`/admin/top-picks/${topPick.id}/edit`}
+                              href={`/admin/places/${topPick.id}/edit`}
                               class="admin-table-action admin-table-action-edit"
                             >
                               Edit
@@ -209,11 +226,11 @@ const deleteError = Astro.url.searchParams.get("error");
           ) : (
             <EmptyState
               icon="◉"
-              title={searchParam ? "No top picks found" : "No top picks yet"}
+              title={searchParam ? "No places found" : "No places yet"}
               description={
                 searchParam
                   ? "Try a different search term."
-                  : "Add your first top pick to get started."
+                  : "Add your first place to get started."
               }
             />
           )
@@ -226,12 +243,12 @@ const deleteError = Astro.url.searchParams.get("error");
     <!-- Delete Confirmation Dialog -->
     <ConfirmDialog
       id="delete-top-pick-dialog"
-      title="Delete Top Pick"
-      description="Are you sure you want to delete this top pick?"
-      confirmText="Delete Top Pick"
+      title="Delete Place"
+      description="Are you sure you want to delete this place?"
+      confirmText="Delete Place"
       cancelText="Cancel"
       variant="danger"
-      warning="A top pick assigned to a station cannot be deleted."
+      warning="A place assigned to a station cannot be deleted."
     />
 
     <!-- Delete Form -->

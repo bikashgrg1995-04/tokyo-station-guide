@@ -48,14 +48,14 @@ export async function getStationSights(db: D1Database, stationId: number): Promi
 }
 
 /** Top picks that are not on this station yet (for "use an existing place"). */
-export async function getUnlinkedSights(db: D1Database, stationId: number): Promise<{ id: number; name: string }[]> {
+export async function getUnlinkedSights(db: D1Database, stationId: number): Promise<{ id: number; name: string; category: string }[]> {
   const r = await db
     .prepare(
-      `SELECT id, name FROM top_picks
+      `SELECT id, name, category FROM top_picks
        WHERE id NOT IN (SELECT top_pick_id FROM station_top_picks WHERE station_id = ?) ORDER BY name`,
     )
     .bind(stationId)
-    .all<{ id: number; name: string }>();
+    .all<{ id: number; name: string; category: string }>();
   return r.results ?? [];
 }
 

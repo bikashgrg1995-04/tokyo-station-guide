@@ -24,7 +24,7 @@ const db = env.DB;
 const id = Number(Astro.params.id);
 
 if (!Number.isInteger(id) || id <= 0) {
-  return Astro.redirect("/admin/top-picks");
+  return Astro.redirect("/admin/places");
 }
 
 const topPick = await getTopPickById(db, id);
@@ -65,12 +65,12 @@ const admin = await Astro.session?.get<{
 
 ---
 
-<AdminLayout title="Edit Top Pick" activePath="/admin/top-picks">
+<AdminLayout title="Edit Place" activePath="/admin/places">
   <header class="admin-topbar">
     <Breadcrumbs
-      backHref="/admin/top-picks"
-      parentLabel="Top Picks"
-      current="Edit Top Pick"
+      backHref="/admin/places"
+      parentLabel="Places"
+      current="Edit Place"
     />
 
     <div class="admin-user">
@@ -100,7 +100,7 @@ const admin = await Astro.session?.get<{
         <>
           <div class="admin-page-header">
             <div>
-              <h2>Edit Top Pick</h2>
+              <h2>Edit Place</h2>
               <p>
                 Update the featured place information used throughout
                 the Tokyo Station Guide.
@@ -112,7 +112,7 @@ const admin = await Astro.session?.get<{
             <div class="admin-panel-body">
               <div class="admin-operator-form">
                 <div class="admin-operator-form-header">
-                  <h2>Top Pick Details</h2>
+                  <h2>Place Details</h2>
                   <p>Update the information for this featured place.</p>
                 </div>
 
@@ -352,7 +352,7 @@ const admin = await Astro.session?.get<{
                   <TopPickHoursTable openingHours={openingHours} />
 
                   <div class="admin-form-actions">
-                    <Button href="/admin/top-picks" variant="secondary">
+                    <Button href="/admin/places" variant="secondary">
                       Cancel
                     </Button>
 
@@ -373,12 +373,12 @@ const admin = await Astro.session?.get<{
         <>
           <div class="admin-page-header">
             <div>
-              <h2>Edit Top Pick</h2>
-              <p>The requested top pick could not be found.</p>
+              <h2>Edit Place</h2>
+              <p>The requested place could not be found.</p>
             </div>
 
-            <Button href="/admin/top-picks" variant="secondary">
-              ← Back to Top Picks
+            <Button href="/admin/places" variant="secondary">
+              ← Back to Places
             </Button>
           </div>
 
@@ -386,12 +386,12 @@ const admin = await Astro.session?.get<{
             <div class="admin-panel-body">
               <EmptyState
                 icon="⚠"
-                title="Top Pick Not Found"
-                description="The requested top pick does not exist or may have been removed."
+                title="Place Not Found"
+                description="The requested place does not exist or may have been removed."
               >
                 <div class="admin-form-actions admin-not-found-actions">
-                  <Button href="/admin/top-picks" variant="secondary">
-                    Back to Top Picks
+                  <Button href="/admin/places" variant="secondary">
+                    Back to Places
                   </Button>
                 </div>
               </EmptyState>
@@ -408,7 +408,7 @@ const admin = await Astro.session?.get<{
         <ConfirmDialog
           id="save-top-pick-dialog"
           title="Save Changes"
-          description="Are you sure you want to save these changes to this top pick?"
+          description="Are you sure you want to save these changes to this place?"
           confirmText="Save Changes"
           cancelText="Cancel"
           variant="primary"

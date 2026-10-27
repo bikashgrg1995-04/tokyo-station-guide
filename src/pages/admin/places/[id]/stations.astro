@@ -19,7 +19,7 @@ const { env } = await import("cloudflare:workers");
 const id = Number(Astro.params.id);
 
 if (!Number.isInteger(id) || id <= 0) {
-  return Astro.redirect("/admin/top-picks");
+  return Astro.redirect("/admin/places");
 }
 
 const page = await loadTopPickStationsPage(
@@ -50,11 +50,11 @@ if (!topPick) {
 const formResult = { error: page.error };
 ---
 
-<AdminLayout title="Top Pick Stations" activePath="/admin/top-picks">
+<AdminLayout title="Place Stations" activePath="/admin/places">
   <header class="admin-topbar">
     <Breadcrumbs
-      backHref="/admin/top-picks"
-      parentLabel="Top Picks"
+      backHref="/admin/places"
+      parentLabel="Places"
       current="Station Assignments"
     />
   </header>
@@ -64,9 +64,9 @@ const formResult = { error: page.error };
       <>
         <div class="admin-page-header">
           <div>
-            <h2>Manage Top Pick Stations</h2>
+            <h2>Manage Place Stations</h2>
             <p>
-              Manage the stations associated with this Top Pick.
+              Manage the stations associated with this Place.
             </p>
           </div>
         </div>
@@ -117,7 +117,7 @@ const formResult = { error: page.error };
               <EmptyState
                 icon="📍"
                 title="No Stations Assigned"
-                description="Click Add Station to assign this Top Pick to a station."
+                description="Click Add Station to assign this Place to a station."
               />
             ) : (
               <div class="station-table-wrap">
@@ -252,7 +252,7 @@ const formResult = { error: page.error };
                 <h2 id="station-modal-title">Add Station</h2>
 
                 <p id="station-modal-description">
-                  Assign this Top Pick to a station.
+                  Assign this Place to a station.
                 </p>
               </div>
 
@@ -513,13 +513,13 @@ const formResult = { error: page.error };
       <>
         <div class="admin-page-header">
           <div>
-            <h2>Top Pick Not Found</h2>
-            <p>The requested Top Pick does not exist.</p>
+            <h2>Place Not Found</h2>
+            <p>The requested Place does not exist.</p>
           </div>
         </div>
 
-        <Button href="/admin/top-picks" variant="secondary">
-          Back to Top Picks
+        <Button href="/admin/places" variant="secondary">
+          Back to Places
         </Button>
       </>
     )}

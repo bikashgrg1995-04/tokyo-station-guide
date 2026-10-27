@@ -243,12 +243,14 @@ export async function getTopPicksPaginated(
     page?: number;
     perPage?: number;
     search?: string;
+    category?: string;
   } = {},
 ): Promise<PaginatedTopPicks> {
   const perPage = Math.max(1, options.perPage ?? 10);
   const requestedPage = Math.max(1, options.page ?? 1);
   const search = options.search?.trim() ?? "";
   const searchValue = `%${search}%`;
+  const category = (TOP_PICK_CATEGORIES as readonly string[]).includes(options.category ?? "") ? (options.category as string) : "";
 
   const countResult = await db
     .prepare(
@@ -256,6 +258,8 @@ export async function getTopPicksPaginated(
         SELECT COUNT(*) AS total
         FROM top_picks
         WHERE
+          (? = '' OR category = ?)
+          AND (
           ? = ''
           OR name LIKE ?
           OR name_japanese LIKE ?
@@ -264,9 +268,12 @@ export async function getTopPicksPaginated(
           OR description LIKE ?
           OR entry_fee LIKE ?
           OR notes LIKE ?
+          )
       `,
     )
     .bind(
+      category,
+      category,
       search,
       searchValue,
       searchValue,
@@ -302,6 +309,8 @@ export async function getTopPicksPaginated(
           notes_japanese
         FROM top_picks
         WHERE
+          (? = '' OR category = ?)
+          AND (
           ? = ''
           OR name LIKE ?
           OR name_japanese LIKE ?
@@ -310,11 +319,14 @@ export async function getTopPicksPaginated(
           OR description LIKE ?
           OR entry_fee LIKE ?
           OR notes LIKE ?
+          )
         ORDER BY name ASC
         LIMIT ? OFFSET ?
       `,
     )
     .bind(
+      category,
+      category,
       search,
       searchValue,
       searchValue,

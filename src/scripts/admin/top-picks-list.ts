@@ -9,7 +9,7 @@ const initializeDeleteButtons = initializeDeleteConfirm({
   buttonSelector: ".js-delete-top-pick",
   idKey: "topPickId",
   nameKey: "topPickName",
-  actionFor: (id) => `/admin/top-picks/${id}/delete`,
+  actionFor: (id) => `/admin/places/${id}/delete`,
 });
 
 initializeAutoSearch({

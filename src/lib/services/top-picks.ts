@@ -6,6 +6,7 @@ import {
   getTopPicksPaginated,
   hasTopPickAssignments,
   updateTopPick,
+  TOP_PICK_CATEGORIES,
   type TopPick,
   type TopPickCategory,
   type TopPickOpeningHour,
@@ -34,7 +35,7 @@ import {
   validateTopPickForm,
 } from "../validators/top-pick";
 
-const LIST_PATH = "/admin/top-picks";
+const LIST_PATH = "/admin/places";
 const PER_PAGE = 10;
 
 export interface TopPickFormResult {
@@ -337,6 +338,7 @@ export async function loadTopPickList(
   url: URL,
 ) {
   const { search, page } = readListQuery(url);
+  const category = url.searchParams.get("category") ?? "";
 
   const {
     items,
@@ -347,6 +349,7 @@ export async function loadTopPickList(
     page,
     perPage: PER_PAGE,
     search,
+    category,
   });
 
   return {
@@ -356,6 +359,11 @@ export async function loadTopPickList(
     totalPages,
     perPage: PER_PAGE,
     searchParam: search,
-    paginationUrl: paginationUrlFor(LIST_PATH, url, search),
+    category: (TOP_PICK_CATEGORIES as readonly string[]).includes(category) ? category : "",
+    paginationUrl: (() => {
+      const u = paginationUrlFor(LIST_PATH, url, search);
+      if ((TOP_PICK_CATEGORIES as readonly string[]).includes(category)) u.searchParams.set("category", category);
+      return u;
+    })(),
   };
 }

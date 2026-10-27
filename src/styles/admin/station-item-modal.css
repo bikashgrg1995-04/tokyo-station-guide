@@ -94,3 +94,8 @@
 .sim-block-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
 .sim-block-head strong { font-size: .9rem; }
 .sim-where { font-size: .78rem; color: #2563eb; }
+
+.sim-hint { margin: -4px 0 8px; font-size: .8rem; color: #6b7280; }
+.sim-place-line { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; margin-bottom: 8px; }
+.sim-place-line span { font-size: .8rem; color: #6b7280; }
+.sim-place-line a { font-size: .8rem; }
