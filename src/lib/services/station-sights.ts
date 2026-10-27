@@ -1,4 +1,4 @@
-import { getStationSights, getUnlinkedSights, linkSight, unlinkSight, type StationSight } from "../db/station-sights";
+import { getStationSights, getUnlinkedSights, linkSight, unlinkSight, type SightList, type StationSight } from "../db/station-sights";
 import { getStationExits } from "../db/station-exits";
 import { readText } from "./common";
 
@@ -18,12 +18,12 @@ const text = (fd: FormData, key: string, max: number) => {
 };
 
 export async function handleSights(
-  request: Request, db: D1Database, stationId: number, stationSlug: string,
+  request: Request, db: D1Database, stationId: number, list: SightList = "top",
 ): Promise<SightsResult> {
   const exits = (await getStationExits(db, stationId)).map((e) => ({ id: e.id, name: e.name }));
   const result: SightsResult = {
-    redirectTo: null, sights: await getStationSights(db, stationId),
-    unlinked: await getUnlinkedSights(db, stationId), exits, formError: "", errorFor: "", posted: null,
+    redirectTo: null, sights: await getStationSights(db, stationId, list),
+    unlinked: await getUnlinkedSights(db, stationId, list), exits, formError: "", errorFor: "", posted: null,
   };
   if (request.method !== "POST") return result;
 
@@ -39,7 +39,7 @@ export async function handleSights(
 
   try {
     if (action === "trip_delete") {
-      if (existing) await unlinkSight(db, stationId, id); // the place stays in the Top picks list
+      if (existing) await unlinkSight(db, stationId, id, list); // the place stays in Places
     } else if (action === "trip_create" || action === "trip_update") {
       const scope = action === "trip_create" ? "thing-new" : `thing-${id}`;
       if (action === "trip_update" && !existing) return result;
@@ -67,11 +67,11 @@ export async function handleSights(
       await linkSight(db, stationId, pickId, {
         exitId, walkingMinutes: minutes, locationType: locType,
         location: loc.value, locationJapanese: locJa.value, sortOrder: order,
-      });
+      }, list);
     } else {
       return result;
     }
-    result.redirectTo = `/admin/stations/${stationId}/edit?g=top-picks#top-picks`;
+    result.redirectTo = `/admin/stations/${stationId}/edit?g=${list === "top" ? "top-picks" : "things-to-do"}`;
   } catch (err) {
     console.error("Failed to save sights:", err);
     result.formError = "Unable to save. Please try again.";

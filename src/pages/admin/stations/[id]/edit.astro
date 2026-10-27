@@ -69,7 +69,7 @@ if (!station) {
 const GROUPS: { key: string; label: string; items: { key: string; label: string }[] }[] = [
   ["details", "Station details"], ["platforms", "Platforms"], ["floors", "Floors"], ["sides", "Sides of the station"],
   ["exits", "Exits & station tips"], ["facilities", "Facilities"], ["buses-taxis", "Buses & taxis"], ["routes", "Getting there"],
-  ["exit", "Which exit?"], ["day-trips", "Day trips"], ["top-picks", "Top picks"], ["restaurants", "Restaurants"],
+  ["exit", "Which exit?"], ["day-trips", "Day trips"], ["things-to-do", "Things to do"], ["top-picks", "Top picks"], ["restaurants", "Restaurants"],
   ["hotels", "Hotels"], ["seasons", "When to visit"], ["practical-tips", "Practical tips"], ["faqs", "FAQ"],
 ].map(([key, label]) => ({ key, label, items: [{ key, label }] }));
 // "stats" is part of the details form; the note belongs to the restaurants page.
@@ -102,7 +102,8 @@ const exitForm = await run("exits", () => handleStationExits(reqFor("exits"), db
 const tipsForm = await run("exits", () => handleStationTips(reqFor("exits"), db, id));
 const facilitiesForm = await run("facilities", () => handleFacilityEntries(reqFor("facilities"), db, id, station.slug));
 const busesForm = await run("buses-taxis", () => handleTransport(reqFor("buses-taxis"), db, id, station.slug));
-const thingsForm = await run("top-picks", () => handleSights(reqFor("top-picks"), db, id, station.slug));
+const topPicksForm = await run("top-picks", () => handleSights(reqFor("top-picks"), db, id, "top"));
+const thingsForm = await run("things-to-do", () => handleSights(reqFor("things-to-do"), db, id, "thing"));
 const hotelsForm = await run("hotels", () => handleStationPlaces(reqFor("hotels"), db, id, PLACE_KINDS.hotel));
 const restaurantsForm = await run("restaurants", () => handleStationPlaces(reqFor("restaurants"), db, id, PLACE_KINDS.restaurant));
 const tripsForm = await run("day-trips", () => handleDayTrips(reqFor("day-trips"), db, id, station.slug));
@@ -132,7 +133,8 @@ const done: [string, string | null | undefined][] = [
   ["exits", exitForm?.redirectTo ?? tipsForm?.redirectTo],
   ["facilities", facilitiesForm?.redirectTo],
   ["buses-taxis", busesForm?.redirectTo],
-  ["top-picks", thingsForm?.redirectTo],
+  ["top-picks", topPicksForm?.redirectTo],
+  ["things-to-do", thingsForm?.redirectTo],
   ["hotels", hotelsForm?.redirectTo],
   ["restaurants", restaurantsForm?.redirectTo],
   ["day-trips", tripsForm?.redirectTo],
@@ -201,7 +203,8 @@ const shared = { station, id, mediaBase };
         {active === "routes" && <StationRoutesSection {...shared} form={routesForm!} />}
         {active === "exit" && <StationExitPlacesSection {...shared} form={exitPlacesForm!} />}
         {active === "day-trips" && <StationDayTripsSection {...shared} form={tripsForm!} />}
-        {active === "top-picks" && <StationTopPicksSection {...shared} form={thingsForm!} />}
+        {active === "top-picks" && <StationTopPicksSection {...shared} form={topPicksForm!} list="top" />}
+        {active === "things-to-do" && <StationTopPicksSection {...shared} form={thingsForm!} list="thing" />}
         {active === "restaurants" && (
           <>
             <StationPlacesSection form={restaurantsForm!} anchor="restaurants" title="Restaurants" noun="restaurant" />

@@ -481,14 +481,14 @@ export async function getStationPage(
     .all<StationPageTransport>();
 
   // One table per place type, each linked to the station with an exit + walking minutes:
-  // sights = top_picks, food = restaurants, hotels = hotels.
+  // Things to do = places (top_picks) picked in station_things; Top picks (map) are station_top_picks.
   const things = db
     .prepare(
       `SELECT p.id AS pid, p.name, p.name_japanese, p.kind, p.kind_japanese, l.location, l.location_japanese,
               p.entry_fee AS cost, p.entry_fee_japanese AS cost_japanese,
               p.description, p.description_japanese, p.map_url, p.image_url AS photo,
               l.exit_id, e.name AS exit_name, e.name_japanese AS exit_name_japanese, l.walking_minutes
-       FROM station_top_picks l JOIN top_picks p ON p.id = l.top_pick_id
+       FROM station_things l JOIN top_picks p ON p.id = l.top_pick_id
        LEFT JOIN station_exits e ON e.id = l.exit_id
        WHERE l.station_id = ? ORDER BY l.sort_order, p.name`,
     )

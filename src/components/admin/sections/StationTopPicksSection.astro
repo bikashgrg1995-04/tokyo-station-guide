@@ -10,8 +10,11 @@ export interface Props {
   id: number;
   form: Awaited<ReturnType<typeof handleSights>>;
   mediaBase: string;
+  /** "top" = Top picks (main page / map popup), "thing" = Things to do (station page) */
+  list?: "top" | "thing";
 }
-const { station, form, mediaBase } = Astro.props;
+const { station, form, mediaBase, list = "top" } = Astro.props;
+const isTop = list === "top";
 const src = (k: string) => (/^https?:\/\//i.test(k) ? k : `${mediaBase}/${k}`);
 
 const nextOrder = form.sights.reduce((m, t) => Math.max(m, t.sort_order), 0) + 1;
@@ -33,10 +36,12 @@ const rows: Row[] = form.sights.map((t) => ({
 ---
 
 <SimSection
-  anchor="top-picks"
-  title="Top picks"
-  hint={`Choose places from <a href="/admin/places"><b>Places</b></a> and say where they are from ${station.name}. These feed <b>Things to do</b> on the station page, <b>Top picks</b> on the map and <b>Which exit?</b>. Place details (name, photo, text) are edited in Places; the exit and walking minutes are only for this station.`}
-  noun="top pick"
+  anchor={isTop ? "top-picks" : "things-to-do"}
+  title={isTop ? "Top picks" : "Things to do"}
+  hint={isTop
+    ? `Shown on the website's <b>main page and in the map popup</b> of ${station.name}. Choose places from <a href="/admin/places"><b>Places</b></a>; the exit and walking minutes are only for this station.`
+    : `Shown on the <b>station page</b> under <b>Things to do</b> (and used by <b>Which exit?</b> when an exit is set). Choose places from <a href="/admin/places"><b>Places</b></a>; the exit and walking minutes are only for this station.`}
+  noun={isTop ? "top pick" : "place"}
   columns={["Order", "Place", "Exit · minutes"]}
   rows={rows}
   actionName="trip_action"
@@ -47,8 +52,8 @@ const rows: Row[] = form.sights.map((t) => ({
   formError={form.formError}
   posted={form.posted}
   reopenMode={form.errorFor === "thing-new" ? "create" : "update"}
-  searchPlaceholder="Search top picks..."
-  emptyHint="Click Add top pick and choose a place from Places."
+  searchPlaceholder={isTop ? "Search top picks..." : "Search places..."}
+  emptyHint="Click Add and choose a place from Places."
 >
   <div data-sim-create-only>
     <div class="sim-grid2">
@@ -80,9 +85,11 @@ const rows: Row[] = form.sights.map((t) => ({
         <select name="exit_id"><option value="">— none —</option>{form.exits.map((e) => <option value={e.id}>{e.name}</option>)}</select>
       </div>
       <div class="admin-form-group"><label>Walking minutes</label><input name="walking_minutes" type="number" min="0" max="120" /></div>
-      <div class="admin-form-group"><label>Inside / outside</label>
-        <select name="location_type"><option value="inside">Inside station</option><option value="outside">Outside</option><option value="inside_outside">Both</option></select>
-      </div>
+      {isTop && (
+        <div class="admin-form-group"><label>Inside / outside</label>
+          <select name="location_type"><option value="inside">Inside station</option><option value="outside">Outside</option><option value="inside_outside">Both</option></select>
+        </div>
+      )}
       <div class="admin-form-group"><label>Order</label><input name="sort_order" type="number" min="0" value="0" /></div>
       <div class="admin-form-group"><label>Extra location note</label><input name="location" maxlength="150" placeholder="Near the east gate" /></div>
       <div class="admin-form-group"><label>Extra location note (Japanese)</label><input name="location_japanese" maxlength="150" lang="ja" /></div>

@@ -172,6 +172,7 @@ export function buildImportPlan(
   const stationRestaurants = new Set(snap.stationRestaurants);
   const floorFacilities = new Set(snap.floorFacilities);
   const stationTopPicks = new Set(snap.stationTopPicks);
+  const stationThings = new Set(snap.stationThings);
 
   const lineOrders = new Map<string, Map<string, number>>();
   for (const ls of snap.lineStations) {
@@ -234,6 +235,9 @@ export function buildImportPlan(
     const delStationTopPicks = gone("stationTopPick", "station_top_picks",
       (d) => `${d.station_slug}|${d.top_pick_slug}`, (k) => stationKept(part(k, 0)) && !delTopPicks.has(part(k, 1)));
 
+    const delStationThings = gone("stationThing", "station_things",
+      (d) => `${d.station_slug}|${d.top_pick_slug}`, (k) => stationKept(part(k, 0)) && !delTopPicks.has(part(k, 1)));
+
     delExits.forEach((k) => removedExits.add(k));
     delStations.forEach((st) => {
       for (const e of exits) if (e.startsWith(`${st}|`)) removedExits.add(e);
@@ -272,6 +276,7 @@ export function buildImportPlan(
       ["hotel", "hotels", delHotels],
       ["restaurant", "restaurants", delRestaurants],
       ["stationTopPick", "station_top_picks", delStationTopPicks],
+      ["stationThing", "station_things", delStationThings],
     ];
     for (const [type, sheet, set] of groups) {
       if (set.size === 0) continue;
@@ -971,6 +976,25 @@ export function buildImportPlan(
     const exists = stationTopPicks.has(key);
     stationTopPicks.add(key);
     record("station_top_picks", { t: "stationTopPick", stationSlug, topPickSlug, exitName, minutes, locationType, location, locationJa, sortOrder }, key, exists);
+  });
+
+  // ---- station_things (the station page "Things to do" list) --------------------
+  eachRow("station_things", (d) => `${d.station_slug}|${d.top_pick_slug}`, (d, err, dup) => {
+    const stationSlug = d.station_slug ?? "";
+    const topPickSlug = d.top_pick_slug ?? "";
+    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
+    if (!topPickSlugs.has(topPickSlug)) err(`Place "${topPickSlug}" does not exist (add it to the top_picks sheet first).`);
+    const exitName = exitNameField(d, stationSlug, err);
+    const minutes = intField(d, "walking_minutes", err, 0, 600);
+    const location = text(d, "location", 150, err);
+    const locationJa = text(d, "location_japanese", 150, err);
+    const sortOrder = intField(d, "sort_order", err);
+    if (dup || !stationSlugs.has(stationSlug) || !topPickSlugs.has(topPickSlug)) return;
+
+    const key = `${stationSlug}|${topPickSlug}`;
+    const exists = stationThings.has(key);
+    stationThings.add(key);
+    record("station_things", { t: "stationThing", stationSlug, topPickSlug, exitName, minutes, location, locationJa, sortOrder }, key, exists);
   });
 
   // ---- hotels -------------------------------------------------------------
