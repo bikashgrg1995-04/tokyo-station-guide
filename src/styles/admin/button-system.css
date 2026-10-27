@@ -151,3 +151,5 @@
 /* Row actions are always stacked (Edit over Delete) so every table fits */
 .admin-main .sim-actions { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
 .admin-main .sim-actions .admin-table-action { width: 100%; }
+
+.admin-saved-note { margin: 0 0 10px; padding: 7px 12px; border-radius: 8px; background: #ecfdf3; color: #166534; font-size: .85rem; font-weight: 600; }

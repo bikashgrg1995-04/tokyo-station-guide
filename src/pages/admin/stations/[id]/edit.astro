@@ -179,6 +179,7 @@ const shared = { station, id, mediaBase };
                 </div>
 
                 {formError && <Alert>{formError}</Alert>}
+                {Astro.url.searchParams.get("saved") === "1" && !formError && <p class="admin-saved-note" role="status">✓ Station saved.</p>}
 
                 <StationFormFields values={form!.values} errors={errors} mainImage={station.main_image} />
               </div>

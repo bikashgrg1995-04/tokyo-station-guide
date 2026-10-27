@@ -352,7 +352,7 @@ export async function handleStationUpdate(
         await saveRestaurantsNote(db, id, noteEn || null, noteJa || null);
       }
 
-      result.redirectTo = LIST_PATH;
+      result.redirectTo = `/admin/stations/${id}/edit?g=details&saved=1`;
       return result;
     } catch (err) {
       console.error(err);
