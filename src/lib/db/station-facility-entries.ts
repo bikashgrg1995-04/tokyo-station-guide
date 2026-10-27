@@ -6,7 +6,7 @@ export interface FacilityEntryInput {
   count: number;
   description: string | null;
   descriptionJapanese: string | null;
-  locationType: "inside" | "outside";
+  locationType: "inside" | "outside" | "inside_outside";
   exitIds: number[];
   photoCaption: string | null;
   photoCaptionJapanese: string | null;

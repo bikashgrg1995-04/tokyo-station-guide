@@ -116,7 +116,7 @@ export async function handleFacilityEntries(
         count,
         description: desc.value,
         descriptionJapanese: descJa.value,
-        locationType: readText(fd, "location_type") === "outside" ? "outside" : "inside",
+        locationType: ({ outside: "outside", inside_outside: "inside_outside" } as const)[readText(fd, "location_type") as "outside" | "inside_outside"] ?? "inside",
         exitIds,
         photoCaption: cap.value,
         photoCaptionJapanese: capJa.value,

@@ -35,7 +35,7 @@ const rows: Row[] = form.entries.map((e) => {
         emoji: e.icon && !isUploadedIcon(e.icon) ? e.icon : undefined,
         badge: (e.facility_count ?? 1) > 1 ? `×${e.facility_count}` : undefined,
       },
-      { main: e.floor_name || e.floor_name_japanese || "", badge: e.location_type === "outside" ? "outside" : undefined },
+      { main: e.floor_name || e.floor_name_japanese || "", badge: e.location_type === "outside" ? "outside" : e.location_type === "inside_outside" ? "inside & outside" : undefined },
       { clip: exitNames.join(", ") },
       { img: e.photo ? src(e.photo) : undefined, clip: e.note || e.note_japanese || "" },
     ],
@@ -84,6 +84,7 @@ const canAdd = form.floors.length > 0 && form.facilities.length > 0;
       <select name="location_type">
         <option value="inside">Inside</option>
         <option value="outside">Outside</option>
+        <option value="inside_outside">Inside &amp; outside</option>
       </select>
     </div>
     <div class="admin-form-group">

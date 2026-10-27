@@ -14,7 +14,7 @@ const where = (f: (typeof station.facilityGuide)[number], jp: boolean) =>
   [
     jp ? f.floor_name_japanese || f.floor_name : f.floor_name,
     ...(jp ? f.exit_names_japanese : f.exit_names),
-    f.location_type === "outside" ? (jp ? "駅の外" : "outside the station") : "",
+    f.location_type === "outside" ? (jp ? "駅の外" : "outside the station") : f.location_type === "inside_outside" ? (jp ? "駅構内・駅外" : "inside & outside the station") : "",
   ]
     .filter(Boolean)
     .join(" · ");

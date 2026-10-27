@@ -39,7 +39,7 @@ export interface StationFacility {
 }
 
 /** Where a facility is: inside the station or outside it. */
-export type StationFacilityLocation = "inside" | "outside";
+export type StationFacilityLocation = "inside" | "outside" | "inside_outside";
 
 export interface StationFacilityExit {
   id: number;

@@ -440,7 +440,7 @@ function facilityDetailHtml(group) {
 
     var where = String(f.location_type || "").toLowerCase();
 
-    if (where === "inside" || where === "outside") {
+    if (where === "inside" || where === "outside" || where === "inside_outside") {
       if (locations.indexOf(where) === -1) {
         locations.push(where);
       }
@@ -463,7 +463,8 @@ function facilityDetailHtml(group) {
 
   var locationPills = locations
     .map(function (type) {
-      var label = type === "inside" ? t("sheet.inside") : t("sheet.outside");
+      var label =
+        type === "inside" ? t("sheet.inside") : type === "inside_outside" ? t("sheet.insideOutside") : t("sheet.outside");
 
       return (
         '<span class="io pk-status pk-status-' +
