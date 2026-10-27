@@ -12,10 +12,9 @@ import ConfirmDialog from "../../../../components/common/ConfirmDialog.astro";
 
 import StationFormFields from "../../../../components/admin/StationFormFields.astro";
 
-import { getStationFloors } from "../../../../lib/db/station-floors";
 import { getStationById } from "../../../../lib/db/stations";
 import { handleStationUpdate } from "../../../../lib/services/stations";
-import { getRestaurantsNote } from "../../../../lib/db/places";
+import { getRestaurantsNote, saveRestaurantsNote } from "../../../../lib/db/places";
 
 
 import StationFacilitiesSection from "../../../../components/admin/sections/StationFacilitiesSection.astro";
@@ -66,69 +65,96 @@ if (!station) {
   return Astro.redirect("/admin/stations");
 }
 
-const stationFloors = await getStationFloors(db, id);
+// Five menus, one page load each: only the open menu's data is read and rendered.
+const GROUPS: { key: string; label: string; items: { key: string; label: string }[] }[] = [
+  ["details", "Station details"], ["platforms", "Platforms"], ["floors", "Floors"], ["sides", "Sides of the station"],
+  ["exits", "Exits & station tips"], ["facilities", "Facilities"], ["buses-taxis", "Buses & taxis"], ["routes", "Getting there"],
+  ["exit", "Which exit?"], ["day-trips", "Day trips"], ["things-to-do", "Things to do"], ["restaurants", "Restaurants"],
+  ["hotels", "Hotels"], ["seasons", "When to visit"], ["practical-tips", "Practical tips"], ["faqs", "FAQ"],
+].map(([key, label]) => ({ key, label, items: [{ key, label }] }));
+// "stats" is part of the details form; the note belongs to the restaurants page.
+const groupOf = (k: string) => (k === "stats" ? "details" : k === "restaurants-note" ? "restaurants" : GROUPS.find((g) => g.key === k)?.key);
 
 // Every section posts here with ?s=<section>; only that section's handler gets the POST.
 const posted = Astro.request.method === "POST";
 const part = Astro.url.searchParams.get("s");
+const active =
+  (posted ? (part ? groupOf(part) : "details") : GROUPS.find((g) => g.key === Astro.url.searchParams.get("g"))?.key) ?? "details";
+const on = (key: string) => groupOf(key) === active;
 const getReq = (): Request => new Request(Astro.url, { method: "GET" });
 const reqFor = (key: string): Request => (!posted ? Astro.request : part === key ? Astro.request.clone() : getReq()) as Request;
 
-const form = await handleStationUpdate((!posted || part ? (posted ? getReq() : Astro.request) : Astro.request.clone()) as Request, db, id, station);
-if (form.redirectTo) {
+type Handled<T> = T | null;
+const run = async <T,>(key: string, fn: () => Promise<T>): Promise<Handled<T>> => (on(key) ? fn() : null);
+
+const form = (await run("details", () =>
+  handleStationUpdate((!posted || part ? (posted ? getReq() : Astro.request) : Astro.request.clone()) as Request, db, id, station),
+))!;
+if (form?.redirectTo) {
   return Astro.redirect(form.redirectTo);
 }
 
-const platformForm = await handleStationPlatforms(reqFor("platforms"), db, id);
-const floorForm = await handleStationFloors(reqFor("floors"), db, id);
-const sidesForm = await handleStationSides(reqFor("sides"), db, id);
-const routesForm = await handleStationRoutes(reqFor("routes"), db, id);
-const exitForm = await handleStationExits(reqFor("exits"), db, id, station.slug);
-const tipsForm = await handleStationTips(reqFor("exits"), db, id);
-const facilitiesForm = await handleFacilityEntries(reqFor("facilities"), db, id, station.slug);
-const busesForm = await handleTransport(reqFor("buses-taxis"), db, id, station.slug);
-const thingsForm = await handleSights(reqFor("things-to-do"), db, id, station.slug);
-const hotelsForm = await handleStationPlaces(reqFor("hotels"), db, id, PLACE_KINDS.hotel);
-const restaurantsForm = await handleStationPlaces(reqFor("restaurants"), db, id, PLACE_KINDS.restaurant);
-const tripsForm = await handleDayTrips(reqFor("day-trips"), db, id, station.slug);
-const seasonsForm = await handleStationSeasons(reqFor("seasons"), db, id);
-const practicalForm = await handlePracticalTips(reqFor("practical-tips"), db, id);
-const faqForm = await handleStationFaqs(reqFor("faqs"), db, id);
-const exitPlacesForm = await handleStationExitPlaces(reqFor("exit"), db, id);
+const platformForm = await run("platforms", () => handleStationPlatforms(reqFor("platforms"), db, id));
+const floorForm = await run("floors", () => handleStationFloors(reqFor("floors"), db, id));
+const sidesForm = await run("sides", () => handleStationSides(reqFor("sides"), db, id));
+const routesForm = await run("routes", () => handleStationRoutes(reqFor("routes"), db, id));
+const exitForm = await run("exits", () => handleStationExits(reqFor("exits"), db, id, station.slug));
+const tipsForm = await run("exits", () => handleStationTips(reqFor("exits"), db, id));
+const facilitiesForm = await run("facilities", () => handleFacilityEntries(reqFor("facilities"), db, id, station.slug));
+const busesForm = await run("buses-taxis", () => handleTransport(reqFor("buses-taxis"), db, id, station.slug));
+const thingsForm = await run("things-to-do", () => handleSights(reqFor("things-to-do"), db, id, station.slug));
+const hotelsForm = await run("hotels", () => handleStationPlaces(reqFor("hotels"), db, id, PLACE_KINDS.hotel));
+const restaurantsForm = await run("restaurants", () => handleStationPlaces(reqFor("restaurants"), db, id, PLACE_KINDS.restaurant));
+const tripsForm = await run("day-trips", () => handleDayTrips(reqFor("day-trips"), db, id, station.slug));
+const seasonsForm = await run("seasons", () => handleStationSeasons(reqFor("seasons"), db, id));
+const practicalForm = await run("practical-tips", () => handlePracticalTips(reqFor("practical-tips"), db, id));
+const faqForm = await run("faqs", () => handleStationFaqs(reqFor("faqs"), db, id));
+const exitPlacesForm = await run("exit", () => handleStationExitPlaces(reqFor("exit"), db, id));
 
-const done: [string, string | null][] = [
-  ["platforms", platformForm.redirectTo],
-  ["floors", floorForm.redirectTo],
-  ["sides", sidesForm.redirectTo],
-  ["routes", routesForm.redirectTo],
-  ["exits", exitForm.redirectTo ?? tipsForm.redirectTo],
-  ["facilities", facilitiesForm.redirectTo],
-  ["buses-taxis", busesForm.redirectTo],
-  ["things-to-do", thingsForm.redirectTo],
-  ["hotels", hotelsForm.redirectTo],
-  ["restaurants", restaurantsForm.redirectTo],
-  ["day-trips", tripsForm.redirectTo],
-  ["seasons", seasonsForm.redirectTo],
-  ["practical-tips", practicalForm.redirectTo],
-  ["faqs", faqForm.redirectTo],
-  ["exit", exitPlacesForm.redirectTo],
+// The note above the restaurants list has its own little form.
+let noteError = "";
+if (posted && part === "restaurants-note") {
+  const fd = await Astro.request.clone().formData();
+  const en = String(fd.get("restaurants_note") ?? "").trim();
+  const ja = String(fd.get("restaurants_note_japanese") ?? "").trim();
+  if (en.length > 1000 || ja.length > 1000) noteError = "The restaurants note must be 1000 characters or less.";
+  else {
+    await saveRestaurantsNote(db, id, en || null, ja || null);
+    return Astro.redirect(`/admin/stations/${id}/edit?g=restaurants#restaurants-note`);
+  }
+}
+
+const done: [string, string | null | undefined][] = [
+  ["platforms", platformForm?.redirectTo],
+  ["floors", floorForm?.redirectTo],
+  ["sides", sidesForm?.redirectTo],
+  ["routes", routesForm?.redirectTo],
+  ["exits", exitForm?.redirectTo ?? tipsForm?.redirectTo],
+  ["facilities", facilitiesForm?.redirectTo],
+  ["buses-taxis", busesForm?.redirectTo],
+  ["things-to-do", thingsForm?.redirectTo],
+  ["hotels", hotelsForm?.redirectTo],
+  ["restaurants", restaurantsForm?.redirectTo],
+  ["day-trips", tripsForm?.redirectTo],
+  ["seasons", seasonsForm?.redirectTo],
+  ["practical-tips", practicalForm?.redirectTo],
+  ["faqs", faqForm?.redirectTo],
+  ["exit", exitPlacesForm?.redirectTo],
 ];
 for (const [anchor, target] of done) {
-  if (target) return Astro.redirect(`/admin/stations/${id}/edit#${anchor}`);
+  if (target) return Astro.redirect(`/admin/stations/${id}/edit?g=${groupOf(anchor)}#${anchor}`);
 }
 
 const mediaBase =
   String((env as { MEDIA_BASE_URL?: string }).MEDIA_BASE_URL ?? "").trim().replace(/\/+$/, "") || "/media";
 const mediaSrc = (k: string) => (/^https?:\/\//i.test(k) ? k : `${mediaBase}/${k}`);
 
-const {
-  errors,
-  formError,
-} = form;
+const errors = form?.errors ?? {};
+const formError = form?.formError ?? "";
 
-const savedNote = await getRestaurantsNote(db, id);
-const noteValue = form.restaurantsNote ?? savedNote.note;
-const noteJaValue = form.restaurantsNoteJapanese ?? savedNote.noteJapanese;
+const savedNote = active === "restaurants" ? await getRestaurantsNote(db, id) : { note: "", noteJapanese: "" };
+const noteValue = savedNote.note;
+const noteJaValue = savedNote.noteJapanese;
 const shared = { station, id, mediaBase };
 ---
 
@@ -138,64 +164,69 @@ const shared = { station, id, mediaBase };
   </header>
 
   <div class="station-admin-frame">
-    <StationSectionNav stationName={station.name} />
+    <StationSectionNav stationName={station.name} stationId={id} groups={GROUPS} active={active} />
 
     <div class="admin-content admin-station-page">
       <div class="station-sections">
-        <form method="POST" enctype="multipart/form-data" class="admin-form station-main-form" id="edit-station-form">
-          <input type="hidden" name="action" value="update" />
+        {active === "details" && (
+          <form method="POST" enctype="multipart/form-data" class="admin-form station-main-form" id="edit-station-form">
+            <input type="hidden" name="action" value="update" />
 
-          <section class="station-section admin-panel" id="details" data-nav="details" style="order:10">
-            <div class="admin-panel-body">
-              <div class="admin-station-form-header">
-                <h3>Station Details</h3>
-              </div>
-
-              {formError && <Alert>{formError}</Alert>}
-
-              <StationFormFields values={form.values} errors={errors} mainImage={station.main_image} />
-            </div>
-          </section>
-
-          <section class="station-section admin-panel" id="restaurants-note" data-nav="restaurants-note" style="order:100">
-            <div class="admin-panel-body">
-              <h3 style="margin:0 0 8px">Restaurants note</h3>
-              <div class="admin-form-grid">
-                <div class="admin-form-group full-width">
-                  <label for="restaurants_note">
-                    Note <span class="admin-label-hint">shown above the restaurants list, use **text** for bold</span>
-                  </label>
-                  <textarea id="restaurants_note" name="restaurants_note" rows="2" maxlength="1000">{noteValue}</textarea>
+            <section class="station-section admin-panel" id="details" data-nav="details">
+              <div class="admin-panel-body">
+                <div class="admin-station-form-header">
+                  <h3>Station Details</h3>
                 </div>
-                <div class="admin-form-group full-width">
-                  <label for="restaurants_note_japanese">Note (Japanese)</label>
-                  <textarea id="restaurants_note_japanese" name="restaurants_note_japanese" lang="ja" rows="2" maxlength="1000">{noteJaValue}</textarea>
-                </div>
+
+                {formError && <Alert>{formError}</Alert>}
+
+                <StationFormFields values={form!.values} errors={errors} mainImage={station.main_image} />
               </div>
+            </section>
+
+            <div class="station-save-bar">
+              <Button href="/admin/stations" variant="secondary"> Cancel </Button>
+              <Button type="submit" variant="primary" id="save-station-button">Save Station</Button>
             </div>
-          </section>
+          </form>
+        )}
 
-          <div class="station-save-bar">
-            <Button href="/admin/stations" variant="secondary"> Cancel </Button>
-            <Button type="submit" variant="primary" id="save-station-button">Save Station</Button>
-          </div>
-        </form>
-
-        <div style="order:25"><StationExitPlacesSection {...shared} form={exitPlacesForm} /></div>
-        <div style="order:20"><StationPlatformsSection {...shared} form={platformForm} /></div>
-        <div style="order:30"><StationFloorsSection {...shared} form={floorForm} /></div>
-        <div style="order:40"><StationSidesSection {...shared} form={sidesForm} /></div>
-        <div style="order:50"><StationRoutesSection {...shared} form={routesForm} /></div>
-        <div style="order:60"><StationExitsSection {...shared} form={exitForm} tipsForm={tipsForm} /></div>
-        <div style="order:70"><StationFacilitiesSection {...shared} form={facilitiesForm} /></div>
-        <div style="order:80"><StationBusesSection {...shared} form={busesForm} /></div>
-        <div style="order:90"><StationThingsSection {...shared} form={thingsForm} /></div>
-        <div style="order:95"><StationPlacesSection form={restaurantsForm} anchor="restaurants" title="Restaurants" noun="restaurant" /></div>
-        <div style="order:105"><StationPlacesSection form={hotelsForm} anchor="hotels" title="Hotels" noun="hotel" /></div>
-        <div style="order:110"><StationDayTripsSection {...shared} form={tripsForm} /></div>
-        <div style="order:120"><StationSeasonsSection {...shared} form={seasonsForm} /></div>
-        <div style="order:130"><StationPracticalSection {...shared} form={practicalForm} /></div>
-        <div style="order:140"><StationFaqSection {...shared} form={faqForm} /></div>
+        {active === "platforms" && <StationPlatformsSection {...shared} form={platformForm!} />}
+        {active === "floors" && <StationFloorsSection {...shared} form={floorForm!} />}
+        {active === "sides" && <StationSidesSection {...shared} form={sidesForm!} />}
+        {active === "exits" && <StationExitsSection {...shared} form={exitForm!} tipsForm={tipsForm!} />}
+        {active === "facilities" && <StationFacilitiesSection {...shared} form={facilitiesForm!} />}
+        {active === "buses-taxis" && <StationBusesSection {...shared} form={busesForm!} />}
+        {active === "routes" && <StationRoutesSection {...shared} form={routesForm!} />}
+        {active === "exit" && <StationExitPlacesSection {...shared} form={exitPlacesForm!} />}
+        {active === "day-trips" && <StationDayTripsSection {...shared} form={tripsForm!} />}
+        {active === "things-to-do" && <StationThingsSection {...shared} form={thingsForm!} />}
+        {active === "restaurants" && (
+          <>
+            <StationPlacesSection form={restaurantsForm!} anchor="restaurants" title="Restaurants" noun="restaurant" />
+            <section class="station-section" id="restaurants-note" data-nav="restaurants-note">
+              <form method="POST" action="?s=restaurants-note" class="sim-note admin-form">
+                <h3>Restaurants note</h3>
+                {noteError && <div class="admin-form-error" role="alert">{noteError}</div>}
+                <div class="sim-grid2">
+                  <div class="admin-form-group">
+                    <label for="restaurants_note">Note <span class="admin-label-hint">shown above the restaurants list, **text** = bold</span></label>
+                    <textarea id="restaurants_note" name="restaurants_note" rows="2" maxlength="1000">{noteValue}</textarea>
+                  </div>
+                  <div class="admin-form-group">
+                    <label for="restaurants_note_japanese">Note (Japanese)</label>
+                    <textarea id="restaurants_note_japanese" name="restaurants_note_japanese" lang="ja" rows="2" maxlength="1000">{noteJaValue}</textarea>
+                  </div>
+                </div>
+                <button type="submit" class="common-button common-button-primary">Save note</button>
+              </form>
+            </section>
+          </>
+        )}
+        {active === "hotels" && <StationPlacesSection form={hotelsForm!} anchor="hotels" title="Hotels" noun="hotel" />}
+        {active === "seasons" && <StationSeasonsSection {...shared} form={seasonsForm!} />}
+        {active === "practical-tips" && <StationPracticalSection {...shared} form={practicalForm!} />}
+        {active === "faqs" && <StationFaqSection {...shared} form={faqForm!} />}
       </div>
     </div>
   </div>

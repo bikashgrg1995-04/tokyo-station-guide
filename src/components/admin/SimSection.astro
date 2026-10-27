@@ -71,7 +71,7 @@ const canDelete = !!deleteValue;
 
   {formError && !posted && <div class="admin-form-error" role="alert">{formError}</div>}
 
-  {canAdd && rows.length > 0 && (
+  {rows.length > 0 && (
     <div class="sim-toolbar">
       <input data-sim="search" type="search" placeholder={searchPlaceholder} aria-label={searchPlaceholder} />
     </div>

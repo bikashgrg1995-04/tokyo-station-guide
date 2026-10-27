@@ -57,17 +57,61 @@ function init(root: HTMLElement) {
     if (e.key === "Escape" && modal && !modal.hidden) close();
   });
 
-  search?.addEventListener("input", () => {
-    const text = search.value.trim().toLowerCase();
-    let shown = 0;
-    root.querySelectorAll<HTMLElement>(".sim-row").forEach((r) => {
-      const hide = text !== "" && !(r.dataset.search ?? "").includes(text);
-      r.hidden = hide;
-      if (!hide) shown++;
-    });
+  // Add button sits beside the search box, in one toolbar.
+  let toolbar = root.querySelector<HTMLElement>(".sim-toolbar");
+  if (!toolbar && (addBtn || search)) {
+    toolbar = document.createElement("div");
+    toolbar.className = "sim-toolbar";
+    root.querySelector(".admin-panel")?.insertAdjacentElement("beforebegin", toolbar);
+  }
+  if (toolbar && addBtn) toolbar.appendChild(addBtn);
+
+  // Search + pagination (10 rows a page).
+  const PAGE = 10;
+  const rows = Array.from(root.querySelectorAll<HTMLElement>(".sim-row"));
+  let page = 1;
+  let pager: HTMLElement | null = null;
+  if (rows.length > PAGE) {
+    pager = document.createElement("div");
+    pager.className = "sim-pager";
+    root.querySelector(".admin-table-wrapper")?.insertAdjacentElement("afterend", pager);
+  }
+  function render() {
+    const text = (search?.value ?? "").trim().toLowerCase();
+    const match = rows.filter((r) => text === "" || (r.dataset.search ?? "").includes(text));
+    const pages = Math.max(1, Math.ceil(match.length / PAGE));
+    page = Math.min(page, pages);
+    const from = (page - 1) * PAGE;
+    const visible = new Set(match.slice(from, from + PAGE));
+    rows.forEach((r) => (r.hidden = !visible.has(r)));
     const e = q("empty");
-    if (e) e.hidden = shown > 0;
+    if (e) e.hidden = match.length > 0;
+    if (pager) {
+      pager.hidden = match.length <= PAGE;
+      pager.innerHTML = "";
+      const info = document.createElement("span");
+      info.textContent = `${from + 1}-${Math.min(from + PAGE, match.length)} of ${match.length}`;
+      const mk = (label: string, to: number, off: boolean) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = label;
+        b.disabled = off;
+        b.addEventListener("click", () => {
+          page = to;
+          render();
+        });
+        return b;
+      };
+      pager.appendChild(info);
+      pager.appendChild(mk("‹ Prev", page - 1, page <= 1));
+      pager.appendChild(mk("Next ›", page + 1, page >= pages));
+    }
+  }
+  search?.addEventListener("input", () => {
+    page = 1;
+    render();
   });
+  render();
 
   const reopen = modal?.dataset.reopen;
   if (reopen) {

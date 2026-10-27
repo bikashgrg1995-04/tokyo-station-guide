@@ -3,40 +3,30 @@ import "../../styles/admin/station-section-nav.css";
 
 export interface Props {
   stationName: string;
+  stationId: number;
+  groups: { key: string; label: string }[];
+  active: string;
 }
 
-const { stationName } = Astro.props;
-
-// Same order as the public station page.
-const ITEMS: { key: string; label: string }[] = [
-  { key: "details", label: "Station Details" },
-  { key: "stats", label: "Page stat cards" },
-  { key: "platforms", label: "Platforms" },
-  { key: "exit", label: "Which exit?" },
-  { key: "floors", label: "Floors" },
-  { key: "sides", label: "Sides of the station" },
-  { key: "routes", label: "Getting there" },
-  { key: "exits", label: "Exits & station tips" },
-  { key: "facilities", label: "Facilities" },
-  { key: "buses-taxis", label: "Buses & taxis" },
-  { key: "things-to-do", label: "Things to do" },
-  { key: "restaurants", label: "Restaurants" },
-  { key: "restaurants-note", label: "Restaurants note" },
-  { key: "hotels", label: "Hotels" },
-  { key: "day-trips", label: "Day trips" },
-  { key: "seasons", label: "When to visit" },
-  { key: "practical-tips", label: "Practical tips" },
-  { key: "faqs", label: "FAQ" },
-];
+const { stationName, stationId, groups, active } = Astro.props;
 ---
 
 <nav class="station-section-nav" aria-label={`${stationName} sections`}>
   <p class="station-section-nav-title">{stationName}</p>
   <ul>
     {
-      ITEMS.map((i) => (
+      groups.map((g) => (
         <li>
-          <a href={`#${i.key}`} data-nav-link={i.key}>{i.label}</a>
+          <a
+            href={`/admin/stations/${stationId}/edit?g=${g.key}`}
+            class:list={[{ "is-active": g.key === active }]}
+            aria-current={g.key === active ? "page" : undefined}
+          >
+            {g.label}
+          </a>
+          {g.key === "details" && (
+            <a class="station-submenu-link" href={`/admin/stations/${stationId}/edit?g=details#stats`}>Page stat cards</a>
+          )}
         </li>
       ))
     }
@@ -48,54 +38,3 @@ const ITEMS: { key: string; label: string }[] = [
     <li><a href="/admin/top-picks">Top picks</a></li>
   </ul>
 </nav>
-
-<script>
-  // Highlight the section being read, like the quick nav on the public page.
-  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>("[data-nav-link]"));
-  const targets = links
-    .map((a) => document.getElementById(a.dataset.navLink ?? ""))
-    .filter((el): el is HTMLElement => !!el);
-
-  function setActive(key: string) {
-    links.forEach((a) => {
-      const on = a.dataset.navLink === key;
-      a.classList.toggle("is-active", on);
-      if (on) a.setAttribute("aria-current", "true");
-      else a.removeAttribute("aria-current");
-    });
-    // keep the active link visible inside the sticky menu
-    const active = links.find((a) => a.dataset.navLink === key);
-    const row = active?.closest("ul");
-    if (active && row && row.scrollWidth > row.clientWidth + 2) {
-      row.scrollTo({ left: active.offsetLeft - (row.clientWidth - active.offsetWidth) / 2, behavior: "smooth" });
-    } else if (active) {
-      // desktop: the menu is a tall sticky column
-      const nav = active.closest("nav");
-      if (nav && nav.scrollHeight > nav.clientHeight) active.scrollIntoView({ block: "nearest" });
-    }
-  }
-
-  let lock = 0;
-  function update() {
-    if (Date.now() < lock) return;
-    const line = 130;
-    let current = targets[0];
-    for (const t of targets) {
-      if (t.getBoundingClientRect().top <= line) current = t;
-    }
-    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
-      current = targets[targets.length - 1];
-    }
-    if (current) setActive(current.id);
-  }
-
-  links.forEach((a) =>
-    a.addEventListener("click", () => {
-      lock = Date.now() + 700; // keep the clicked item highlighted while smooth-scrolling
-      setActive(a.dataset.navLink ?? "");
-    }),
-  );
-  window.addEventListener("scroll", update, { passive: true });
-  window.addEventListener("resize", update);
-  update();
-</script>

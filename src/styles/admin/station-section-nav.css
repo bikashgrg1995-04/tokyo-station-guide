@@ -105,3 +105,12 @@
   .station-section-nav a { white-space: nowrap; border-radius: 999px; padding: 7px 12px; }
   .station-admin-frame [id] { scroll-margin-top: 60px; }
 }
+
+/* Five menus; the open one lists its sections */
+.station-section-nav .station-menu-link { font-weight: 600; }
+.station-section-nav .station-menu-group.is-open > .station-menu-link { background: #b3202a; color: #fff; }
+.station-section-nav .station-submenu { margin: 4px 0 8px 10px; padding-left: 8px; border-left: 2px solid var(--admin-border); }
+.station-section-nav .station-submenu a { padding: 4px 8px; font-size: 0.8rem; font-weight: 500; }
+.station-section-nav .station-submenu a.is-active { background: rgba(179, 32, 42, 0.12); color: #b3202a; }
+
+.station-section-nav a.station-submenu-link { padding: 3px 10px 3px 22px; font-size: 0.8rem; color: #6b6b78; }

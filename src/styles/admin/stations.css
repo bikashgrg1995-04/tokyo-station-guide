@@ -1271,3 +1271,49 @@
   font-size: 13px;
   font-weight: 700;
 }
+
+/* ---- Station edit: compact tables that never run off the page ---- */
+.station-section .admin-table-wrapper { overflow-x: hidden; }
+.station-section .admin-table { width: 100%; min-width: 0; table-layout: auto; }
+.station-section .admin-table th,
+.station-section .admin-table td { padding: 6px 10px; font-size: .84rem; line-height: 1.3; overflow-wrap: break-word; vertical-align: middle; }
+.station-section .admin-table th.admin-table-id,
+.station-section .admin-table td.admin-table-id { display: none; }
+.station-section .admin-table td .sim-clip { max-width: 300px; white-space: normal; text-overflow: clip; }
+.station-section .admin-table .sim-clip { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.station-section td.exit-description-cell { max-width: none; white-space: normal; overflow: visible; text-overflow: clip; }
+.station-section .exit-color-chip, .station-section .admin-floor-pill, .station-section .admin-table td:nth-child(n+3) .admin-table-muted { white-space: nowrap; }
+.station-section .admin-table-actions { display: flex; gap: 4px; flex-wrap: nowrap; }
+.station-section .admin-table-actions .admin-table-action { padding: 3px 9px; font-size: .78rem; }
+.station-section .admin-table-meta { margin: 0 0 4px; font-size: .78rem; }
+.station-section .admin-list-toolbar { gap: 8px; margin-bottom: 6px; }
+.station-section .admin-search-form { flex: 1 1 220px; max-width: 360px; }
+.station-section .admin-toolbar-actions { margin-left: auto; display: flex; gap: 8px; }
+.station-section .admin-table-footer { padding-top: 6px; font-size: .8rem; }
+.station-section .admin-table td { white-space: normal; }
+.station-section .admin-table th { white-space: normal; letter-spacing: .03em; padding: 6px 8px; }
+.station-section .admin-table.sim-table th,
+.station-section .admin-table.sim-table td { padding: 5px 10px; }
+.station-section .admin-table tbody tr { height: auto; }
+.station-section > .sim-toolbar { padding: 0 16px; }
+.station-section .admin-table .admin-select-cell { width: 34px; padding-left: 10px; padding-right: 4px; }
+.station-section .admin-table th { height: 36px; white-space: nowrap; letter-spacing: .02em; font-size: .72rem; }
+.station-section .admin-table td { height: 44px; padding-top: 4px; padding-bottom: 4px; }
+.station-section .admin-table.sim-table th:first-child { width: 64px; }
+.station-section .admin-table th { white-space: normal; overflow-wrap: normal; word-break: normal; padding: 4px 6px; line-height: 1.15; }
+.station-section .admin-table td { padding-left: 8px; padding-right: 8px; }
+.station-section .admin-table td:last-child, .station-section .admin-table th:last-child { width: 1%; white-space: nowrap; }
+.station-section .admin-table-actions .admin-table-action { padding: 2px 8px; height: 26px; }
+@media (max-width: 700px) {
+  .station-section .admin-table-wrapper { overflow-x: auto; }
+  .sim-toolbar { flex-wrap: wrap; }
+  .sim-toolbar input[type="search"] { flex: 1 1 100%; max-width: none; }
+  .sim-toolbar .sim-add { margin-left: 0; }
+  .station-section > .sim-toolbar { padding: 0 8px; }
+  .station-section .admin-toolbar-actions { margin-left: 0; }
+}
+
+/* Row actions stack so the table always fits */
+.station-section .admin-table-actions { flex-direction: column; align-items: stretch; }
+.station-section .admin-table-actions .admin-table-action { height: 24px; text-align: center; }
+.station-section .sim-note .common-button { width: auto; }

@@ -348,12 +348,9 @@ export async function handleStationUpdate(
         await deleteStationImage(bucket, station.main_image);
       }
 
-      await saveRestaurantsNote(
-        db,
-        id,
-        noteEn || null,
-        noteJa || null,
-      );
+      if (formData.has("restaurants_note")) {
+        await saveRestaurantsNote(db, id, noteEn || null, noteJa || null);
+      }
 
       result.redirectTo = LIST_PATH;
       return result;
