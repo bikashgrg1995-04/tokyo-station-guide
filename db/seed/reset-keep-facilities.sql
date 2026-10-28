@@ -9,7 +9,7 @@ DELETE FROM station_platforms;
 DELETE FROM station_floors;
 DELETE FROM station_suggestions;
 DELETE FROM featured_stations;
-DELETE FROM station_top_picks;
+DELETE FROM station_places;
 DELETE FROM top_picks;
 DELETE FROM line_stations;
 DELETE FROM stations;

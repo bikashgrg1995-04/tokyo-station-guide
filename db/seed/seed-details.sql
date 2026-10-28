@@ -631,7 +631,7 @@ WITH m(station, pick, ord) AS (VALUES
   ('haneda-airport-t1-t2', 'airport-shops', 2),
   ('haneda-airport-t1-t2', 'airport-restaurants', 3)
 )
-INSERT OR IGNORE INTO station_top_picks (station_id, top_pick_id, sort_order)
+INSERT OR IGNORE INTO station_places (station_id, top_pick_id, sort_order)
 SELECT s.id, t.id, m.ord FROM m
 JOIN stations s ON s.slug = m.station
 JOIN top_picks t ON t.slug = m.pick;
