@@ -375,3 +375,16 @@
     max-width: 100%;
   }
 }
+
+/* Places catalog: compact table, English + Japanese name in one cell, no horizontal overflow */
+.places-table { width: 100%; min-width: 0; table-layout: fixed; }
+.places-table th, .places-table td { padding-left: 10px; padding-right: 10px; }
+.places-name { font-weight: 600; color: #0f172a; }
+.places-table td { vertical-align: middle; }
+.places-col-image { width: 64px; }
+.places-col-actions { width: 96px; }
+.places-name, .places-name-ja { overflow-wrap: anywhere; }
+.places-name-ja { color: #64748b; font-size: 12.5px; margin-top: 2px; }
+.places-table .admin-table-actions { flex-direction: column; align-items: stretch; gap: 6px; }
+.places-category { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 12px; text-transform: capitalize; }
+.places-table td, .places-table .places-name, .places-table .places-name-ja { white-space: normal; min-width: 0; }

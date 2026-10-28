@@ -114,49 +114,19 @@ const filterHref = (c: string) => {
             <>
               <!-- Table -->
               <div class="admin-table-wrapper">
-                <table class="admin-table">
+                <table class="admin-table places-table">
                   <thead>
                     <tr>
-                      <th>ID</th>
+                      <th class="places-col-image">Image</th>
                       <th>Place</th>
-                      <th>Japanese Name</th>
-                      <th>Slug</th>
-                      <th>Category</th>
-                      <th>Image</th>
-                      <th>Actions</th>
+                      <th class="places-col-actions">Actions</th>
                     </tr>
                   </thead>
 
                   <tbody>
                     {topPicks.map((topPick) => (
                       <tr>
-                        <td class="admin-table-id">
-                          {topPick.id}
-                        </td>
-
-                        <td>
-                          <div class="admin-operator-name">
-                            {topPick.name}
-                          </div>
-                        </td>
-
-                        <td>
-                          {topPick.name_japanese ? (
-                            <span>{topPick.name_japanese}</span>
-                          ) : (
-                            <span class="admin-table-muted">—</span>
-                          )}
-                        </td>
-
-                        <td class="admin-table-code">
-                          {topPick.slug}
-                        </td>
-
-                        <td>
-                          {topPick.category}
-                        </td>
-
-                        <td>
+                        <td class="places-col-image">
                           {topPick.image_url ? (
                             <a
                               href={topPickImageSrc(topPick.image_url)}
@@ -177,6 +147,14 @@ const filterHref = (c: string) => {
                         </td>
 
                         <td>
+                          <div class="places-name">{topPick.name}</div>
+                          {topPick.name_japanese && (
+                            <div class="places-name-ja">{topPick.name_japanese}</div>
+                          )}
+                          <span class="places-category">{topPick.category}</span>
+                        </td>
+
+                        <td class="places-col-actions">
                           <div class="admin-table-actions">
                             <a
                               href={`/admin/places/${topPick.id}/edit`}
