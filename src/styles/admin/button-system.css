@@ -159,3 +159,32 @@
 .admin-filter-pill { padding: 5px 12px; border: 1px solid #d1d5db; border-radius: 999px; background: #fff; color: #374151; font-size: .8rem; font-weight: 600; text-decoration: none; text-transform: capitalize; }
 .admin-filter-pill:hover { background: #f3f4f6; }
 .admin-filter-pill.is-active { background: #2563eb; border-color: #2563eb; color: #fff; }
+
+/* Add / edit dialogs: title and buttons stay in view, only the form scrolls in between */
+.sim-dialog,
+.admin-line-station-modal-dialog { --dlg-pad-y: 20px; --dlg-pad-x: 22px; overscroll-behavior: contain; }
+.admin-line-station-modal-dialog { --dlg-pad-y: 16px; --dlg-pad-x: 18px; }
+
+.sim-dialog > h2:first-child,
+.admin-line-station-modal-dialog > .admin-line-station-modal-header:first-child {
+  position: sticky;
+  top: calc(var(--dlg-pad-y) * -1);
+  z-index: 5;
+  margin: calc(var(--dlg-pad-y) * -1) calc(var(--dlg-pad-x) * -1) 12px;
+  padding: var(--dlg-pad-y) var(--dlg-pad-x) 10px;
+  background: #fff;
+  border-bottom: 1px solid #eef0f3;
+}
+
+
+.sim-dialog .sim-foot,
+.admin-line-station-modal-dialog .admin-form-actions,
+.admin-line-station-modal-dialog .admin-modal-actions {
+  position: sticky;
+  bottom: calc(var(--dlg-pad-y) * -1);
+  z-index: 5;
+  margin: 16px calc(var(--dlg-pad-x) * -1) calc(var(--dlg-pad-y) * -1);
+  padding: 12px var(--dlg-pad-x);
+  background: #fff;
+  border-top: 1px solid #eef0f3;
+}
