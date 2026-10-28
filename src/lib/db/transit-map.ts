@@ -225,6 +225,8 @@ export async function getTransitMapData(
                   'entry_fee_jp', top_pick.entry_fee_japanese,
                   'map_url', top_pick.map_url,
                   'notes', top_pick.notes,
+                  'image_caption', top_pick.top_caption,
+                  'image_caption_jp', top_pick.top_caption_japanese,
                   'notes_jp', top_pick.notes_japanese,
                   'minutes', top_pick.walking_minutes,
                   'floor_id', top_pick.floor_id,
@@ -251,8 +253,10 @@ export async function getTransitMapData(
                 tp.entry_fee,
                 tp.entry_fee_japanese,
                 tp.map_url,
-                tp.notes,
-                tp.notes_japanese,
+                COALESCE(NULLIF(stp.top_text, ''), tp.notes) AS notes,
+                COALESCE(NULLIF(stp.top_text_japanese, ''), NULLIF(stp.top_text, ''), tp.notes_japanese) AS notes_japanese,
+                stp.top_caption,
+                stp.top_caption_japanese,
                 stp.walking_minutes,
                 stp.floor_id,
                 sf.name AS floor_name,
@@ -278,14 +282,14 @@ export async function getTransitMapData(
                   FROM top_pick_opening_hours oph
                   WHERE oph.top_pick_id = tp.id
                 ) AS opening_hours
-              FROM station_top_picks stp
+              FROM station_places stp
               INNER JOIN top_picks tp
                 ON tp.id = stp.top_pick_id
               LEFT JOIN station_floors sf
                 ON sf.id = stp.floor_id
               LEFT JOIN station_exits se
                 ON se.id = stp.exit_id
-              WHERE stp.station_id = s.id
+              WHERE stp.station_id = s.id AND stp.is_top_pick = 1
               ORDER BY
                 stp.sort_order ASC,
                 tp.name ASC

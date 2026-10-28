@@ -88,13 +88,14 @@ export async function createStation(
       db
         .prepare(
           `
-            INSERT INTO station_top_picks (
+            INSERT INTO station_places (
               station_id,
               top_pick_id,
               sort_order,
-              walking_minutes
+              walking_minutes,
+              is_top_pick
             )
-            VALUES (?, ?, ?, NULL)
+            VALUES (?, ?, ?, NULL, 1)
           `,
         )
         .bind(stationId, topPickId, index + 1),
@@ -312,9 +313,11 @@ export async function updateStation(
       db
         .prepare(
           keep
-            ? `DELETE FROM station_top_picks
-               WHERE station_id = ? AND top_pick_id NOT IN (${keep})`
-            : `DELETE FROM station_top_picks WHERE station_id = ?`,
+            ? `DELETE FROM station_places
+               WHERE station_id = ? AND is_top_pick = 1 AND is_thing = 0 AND is_which_exit = 0 AND is_day_trip = 0
+                 AND top_pick_id NOT IN (${keep})`
+            : `DELETE FROM station_places
+               WHERE station_id = ? AND is_top_pick = 1 AND is_thing = 0 AND is_which_exit = 0 AND is_day_trip = 0`,
         )
         .bind(id, ...topPickIds),
     );
@@ -324,15 +327,16 @@ export async function updateStation(
         db
           .prepare(
             `
-              INSERT INTO station_top_picks (
+              INSERT INTO station_places (
                 station_id,
                 top_pick_id,
                 sort_order,
-                walking_minutes
+                walking_minutes,
+                is_top_pick
               )
-              VALUES (?, ?, ?, NULL)
+              VALUES (?, ?, ?, NULL, 1)
               ON CONFLICT (station_id, top_pick_id)
-              DO UPDATE SET sort_order = excluded.sort_order
+              DO UPDATE SET sort_order = excluded.sort_order, is_top_pick = 1
             `,
           )
           .bind(id, topPickId, index + 1),
@@ -379,7 +383,7 @@ export async function deleteStation(
     db
       .prepare(
         `
-          DELETE FROM station_top_picks
+          DELETE FROM station_places
           WHERE station_id = ?
         `,
       )

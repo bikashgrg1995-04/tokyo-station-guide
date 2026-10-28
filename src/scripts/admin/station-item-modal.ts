@@ -46,6 +46,7 @@ function init(root: HTMLElement) {
       el.href = (el.dataset.simHref ?? "").replace("{id}", values.item_id ?? "");
     });
     filters().forEach(applyFilter);
+    syncWhen();
     modal.hidden = false;
     form.querySelector<HTMLElement>("input[type='text'], input:not([type]), textarea")?.focus();
   }
@@ -63,6 +64,15 @@ function init(root: HTMLElement) {
     if (target.selectedOptions[0]?.disabled) target.value = "";
   }
   filters().forEach((f) => f.addEventListener("change", () => applyFilter(f)));
+
+  // Blocks that only show while their checkbox is ticked: data-sim-when="<checkbox name>".
+  function syncWhen() {
+    form?.querySelectorAll<HTMLElement>("[data-sim-when]").forEach((b) => {
+      const c = form.elements.namedItem(b.dataset.simWhen ?? "") as HTMLInputElement | null;
+      b.hidden = !(c && c.checked);
+    });
+  }
+  form?.addEventListener("change", syncWhen);
 
   const close = () => {
     if (modal) modal.hidden = true;
@@ -92,6 +102,15 @@ function init(root: HTMLElement) {
   const PAGE = 10;
   const rows = Array.from(root.querySelectorAll<HTMLElement>(".sim-row"));
   let page = 1;
+  let pill = "";
+  root.querySelectorAll<HTMLElement>("[data-sim-pill]").forEach((b) =>
+    b.addEventListener("click", () => {
+      pill = b.dataset.simPill ?? "";
+      root.querySelectorAll("[data-sim-pill]").forEach((x) => x.classList.toggle("is-active", x === b));
+      page = 1;
+      render();
+    }),
+  );
   let pager: HTMLElement | null = null;
   if (rows.length > PAGE) {
     pager = document.createElement("div");
@@ -100,7 +119,11 @@ function init(root: HTMLElement) {
   }
   function render() {
     const text = (search?.value ?? "").trim().toLowerCase();
-    const match = rows.filter((r) => text === "" || (r.dataset.search ?? "").includes(text));
+    const match = rows.filter(
+      (r) =>
+        (text === "" || (r.dataset.search ?? "").includes(text)) &&
+        (pill === "" || (r.dataset.flags ?? "").split(" ").includes(pill)),
+    );
     const pages = Math.max(1, Math.ceil(match.length / PAGE));
     page = Math.min(page, pages);
     const from = (page - 1) * PAGE;

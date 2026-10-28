@@ -10,6 +10,9 @@ export const TOP_PICK_CATEGORIES = [
   "museum",
   "park",
   "temple",
+  "daytrip",
+  "transport",
+  "help",
 ] as const;
 
 export type TopPickCategory = (typeof TOP_PICK_CATEGORIES)[number];
@@ -518,7 +521,7 @@ export async function hasTopPickAssignments(
     .prepare(
       `
         SELECT 1 AS assigned
-        FROM station_top_picks
+        FROM station_places
         WHERE top_pick_id = ?
         LIMIT 1
       `,
@@ -590,14 +593,14 @@ export async function getStationTopPicks(
           se.name AS exit_name,
           se.code AS exit_code,
           stp.location_type
-        FROM station_top_picks stp
+        FROM station_places stp
         INNER JOIN top_picks tp
           ON tp.id = stp.top_pick_id
         LEFT JOIN station_floors sf
           ON sf.id = stp.floor_id
         LEFT JOIN station_exits se
           ON se.id = stp.exit_id
-        WHERE stp.station_id = ?
+        WHERE stp.station_id = ? AND stp.is_top_pick = 1
         ORDER BY stp.sort_order ASC, tp.name ASC
       `,
     )
@@ -635,7 +638,7 @@ export async function getAvailableTopPicksForStation(
         FROM top_picks tp
         WHERE NOT EXISTS (
           SELECT 1
-          FROM station_top_picks stp
+          FROM station_places stp
           WHERE stp.station_id = ?
             AND stp.top_pick_id = tp.id
         )

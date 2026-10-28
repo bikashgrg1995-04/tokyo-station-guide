@@ -16,16 +16,13 @@ export type SheetName =
   | "exits"
   | "platforms"
   | "sides"
-  | "exit_places"
   | "routes"
   | "tips"
   | "seasons"
   | "faqs"
-  | "day_trips"
   | "buses_taxis"
   | "top_picks"
-  | "station_top_picks"
-  | "station_things"
+  | "station_places"
   | "hotels"
   | "restaurants"
   | "station_hotels"
@@ -42,16 +39,13 @@ export const SHEET_ORDER: SheetName[] = [
   "exits",
   "platforms",
   "sides",
-  "exit_places",
   "routes",
   "tips",
   "seasons",
   "faqs",
-  "day_trips",
   "buses_taxis",
   "top_picks",
-  "station_top_picks",
-  "station_things",
+  "station_places",
   "hotels",
   "restaurants",
   "station_hotels",
@@ -70,16 +64,13 @@ export const REQUIRED_COLUMNS: Record<SheetName, string[]> = {
   exits: ["station_slug", "floor_name", "name"],
   platforms: ["station_slug", "platform_number"],
   sides: ["station_slug", "name"],
-  exit_places: ["station_slug", "name"],
   routes: ["station_slug", "from_place"],
   tips: ["station_slug", "tip"],
   seasons: ["station_slug", "season"],
   faqs: ["station_slug", "question"],
-  day_trips: ["station_slug", "name"],
   buses_taxis: ["station_slug", "place"],
   top_picks: ["slug", "name"],
-  station_top_picks: ["station_slug", "top_pick_slug"],
-  station_things: ["station_slug", "top_pick_slug"],
+  station_places: ["station_slug", "top_pick_slug"],
   hotels: ["slug", "name"],
   restaurants: ["slug", "name"],
   station_hotels: ["station_slug", "hotel_slug"],
@@ -91,7 +82,6 @@ export const SEASONS = ["spring", "summer", "autumn", "winter"];
 export const LINE_TYPES = ["jr", "subway", "private", "shinkansen", "express"];
 export const WEBSITE_STATUSES = ["live", "coming_soon", "hidden"];
 export const FACILITY_LOCATIONS = ["inside", "outside", "inside_outside"];
-export const EXIT_PLACE_CATEGORIES = ["transport", "help"];
 export const TOP_PICK_LOCATIONS = ["inside", "outside", "inside_outside"];
 export const TOP_PICK_CATEGORIES = [
   "landmark",
@@ -100,6 +90,9 @@ export const TOP_PICK_CATEGORIES = [
   "museum",
   "park",
   "temple",
+  "daytrip",
+  "transport",
+  "help",
 ];
 
 /** Hard limits so one upload cannot be huge. */

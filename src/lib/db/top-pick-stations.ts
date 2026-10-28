@@ -60,7 +60,7 @@ export async function getTopPickStationAssignments(
           stp.location_type,
           stp.walking_minutes,
           stp.sort_order
-        FROM station_top_picks stp
+        FROM station_places stp
         INNER JOIN stations s
           ON s.id = stp.station_id
         LEFT JOIN station_floors sf
@@ -173,23 +173,25 @@ export async function saveTopPickStationAssignment(
   await db
     .prepare(
       `
-        INSERT INTO station_top_picks (
+        INSERT INTO station_places (
           station_id,
           top_pick_id,
           sort_order,
           walking_minutes,
           floor_id,
           exit_id,
-          location_type
+          location_type,
+          is_top_pick
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1)
         ON CONFLICT (station_id, top_pick_id)
         DO UPDATE SET
           sort_order = excluded.sort_order,
           walking_minutes = excluded.walking_minutes,
           floor_id = excluded.floor_id,
           exit_id = excluded.exit_id,
-          location_type = excluded.location_type
+          location_type = excluded.location_type,
+          is_top_pick = 1
       `,
     )
     .bind(
@@ -216,7 +218,7 @@ export async function removeTopPickStationAssignment(
   await db
     .prepare(
       `
-        DELETE FROM station_top_picks
+        DELETE FROM station_places
         WHERE top_pick_id = ? AND station_id = ?
       `,
     )

@@ -31,6 +31,9 @@ export const TOP_PICK_CATEGORIES = [
   "museum",
   "park",
   "temple",
+  "daytrip",
+  "transport",
+  "help",
 ] as const;
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;

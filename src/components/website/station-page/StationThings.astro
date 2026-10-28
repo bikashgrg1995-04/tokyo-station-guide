@@ -21,6 +21,9 @@ const src = (key: string) => (/^https?:\/\//i.test(key) ? key : `${mediaBase}/${
           ) : (
             <span data-pick data-en={t.name} data-jp={t.name_japanese ?? ""}>{t.name}</span>
           )}
+          {t.photo && t.photo_caption && (
+            <span class="sp-trip-cap" data-pick data-en={t.photo_caption} data-jp={t.photo_caption_japanese ?? ""}>{t.photo_caption}</span>
+          )}
         </div>
 
         <div class="sp-trip-body">

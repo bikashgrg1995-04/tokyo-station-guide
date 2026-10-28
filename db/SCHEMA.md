@@ -18,7 +18,7 @@ The SQL itself lives in `db/migrations/` (applied in numeric order).
 | `station_floor_facility_exits` | Which exits a floor facility is reached from | `db/stations/write.ts` |
 | `station_platforms` | Platforms (optional line + floor, destinations) | `db/station-platforms.ts` |
 | `top_picks` | Shared list of nearby attractions | `db/top-picks.ts` |
-| `station_top_picks` | Which pick is recommended at which station | `db/top-picks.ts`, `db/stations/write.ts` |
+| `station_places` | A Place on a station + flags (top pick, thing to do, which exit, day trip) and their fields | `db/station-sights.ts`, `db/top-picks.ts`, `db/stations/write.ts` |
 | `featured_stations` | Home page "Popular Station Hubs" | `db/featured-stations.ts` |
 | `station_suggestions` | Visitor message about a station (and the line they were viewing); the admin reads it and edits the station by hand. Status: pending = New, approved = Resolved, rejected = Dismissed. | `db/station-suggestions.ts` |
 | `admin_users` | Admin accounts (PBKDF2 hash) | `pages/admin/auth/login.astro` |
@@ -35,7 +35,7 @@ stations 1─* station_floors 1─* station_floor_facilities *─1 facilities
                     │                       └─* station_floor_facility_exits *─1 station_exits
                     ├─* station_exits (floor_id)
                     └─* station_platforms (floor_id, optional)
-stations *─* top_picks via station_top_picks
+stations *─* top_picks via station_places
 stations 1─1 featured_stations      stations 1─* station_suggestions
 ```
 

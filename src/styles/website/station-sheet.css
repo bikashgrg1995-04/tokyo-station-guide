@@ -938,6 +938,20 @@ html[data-theme="dark"] .station-sheet {
   gap: 9px;
 }
 
+.pk-media {
+  flex: 0 0 60px;
+  width: 60px;
+}
+
+.pk-caption {
+  display: block;
+  margin-top: 2px;
+  color: var(--sheet-muted, #6b7280);
+  font-size: 9px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
 .pk-photo {
   flex: 0 0 auto;
   width: 60px;

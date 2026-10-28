@@ -122,10 +122,10 @@ export async function getStationTopPicksJson(
         SELECT
           tp.name,
           stp.sort_order
-        FROM station_top_picks stp
+        FROM station_places stp
         INNER JOIN top_picks tp
           ON tp.id = stp.top_pick_id
-        WHERE stp.station_id = ?
+        WHERE stp.station_id = ? AND stp.is_top_pick = 1
         ORDER BY
           stp.sort_order ASC
       `,

@@ -147,6 +147,8 @@ export interface StationPageThing {
   description_japanese: string | null;
   map_url: string | null;
   photo: string | null;
+  photo_caption?: string | null;
+  photo_caption_japanese?: string | null;
 }
 
 interface PlaceRow extends StationPagePlace {
@@ -375,30 +377,20 @@ export async function getStationPage(
     exitIdsBySide.set(l.side_id, [...(exitIdsBySide.get(l.side_id) ?? []), l.exit_id]);
   }
 
+  // Places linked to this station with the "Which exit?" flag (sights, food, transport, help ...), plus their other exits.
   const exitPlaceRows = db
     .prepare(
-      `SELECT id, name, name_japanese, category FROM station_exit_places
-       WHERE station_id = ? AND category IN ('transport', 'help') ORDER BY sort_order, id`,
+      `SELECT p.id AS pid, p.name, p.name_japanese, p.category, l.exit_id, l.walking_minutes, l.location, l.location_japanese,
+              l.exit_note, l.exit_note_japanese
+       FROM station_places l JOIN top_picks p ON p.id = l.top_pick_id
+       WHERE l.station_id = ? AND l.is_which_exit = 1 ORDER BY l.sort_order, p.name`,
     )
     .bind(station.id)
-    .all<{ id: number; name: string; name_japanese: string | null; category: string }>();
+    .all<{ pid: number; name: string; name_japanese: string | null; category: string; exit_id: number | null; walking_minutes: number | null; location: string | null; location_japanese: string | null; exit_note: string | null; exit_note_japanese: string | null }>();
   const exitPlaceLinks = db
-    .prepare(
-      `SELECT pe.place_id, pe.exit_id, pe.note, pe.note_japanese
-       FROM station_exit_place_exits pe JOIN station_exit_places p ON p.id = pe.place_id
-       WHERE p.station_id = ?`,
-    )
+    .prepare(`SELECT top_pick_id, exit_id, note, note_japanese FROM station_place_exits WHERE station_id = ?`)
     .bind(station.id)
-    .all<{ place_id: number; exit_id: number; note: string | null; note_japanese: string | null }>();
-  const exitPlaceLinkRows = (await exitPlaceLinks).results ?? [];
-  const otherExitPlaces: StationPageExitPlace[] = ((await exitPlaceRows).results ?? []).map((p) => ({
-    name: p.name,
-    name_japanese: p.name_japanese,
-    category: p.category,
-    exits: exitPlaceLinkRows
-      .filter((l) => l.place_id === p.id)
-      .map((l) => ({ exit_id: l.exit_id, note: l.note, note_japanese: l.note_japanese })),
-  }));
+    .all<{ top_pick_id: number; exit_id: number; note: string | null; note_japanese: string | null }>();
 
   const routes = db
     .prepare(
@@ -443,9 +435,10 @@ export async function getStationPage(
 
   const dayTrips = db
     .prepare(
-      `SELECT name, name_japanese, travel_time, travel_time_japanese, transport, transport_japanese,
-              description, description_japanese, map_url, photo
-       FROM station_day_trips WHERE station_id = ? ORDER BY sort_order, id`,
+      `SELECT p.name, p.name_japanese, l.travel_time, l.travel_time_japanese, l.transport, l.transport_japanese,
+              p.description, p.description_japanese, p.map_url, p.image_url AS photo
+       FROM station_places l JOIN top_picks p ON p.id = l.top_pick_id
+       WHERE l.station_id = ? AND l.is_day_trip = 1 ORDER BY l.sort_order, p.name`,
     )
     .bind(station.id)
     .all<StationPageDayTrip>();
@@ -481,19 +474,22 @@ export async function getStationPage(
     .all<StationPageTransport>();
 
   // One table per place type, each linked to the station with an exit + walking minutes:
-  // Things to do = places (top_picks) picked in station_things; Top picks (map) are station_top_picks.
+  // One table (station_places) links Places to the station; the flag says where each one shows.
+  // "Things to do" = is_thing. The thing text replaces the place description when it is filled in.
   const things = db
     .prepare(
       `SELECT p.id AS pid, p.name, p.name_japanese, p.kind, p.kind_japanese, l.location, l.location_japanese,
               p.entry_fee AS cost, p.entry_fee_japanese AS cost_japanese,
-              p.description, p.description_japanese, p.map_url, p.image_url AS photo,
+              COALESCE(NULLIF(l.thing_text, ''), p.description) AS description,
+              COALESCE(NULLIF(l.thing_text_japanese, ''), NULLIF(l.thing_text, ''), p.description_japanese) AS description_japanese,
+              p.map_url, p.image_url AS photo, l.thing_caption AS photo_caption, l.thing_caption_japanese AS photo_caption_japanese,
               l.exit_id, e.name AS exit_name, e.name_japanese AS exit_name_japanese, l.walking_minutes
-       FROM station_things l JOIN top_picks p ON p.id = l.top_pick_id
+       FROM station_places l JOIN top_picks p ON p.id = l.top_pick_id
        LEFT JOIN station_exits e ON e.id = l.exit_id
-       WHERE l.station_id = ? ORDER BY l.sort_order, p.name`,
+       WHERE l.station_id = ? AND l.is_thing = 1 ORDER BY l.sort_order, p.name`,
     )
     .bind(station.id)
-    .all<PlaceRow & { pid: number; cost: string | null; cost_japanese: string | null }>();
+    .all<PlaceRow & { pid: number; cost: string | null; cost_japanese: string | null; photo_caption: string | null; photo_caption_japanese: string | null }>();
 
   const hotels = db
     .prepare(
@@ -543,7 +539,7 @@ export async function getStationPage(
   const thingRows = composeWhere((await things).results ?? [], exitNames);
   const hotelRows = composeWhere((await hotels).results ?? [], exitNames);
   const restaurantRows = composeWhere((await restaurants).results ?? [], exitNames);
-  // "Which exit?" lists the sights, food and hotels that are tied to an exit, plus transport and help.
+  // "Which exit?" lists the places with that flag, plus restaurants and hotels that are tied to an exit.
   const toExitPlaces = (rows: PlaceRow[], orig: PlaceRow[], category: string): StationPageExitPlace[] =>
     orig.flatMap((r, i) => {
       if (!r.exit_id) return [];
@@ -554,11 +550,22 @@ export async function getStationPage(
         exits: [{ exit_id: r.exit_id, note: en, note_japanese: ja }],
       }];
     });
+  const extraLinks = (await exitPlaceLinks).results ?? [];
+  const flaggedPlaces: StationPageExitPlace[] = ((await exitPlaceRows).results ?? []).flatMap((p) => {
+    const category = p.category === "transport" || p.category === "help" ? p.category : p.category === "food" ? "food" : "sights";
+    const auto = [p.walking_minutes != null ? `${p.walking_minutes} min` : null, p.location].filter(Boolean).join(" · ") || null;
+    const autoJa = [p.walking_minutes != null ? `徒歩${p.walking_minutes}分` : null, p.location_japanese ?? p.location].filter(Boolean).join(" · ") || null;
+    const exits = [
+      ...(p.exit_id ? [{ exit_id: p.exit_id, note: p.exit_note ?? auto, note_japanese: p.exit_note_japanese ?? p.exit_note ?? autoJa }] : []),
+      ...extraLinks.filter((l) => l.top_pick_id === p.pid && l.exit_id !== p.exit_id)
+        .map((l) => ({ exit_id: l.exit_id, note: l.note, note_japanese: l.note_japanese })),
+    ];
+    return exits.length ? [{ name: p.name, name_japanese: p.name_japanese, category, exits }] : [];
+  });
   const exitPlaces = [
-    ...toExitPlaces(thingRows, (await things).results ?? [], "sights"),
+    ...flaggedPlaces,
     ...toExitPlaces(restaurantRows, (await restaurants).results ?? [], "food"),
     ...toExitPlaces(hotelRows, (await hotels).results ?? [], "hotels"),
-    ...otherExitPlaces,
   ];
 
   return {

@@ -99,3 +99,18 @@
 .sim-place-line { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; margin-bottom: 8px; }
 .sim-place-line span { font-size: .8rem; color: #6b7280; }
 .sim-place-line a { font-size: .8rem; }
+
+.sim-badge-soft { background:#eef1f6; color:#334155; font-weight:600; }
+.sim-pills { order:3; flex-basis:100%; margin:4px 0 0 !important; }
+.sim-pills .admin-filter-pill { text-transform:none; }
+.sim-toolbar { flex-wrap:wrap; }
+
+/* "Where it shows" blocks of the Station places form */
+.sim-flag { border:1px solid var(--admin-border, #e3e6ea); border-radius:10px; margin:0 0 10px; background:#fff; }
+.sim-flag-head { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; margin:0; cursor:pointer; }
+.sim-flag-head input { width:auto; margin-top:3px; }
+.sim-flag-head strong { display:block; font-size:.9rem; }
+.sim-flag-head span { display:block; font-size:.78rem; color:#6b7280; font-weight:400; }
+.sim-flag-body { padding:2px 12px 10px 38px; border-top:1px dashed var(--admin-border, #e3e6ea); background:#fafbfc; border-radius:0 0 10px 10px; }
+.sim-flag-body .admin-form-group small { display:block; color:#6b7280; font-weight:400; font-size:.75rem; }
+.sim-flag:has(.sim-flag-head input:checked) { border-color:#2563eb; }

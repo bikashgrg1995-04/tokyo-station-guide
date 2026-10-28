@@ -1,6 +1,0 @@
----
-export const prerender = false;
-// This section now lives on the station edit page.
-const id = Number(Astro.params.id);
-return Astro.redirect(Number.isInteger(id) && id > 0 ? `/admin/stations/${id}/edit#day-trips` : "/admin/stations");
----

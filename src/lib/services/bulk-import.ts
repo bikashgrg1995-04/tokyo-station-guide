@@ -8,7 +8,6 @@ import {
   REQUIRED_COLUMNS,
   SHEET_ORDER,
   TOP_PICK_CATEGORIES,
-  EXIT_PLACE_CATEGORIES,
   SEASONS,
   TIP_SECTIONS,
   TOP_PICK_LOCATIONS,
@@ -159,20 +158,17 @@ export function buildImportPlan(
   const exits = new Set(snap.exits);
   const platforms = new Set(snap.platforms);
   const sides = new Set(snap.sides);
-  const exitPlaces = new Set(snap.exitPlaces);
   const routes = new Set(snap.routes);
   const tips = new Set(snap.tips);
   const seasons = new Set(snap.seasons);
   const faqs = new Set(snap.faqs);
-  const dayTrips = new Set(snap.dayTrips);
   const transport = new Set(snap.transport);
   const hotelSlugs = new Set(snap.hotels.map((h) => h.slug));
   const restaurantSlugs = new Set(snap.restaurants.map((h) => h.slug));
   const stationHotels = new Set(snap.stationHotels);
   const stationRestaurants = new Set(snap.stationRestaurants);
   const floorFacilities = new Set(snap.floorFacilities);
-  const stationTopPicks = new Set(snap.stationTopPicks);
-  const stationThings = new Set(snap.stationThings);
+  const stationPlaces = new Set(snap.stationPlaces);
 
   const lineOrders = new Map<string, Map<string, number>>();
   for (const ls of snap.lineStations) {
@@ -219,12 +215,10 @@ export function buildImportPlan(
     const delPlatforms = gone("platform", "platforms",
       (d) => `${d.station_slug}|${d.platform_number}|${d.line_slug ?? ""}`, (k) => stationKept(part(k, 0)));
     const delSides = gone("side", "sides", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
-    const delExitPlaces = gone("exitPlace", "exit_places", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
     const delRoutes = gone("route", "routes", (d) => `${d.station_slug}|${d.from_place}|${d.route ?? ""}`, (k) => stationKept(part(k, 0)));
     const delTips = gone("tip", "tips", (d) => `${d.station_slug}|${(d.section || "exits").toLowerCase()}|${d.tip}`, (k) => stationKept(part(k, 0)));
     const delSeasons = gone("season", "seasons", (d) => `${d.station_slug}|${(d.season ?? "").toLowerCase()}`, (k) => stationKept(part(k, 0)));
     const delFaqs = gone("faq", "faqs", (d) => `${d.station_slug}|${d.question}`, (k) => stationKept(part(k, 0)));
-    const delDayTrips = gone("dayTrip", "day_trips", (d) => `${d.station_slug}|${d.name}`, (k) => stationKept(part(k, 0)));
     const delTransport = gone("transport", "buses_taxis", (d) => `${d.station_slug}|${d.place}`, (k) => stationKept(part(k, 0)));
     const delHotels = gone("hotel", "hotels", (d) => d.slug);
     const delRestaurants = gone("restaurant", "restaurants", (d) => d.slug);
@@ -232,10 +226,7 @@ export function buildImportPlan(
       (d) => `${d.station_slug}|${d.hotel_slug}`, (k) => stationKept(part(k, 0)) && !delHotels.has(part(k, 1)));
     const delStationRestaurants = gone("stationRestaurant", "station_restaurants",
       (d) => `${d.station_slug}|${d.restaurant_slug}`, (k) => stationKept(part(k, 0)) && !delRestaurants.has(part(k, 1)));
-    const delStationTopPicks = gone("stationTopPick", "station_top_picks",
-      (d) => `${d.station_slug}|${d.top_pick_slug}`, (k) => stationKept(part(k, 0)) && !delTopPicks.has(part(k, 1)));
-
-    const delStationThings = gone("stationThing", "station_things",
+    const delStationPlaces = gone("stationPlace", "station_places",
       (d) => `${d.station_slug}|${d.top_pick_slug}`, (k) => stationKept(part(k, 0)) && !delTopPicks.has(part(k, 1)));
 
     delExits.forEach((k) => removedExits.add(k));
@@ -264,19 +255,16 @@ export function buildImportPlan(
       ["exit", "exits", delExits],
       ["platform", "platforms", delPlatforms],
       ["side", "sides", delSides],
-      ["exitPlace", "exit_places", delExitPlaces],
       ["route", "routes", delRoutes],
       ["tip", "tips", delTips],
       ["season", "seasons", delSeasons],
       ["faq", "faqs", delFaqs],
-      ["dayTrip", "day_trips", delDayTrips],
       ["transport", "buses_taxis", delTransport],
       ["stationHotel", "station_hotels", delStationHotels],
       ["stationRestaurant", "station_restaurants", delStationRestaurants],
       ["hotel", "hotels", delHotels],
       ["restaurant", "restaurants", delRestaurants],
-      ["stationTopPick", "station_top_picks", delStationTopPicks],
-      ["stationThing", "station_things", delStationThings],
+      ["stationPlace", "station_places", delStationPlaces],
     ];
     for (const [type, sheet, set] of groups) {
       if (set.size === 0) continue;
@@ -770,52 +758,6 @@ export function buildImportPlan(
     record("sides", { t: "side", stationSlug, name, nameJa, subtitle, subtitleJa, desc, descJa, sortOrder, exits: exitsValue }, key, exists);
   });
 
-  // ---- exit_places ("Which exit?": a place and the exits that lead to it) ---------
-  eachRow("exit_places", (d) => `${d.station_slug}|${d.name}`, (d, err, dup) => {
-    const stationSlug = d.station_slug ?? "";
-    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
-    const name = text(d, "name", 150, err, true) ?? "";
-    const nameJa = text(d, "name_japanese", 150, err);
-    const category = oneOf(d, "category", EXIT_PLACE_CATEGORIES, err);
-    const sortOrder = intField(d, "sort_order", err);
-
-    // exits: "Exit name=short note" separated by "|" or line breaks; exit_notes_japanese: "Exit name=メモ".
-    const parse = (col: string) => {
-      const map = new Map<string, string>();
-      for (const piece of (d[col] ?? "").split(/[|\n]/)) {
-        const at = piece.indexOf("=");
-        const exitName = (at === -1 ? piece : piece.slice(0, at)).trim();
-        const note = at === -1 ? "" : piece.slice(at + 1).trim();
-        if (!exitName) continue;
-        if (note.length > 120) err(`The note for exit "${exitName}" must be 120 characters or less.`);
-        if (note.includes("=")) err(`The note for exit "${exitName}" cannot contain "=".`);
-        map.set(exitName, note);
-      }
-      return map;
-    };
-    let exitsValue: Opt<string> = undefined;
-    if ("exits" in d) {
-      const en = parse("exits");
-      const ja = parse("exit_notes_japanese");
-      for (const exitName of [...en.keys(), ...ja.keys()]) {
-        if (!knownExit(stationSlug, exitName)) {
-          err(`Exit "${exitName}" does not exist for station "${stationSlug}" (add it in the exits sheet).`);
-        }
-      }
-      for (const exitName of ja.keys()) {
-        if (!en.has(exitName)) err(`Exit "${exitName}" has a Japanese note but is not listed in "exits".`);
-      }
-      const list = [...en.keys()].sort().map((x) => `${x}=${en.get(x) ?? ""}=${ja.get(x) ?? ""}`);
-      exitsValue = list.length > 0 ? list.join("|") : null;
-    }
-    if (dup || !name || !stationSlugs.has(stationSlug)) return;
-
-    const key = `${stationSlug}|${name}`;
-    const exists = exitPlaces.has(key);
-    exitPlaces.add(key);
-    record("exit_places", { t: "exitPlace", stationSlug, name, nameJa, category, sortOrder, exits: exitsValue }, key, exists);
-  });
-
   // ---- routes ----------------------------------------------------------------
   eachRow("routes", (d) => `${d.station_slug}|${d.from_place}|${d.route ?? ""}`, (d, err, dup) => {
     const stationSlug = d.station_slug ?? "";
@@ -891,28 +833,6 @@ export function buildImportPlan(
     record("faqs", { t: "faq", stationSlug, question, questionJa, answer, answerJa, sortOrder }, key, exists);
   });
 
-  // ---- day_trips -------------------------------------------------------------
-  eachRow("day_trips", (d) => `${d.station_slug}|${d.name}`, (d, err, dup) => {
-    const stationSlug = d.station_slug ?? "";
-    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
-    const name = text(d, "name", 150, err, true) ?? "";
-    const nameJa = text(d, "name_japanese", 150, err);
-    const time = text(d, "travel_time", 60, err);
-    const timeJa = text(d, "travel_time_japanese", 60, err);
-    const transport = text(d, "transport", 120, err);
-    const transportJa = text(d, "transport_japanese", 120, err);
-    const desc = text(d, "description", 600, err);
-    const descJa = text(d, "description_japanese", 600, err);
-    const mapUrl = urlField(d, "map_url", err);
-    const sortOrder = intField(d, "sort_order", err);
-    if (dup || !name || !stationSlugs.has(stationSlug)) return;
-
-    const key = `${stationSlug}|${name}`;
-    const exists = dayTrips.has(key);
-    dayTrips.add(key);
-    record("day_trips", { t: "dayTrip", stationSlug, name, nameJa, time, timeJa, transport, transportJa, desc, descJa, mapUrl, sortOrder }, key, exists);
-  });
-
   // ---- buses_taxis -----------------------------------------------------------
   eachRow("buses_taxis", (d) => `${d.station_slug}|${d.place}`, (d, err, dup) => {
     const stationSlug = d.station_slug ?? "";
@@ -958,43 +878,65 @@ export function buildImportPlan(
     record("top_picks", { t: "topPick", slug, name, nameJa, kind, kindJa, category, desc, descJa, entryFee, entryFeeJa, notes, notesJa, mapUrl }, slug, exists);
   });
 
-  // ---- station_top_picks -----------------------------------------------------
-  eachRow("station_top_picks", (d) => `${d.station_slug}|${d.top_pick_slug}`, (d, err, dup) => {
-    const stationSlug = d.station_slug ?? "";
-    const topPickSlug = d.top_pick_slug ?? "";
-    if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
-    if (!topPickSlugs.has(topPickSlug)) err(`Top pick "${topPickSlug}" does not exist.`);
-    const exitName = exitNameField(d, stationSlug, err);
-    const minutes = intField(d, "walking_minutes", err, 0, 600);
-    const locationType = oneOf(d, "location_type", TOP_PICK_LOCATIONS, err);
-    const location = text(d, "location", 150, err);
-    const locationJa = text(d, "location_japanese", 150, err);
-    const sortOrder = intField(d, "sort_order", err);
-    if (dup || !stationSlugs.has(stationSlug) || !topPickSlugs.has(topPickSlug)) return;
-
-    const key = `${stationSlug}|${topPickSlug}`;
-    const exists = stationTopPicks.has(key);
-    stationTopPicks.add(key);
-    record("station_top_picks", { t: "stationTopPick", stationSlug, topPickSlug, exitName, minutes, locationType, location, locationJa, sortOrder }, key, exists);
-  });
-
-  // ---- station_things (the station page "Things to do" list) --------------------
-  eachRow("station_things", (d) => `${d.station_slug}|${d.top_pick_slug}`, (d, err, dup) => {
+  // ---- station_places (ONE table: a place on a station + where the website shows it) ----------------
+  eachRow("station_places", (d) => `${d.station_slug}|${d.top_pick_slug}`, (d, err, dup) => {
     const stationSlug = d.station_slug ?? "";
     const topPickSlug = d.top_pick_slug ?? "";
     if (!stationSlugs.has(stationSlug)) err(`Station "${stationSlug}" does not exist.`);
     if (!topPickSlugs.has(topPickSlug)) err(`Place "${topPickSlug}" does not exist (add it to the top_picks sheet first).`);
     const exitName = exitNameField(d, stationSlug, err);
     const minutes = intField(d, "walking_minutes", err, 0, 600);
+    const locationType = oneOf(d, "location_type", TOP_PICK_LOCATIONS, err);
     const location = text(d, "location", 150, err);
     const locationJa = text(d, "location_japanese", 150, err);
     const sortOrder = intField(d, "sort_order", err);
-    if (dup || !stationSlugs.has(stationSlug) || !topPickSlugs.has(topPickSlug)) return;
+
+    const flag = (col: string): Opt<number> => {
+      if (!(col in d)) return undefined;
+      const v = (d[col] ?? "").toLowerCase();
+      if (v === "") return null;
+      if (["1", "yes", "true"].includes(v)) return 1;
+      if (["0", "no", "false"].includes(v)) return 0;
+      err(`"${col}" must be 1 or 0.`);
+      return null;
+    };
+    const isTop = flag("is_top_pick"), isThing = flag("is_thing"), isWhichExit = flag("is_which_exit"), isDayTrip = flag("is_day_trip");
+    const flags = [isTop, isThing, isWhichExit, isDayTrip];
+
+    const topText = text(d, "top_text", 600, err), topTextJa = text(d, "top_text_japanese", 600, err);
+    const topCaption = text(d, "top_caption", 200, err), topCaptionJa = text(d, "top_caption_japanese", 200, err);
+    const thingText = text(d, "thing_text", 1000, err), thingTextJa = text(d, "thing_text_japanese", 1000, err);
+    const thingCaption = text(d, "thing_caption", 200, err), thingCaptionJa = text(d, "thing_caption_japanese", 200, err);
+    const exitNote = text(d, "exit_note", 200, err), exitNoteJa = text(d, "exit_note_japanese", 200, err);
+    const travelTime = text(d, "travel_time", 80, err), travelTimeJa = text(d, "travel_time_japanese", 80, err);
+    const transport = text(d, "transport", 150, err), transportJa = text(d, "transport_japanese", 150, err);
+
+    // other_exits: exit names separated by "|" or ";" (the main exit is exit_name).
+    let otherExits: Opt<string> = undefined;
+    if ("other_exits" in d) {
+      const names = [...new Set((d.other_exits ?? "").split(/[|;\n]/).map((x) => x.trim()).filter(Boolean))].sort();
+      for (const x of names) {
+        if (!knownExit(stationSlug, x)) err(`Exit "${x}" does not exist for station "${stationSlug}" (add it in the exits sheet).`);
+      }
+      otherExits = names.length > 0 ? names.join("|") : null;
+    }
 
     const key = `${stationSlug}|${topPickSlug}`;
-    const exists = stationThings.has(key);
-    stationThings.add(key);
-    record("station_things", { t: "stationThing", stationSlug, topPickSlug, exitName, minutes, location, locationJa, sortOrder }, key, exists);
+    const exists = stationPlaces.has(key);
+    const given = flags.filter((f) => f !== undefined);
+    if (given.length > 0 && !flags.some((f) => f === 1) && (!exists || given.length === 4)) {
+      err(`Set at least one of is_top_pick, is_thing, is_which_exit, is_day_trip to 1 (where should this place show?).`);
+    }
+    if (!exists && given.length === 0) err(`Add the flag columns is_top_pick, is_thing, is_which_exit, is_day_trip (1 = show there).`);
+    if (isWhichExit === 1 && exitName === null) err(`"exit_name" is needed when is_which_exit is 1.`);
+    if (dup || !stationSlugs.has(stationSlug) || !topPickSlugs.has(topPickSlug)) return;
+
+    stationPlaces.add(key);
+    record("station_places", {
+      t: "stationPlace", stationSlug, topPickSlug, exitName, minutes, locationType, location, locationJa, sortOrder,
+      isTop, topText, topTextJa, topCaption, topCaptionJa, isThing, thingText, thingTextJa, thingCaption, thingCaptionJa,
+      isWhichExit, exitNote, exitNoteJa, otherExits, isDayTrip, travelTime, travelTimeJa, transport, transportJa,
+    }, key, exists);
   });
 
   // ---- hotels -------------------------------------------------------------

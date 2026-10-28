@@ -18,6 +18,7 @@ export interface Cell {
   icon?: string;
   emoji?: string;
   badge?: string;
+  badges?: string[];
   ja?: boolean;
 }
 export interface Row {
@@ -26,6 +27,8 @@ export interface Row {
   item: Record<string, string>;
   cells: Cell[];
   noDelete?: boolean;
+  /** space separated keys, matched by the filter pills */
+  flags?: string;
 }
 export interface Props {
   anchor: string;
@@ -48,12 +51,14 @@ export interface Props {
   emptyHint?: string;
   editTitle?: string;
   idField?: string;
+  /** filter pills above the table (match Row.flags) */
+  filters?: { key: string; label: string }[];
 }
 
 const {
   anchor, title, hint, noun, columns, rows, actionName, createValue, updateValue, deleteValue,
   multipart = false, nextOrder = 0, canAdd = true, formError = "", posted = null, reopenMode = "update",
-  searchPlaceholder = `Search ${noun}s...`, emptyHint, editTitle, idField = "item_id",
+  searchPlaceholder = `Search ${noun}s...`, emptyHint, editTitle, idField = "item_id", filters = [],
 } = Astro.props;
 
 const reopen = posted ? JSON.stringify({ mode: reopenMode, values: posted }) : "";
@@ -74,6 +79,12 @@ const canDelete = !!deleteValue;
   {rows.length > 0 && (
     <div class="sim-toolbar">
       <input data-sim="search" type="search" placeholder={searchPlaceholder} aria-label={searchPlaceholder} />
+      {filters.length > 0 && (
+        <div class="admin-filter-pills sim-pills" role="group" aria-label="Filter">
+          <button type="button" class="admin-filter-pill is-active" data-sim-pill="">All</button>
+          {filters.map((f) => <button type="button" class="admin-filter-pill" data-sim-pill={f.key}>{f.label}</button>)}
+        </div>
+      )}
     </div>
   )}
 
@@ -93,7 +104,7 @@ const canDelete = !!deleteValue;
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr class="sim-row" data-search={r.search.toLowerCase()}>
+                  <tr class="sim-row" data-search={r.search.toLowerCase()} data-flags={r.flags}>
                     {r.cells.map((c) => (
                       <td>
                         {c.img && <img class="sim-thumb" src={c.img} alt="" loading="lazy" />}
@@ -101,6 +112,7 @@ const canDelete = !!deleteValue;
                         {c.emoji && <span class="sim-emoji">{c.emoji}</span>}
                         {c.main !== undefined && <strong lang={c.ja ? "ja" : undefined}>{c.main}</strong>}
                         {c.badge && <span class="sim-badge">{c.badge}</span>}
+                        {c.badges?.map((b) => <span class="sim-badge sim-badge-soft">{b}</span>)}
                         {c.clip && <div class="sim-clip">{c.clip}</div>}
                         {c.sub && <div class="sim-sub" lang="ja">{c.sub}</div>}
                       </td>

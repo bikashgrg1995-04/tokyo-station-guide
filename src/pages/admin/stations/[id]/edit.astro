@@ -25,11 +25,9 @@ import StationSidesSection from "../../../../components/admin/sections/StationSi
 import StationRoutesSection from "../../../../components/admin/sections/StationRoutesSection.astro";
 import StationExitsSection from "../../../../components/admin/sections/StationExitsSection.astro";
 import StationBusesSection from "../../../../components/admin/sections/StationBusesSection.astro";
-import StationTopPicksSection from "../../../../components/admin/sections/StationTopPicksSection.astro";
-import StationDayTripsSection from "../../../../components/admin/sections/StationDayTripsSection.astro";
+import StationSightsSection from "../../../../components/admin/sections/StationSightsSection.astro";
 import StationSeasonsSection from "../../../../components/admin/sections/StationSeasonsSection.astro";
 import StationPracticalSection from "../../../../components/admin/sections/StationPracticalSection.astro";
-import StationExitPlacesSection from "../../../../components/admin/sections/StationExitPlacesSection.astro";
 import StationFaqSection from "../../../../components/admin/sections/StationFaqSection.astro";
 import { handleStationPlatforms } from "../../../../lib/services/station-platforms";
 import { handleStationFloors } from "../../../../lib/services/station-floors";
@@ -42,10 +40,8 @@ import { PLACE_KINDS } from "../../../../lib/db/places";
 import { handleStationPlaces } from "../../../../lib/services/station-places";
 import StationPlacesSection from "../../../../components/admin/sections/StationPlacesSection.astro";
 import { handleSights } from "../../../../lib/services/station-sights";
-import { handleDayTrips } from "../../../../lib/services/station-day-trips";
 import { handleStationSeasons } from "../../../../lib/services/station-seasons";
 import { handlePracticalTips } from "../../../../lib/services/station-practical-tips";
-import { handleStationExitPlaces } from "../../../../lib/services/station-exit-places";
 import { handleStationFaqs } from "../../../../lib/services/station-faqs";
 
 export const prerender = false;
@@ -69,11 +65,13 @@ if (!station) {
 const GROUPS: { key: string; label: string; items: { key: string; label: string }[] }[] = [
   ["details", "Station details"], ["platforms", "Platforms"], ["floors", "Floors"], ["sides", "Sides of the station"],
   ["exits", "Exits & station tips"], ["facilities", "Facilities"], ["buses-taxis", "Buses & taxis"], ["routes", "Getting there"],
-  ["exit", "Which exit?"], ["day-trips", "Day trips"], ["things-to-do", "Things to do"], ["top-picks", "Top picks"], ["restaurants", "Restaurants"],
+  ["places", "Places"], ["restaurants", "Restaurants"],
   ["hotels", "Hotels"], ["seasons", "When to visit"], ["practical-tips", "Practical tips"], ["faqs", "FAQ"],
 ].map(([key, label]) => ({ key, label, items: [{ key, label }] }));
 // "stats" is part of the details form; the note belongs to the restaurants page.
-const groupOf = (k: string) => (k === "stats" ? "details" : k === "restaurants-note" ? "restaurants" : GROUPS.find((g) => g.key === k)?.key);
+// Old section names (Top picks, Things to do, Which exit?, Day trips) now live in one "places" page.
+const LEGACY: Record<string, string> = { stats: "details", "restaurants-note": "restaurants", "top-picks": "places", "things-to-do": "places", exit: "places", "day-trips": "places" };
+const groupOf = (k: string) => LEGACY[k] ?? GROUPS.find((g) => g.key === k)?.key;
 
 // Every section posts here with ?s=<section>; only that section's handler gets the POST.
 const posted = Astro.request.method === "POST";
@@ -102,15 +100,12 @@ const exitForm = await run("exits", () => handleStationExits(reqFor("exits"), db
 const tipsForm = await run("exits", () => handleStationTips(reqFor("exits"), db, id));
 const facilitiesForm = await run("facilities", () => handleFacilityEntries(reqFor("facilities"), db, id, station.slug));
 const busesForm = await run("buses-taxis", () => handleTransport(reqFor("buses-taxis"), db, id, station.slug));
-const topPicksForm = await run("top-picks", () => handleSights(reqFor("top-picks"), db, id, "top"));
-const thingsForm = await run("things-to-do", () => handleSights(reqFor("things-to-do"), db, id, "thing"));
+const placesForm = await run("places", () => handleSights(reqFor("places"), db, id));
 const hotelsForm = await run("hotels", () => handleStationPlaces(reqFor("hotels"), db, id, PLACE_KINDS.hotel));
 const restaurantsForm = await run("restaurants", () => handleStationPlaces(reqFor("restaurants"), db, id, PLACE_KINDS.restaurant));
-const tripsForm = await run("day-trips", () => handleDayTrips(reqFor("day-trips"), db, id, station.slug));
 const seasonsForm = await run("seasons", () => handleStationSeasons(reqFor("seasons"), db, id));
 const practicalForm = await run("practical-tips", () => handlePracticalTips(reqFor("practical-tips"), db, id));
 const faqForm = await run("faqs", () => handleStationFaqs(reqFor("faqs"), db, id));
-const exitPlacesForm = await run("exit", () => handleStationExitPlaces(reqFor("exit"), db, id));
 
 // The note above the restaurants list has its own little form.
 let noteError = "";
@@ -133,15 +128,12 @@ const done: [string, string | null | undefined][] = [
   ["exits", exitForm?.redirectTo ?? tipsForm?.redirectTo],
   ["facilities", facilitiesForm?.redirectTo],
   ["buses-taxis", busesForm?.redirectTo],
-  ["top-picks", topPicksForm?.redirectTo],
-  ["things-to-do", thingsForm?.redirectTo],
+  ["places", placesForm?.redirectTo],
   ["hotels", hotelsForm?.redirectTo],
   ["restaurants", restaurantsForm?.redirectTo],
-  ["day-trips", tripsForm?.redirectTo],
   ["seasons", seasonsForm?.redirectTo],
   ["practical-tips", practicalForm?.redirectTo],
   ["faqs", faqForm?.redirectTo],
-  ["exit", exitPlacesForm?.redirectTo],
 ];
 for (const [anchor, target] of done) {
   if (target) return Astro.redirect(`/admin/stations/${id}/edit?g=${groupOf(anchor)}#${anchor}`);
@@ -201,10 +193,7 @@ const shared = { station, id, mediaBase };
         {active === "facilities" && <StationFacilitiesSection {...shared} form={facilitiesForm!} />}
         {active === "buses-taxis" && <StationBusesSection {...shared} form={busesForm!} />}
         {active === "routes" && <StationRoutesSection {...shared} form={routesForm!} />}
-        {active === "exit" && <StationExitPlacesSection {...shared} form={exitPlacesForm!} />}
-        {active === "day-trips" && <StationDayTripsSection {...shared} form={tripsForm!} />}
-        {active === "top-picks" && <StationTopPicksSection {...shared} form={topPicksForm!} list="top" />}
-        {active === "things-to-do" && <StationTopPicksSection {...shared} form={thingsForm!} list="thing" />}
+        {active === "places" && <StationSightsSection {...shared} form={placesForm!} />}
         {active === "restaurants" && (
           <>
             <StationPlacesSection form={restaurantsForm!} anchor="restaurants" title="Restaurants" noun="restaurant" />

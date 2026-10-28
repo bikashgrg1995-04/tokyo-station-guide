@@ -731,6 +731,7 @@ function picksHtml(stn) {
         '<div class="pk' +
         (photo ? " has-photo" : "") +
         '">' +
+        (photo ? '<div class="pk-media">' : "") +
         (photo
           ? '<img class="pk-photo" src="' +
             esc(photo) +
@@ -738,6 +739,10 @@ function picksHtml(stn) {
             esc(pick(item.name, item.name_jp)) +
             '" loading="lazy" decoding="async">'
           : "") +
+        (photo && pick(item.image_caption, item.image_caption_jp)
+          ? '<span class="pk-caption">' + esc(pick(item.image_caption, item.image_caption_jp)) + "</span>"
+          : "") +
+        (photo ? "</div>" : "") +
         '<div class="pk-body">' +
         '<div class="pk-heading">' +
         '<b class="pk-name">' +
