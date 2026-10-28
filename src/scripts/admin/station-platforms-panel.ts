@@ -47,6 +47,11 @@ function openModal(edit = false, button?: HTMLButtonElement) {
       notes_japanese: button.dataset.notesJapanese,
       platform_group: button.dataset.group,
       platform_group_japanese: button.dataset.groupJapanese,
+      legend_label: button.dataset.legendLabel,
+      legend_label_japanese: button.dataset.legendLabelJapanese,
+      legend_color: button.dataset.legendColor,
+      group_note: button.dataset.groupNote,
+      group_note_japanese: button.dataset.groupNoteJapanese,
       sort_order: button.dataset.sortOrder,
     };
 

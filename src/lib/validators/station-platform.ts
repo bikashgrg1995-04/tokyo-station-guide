@@ -7,6 +7,11 @@ export interface StationPlatformFormValues {
   notesJapanese: string;
   group: string;
   groupJapanese: string;
+  legendLabel: string;
+  legendLabelJapanese: string;
+  legendColor: string;
+  groupNote: string;
+  groupNoteJapanese: string;
   sortOrder: string;
 }
 
@@ -25,6 +30,11 @@ export function emptyStationPlatformErrors(): StationPlatformFormErrors {
     notesJapanese: "",
     group: "",
     groupJapanese: "",
+    legendLabel: "",
+    legendLabelJapanese: "",
+    legendColor: "",
+    groupNote: "",
+    groupNoteJapanese: "",
     sortOrder: "",
   };
 }
@@ -63,6 +73,12 @@ export function validateStationPlatformForm(
   if (values.groupJapanese.length > 80) {
     errors.groupJapanese = "Japanese group name must be 80 characters or less.";
   }
+
+  if (values.legendLabel.length > 80) errors.legendLabel = "Legend label must be 80 characters or less.";
+  if (values.legendLabelJapanese.length > 80) errors.legendLabelJapanese = "Japanese legend label must be 80 characters or less.";
+  if (values.legendColor && !/^#[0-9a-fA-F]{6}$/.test(values.legendColor)) errors.legendColor = "Use a colour like #1a7f4b.";
+  if (values.groupNote.length > 120) errors.groupNote = "Map note must be 120 characters or less.";
+  if (values.groupNoteJapanese.length > 120) errors.groupNoteJapanese = "Japanese map note must be 120 characters or less.";
 
   if (values.notes.length > 2000) {
     errors.notes = "Walking guidance must be 2000 characters or less.";

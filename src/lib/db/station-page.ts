@@ -42,6 +42,15 @@ export interface StationPagePlatform {
   line_color: string | null;
   group: string | null;
   group_japanese: string | null;
+  group_note: string | null;
+  group_note_japanese: string | null;
+  legend_label: string | null;
+  legend_label_japanese: string | null;
+  legend_color: string | null;
+  notes: string | null;
+  notes_japanese: string | null;
+  floor_name: string | null;
+  floor_name_japanese: string | null;
 }
 
 export interface StationPageSide {
@@ -229,6 +238,11 @@ export interface StationPageData {
   exits_note_japanese: string | null;
   restaurants_note: string | null;
   restaurants_note_japanese: string | null;
+  platform_map_left: string | null;
+  platform_map_left_japanese: string | null;
+  platform_map_right: string | null;
+  platform_map_right_japanese: string | null;
+  platform_map_north: number;
   routes_note_japanese: string | null;
   sides_note_japanese: string | null;
   address: string | null;
@@ -272,6 +286,7 @@ export async function getStationPage(
       `SELECT id, slug, name, name_japanese, description, description_japanese,
               is_verified, verified_at, location_url, region, region_japanese, address, address_japanese,
               sides_note, sides_note_japanese, routes_note, routes_note_japanese, exits_note, exits_note_japanese, restaurants_note, restaurants_note_japanese,
+              platform_map_left, platform_map_left_japanese, platform_map_right, platform_map_right_japanese, platform_map_north,
               main_image, updated_at,
               stat_lines_note, stat_lines_note_japanese,
               stat_riders_value, stat_riders_note, stat_riders_note_japanese,
@@ -348,9 +363,14 @@ export async function getStationPage(
               l.name AS line_name, l.name_japanese AS line_name_japanese,
               l.color AS line_color,
               sp.platform_group AS "group",
-              sp.platform_group_japanese AS group_japanese
+              sp.platform_group_japanese AS group_japanese,
+              sp.group_note, sp.group_note_japanese,
+              sp.legend_label, sp.legend_label_japanese, sp.legend_color,
+              sp.notes, sp.notes_japanese,
+              fl.name AS floor_name, fl.name_japanese AS floor_name_japanese
        FROM station_platforms sp
        LEFT JOIN lines l ON l.id = sp.line_id
+       LEFT JOIN station_floors fl ON fl.id = sp.floor_id
        WHERE sp.station_id = ?
        ORDER BY sp.sort_order, sp.platform_number`,
     )

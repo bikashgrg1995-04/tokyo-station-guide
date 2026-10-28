@@ -991,7 +991,7 @@ a.sp-sign-side:hover {
 .sp-pm-block {
   display: grid;
   gap: 10px;
-  width: min(100%, max(280px, calc(var(--n, 6) * 44px + 12px)));
+  width: min(100%, max(340px, calc(var(--n, 6) * 44px + 12px)));
   margin: 0 auto;
 }
 
@@ -1057,6 +1057,31 @@ a.sp-sign-side:hover {
   line-height: 1.2;
   color: var(--ink);
   text-align: center;
+}
+
+.sp-pm-dir {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sp-pm-dir-left { color: #b3202a; text-align: left; }
+.sp-pm-dir-right { color: #1a6fc4; text-align: right; }
+.sp-pm-north { color: var(--muted); font-weight: 700; text-align: center; }
+
+.sp-pm-group-note { color: var(--muted); }
+
+.sp-pm-details {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--ink);
 }
 
 .sp-pm-legend {

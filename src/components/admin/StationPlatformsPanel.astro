@@ -49,6 +49,11 @@ const formValues =
         notesJapanese: editPlatform.notes_japanese ?? "",
         group: editPlatform.platform_group ?? "",
         groupJapanese: editPlatform.platform_group_japanese ?? "",
+        legendLabel: editPlatform.legend_label ?? "",
+        legendLabelJapanese: editPlatform.legend_label_japanese ?? "",
+        legendColor: editPlatform.legend_color ?? "",
+        groupNote: editPlatform.group_note ?? "",
+        groupNoteJapanese: editPlatform.group_note_japanese ?? "",
         sortOrder: String(editPlatform.sort_order),
       }
     : values;
@@ -170,6 +175,11 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
                         data-notes-japanese={platform.notes_japanese ?? ""}
                         data-group={platform.platform_group ?? ""}
                         data-group-japanese={platform.platform_group_japanese ?? ""}
+                        data-legend-label={platform.legend_label ?? ""}
+                        data-legend-label-japanese={platform.legend_label_japanese ?? ""}
+                        data-legend-color={platform.legend_color ?? ""}
+                        data-group-note={platform.group_note ?? ""}
+                        data-group-note-japanese={platform.group_note_japanese ?? ""}
                         data-sort-order={platform.sort_order}
                       >
                         Edit
@@ -367,6 +377,36 @@ const showDeleteError = Boolean(formError) && editingId === null && !hasValidati
         {errors.groupJapanese && (
           <small class="admin-field-error">{errors.groupJapanese}</small>
         )}
+      </div>
+
+      <div class="admin-form-group">
+        <label for="group_note">Map note (optional) <span class="admin-label-hint">shown beside the group name, e.g. their own numbers 1–4</span></label>
+        <input id="group_note" name="group_note" maxlength="120" placeholder="e.g. their own numbers 1–4" value={formValues.groupNote} />
+        {errors.groupNote && <small class="admin-field-error">{errors.groupNote}</small>}
+      </div>
+
+      <div class="admin-form-group">
+        <label for="group_note_japanese">Japanese map note (optional)</label>
+        <input id="group_note_japanese" name="group_note_japanese" lang="ja" maxlength="120" value={formValues.groupNoteJapanese} />
+        {errors.groupNoteJapanese && <small class="admin-field-error">{errors.groupNoteJapanese}</small>}
+      </div>
+
+      <div class="admin-form-group">
+        <label for="legend_label">Legend label (optional) <span class="admin-label-hint">colour key under the map, e.g. Shinkansen, green gates (JR East). Platforms with the same label share one legend row; blank = the line name</span></label>
+        <input id="legend_label" name="legend_label" maxlength="80" placeholder="e.g. JR lines" value={formValues.legendLabel} />
+        {errors.legendLabel && <small class="admin-field-error">{errors.legendLabel}</small>}
+      </div>
+
+      <div class="admin-form-group">
+        <label for="legend_label_japanese">Japanese legend label (optional)</label>
+        <input id="legend_label_japanese" name="legend_label_japanese" lang="ja" maxlength="80" value={formValues.legendLabelJapanese} />
+        {errors.legendLabelJapanese && <small class="admin-field-error">{errors.legendLabelJapanese}</small>}
+      </div>
+
+      <div class="admin-form-group">
+        <label for="legend_color">Legend colour (optional) <span class="admin-label-hint">swatch next to the legend label; blank = the line colour</span></label>
+        <input id="legend_color" name="legend_color" maxlength="7" placeholder="#1a7f4b" value={formValues.legendColor} />
+        {errors.legendColor && <small class="admin-field-error">{errors.legendColor}</small>}
       </div>
 
       <div class="admin-form-group">

@@ -30,6 +30,7 @@ import StationSeasonsSection from "../../../../components/admin/sections/Station
 import StationPracticalSection from "../../../../components/admin/sections/StationPracticalSection.astro";
 import StationFaqSection from "../../../../components/admin/sections/StationFaqSection.astro";
 import { handleStationPlatforms } from "../../../../lib/services/station-platforms";
+import { getPlatformMapDirection, savePlatformMapDirection } from "../../../../lib/db/station-platforms";
 import { handleStationFloors } from "../../../../lib/services/station-floors";
 import { handleStationSides } from "../../../../lib/services/station-sides";
 import { handleStationRoutes } from "../../../../lib/services/station-routes";
@@ -70,7 +71,7 @@ const GROUPS: { key: string; label: string; items: { key: string; label: string 
 ].map(([key, label]) => ({ key, label, items: [{ key, label }] }));
 // "stats" is part of the details form; the note belongs to the restaurants page.
 // Old section names (Top picks, Things to do, Which exit?, Day trips) now live in one "places" page.
-const LEGACY: Record<string, string> = { stats: "details", "restaurants-note": "restaurants", "top-picks": "places", "things-to-do": "places", exit: "places", "day-trips": "places" };
+const LEGACY: Record<string, string> = { stats: "details", "platform-map": "platforms", "restaurants-note": "restaurants", "top-picks": "places", "things-to-do": "places", exit: "places", "day-trips": "places" };
 const groupOf = (k: string) => LEGACY[k] ?? GROUPS.find((g) => g.key === k)?.key;
 
 // Every section posts here with ?s=<section>; only that section's handler gets the POST.
@@ -119,6 +120,20 @@ if (posted && part === "restaurants-note") {
     return Astro.redirect(`/admin/stations/${id}/edit?g=restaurants#restaurants-note`);
   }
 }
+
+// Direction of the platform map has its own little form on the platforms page.
+let mapError = "";
+if (posted && part === "platform-map") {
+  const fd = await Astro.request.clone().formData();
+  const f = (k: string) => String(fd.get(k) ?? "").trim();
+  const d = { left: f("platform_map_left"), leftJapanese: f("platform_map_left_japanese"), right: f("platform_map_right"), rightJapanese: f("platform_map_right_japanese"), north: fd.get("platform_map_north") === "1" };
+  if ([d.left, d.leftJapanese, d.right, d.rightJapanese].some((v) => v.length > 60)) mapError = "Each label must be 60 characters or less.";
+  else {
+    await savePlatformMapDirection(db, id, d);
+    return Astro.redirect(`/admin/stations/${id}/edit?g=platforms#platform-map`);
+  }
+}
+const mapDir = active === "platforms" ? await getPlatformMapDirection(db, id) : null;
 
 const done: [string, string | null | undefined][] = [
   ["platforms", platformForm?.redirectTo],
@@ -186,7 +201,38 @@ const shared = { station, id, mediaBase };
           </form>
         )}
 
-        {active === "platforms" && <StationPlatformsSection {...shared} form={platformForm!} />}
+        {active === "platforms" && (
+          <>
+            <section class="station-section" id="platform-map" data-nav="platform-map">
+              <form method="POST" action="?s=platform-map" class="sim-note admin-form">
+                <h3>Platform map direction</h3>
+                <p class="admin-field-hint">Shown above the map on the station page: what is on the left and right side of the diagram, and the north arrow. Leave blank to hide.</p>
+                {mapError && <div class="admin-form-error" role="alert">{mapError}</div>}
+                <div class="sim-grid2">
+                  <div class="admin-form-group">
+                    <label for="platform_map_left">Left side label</label>
+                    <input id="platform_map_left" name="platform_map_left" maxlength="60" placeholder="e.g. Marunouchi · West" value={mapDir!.left} />
+                  </div>
+                  <div class="admin-form-group">
+                    <label for="platform_map_left_japanese">Left side label (Japanese)</label>
+                    <input id="platform_map_left_japanese" name="platform_map_left_japanese" lang="ja" maxlength="60" value={mapDir!.leftJapanese} />
+                  </div>
+                  <div class="admin-form-group">
+                    <label for="platform_map_right">Right side label</label>
+                    <input id="platform_map_right" name="platform_map_right" maxlength="60" placeholder="e.g. Yaesu · East" value={mapDir!.right} />
+                  </div>
+                  <div class="admin-form-group">
+                    <label for="platform_map_right_japanese">Right side label (Japanese)</label>
+                    <input id="platform_map_right_japanese" name="platform_map_right_japanese" lang="ja" maxlength="60" value={mapDir!.rightJapanese} />
+                  </div>
+                </div>
+                <label class="admin-check"><input type="checkbox" name="platform_map_north" value="1" checked={mapDir!.north} /> Show the north arrow (the map is drawn with north up)</label>
+                <div><button type="submit" class="common-button common-button-primary">Save direction</button></div>
+              </form>
+            </section>
+            <StationPlatformsSection {...shared} form={platformForm!} />
+          </>
+        )}
         {active === "floors" && <StationFloorsSection {...shared} form={floorForm!} />}
         {active === "sides" && <StationSidesSection {...shared} form={sidesForm!} />}
         {active === "exits" && <StationExitsSection {...shared} form={exitForm!} tipsForm={tipsForm!} />}

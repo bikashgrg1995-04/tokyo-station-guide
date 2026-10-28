@@ -522,6 +522,17 @@ export function buildImportPlan(
     const routesNoteJa = text(d, "routes_note_japanese", 1000, err);
     const sidesNote = text(d, "sides_note", 1500, err);
     const sidesNoteJa = text(d, "sides_note_japanese", 1500, err);
+    const mapLeft = text(d, "platform_map_left", 60, err);
+    const mapLeftJa = text(d, "platform_map_left_japanese", 60, err);
+    const mapRight = text(d, "platform_map_right", 60, err);
+    const mapRightJa = text(d, "platform_map_right_japanese", 60, err);
+    let mapNorth: Opt<number> = "platform_map_north" in d ? null : undefined;
+    const rawNorth = (d.platform_map_north ?? "").toLowerCase();
+    if (rawNorth !== "") {
+      if (["1", "yes", "true"].includes(rawNorth)) mapNorth = 1;
+      else if (["0", "no", "false"].includes(rawNorth)) mapNorth = 0;
+      else err(`"platform_map_north" must be 1 or 0.`);
+    }
     const statLinesNote = text(d, "stat_lines_note", 150, err);
     const statLinesNoteJa = text(d, "stat_lines_note_japanese", 150, err);
     const statRidersValue = text(d, "stat_riders_value", 60, err);
@@ -553,7 +564,7 @@ export function buildImportPlan(
 
     const exists = stationSlugs.has(slug);
     stationSlugs.add(slug);
-    record("stations", { t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt, region, regionJa, address, addressJa, statLinesNote, statLinesNoteJa, statRidersValue, statRidersNote, statRidersNoteJa, statOpenedValue, statOpenedNote, statOpenedNoteJa, sidesNote, sidesNoteJa, routesNote, routesNoteJa, exitsNote, exitsNoteJa, restaurantsNote, restaurantsNoteJa }, slug, exists);
+    record("stations", { t: "station", slug, name, nameJa, desc, descJa, about, aboutJa, locationUrl, isVerified, verifiedAt, region, regionJa, address, addressJa, statLinesNote, statLinesNoteJa, statRidersValue, statRidersNote, statRidersNoteJa, statOpenedValue, statOpenedNote, statOpenedNoteJa, sidesNote, sidesNoteJa, routesNote, routesNoteJa, exitsNote, exitsNoteJa, restaurantsNote, restaurantsNoteJa, mapLeft, mapLeftJa, mapRight, mapRightJa, mapNorth }, slug, exists);
   });
 
   // ---- line_stations ---------------------------------------------------------
@@ -718,13 +729,19 @@ export function buildImportPlan(
     const notesJa = text(d, "notes_japanese", 2000, err);
     const group = text(d, "platform_group", 80, err);
     const groupJa = text(d, "platform_group_japanese", 80, err);
+    const groupNote = text(d, "group_note", 120, err);
+    const groupNoteJa = text(d, "group_note_japanese", 120, err);
+    const legendLabel = text(d, "legend_label", 80, err);
+    const legendLabelJa = text(d, "legend_label_japanese", 80, err);
+    const legendColor = text(d, "legend_color", 7, err);
+    if (legendColor && !/^#[0-9a-fA-F]{6}$/.test(legendColor)) err(`legend_color "${legendColor}" must look like #1a7f4b.`);
     const sortOrder = intField(d, "sort_order", err);
     if (dup || !number || !stationSlugs.has(stationSlug)) return;
 
     const key = `${stationSlug}|${number}|${lineSlug ?? ""}`;
     const exists = platforms.has(key);
     platforms.add(key);
-    record("platforms", { t: "platform", stationSlug, lineSlug, floorName, number, dest, destJa, notes, notesJa, group, groupJa, sortOrder }, key, exists);
+    record("platforms", { t: "platform", stationSlug, lineSlug, floorName, number, dest, destJa, notes, notesJa, group, groupJa, groupNote, groupNoteJa, legendLabel, legendLabelJa, legendColor, sortOrder }, key, exists);
   });
 
   // ---- sides -----------------------------------------------------------------

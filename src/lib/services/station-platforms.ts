@@ -39,6 +39,11 @@ function emptyValues(): StationPlatformFormValues {
     notesJapanese: "",
     group: "",
     groupJapanese: "",
+    legendLabel: "",
+    legendLabelJapanese: "",
+    legendColor: "",
+    groupNote: "",
+    groupNoteJapanese: "",
     sortOrder: "0",
   };
 }
@@ -53,6 +58,11 @@ function readPlatformForm(formData: FormData): StationPlatformFormValues {
     notesJapanese: readText(formData, "notes_japanese"),
     group: readText(formData, "platform_group"),
     groupJapanese: readText(formData, "platform_group_japanese"),
+    legendLabel: readText(formData, "legend_label"),
+    legendLabelJapanese: readText(formData, "legend_label_japanese"),
+    legendColor: readText(formData, "legend_color"),
+    groupNote: readText(formData, "group_note"),
+    groupNoteJapanese: readText(formData, "group_note_japanese"),
     sortOrder: readText(formData, "sort_order"),
   };
 }
@@ -69,6 +79,11 @@ function toPlatformInput(
     notesJapanese: values.notesJapanese || null,
     group: values.group || null,
     groupJapanese: values.groupJapanese || null,
+    legendLabel: values.legendLabel || null,
+    legendLabelJapanese: values.legendLabelJapanese || null,
+    legendColor: values.legendColor || null,
+    groupNote: values.groupNote || null,
+    groupNoteJapanese: values.groupNoteJapanese || null,
     sortOrder: Number(values.sortOrder),
   };
 }
@@ -111,6 +126,11 @@ export async function handleStationPlatforms(
         notesJapanese: platform.notes_japanese ?? "",
         group: platform.platform_group ?? "",
         groupJapanese: platform.platform_group_japanese ?? "",
+        legendLabel: platform.legend_label ?? "",
+        legendLabelJapanese: platform.legend_label_japanese ?? "",
+        legendColor: platform.legend_color ?? "",
+        groupNote: platform.group_note ?? "",
+        groupNoteJapanese: platform.group_note_japanese ?? "",
         sortOrder: String(platform.sort_order),
       };
     } else {

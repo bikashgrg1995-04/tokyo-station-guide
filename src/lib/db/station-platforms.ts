@@ -9,6 +9,11 @@ export interface StationPlatform {
   notes_japanese: string | null;
   platform_group: string | null;
   platform_group_japanese: string | null;
+  legend_label: string | null;
+  legend_label_japanese: string | null;
+  legend_color: string | null;
+  group_note: string | null;
+  group_note_japanese: string | null;
   sort_order: number;
   line_name: string | null;
   line_code: string | null;
@@ -23,6 +28,11 @@ export interface StationPlatformInput {
   notesJapanese?: string | null;
   group?: string | null;
   groupJapanese?: string | null;
+  legendLabel?: string | null;
+  legendLabelJapanese?: string | null;
+  legendColor?: string | null;
+  groupNote?: string | null;
+  groupNoteJapanese?: string | null;
   sortOrder: number;
 }
 
@@ -47,6 +57,11 @@ export async function getStationPlatforms(
           sp.notes_japanese,
           sp.platform_group,
           sp.platform_group_japanese,
+          sp.legend_label,
+          sp.legend_label_japanese,
+          sp.legend_color,
+          sp.group_note,
+          sp.group_note_japanese,
           sp.sort_order,
           l.name AS line_name,
           l.code AS line_code
@@ -113,9 +128,14 @@ export async function createStationPlatform(
       notes_japanese,
       platform_group,
       platform_group_japanese,
+      legend_label,
+      legend_label_japanese,
+      legend_color,
+      group_note,
+      group_note_japanese,
       sort_order
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
     )
     .bind(
@@ -128,6 +148,11 @@ export async function createStationPlatform(
       input.notesJapanese?.trim() || null,
       input.group?.trim() || null,
       input.groupJapanese?.trim() || null,
+      input.legendLabel?.trim() || null,
+      input.legendLabelJapanese?.trim() || null,
+      input.legendColor?.trim() || null,
+      input.groupNote?.trim() || null,
+      input.groupNoteJapanese?.trim() || null,
       input.sortOrder,
     )
     .run();
@@ -156,6 +181,11 @@ export async function updateStationPlatform(
       notes_japanese = ?,
       platform_group = ?,
       platform_group_japanese = ?,
+      legend_label = ?,
+      legend_label_japanese = ?,
+      legend_color = ?,
+      group_note = ?,
+      group_note_japanese = ?,
       sort_order = ?,
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
@@ -171,6 +201,11 @@ export async function updateStationPlatform(
       input.notesJapanese?.trim() || null,
       input.group?.trim() || null,
       input.groupJapanese?.trim() || null,
+      input.legendLabel?.trim() || null,
+      input.legendLabelJapanese?.trim() || null,
+      input.legendColor?.trim() || null,
+      input.groupNote?.trim() || null,
+      input.groupNoteJapanese?.trim() || null,
       input.sortOrder,
       platformId,
       stationId,
@@ -215,4 +250,28 @@ export async function deleteStationPlatforms(
         .bind(stationId, id),
     ),
   );
+}
+
+/** Direction of the platform map: what is on the left / right of the diagram, and the north arrow. */
+export interface PlatformMapDirection {
+  left: string; leftJapanese: string; right: string; rightJapanese: string; north: boolean;
+}
+
+export async function getPlatformMapDirection(db: D1Database, stationId: number): Promise<PlatformMapDirection> {
+  const r = await db
+    .prepare(`SELECT platform_map_left, platform_map_left_japanese, platform_map_right, platform_map_right_japanese, platform_map_north FROM stations WHERE id = ?`)
+    .bind(stationId)
+    .first<{ platform_map_left: string | null; platform_map_left_japanese: string | null; platform_map_right: string | null; platform_map_right_japanese: string | null; platform_map_north: number }>();
+  return {
+    left: r?.platform_map_left ?? "", leftJapanese: r?.platform_map_left_japanese ?? "",
+    right: r?.platform_map_right ?? "", rightJapanese: r?.platform_map_right_japanese ?? "",
+    north: !!r?.platform_map_north,
+  };
+}
+
+export async function savePlatformMapDirection(db: D1Database, stationId: number, d: PlatformMapDirection): Promise<void> {
+  await db
+    .prepare(`UPDATE stations SET platform_map_left = ?, platform_map_left_japanese = ?, platform_map_right = ?, platform_map_right_japanese = ?, platform_map_north = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+    .bind(d.left || null, d.leftJapanese || null, d.right || null, d.rightJapanese || null, d.north ? 1 : 0, stationId)
+    .run();
 }

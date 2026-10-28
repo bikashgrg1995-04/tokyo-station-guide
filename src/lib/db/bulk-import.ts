@@ -131,7 +131,7 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
       keyed(`SELECT slug AS k, name, name_japanese AS nameJa, description AS "desc",
                     description_japanese AS descJa, about, about_japanese AS aboutJa,
                     location_url AS locationUrl, is_verified AS isVerified, verified_at AS verifiedAt,
-                    region, region_japanese AS regionJa, sides_note AS sidesNote, sides_note_japanese AS sidesNoteJa, routes_note AS routesNote, routes_note_japanese AS routesNoteJa, exits_note AS exitsNote, exits_note_japanese AS exitsNoteJa, restaurants_note AS restaurantsNote, restaurants_note_japanese AS restaurantsNoteJa, address, address_japanese AS addressJa,
+                    region, region_japanese AS regionJa, sides_note AS sidesNote, sides_note_japanese AS sidesNoteJa, routes_note AS routesNote, routes_note_japanese AS routesNoteJa, exits_note AS exitsNote, exits_note_japanese AS exitsNoteJa, restaurants_note AS restaurantsNote, restaurants_note_japanese AS restaurantsNoteJa, platform_map_left AS mapLeft, platform_map_left_japanese AS mapLeftJa, platform_map_right AS mapRight, platform_map_right_japanese AS mapRightJa, platform_map_north AS mapNorth, address, address_japanese AS addressJa,
                     stat_lines_note AS statLinesNote, stat_lines_note_japanese AS statLinesNoteJa,
                     stat_riders_value AS statRidersValue, stat_riders_note AS statRidersNote,
                     stat_riders_note_japanese AS statRidersNoteJa,
@@ -166,7 +166,9 @@ async function loadStoredRows(all: Reader): Promise<ImportSnapshot["stored"]> {
       keyed(`SELECT s.slug || '|' || p.platform_number || '|' || COALESCE(l.slug, '') AS k,
                     f.name AS floorName, p.destinations AS dest, p.destinations_japanese AS destJa,
                     p.notes, p.notes_japanese AS notesJa, p.sort_order AS sortOrder,
-                    p.platform_group AS "group", p.platform_group_japanese AS groupJa
+                    p.platform_group AS "group", p.platform_group_japanese AS groupJa,
+                    p.group_note AS groupNote, p.group_note_japanese AS groupNoteJa,
+                    p.legend_label AS legendLabel, p.legend_label_japanese AS legendLabelJa, p.legend_color AS legendColor
              FROM station_platforms p JOIN stations s ON s.id = p.station_id
              LEFT JOIN lines l ON l.id = p.line_id
              LEFT JOIN station_floors f ON f.id = p.floor_id`),
@@ -341,6 +343,17 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
     }
 
     case "station": {
+      // Direction of the platform map: applied after the row exists (new or old).
+      const m = sets(
+        [
+          ["platform_map_left", op.mapLeft],
+          ["platform_map_left_japanese", op.mapLeftJa],
+          ["platform_map_right", op.mapRight],
+          ["platform_map_right_japanese", op.mapRightJa],
+          ["platform_map_north", op.mapNorth, true],
+        ],
+        2,
+      );
       const u = sets(
         [
           ["name_japanese", op.nameJa],
@@ -394,6 +407,7 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
           n(op.statRidersValue), n(op.statRidersNote), n(op.statRidersNoteJa),
           n(op.statOpenedValue), n(op.statOpenedNote), n(op.statOpenedNoteJa), n(op.address), n(op.addressJa), n(op.sidesNote), n(op.sidesNoteJa), n(op.routesNote), n(op.routesNoteJa), n(op.exitsNote), n(op.exitsNoteJa), n(op.restaurantsNote), n(op.restaurantsNoteJa), ...u.params,
         ),
+        ...(m.params.length ? [p(`UPDATE stations SET updated_at = updated_at${m.sql} WHERE slug = ?1`, op.slug, ...m.params)] : []),
       ];
     }
 
@@ -576,6 +590,11 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
           ["notes_japanese", op.notesJa],
           ["platform_group", op.group],
           ["platform_group_japanese", op.groupJa],
+          ["group_note", op.groupNote],
+          ["group_note_japanese", op.groupNoteJa],
+          ["legend_label", op.legendLabel],
+          ["legend_label_japanese", op.legendLabelJa],
+          ["legend_color", op.legendColor],
           ["sort_order", op.sortOrder, true],
         ],
         5,
@@ -598,11 +617,12 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
           `INSERT INTO station_platforms
              (station_id, line_id, floor_id, platform_number, destinations,
               destinations_japanese, notes, notes_japanese, sort_order,
-              platform_group, platform_group_japanese)
+              platform_group, platform_group_japanese,
+              group_note, group_note_japanese, legend_label, legend_label_japanese, legend_color)
            SELECT s.id,
                   (SELECT id FROM lines WHERE slug = ?2),
                   (SELECT f.id FROM station_floors f WHERE f.station_id = s.id AND f.name = ?3),
-                  ?9, ?4, ?5, ?6, ?7, COALESCE(?8, 0), ?10, ?11
+                  ?9, ?4, ?5, ?6, ?7, COALESCE(?8, 0), ?10, ?11, ?12, ?13, ?14, ?15, ?16
            FROM stations s
            WHERE s.slug = ?1
              AND NOT EXISTS (
@@ -612,6 +632,7 @@ function statementsFor(db: D1Database, op: UpsertOp): D1PreparedStatement[] {
              )`,
           op.stationSlug, op.lineSlug, n(op.floorName), n(op.dest), n(op.destJa), n(op.notes),
           n(op.notesJa), n(op.sortOrder), op.number, n(op.group), n(op.groupJa),
+          n(op.groupNote), n(op.groupNoteJa), n(op.legendLabel), n(op.legendLabelJa), n(op.legendColor),
         ),
       ];
     }

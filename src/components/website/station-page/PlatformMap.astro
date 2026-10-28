@@ -6,9 +6,12 @@ import type { StationPagePlatform } from "../../../lib/db/station-page";
 
 export interface Props {
   platforms: StationPagePlatform[];
+  /** Left / right labels and the north arrow (Admin > Station > Platforms > Platform map direction). */
+  direction?: { left: string; leftJa: string; right: string; rightJa: string; north: boolean };
 }
 
-const { platforms } = Astro.props;
+const { platforms, direction } = Astro.props;
+const hasDirection = !!direction && !!(direction.left || direction.right || direction.north);
 const FALLBACK = "#8a93a0";
 
 interface Strip {
@@ -20,12 +23,21 @@ interface Strip {
   lineKey: string;
   lineEn: string;
   lineJa: string;
+  legendEn: string;
+  legendJa: string;
+  legendColor: string;
+  floorEn: string;
+  floorJa: string;
+  notesEn: string;
+  notesJa: string;
 }
 
 interface Group {
   key: string;
   en: string;
   ja: string;
+  noteEn: string;
+  noteJa: string;
   strips: Strip[];
 }
 
@@ -44,10 +56,12 @@ for (const p of platforms) {
   const key = (p.group ?? "").trim();
   let group = groups.find((g) => g.key === key);
   if (!group) {
-    group = { key, en: key, ja: p.group_japanese ?? "", strips: [] };
+    group = { key, en: key, ja: p.group_japanese ?? "", noteEn: "", noteJa: "", strips: [] };
     groups.push(group);
   }
   if (!group.ja && p.group_japanese) group.ja = p.group_japanese;
+  if (!group.noteEn && p.group_note) group.noteEn = p.group_note;
+  if (!group.noteJa && p.group_note_japanese) group.noteJa = p.group_note_japanese;
 
   const lineEn = p.line_name ?? "";
   const lineJa = p.line_name_japanese ?? lineEn;
@@ -63,24 +77,46 @@ for (const p of platforms) {
     lineKey: lineEn || "—",
     lineEn,
     lineJa,
+    legendEn: (p.legend_label ?? "").trim() || lineEn,
+    legendJa: (p.legend_label_japanese ?? "").trim() || (p.legend_label ?? "").trim() || lineJa,
+    legendColor: (p.legend_color ?? "").trim() || p.line_color || FALLBACK,
+    floorEn: p.floor_name ?? "",
+    floorJa: p.floor_name_japanese ?? p.floor_name ?? "",
+    notesEn: p.notes ?? "",
+    notesJa: p.notes_japanese ?? p.notes ?? "",
   });
 }
 
 // Main diagram first, grouped diagrams after it.
 groups.sort((a, b) => Number(a.key !== "") === Number(b.key !== "") ? 0 : a.key === "" ? -1 : 1);
 
-// Legend: one row per line in a diagram, with the platforms it uses.
+// Legend: one row per legend label (default: the line), with the platforms it uses.
 function legend(group: Group) {
   const rows: { color: string; numbers: string[]; en: string; ja: string }[] = [];
   for (const s of group.strips) {
-    let row = rows.find((r) => r.en === s.lineEn && r.color === s.color);
+    let row = rows.find((r) => r.en === s.legendEn && r.color === s.legendColor);
     if (!row) {
-      row = { color: s.color, numbers: [], en: s.lineEn, ja: s.lineJa };
+      row = { color: s.legendColor, numbers: [], en: s.legendEn, ja: s.legendJa };
       rows.push(row);
     }
     row.numbers.push(...s.numbers);
   }
   return rows.filter((r) => r.en);
+}
+
+// Details under a named diagram: "Sobu platforms · B5 · 230 m from Marunouchi North gate".
+function details(group: Group) {
+  if (!group.key) return [];
+  const rows: { en: string; ja: string }[] = [];
+  const seen = new Set<string>();
+  for (const s of group.strips) {
+    if (!s.lineEn || (!s.floorEn && !s.notesEn)) continue;
+    const en = [`${s.lineEn} platforms`, s.floorEn, s.notesEn].filter(Boolean).join(" · ");
+    if (seen.has(en)) continue;
+    seen.add(en);
+    rows.push({ en, ja: [`${s.lineJa}のホーム`, s.floorJa, s.notesJa].filter(Boolean).join(" · ") });
+  }
+  return rows;
 }
 
 // 1,2,9,10 → "1–2, 9–10" (plain numbers only; anything else is listed as typed).
@@ -102,9 +138,19 @@ function span(numbers: string[]): string {
   {
     groups.map((group) => (
       <figure class="sp-pm-block" style={`--n:${group.strips.length}`}>
+        {!group.key && hasDirection && (
+          <div class="sp-pm-dir">
+            <b class="sp-pm-dir-left" data-pick data-en={direction!.left} data-jp={direction!.leftJa || direction!.left}>{direction!.left}</b>
+            {direction!.north && <span class="sp-pm-north" aria-label="North is up">N ↑</span>}
+            <b class="sp-pm-dir-right" data-pick data-en={direction!.right} data-jp={direction!.rightJa || direction!.right}>{direction!.right}</b>
+          </div>
+        )}
         {group.key && (
           <figcaption class="sp-pm-group">
             <b data-pick data-en={group.en} data-jp={group.ja}>{group.en}</b>
+            {group.noteEn && (
+              <span class="sp-pm-group-note"> (<span data-pick data-en={group.noteEn} data-jp={group.noteJa || group.noteEn}>{group.noteEn}</span>)</span>
+            )}
           </figcaption>
         )}
 
@@ -134,6 +180,14 @@ function span(numbers: string[]): string {
             </li>
           ))}
         </ul>
+
+        {details(group).length > 0 && (
+          <ul class="sp-pm-details">
+            {details(group).map((d) => (
+              <li data-pick data-en={d.en} data-jp={d.ja}>{d.en}</li>
+            ))}
+          </ul>
+        )}
       </figure>
     ))
   }

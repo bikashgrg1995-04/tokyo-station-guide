@@ -57,7 +57,10 @@ const isMap = section.id === "map" && station.platforms.length > 0;
   <div class="sp-section-body">
     {
       isMap ? (
-        <PlatformMap platforms={station.platforms} />
+        <PlatformMap
+          platforms={station.platforms}
+          direction={{ left: station.platform_map_left ?? "", leftJa: station.platform_map_left_japanese ?? "", right: station.platform_map_right ?? "", rightJa: station.platform_map_right_japanese ?? "", north: !!station.platform_map_north }}
+        />
       ) : isWhichExit ? (
         <StationWhichExit station={station} />
       ) : isOverview && (station.description || station.description_japanese) ? (
