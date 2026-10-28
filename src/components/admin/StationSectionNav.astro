@@ -24,9 +24,6 @@ const { stationName, stationId, groups, active } = Astro.props;
           >
             {g.label}
           </a>
-          {g.key === "details" && (
-            <a class="station-submenu-link" href={`/admin/stations/${stationId}/edit?g=details#stats`}>Page stat cards</a>
-          )}
         </li>
       ))
     }
