@@ -17,7 +17,7 @@ const rows: Row[] = form.items.map((t) => ({
   id: t.place_id,
   search: [t.name, t.name_japanese, t.exit_name, t.location, t.location_japanese].join(" "),
   item: {
-    item_id: String(t.place_id), exit_id: t.exit_id ? String(t.exit_id) : "",
+    item_id: String(t.place_id), place_name: t.name || t.name_japanese || "", exit_id: t.exit_id ? String(t.exit_id) : "",
     walking_minutes: t.walking_minutes != null ? String(t.walking_minutes) : "",
     location: t.location ?? "", location_japanese: t.location_japanese ?? "", sort_order: String(t.sort_order),
   },
@@ -32,7 +32,7 @@ const rows: Row[] = form.items.map((t) => ({
 <SimSection
   anchor={anchor}
   title={title}
-  hint={`Pick a ${noun} from the <b>${title}</b> list, then its exit and walking minutes. Used by the station page and <b>Which exit?</b>. Removing only takes it off this station.`}
+  hint={`Pick a ${noun} from the <a href="/admin/${anchor}"><b>${title}</b></a> list, then its exit and walking minutes. Used by the station page and <b>Which exit?</b>. Removing only takes it off this station. Not in the list? <a href="/admin/${anchor}/new">Add a new ${noun.toLowerCase()}</a>.`}
   noun={noun}
   columns={["Order", "Name", "Exit · minutes"]}
   rows={rows}
@@ -41,15 +41,24 @@ const rows: Row[] = form.items.map((t) => ({
   updateValue="place_update"
   deleteValue="place_delete"
   nextOrder={nextOrder}
-  canAdd={form.choices.length > 0}
-  emptyHint={form.choices.length === 0 ? `No more ${title.toLowerCase()} to add. Create them under ${title} first.` : undefined}
+  emptyHint={`Nothing added to this station yet. Click Add ${noun} to pick one from the ${title} list.`}
   formError={form.formError}
   posted={form.posted}
   reopenMode={form.errorFor === "place-new" ? "create" : "update"}
 >
-  <div class="admin-form-group">
-    <label>{noun}</label>
-    <select name="existing_id"><option value="">— choose —</option>{form.choices.map((c) => <option value={c.id}>{c.name}</option>)}</select>
+  <div data-sim-create-only>
+    <div class="admin-form-group">
+      <label style="text-transform:capitalize">{noun}</label>
+      <select name="existing_id"><option value="">{form.choices.length ? "— choose —" : "— none left —"}</option>{form.choices.map((c) => <option value={c.id}>{c.name}</option>)}</select>
+    </div>
+    <p class="sim-hint">
+      {form.choices.length === 0 ? `Every ${noun.toLowerCase()} in the list is already on this station. ` : "Not in the list? "}
+      <a href={`/admin/${anchor}/new`} target="_blank" rel="noopener">Add a new {noun.toLowerCase()}</a>, then reload this page.
+    </p>
+  </div>
+  <div data-sim-edit-only class="sim-place-line">
+    <span>{noun}</span> <strong data-sim-text="place_name"></strong>
+    <a data-sim-href={`/admin/${anchor}/{id}/edit`} target="_blank" rel="noopener">Edit {noun.toLowerCase()} details ↗</a>
   </div>
   <div class="sim-grid2">
     <div class="admin-form-group"><label>Exit</label>
