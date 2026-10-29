@@ -281,7 +281,8 @@ export function initTrain() {
 
   var total = Math.max(50, Math.min(spacing * 1.68, 150));
 
-  var gap = 1.4;
+  /* Real cars are separated by a short gangway; this much room lets it bend on a curve. */
+  var gap = 2.6;
 
   var carLen = (total - gap * 2) / 3;
 
@@ -298,7 +299,10 @@ export function initTrain() {
   state.carLen = carLen;
   state.carW = carW;
   state.jointEls = [0, 1].map(function () {
-    return el("path", { class: "joint" }, $("#train"));
+    return {
+      body: el("path", { class: "joint" }, $("#train")),
+      ribs: el("path", { class: "joint-ribs" }, $("#train")),
+    };
   });
 
   state.carEls = [
@@ -368,6 +372,17 @@ export function initTrain() {
   drawTrain(state.trainS, state.trainLane, state.trainDir);
 }
 
+/* Point a fraction f of the way between two "x,y" strings. */
+function mix(p, q, f) {
+  var a = p.split(",");
+  var b = q.split(",");
+
+  return (
+    (+a[0] + (b[0] - a[0]) * f).toFixed(2) + "," +
+    (+a[1] + (b[1] - a[1]) * f).toFixed(2)
+  );
+}
+
 /*
  * Each car follows the track curve.
  */
@@ -407,17 +422,32 @@ function drawTrain(s, lane, dir) {
   /* Each coupling joins the rear corners of one car to the front corners of the
      next, so it bends with the track instead of leaving a gap on curves. */
   var h = state.carLen / 2;
-  var jw = (state.carW / 2) * 0.94;
+  var jw = state.carW * 0.27; /* the gangway is narrower than the car, like the real thing */
 
   for (var j = 0; j < 2; j++) {
     var a = poses[j];
     var b = poses[j + 1];
 
-    state.jointEls[j].setAttribute(
+    /* rear end of car a -> front end of car b (slightly inside both cars) */
+    state.jointEls[j].body.setAttribute(
       "d",
       "M" + world(a, -jw, h - 1) + " L" + world(a, jw, h - 1) +
         " L" + world(b, jw, -h + 1) + " L" + world(b, -jw, -h + 1) + " Z",
     );
+
+    /* bellows: three folds across the gangway, following the bend */
+    var ribs = "";
+
+    for (var r = 1; r <= 3; r++) {
+      var f = r / 4;
+      var ay = h - 1;
+
+      ribs +=
+        "M" + mix(world(a, -jw, ay), world(b, -jw, -h + 1), f) +
+        " L" + mix(world(a, jw, ay), world(b, jw, -h + 1), f);
+    }
+
+    state.jointEls[j].ribs.setAttribute("d", ribs);
   }
 
   return pointAt(s);

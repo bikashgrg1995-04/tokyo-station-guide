@@ -211,10 +211,16 @@
   opacity: 0.8;
 }
 .joint {
-  fill: #8a929d;
-  stroke: #8a929d;
-  stroke-width: 0.6;
+  fill: #59616c;
+  stroke: #59616c;
+  stroke-width: 0.5;
   stroke-linejoin: round;
+}
+.joint-ribs {
+  fill: none;
+  stroke: #2c3138;
+  stroke-width: 0.35;
+  stroke-linecap: round;
 }
 .cab {
   fill: url(#cab-grad);
