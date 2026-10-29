@@ -50,25 +50,6 @@ function buildCar(k, len, w, gap) {
   var capH = len * 0.17; // height of the dark cab cap
 
   /*
-   * Coupling: a slim dark bridge sitting in the gap behind the next car.
-   */
-
-  if (k < 2) {
-    el(
-      "rect",
-      {
-        x: -w * 0.31,
-        y: h - 0.4,
-        width: w * 0.62,
-        height: gap + 0.8,
-        rx: 0.4,
-        class: "joint",
-      },
-      g,
-    );
-  }
-
-  /*
    * Body shell.
    */
 
@@ -312,6 +293,14 @@ export function initTrain() {
 
   state.carPitch = carLen + gap;
 
+  /* Flexible couplings: drawn first (under the cars), reshaped every frame so the
+     train stays one connected piece on any curve. */
+  state.carLen = carLen;
+  state.carW = carW;
+  state.jointEls = [0, 1].map(function () {
+    return el("path", { class: "joint" }, $("#train"));
+  });
+
   state.carEls = [
     buildCar(0, carLen, carW, gap),
     buildCar(1, carLen, carW, gap),
@@ -383,6 +372,8 @@ export function initTrain() {
  * Each car follows the track curve.
  */
 function drawTrain(s, lane, dir) {
+  var poses = [];
+
   for (var k = 0; k < 3; k++) {
     var p = pointAt(s + dir * (1 - k) * state.carPitch);
 
@@ -390,15 +381,43 @@ function drawTrain(s, lane, dir) {
 
     var y = p.y + p.ny * lane * LANE_OFFSET;
 
-    var ang = (Math.atan2(dir * p.ny, dir * p.nx) * 180) / Math.PI;
+    var rad = Math.atan2(dir * p.ny, dir * p.nx);
+
+    var ang = (rad * 180) / Math.PI;
 
     var t = "translate(" + x + " " + y + ") rotate(" + ang + ")";
 
     state.carEls[k].setAttribute("transform", t);
 
+    poses.push({ x: x, y: y, c: Math.cos(rad), s: Math.sin(rad) });
+
     if (k === 0) {
       state.glowEl.setAttribute("transform", t);
     }
+  }
+
+  /* Car-local point -> map point. */
+  function world(pose, lx, ly) {
+    return (
+      (pose.x + lx * pose.c - ly * pose.s).toFixed(2) + "," +
+      (pose.y + lx * pose.s + ly * pose.c).toFixed(2)
+    );
+  }
+
+  /* Each coupling joins the rear corners of one car to the front corners of the
+     next, so it bends with the track instead of leaving a gap on curves. */
+  var h = state.carLen / 2;
+  var jw = (state.carW / 2) * 0.94;
+
+  for (var j = 0; j < 2; j++) {
+    var a = poses[j];
+    var b = poses[j + 1];
+
+    state.jointEls[j].setAttribute(
+      "d",
+      "M" + world(a, -jw, h - 1) + " L" + world(a, jw, h - 1) +
+        " L" + world(b, jw, -h + 1) + " L" + world(b, -jw, -h + 1) + " Z",
+    );
   }
 
   return pointAt(s);

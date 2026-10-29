@@ -212,6 +212,9 @@
 }
 .joint {
   fill: #8a929d;
+  stroke: #8a929d;
+  stroke-width: 0.6;
+  stroke-linejoin: round;
 }
 .cab {
   fill: url(#cab-grad);
