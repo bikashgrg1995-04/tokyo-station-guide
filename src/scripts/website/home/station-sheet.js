@@ -185,10 +185,45 @@ function isDark() {
 
 function uploadedIconImg(key) {
   return (
-    '<img class="ic ic-img" alt="" loading="lazy" src="' +
+    '<img class="ic ic-img" alt="" decoding="async" src="' +
     esc(mediaSrc(key)) +
     '">'
   );
+}
+
+/*
+ * Facility icons are tiny files, but each one is its own request. Fetch them all once
+ * the page is idle (current theme only), so the popup finds them in the browser cache
+ * instead of loading them one by one when it opens.
+ */
+var preloaded = {};
+
+function preloadFacilityIcons() {
+  var dark = isDark();
+  var keys = {};
+
+  function add(f) {
+    var k = String((dark && f.icon_dark) || f.icon || "").trim();
+
+    if (k.indexOf("facility-icons/") === 0) {
+      keys[k] = true;
+    }
+  }
+
+  var all = Object.keys(data.stationsByLine || {}).reduce(function (out, id) {
+    return out.concat(data.stationsByLine[id]);
+  }, []);
+
+  all.forEach(function (stn) {
+    parseList(stationField(stn, ["facilities"])).forEach(add);
+  });
+
+  Object.keys(keys).forEach(function (k) {
+    if (!preloaded[k]) {
+      preloaded[k] = true;
+      new Image().src = mediaSrc(k);
+    }
+  });
 }
 
 function facilityIcon(f) {
@@ -1053,6 +1088,8 @@ export function closeSheet() {
 }
 
 export function initStationSheet() {
+  (window.requestIdleCallback || function (fn) { return setTimeout(fn, 600); })(preloadFacilityIcons);
+
   $("#info-link").addEventListener("click", function (e) {
     if (!list()[state.idx]) {
       return;
@@ -1117,6 +1154,8 @@ export function initStationSheet() {
 
   /* Redraw icons when the theme changes while the sheet is open. */
   new MutationObserver(function () {
+    preloadFacilityIcons();
+
     if (view.stn && !sheet.hidden) {
       renderTab();
     }
