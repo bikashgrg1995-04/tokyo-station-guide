@@ -188,3 +188,53 @@
   background: #fff;
   border-top: 1px solid #eef0f3;
 }
+
+/* ===== Phones: tables that do not fit become compact swipe lists (see scripts/admin/shared/mobile-list.ts) ===== */
+@media (max-width: 640px) {
+  .admin-table.m-list { display: block; width: 100%; min-width: 0 !important; border: 0; }
+  .admin-table.m-list thead { display: none; }
+  .admin-table.m-list tbody { display: grid; gap: 8px; padding: 4px 0 8px; }
+  .admin-table.m-list tr.m-row {
+    display: block; position: relative; overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none;
+    background: #fff; border: 1px solid var(--admin-border, #e5e7eb); border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+  }
+  .admin-table.m-list tr.m-row > td { display: none; border: 0; padding: 0; height: auto; }
+  .admin-table.m-list tr.m-row > td[data-m="title"],
+  .admin-table.m-list tr.m-row > td[data-m="detail"] {
+    display: block; position: relative; z-index: 1; background: #fff;
+    transform: translateX(var(--dx, 0px)); transition: transform .2s ease;
+  }
+  .admin-table.m-list tr.m-row.is-dragging > td { transition: none; }
+  .admin-table.m-list tr.m-row > td[data-m="title"] { padding: 11px 44px 2px 14px !important; overflow: visible !important; width: auto !important; font-size: 14.5px; font-weight: 600; color: #0f172a; line-height: 1.3; }
+  .admin-table.m-list td[data-m="title"] * { white-space: normal; overflow-wrap: anywhere; }
+  .admin-table.m-list tr.m-row > td[data-m="detail"] { padding: 0 14px 0 14px !important; overflow: visible !important; width: auto !important; font-size: 12.5px; color: #64748b; line-height: 1.4; }
+  .admin-table.m-list tr.m-row > td.m-last { padding-bottom: 11px !important; }
+  .admin-table.m-list td[data-m="detail"] * { white-space: normal; overflow-wrap: anywhere; }
+
+  /* the Edit / Delete layer waits at the left edge and slides in with the row */
+  .admin-table.m-list tr.m-row > td[data-m="actions"] {
+    display: flex; align-items: center; gap: 8px; position: absolute; z-index: 0; top: 0; bottom: 0; left: 0;
+    width: 150px; padding: 0 12px; box-sizing: border-box; background: #f1f5f9;
+    transform: translateX(calc(-100% + var(--dx, 0px))); transition: transform .2s ease;
+  }
+  .admin-table.m-list tr.m-row.is-dragging > td[data-m="actions"] { transition: none; }
+  .admin-table.m-list td[data-m="actions"] .admin-table-actions,
+  .admin-table.m-list td[data-m="actions"] .sim-actions { display: flex; flex-direction: row; gap: 8px; width: 100%; }
+  .admin-table.m-list td[data-m="actions"] .admin-table-action,
+  .admin-table.m-list td[data-m="actions"] .sim-actions > * { flex: 1; width: auto; text-align: center; justify-content: center; }
+  .admin-table.m-list td[data-m="actions"] form { flex: 1; margin: 0; display: flex; }
+  .admin-table.m-list td[data-m="actions"] form > * { flex: 1; }
+
+  .m-more {
+    position: absolute; top: 5px; right: 6px; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 10px;
+    background: transparent; color: #64748b; font-size: 20px; line-height: 1; cursor: pointer; z-index: 2;
+  }
+  .m-more:active { background: #eef2f7; }
+  .admin-table.m-list .m-row.is-open .m-more { color: #2563eb; }
+}
+@media (max-width: 640px) {
+  .admin-table.m-list td[data-m="title"] .admin-operator-name,
+  .admin-table.m-list td[data-m="title"] .places-name { display: block; font-size: inherit; font-weight: inherit; }
+  .admin-table.m-list td[data-m="title"] .admin-operator-name::before { display: none; }
+}
