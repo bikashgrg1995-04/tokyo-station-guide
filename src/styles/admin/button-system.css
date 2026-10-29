@@ -238,3 +238,15 @@
   .admin-table.m-list td[data-m="title"] .places-name { display: block; font-size: inherit; font-weight: inherit; }
   .admin-table.m-list td[data-m="title"] .admin-operator-name::before { display: none; }
 }
+
+/* Add / edit pages: Save / Cancel stay at the bottom of the screen, only the form content scrolls */
+.admin-content :is(.admin-form-actions, .station-save-bar):not(.admin-not-found-actions):not(.sim-dialog *):not(.admin-line-station-modal-dialog *) {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  margin-top: 16px;
+  padding: 12px 0;
+  background: var(--admin-surface, #fff);
+  border-top: 1px solid var(--admin-border, #e5e7eb);
+  box-shadow: 0 -8px 14px -10px rgba(15, 23, 42, 0.22);
+}
