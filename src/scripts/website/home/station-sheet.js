@@ -937,6 +937,7 @@ function prepareSuggestionForm(stn) {
   $("#suggestion-line-id").value =
     line && line.id != null ? String(line.id) : "";
 
+  window.clearTimeout(closeTimer);
   section.hidden = true;
   button.setAttribute("aria-expanded", "false");
 
@@ -947,6 +948,25 @@ function prepareSuggestionForm(stn) {
   message.textContent = "";
   message.hidden = true;
   message.classList.remove("is-success", "is-error");
+}
+
+var closeTimer = null;
+
+/* Hide the suggestion form and clear its message. */
+function closeSuggestion() {
+  window.clearTimeout(closeTimer);
+  closeTimer = null;
+
+  $("#sheet-edit-form").hidden = true;
+  $("#sheet-suggest-edit").setAttribute("aria-expanded", "false");
+
+  var message = $("#suggestion-message");
+  message.hidden = true;
+  message.textContent = "";
+  message.classList.remove("is-success", "is-error");
+
+  view.sent = false;
+  updateSuggestButtons();
 }
 
 /* Cancel / Close and Submit change with the state and with the language. */
@@ -1187,15 +1207,7 @@ export function initStationSheet() {
     }
   });
 
-  $("#sheet-cancel-edit").addEventListener("click", function () {
-    $("#sheet-edit-form").hidden = true;
-    $("#sheet-suggest-edit").setAttribute("aria-expanded", "false");
-
-    var message = $("#suggestion-message");
-    message.hidden = true;
-    message.textContent = "";
-    message.classList.remove("is-success", "is-error");
-  });
+  $("#sheet-cancel-edit").addEventListener("click", closeSuggestion);
 
   $("#station-suggestion-form").addEventListener(
     "submit",
@@ -1235,16 +1247,18 @@ export function initStationSheet() {
           );
         }
 
-        message.textContent = isJp()
-          ? t("sug.thanks")
-          : result.message || t("sug.thanks");
+        message.textContent = t("sug.done") + " " + t("sug.thanks");
         message.classList.remove("is-error");
         message.classList.add("is-success");
         message.hidden = false;
+        message.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
-        // Ready for another suggestion; the button now just closes the form.
+        // The form closes by itself after a moment (Close button works right away too).
         $("#suggestion-text").value = "";
         view.sent = true;
+
+        window.clearTimeout(closeTimer);
+        closeTimer = window.setTimeout(closeSuggestion, 2500);
       } catch (error) {
         message.textContent =
           error instanceof Error ? error.message : t("sug.network");
